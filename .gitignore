@@ -58,3 +58,4 @@ dkms.conf
 .venv
 .idea
 cmake-build-debug
+*.pgn
