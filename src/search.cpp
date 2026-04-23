@@ -9,11 +9,14 @@
 #include <algorithm>
 #include <climits>
 #include <cstring>
-#include <vector>
 
+static constexpr int MAX_PLY = 128;
 static constexpr int INF = 1000000;
 static constexpr int MATE_SCORE = 900000;
-static constexpr int PTYPE_VALUES[7] = {0, 100, 320, 330, 500, 900, 20000};
+static constexpr int PTYPE_VALUES[7] = {0, 100, 320, 330, 500, 900, 0};
+
+std::atomic<bool> g_stop = false;
+static U64 node_count = 0;
 
 struct ScoredMove {
     Move m;
@@ -21,17 +24,19 @@ struct ScoredMove {
 };
 
 struct SearchHeuristics {
-    std::vector<std::array<Move, 2>> killers;
+    Move killers[MAX_PLY][2];
     int history[64][64];
 
-    explicit SearchHeuristics(int max_ply) {
-        killers.resize(std::max(1, max_ply + 2));
-        for (auto &k : killers) { k[0] = MOVE_NONE; k[1] = MOVE_NONE; }
+    SearchHeuristics() {
+        for (int i = 0; i < MAX_PLY; ++i) {
+            killers[i][0] = MOVE_NONE;
+            killers[i][1] = MOVE_NONE;
+        }
         std::memset(history, 0, sizeof(history));
     }
 
     inline void store_killer(int ply, Move m) {
-        if (ply < 0 || ply >= (int)killers.size()) return;
+        if (ply < 0 || ply >= MAX_PLY) return;
         if (killers[ply][0] == m) return;
         killers[ply][1] = killers[ply][0];
         killers[ply][0] = m;
@@ -42,10 +47,10 @@ struct SearchHeuristics {
         Square to   = move_to(m);
         int bonus = depth * depth;
         history[int(from)][int(to)] += bonus;
-        if (history[int(from)][int(to)] > 1'000'000) history[int(from)][int(to)] /= 2;
+        if (history[int(from)][int(to)] > 1000000)
+            history[int(from)][int(to)] /= 2;
     }
 };
-
 static inline bool is_ep_capture(const Board& b, Move m) {
     if (b.en_passant == SQ_NONE) return false;
     if (move_to(m) != b.en_passant) return false;
@@ -97,11 +102,11 @@ static inline bool is_capture_or_promo(const Board& b, Move m) {
 // captures first (MVV/LVA), then killer, then history
 static inline int order_score(const Board& b, Move m, int ply, const SearchHeuristics& H) {
     int cap = capture_order_score(b, m);
-    if (cap != 0) return 1'000'000 + cap;
+    if (cap != 0) return 1000000 + cap;
 
-    if (ply >= 0 && ply < (int)H.killers.size()) {
-        if (m == H.killers[ply][0]) return 900'000;
-        if (m == H.killers[ply][1]) return 890'000;
+    if (ply >= 0 && ply < MAX_PLY) {
+        if (m == H.killers[ply][0]) return 900000;
+        if (m == H.killers[ply][1]) return 890000;
     }
 
     Square from = move_from(m);
@@ -110,8 +115,10 @@ static inline int order_score(const Board& b, Move m, int ply, const SearchHeuri
 }
 
 static int qsearch(Board &b, int alpha, int beta, int depth) {
-    int stand_pat = evaluate(b);
+    if (g_stop) return 0;
+    node_count++;
 
+    int stand_pat = evaluate(b);
     if (stand_pat >= beta) return stand_pat;
     if (stand_pat > alpha) alpha = stand_pat;
 
@@ -151,6 +158,9 @@ static int qsearch(Board &b, int alpha, int beta, int depth) {
 }
 
 static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeuristics& H) {
+    if (g_stop) return 0;
+    node_count++;
+
     if (depth == 0) return qsearch(b, alpha, beta, 8);
 
     MoveList moves = generate_legal_moves(b);
@@ -194,9 +204,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
 
 SearchResult search(Board &b, int max_depth) {
     SearchResult result;
-
-    // Allocate requested depth + 2 for safety at root/child.
-    SearchHeuristics H(max_depth + 2);
+    SearchHeuristics H;
+    node_count = 0;
+    g_stop = false;
 
     for (int depth = 1; depth <= max_depth; ++depth) {
         int alpha = -INF;
@@ -210,7 +220,7 @@ SearchResult search(Board &b, int max_depth) {
         ScoredMove ordered[256];
         for (int i = 0; i < moves.count; ++i) {
             Move m = moves.moves[i];
-            ordered[i] = {m, order_score(b, m, /*ply=*/0, H)};
+            ordered[i] = {m, order_score(b, m, 0, H)};
         }
         std::sort(ordered, ordered + moves.count, [](const ScoredMove& a, const ScoredMove& b) {
             return a.score > b.score;
@@ -230,10 +240,12 @@ SearchResult search(Board &b, int max_depth) {
             }
             if (score > alpha) alpha = score;
         }
+        if (g_stop) break;
 
         result.best_move = best_move;
         result.score = best_score;
         result.depth = depth;
+        result.nodes = node_count;
     }
     return result;
 }

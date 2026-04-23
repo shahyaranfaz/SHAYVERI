@@ -4,10 +4,15 @@
 #include "board.h"
 #include "move.h"
 
+#include <atomic>
+
+extern std::atomic<bool> g_stop;
+
 struct SearchResult {
     Move best_move = MOVE_NONE;
     int score = 0;
     int depth = 0;
+    U64 nodes = 0;
 };
 
 SearchResult search(Board &b, int max_depth);

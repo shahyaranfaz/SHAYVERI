@@ -6,10 +6,22 @@
 #include "opening_book.h"
 #include "search.h"
 
+#include <atomic>
+#include <chrono>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
+
+static std::thread search_thread;
+
+static void stop_search() {
+    g_stop = true;
+    if (search_thread.joinable())
+        search_thread.join();
+}
 
 // opening book
 
@@ -117,7 +129,8 @@ int main() {
                 std::string fen, part;
                 for (int i = 0; i < 6 && iss >> part; ++i)
                     fen += (i ? " " : "") + part;
-                set_from_fen(b, fen);
+                if (!set_from_fen(b, fen))
+                    set_startpos(b);
             }
             std::string moves_token;
             if (iss >> moves_token && moves_token == "moves") {
@@ -137,17 +150,54 @@ int main() {
             if (!book_move.empty()) {
                 std::cout << "bestmove " << book_move << "\n";
             } else {
-                SearchResult result = search(b, 6);
-                if (result.best_move != MOVE_NONE)
-                    std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
-                else
-                    std::cout << "bestmove 0000\n";
-            }
+                stop_search(); // stop any existing search
 
+                // parse wtime/btime/winc/binc/infinite
+                bool infinite = false;
+                int wtime = 0, btime = 0, winc = 0, binc = 0, movetime = 0;
+                std::string tok;
+                while (iss >> tok) {
+                    if (tok == "infinite") infinite = true;
+                    else if (tok == "wtime") iss >> wtime;
+                    else if (tok == "btime") iss >> btime;
+                    else if (tok == "winc") iss >> winc;
+                    else if (tok == "binc") iss >> binc;
+                    else if (tok == "movetime") iss >> movetime;
+                }
+
+                // compute time to use in ms
+                int my_time = (b.side_to_move == WHITE) ? wtime : btime;
+                int my_inc  = (b.side_to_move == WHITE) ? winc  : binc;
+                int alloc = infinite ? 60000 : (movetime > 0 ? movetime : my_time / 20 + my_inc / 2);
+                if (alloc < 10) alloc = 10;
+
+                Board b_copy = b;
+                search_thread = std::thread([b_copy, alloc]() mutable {
+                    // timer thread to set stop flag
+                    auto timer_active = std::make_shared<std::atomic<bool>>(true);
+                    std::thread timer([alloc, timer_active]() {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(alloc));
+                        if (*timer_active) g_stop = true;
+                    });
+
+                    SearchResult result = search(b_copy, 64);
+                    *timer_active = false;
+                    g_stop = true; // make timer exit cleanly if still sleeping
+                    timer.join();
+
+                    std::cout << "info depth " << result.depth
+                              << " score cp " << result.score
+                              << " nodes " << result.nodes << "\n";
+                    std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
+                    std::cout.flush();
+                });
+            }
+        } else if (token == "stop") {
+            stop_search();
         } else if (token == "quit") {
+            stop_search();
             break;
         }
-
         std::cout.flush();
     }
     return 0;

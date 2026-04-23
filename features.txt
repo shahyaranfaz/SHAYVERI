@@ -26,13 +26,15 @@ Endgame:
 
 UCI Protocol:
   - uci, isready, ucinewgame, position, go, stop, quit ✅
-  - Time management — use fraction of remaining time, handle wtime/btime/winc/binc
-  - stop command handling
-  - info output (depth, score, nodes, pv line)
+  - Time management (wtime/btime/winc/binc, movetime, infinite) ✅
+  - stop command handling ✅
+  - info output (depth, score, nodes) ✅
+  - Invalid FEN fallback to startpos ✅
   - searchmoves support
+  - pv line
 
 Infrastructure:
   - Zobrist hashing (needed for TT and repetition detection)
   - Magic bitboards (replace classical sliding attacks — big speed boost)
 
-Priority order: time management → TT+Zobrist → move ordering → the rest
+Priority order: time management → TT+Zobrist → the rest

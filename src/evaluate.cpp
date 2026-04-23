@@ -11,13 +11,13 @@ static constexpr int PIECE_VALUES[PIECE_COUNT] = {
     330,  // WB
     500,  // WR
     900,  // WQ
-    20000,    // WK
+    0,    // WK
    -100,  // BP
    -320,  // BN
    -330,  // BB
    -500,  // BR
    -900,  // BQ
-    -20000,    // BK
+    0,    // BK
 };
 
 // from https://www.chessprogramming.org/Simplified_Evaluation_Function#Piece_Values
@@ -124,7 +124,7 @@ static int pst_white(PieceType pt, int sq, bool endgame) {
     }
 }
 
-int evaluate(Board &b) {
+int evaluate(const Board &b) {
     bool eg = is_endgame(b);
     int score = 0;
     for (int p = 1; p < PIECE_COUNT; ++p) {
