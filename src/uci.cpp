@@ -3,11 +3,38 @@
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
+#include "opening_book.h"
 #include "search.h"
 
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
+
+// opening book
+
+static uint64_t fnv64(const std::string& s) {
+    uint64_t h = 14695981039346656037ULL;
+    for (unsigned char c : s) {
+        h ^= c;
+        h *= 1099511628211ULL;
+    }
+    return h;
+}
+
+static std::string probe_book(const std::vector<std::string>& history) {
+    std::string prefix;
+    for (int i = 0; i < (int)history.size(); ++i) {
+        if (i > 0) prefix += ' ';
+        prefix += history[i];
+    }
+    uint64_t key = fnv64(prefix);
+    for (int i = 0; i < OPENING_BOOK_SIZE; ++i) {
+        if (OPENING_BOOK[i].key == key)
+            return std::string(OPENING_BOOK[i].move);
+    }
+    return "";
+}
 
 static std::string move_to_uci(Move m) {
     auto sq_to_str = [](Square s) -> std::string {
@@ -60,6 +87,7 @@ int main() {
 
     Board b;
     set_startpos(b);
+    std::vector<std::string> move_history;
 
     std::string line;
     while (std::getline(std::cin, line)) {
@@ -77,10 +105,12 @@ int main() {
 
         } else if (token == "ucinewgame") {
             set_startpos(b);
+            move_history.clear();
 
         } else if (token == "position") {
             std::string pos;
             iss >> pos;
+            move_history.clear();
             if (pos == "startpos") {
                 set_startpos(b);
             } else if (pos == "fen") {
@@ -97,16 +127,22 @@ int main() {
                     if (m != MOVE_NONE) {
                         Undo u;
                         make_move(b, m, u);
+                        move_history.push_back(mv);
                     }
                 }
             }
 
         } else if (token == "go") {
-            SearchResult result = search(b, 6);
-            if (result.best_move != MOVE_NONE)
-                std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
-            else
-                std::cout << "bestmove 0000\n";
+            std::string book_move = probe_book(move_history);
+            if (!book_move.empty()) {
+                std::cout << "bestmove " << book_move << "\n";
+            } else {
+                SearchResult result = search(b, 6);
+                if (result.best_move != MOVE_NONE)
+                    std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
+                else
+                    std::cout << "bestmove 0000\n";
+            }
 
         } else if (token == "quit") {
             break;
