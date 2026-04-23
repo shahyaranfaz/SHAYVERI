@@ -18,6 +18,7 @@ struct Board {
     std::array<U64, COLOUR_COUNT> occupancies{}; // occupancy by color
     std::array<Piece, 64> mailbox{}; // for O(1) square lookups
 
+    U64 hash = 0;
     U64 occupied = 0;
     Colour side_to_move = WHITE;
     Square en_passant = SQ_NONE;

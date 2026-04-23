@@ -8,6 +8,10 @@ Search:
   - Late move reductions (LMR)
   - Aspiration windows
   - Repetition detection (2-fold during search, 3-fold draw claim)
+  - Futility pruning — skip moves near leaf nodes that can't improve alpha, big speedup
+  - Delta pruning — in qsearch, skip captures that can't raise alpha even with a big swing
+  - Check extensions — extend search by 1 ply when in check, prevents missing forced mates
+  - SEE (Static Exchange Evaluation) — before qsearch, prune obviously losing captures
 
 Evaluation:
   - Piece-square tables ✅
@@ -16,6 +20,10 @@ Evaluation:
   - Pawn structure (doubled, isolated, passed pawns)
   - Mobility (count legal moves as a bonus)
   - Bishop pair bonuses ✅
+  - Rook on open/semi-open file bonus
+  - Tempo / side to move bonus (small flat bonus for having the move)
+  - Outpost squares for knights — knight on e5/d5 with no pawn to kick it
+  - Connected rooks bonus
 
 Opening:
   - Opening book from 2600+ games in TWIC ✅
@@ -34,7 +42,18 @@ UCI Protocol:
   - pv line
 
 Infrastructure:
-  - Zobrist hashing (needed for TT and repetition detection)
+  - Zobrist hashing ✅
   - Magic bitboards (replace classical sliding attacks — big speed boost)
+  - bench command
 
-Priority order: time management → TT+Zobrist → the rest
+Priority order:
+  - Zobrist → TT → repetition
+  - Check extensions + SEE
+  - King safety + pawn structure + tapered eval
+  - Futility pruning + delta pruning
+  - Null move → LMR → aspiration windows
+  - Rook/knight bonuses + mobility
+  - Magic bitboards
+  - Syzygy
+  - searchmoves support
+  - pv line

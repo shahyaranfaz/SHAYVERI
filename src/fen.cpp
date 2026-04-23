@@ -1,5 +1,7 @@
 #include "board.h"
 
+#include "zobrist.h"
+
 #include <cctype>
 #include <sstream>
 #include <string>
@@ -71,5 +73,6 @@ bool set_from_fen(Board &b, const std::string &fen) {
     } catch (...) { return false; }
 
     b.recompute_all();
+    b.hash = Zobrist::compute(b);
     return true;
 }

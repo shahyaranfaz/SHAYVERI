@@ -1,7 +1,10 @@
 #include "make.h"
+
 #include "attacks.h"
 
 #include <cassert>
+
+#include "zobrist.h"
 
 static Piece promo_piece(Colour side_to_move, PieceType promo) {
     // promo: 1=N,2=B,3=R,4=Q
@@ -59,6 +62,7 @@ bool make_move(Board &b, Move m, Undo &u) {
     u.en_passant = b.en_passant;
     u.half_move = b.half_move;
     u.full_move = b.full_move;
+    u.hash = b.hash;
     u.captured = NONE_PIECE;
 
     Square from = move_from(m);
@@ -67,8 +71,12 @@ bool make_move(Board &b, Move m, Undo &u) {
 
     Piece moved = b.get_piece(from);
     if (moved == NONE_PIECE) return false;
-
     if (b.side_to_move != get_colour(moved)) return false;
+
+    const int old_castling = b.castling & 15;
+    const Square old_ep = b.en_passant;
+    b.hash ^= Zobrist::castlings[old_castling];
+    if (old_ep != SQ_NONE) b.hash ^= Zobrist::en_passants[get_file(old_ep)];
 
     Piece captured = b.get_piece(to);
 
@@ -77,23 +85,27 @@ bool make_move(Board &b, Move m, Undo &u) {
         is_ep = true;
         Square cap = (b.side_to_move == WHITE) ? (to - 8) : (to + 8);
         captured = b.get_piece(cap);
-        if (captured == NONE_PIECE) return false;
+        if (captured == NONE_PIECE) { b.hash = u.hash; return false; }
         u.captured = captured;
+        b.hash ^= Zobrist::pieces[captured][cap];
         remove_piece(b, captured, cap);
     } else if (captured != NONE_PIECE) {
         u.captured = captured;
+        b.hash ^= Zobrist::pieces[captured][to];
         remove_piece(b, captured, to);
         clear_castling_if_rook_captured(b, captured, to);
     }
     u.was_ep = is_ep;
-
+    b.hash ^= Zobrist::pieces[moved][from];
     remove_piece(b, moved, from);
 
     if (promo && (moved == WP || moved == BP)) {
         Piece pp = promo_piece(b.side_to_move, promo);
-        if (pp == NONE_PIECE) return false;
+        if (pp == NONE_PIECE) { b.hash = u.hash; return false; }
+        b.hash ^= Zobrist::pieces[pp][to];
         add_piece(b, pp, to);
     } else {
+        b.hash ^= Zobrist::pieces[moved][to];
         add_piece(b, moved, to);
     }
 
@@ -103,31 +115,49 @@ bool make_move(Board &b, Move m, Undo &u) {
     if (is_castle) {
         if (b.side_to_move == WHITE) {
             if (to == make_square(FILE_G, RANK_1)) { // king side
-                remove_piece(b, WR, make_square(FILE_H, RANK_1));
-                add_piece(b, WR, make_square(FILE_F, RANK_1));
+                Square rook_from = make_square(FILE_H, RANK_1);
+                Square rook_to = make_square(FILE_F, RANK_1);
+                b.hash ^= Zobrist::pieces[WR][rook_from];
+                b.hash ^= Zobrist::pieces[WR][rook_to];
+                remove_piece(b, WR, rook_from);
+                add_piece(b, WR, rook_to);
             } else { // queen side
-                remove_piece(b, WR, make_square(FILE_A, RANK_1));
-                add_piece(b, WR, make_square(FILE_D, RANK_1));
+                Square rook_from = make_square(FILE_A, RANK_1);
+                Square rook_to = make_square(FILE_D, RANK_1);
+                b.hash ^= Zobrist::pieces[WR][rook_from];
+                b.hash ^= Zobrist::pieces[WR][rook_to];
+                remove_piece(b, WR, rook_from);
+                add_piece(b, WR, rook_to);
             }
             b.castling &= ~(WHITE_KINGSIDE | WHITE_QUEENSIDE);
         } else {
             if (to == make_square(FILE_G, RANK_8)) {
-                remove_piece(b, BR, make_square(FILE_H, RANK_8));
-                add_piece(b, BR, make_square(FILE_F, RANK_8));
+                Square rook_from = make_square(FILE_H, RANK_8);
+                Square rook_to = make_square(FILE_F, RANK_8);
+                b.hash ^= Zobrist::pieces[BR][rook_from];
+                b.hash ^= Zobrist::pieces[BR][rook_to];
+                remove_piece(b, BR, rook_from);
+                add_piece(b, BR, rook_to);
             } else {
-                remove_piece(b, BR, make_square(FILE_A, RANK_8));
-                add_piece(b, BR, make_square(FILE_D, RANK_8));
+                Square rook_from = make_square(FILE_A, RANK_8);
+                Square rook_to = make_square(FILE_D, RANK_8);
+                b.hash ^= Zobrist::pieces[BR][rook_from];
+                b.hash ^= Zobrist::pieces[BR][rook_to];
+                remove_piece(b, BR, rook_from);
+                add_piece(b, BR, rook_to);
             }
             b.castling &= ~(BLACK_KINGSIDE | BLACK_QUEENSIDE);
         }
     }
     u.was_castle = is_castle;
-
     clear_castling_if_rook_king_moved(b, moved, from);
 
     b.en_passant = SQ_NONE;
     if (moved == WP && get_rank(from) == RANK_2 && get_rank(to) == RANK_4) b.en_passant = from + 8;
     if (moved == BP && get_rank(from) == RANK_7 && get_rank(to) == RANK_5) b.en_passant = from - 8;
+
+    b.hash ^= Zobrist::castlings[b.castling & 15];
+    if (b.en_passant != SQ_NONE) b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
 
     if (moved == WP || moved == BP || u.captured != NONE_PIECE) b.half_move = 0;
     else b.half_move++;
@@ -135,14 +165,19 @@ bool make_move(Board &b, Move m, Undo &u) {
     if (b.side_to_move == BLACK) b.full_move++;
 
     b.side_to_move = flip(b.side_to_move);
+    b.hash ^= Zobrist::sides;
+
     b.recompute_all();
+
+#ifndef NDEBUG
+    assert(b.hash == Zobrist::compute(b));
+#endif
 
     Square ksq = king_square(b, flip(b.side_to_move));
     if (is_square_attacked(b, ksq, b.side_to_move)) {
         unmake_move(b, m, u);
         return false;
     }
-
     return true;
 }
 
@@ -156,6 +191,7 @@ void unmake_move(Board &b, Move m, const Undo &u) {
     b.en_passant = u.en_passant;
     b.half_move = u.half_move;
     b.full_move = u.full_move;
+    b.hash = u.hash;
 
     Piece piece_to = b.get_piece(to);
 
@@ -195,6 +231,10 @@ void unmake_move(Board &b, Move m, const Undo &u) {
             add_piece(b, u.captured, to);
         }
     }
-
     b.recompute_all();
+
+#ifndef NDEBUG
+    assert(b.hash == Zobrist::compute(b));
+#endif
+
 }

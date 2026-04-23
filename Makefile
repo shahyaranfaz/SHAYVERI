@@ -11,7 +11,8 @@ SRC := \
 	src/move_gen.cpp \
 	src/evaluate.cpp \
 	src/search.cpp \
-	src/uci.cpp
+	src/uci.cpp \
+	src/zobrist.cpp
 
 BIN := shaybot
 BIN_WIN := shaybot.exe

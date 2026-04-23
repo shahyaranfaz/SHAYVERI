@@ -12,6 +12,7 @@ struct Undo {
   Piece captured;
   bool was_ep;
   bool was_castle;
+  U64 hash;
 };
 
 bool make_move(Board &b, Move m, Undo &u);

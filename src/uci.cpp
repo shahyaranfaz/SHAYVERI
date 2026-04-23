@@ -5,6 +5,7 @@
 #include "move_gen.h"
 #include "opening_book.h"
 #include "search.h"
+#include "zobrist.h"
 
 #include <atomic>
 #include <chrono>
@@ -96,6 +97,8 @@ static Move uci_to_move(Board& b, const std::string& uci) {
 int main() {
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
+
+    Zobrist::init();
 
     Board b;
     set_startpos(b);

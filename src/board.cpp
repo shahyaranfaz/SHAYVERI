@@ -4,6 +4,7 @@ void Board::clear() {
     bit_boards.fill(0);
     occupancies.fill(0);
     mailbox.fill(NONE_PIECE);
+    hash = 0;
     occupied = 0;
     side_to_move = WHITE;
     castling = 0;
