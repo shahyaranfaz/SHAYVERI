@@ -6,7 +6,6 @@
 
 #include <climits>
 
-
 static constexpr int INF = 1000000;
 
 static int negamax(Board &b, int depth, int alpha, int beta) {

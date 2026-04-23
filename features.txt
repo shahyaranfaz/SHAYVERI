@@ -1,0 +1,38 @@
+Search:
+  - Negamax with alpha-beta pruning ✅
+  - Iterative deepening ✅
+  - Quiescence search — urgent, fixes horizon effect on captures
+  - Move ordering — captures first (MVV-LVA), then killer moves, then history heuristic
+  - Transposition table + Zobrist hashing
+  - Null move pruning
+  - Late move reductions (LMR)
+  - Aspiration windows
+  - Repetition detection (2-fold during search, 3-fold draw claim)
+
+Evaluation:
+  - Piece-square tables ✅
+  - Tapered eval (interpolate between midgame/endgame PSTs based on material)
+  - Basic king safety (pawn shield, open files near king)
+  - Pawn structure (doubled, isolated, passed pawns)
+  - Mobility (count legal moves as a bonus)
+  - Bishop pair bonuses ✅
+
+Opening:
+  - Opening book from 2600+ games in TWIC ✅
+
+Endgame:
+  - Syzygy tablebases (perfect play with ≤7 pieces)
+  - Basic KPK/KQK/KRK patterns as fallback if no tablebases
+
+UCI Protocol:
+  - uci, isready, ucinewgame, position, go, stop, quit ✅
+  - Time management — use fraction of remaining time, handle wtime/btime/winc/binc
+  - stop command handling
+  - info output (depth, score, nodes, pv line)
+  - searchmoves support
+
+Infrastructure:
+  - Zobrist hashing (needed for TT and repetition detection)
+  - Magic bitboards (replace classical sliding attacks — big speed boost)
+
+Priority order: PSTs → quiescence → time management → TT+Zobrist → move ordering → the rest

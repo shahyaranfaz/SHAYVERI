@@ -100,7 +100,7 @@ static constexpr int PST_KING_EG[64] = {
 
 static constexpr int mirror(int sq) { return (7 - sq / 8) * 8 + (sq % 8); }
 
-static bool is_endgame(const Board& b) {
+static bool is_endgame(const Board &b) {
     bool wq = b.bit_boards[WQ] != 0;
     bool bq = b.bit_boards[BQ] != 0;
     if (!wq && !bq) return true;
@@ -123,7 +123,7 @@ static int pst_white(PieceType pt, int sq, bool endgame) {
     }
 }
 
-int evaluate(Board& b) {
+int evaluate(Board &b) {
     bool eg = is_endgame(b);
     int score = 0;
     for (int p = 1; p < PIECE_COUNT; ++p) {
@@ -140,5 +140,7 @@ int evaluate(Board& b) {
             score += mat + pst;
         }
     }
+    if (__builtin_popcountll(b.bit_boards[WB]) >= 2) score += 30;
+    if (__builtin_popcountll(b.bit_boards[BB]) >= 2) score -= 30;
     return b.side_to_move == WHITE ? score : -score;
 }
