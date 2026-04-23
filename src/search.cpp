@@ -1,56 +1,232 @@
 #include "search.h"
+
 #include "attacks.h"
 #include "evaluate.h"
 #include "make.h"
+#include "move.h"
 #include "move_gen.h"
 
+#include <algorithm>
 #include <climits>
+#include <cstring>
+#include <vector>
 
 static constexpr int INF = 1000000;
+static constexpr int MATE_SCORE = 900000;
+static constexpr int PTYPE_VALUES[7] = {0, 100, 320, 330, 500, 900, 20000};
 
-static int negamax(Board &b, int depth, int alpha, int beta) {
-    if (depth == 0) return evaluate(b);
+struct ScoredMove {
+    Move m;
+    int score;
+};
+
+struct SearchHeuristics {
+    std::vector<std::array<Move, 2>> killers;
+    int history[64][64];
+
+    explicit SearchHeuristics(int max_ply) {
+        killers.resize(std::max(1, max_ply + 2));
+        for (auto &k : killers) { k[0] = MOVE_NONE; k[1] = MOVE_NONE; }
+        std::memset(history, 0, sizeof(history));
+    }
+
+    inline void store_killer(int ply, Move m) {
+        if (ply < 0 || ply >= (int)killers.size()) return;
+        if (killers[ply][0] == m) return;
+        killers[ply][1] = killers[ply][0];
+        killers[ply][0] = m;
+    }
+
+    inline void add_history(Move m, int depth) {
+        Square from = move_from(m);
+        Square to   = move_to(m);
+        int bonus = depth * depth;
+        history[int(from)][int(to)] += bonus;
+        if (history[int(from)][int(to)] > 1'000'000) history[int(from)][int(to)] /= 2;
+    }
+};
+
+static inline bool is_ep_capture(const Board& b, Move m) {
+    if (b.en_passant == SQ_NONE) return false;
+    if (move_to(m) != b.en_passant) return false;
+
+    Square from = move_from(m);
+    Square to   = move_to(m);
+
+    Piece p = b.get_piece(from);
+    if (p != WP && p != BP) return false;
+
+    int df = int(get_file(to)) - int(get_file(from));
+    if (df != 1 && df != -1) return false;
+
+    int dr = int(get_rank(to)) - int(get_rank(from));
+    if (p == WP && dr != 1) return false;
+    if (p == BP && dr != -1) return false;
+
+    return true;
+}
+
+static inline int capture_order_score(const Board& b, Move m) {
+    if (move_promo(m) != NONE_PTYPE)
+        return 1000000;
+
+    Square from = move_from(m);
+    Square to   = move_to(m);
+
+    Piece attacker_piece = b.get_piece(from);
+    PieceType attacker   = get_type(attacker_piece);
+    PieceType victim = NONE_PTYPE;
+
+    if (is_ep_capture(b, m)) {
+        victim = PAWN;
+    } else {
+        Piece victim_piece = b.get_piece(to);
+        if (victim_piece == NONE_PIECE) return 0; // quiet
+        victim = get_type(victim_piece);
+    }
+
+    return 100000 + (PTYPE_VALUES[victim] - PTYPE_VALUES[attacker]);
+}
+
+static inline bool is_capture_or_promo(const Board& b, Move m) {
+    if (move_promo(m) != NONE_PTYPE) return true;
+    if (is_ep_capture(b, m)) return true;
+    return b.get_piece(move_to(m)) != NONE_PIECE;
+}
+
+// captures first (MVV/LVA), then killer, then history
+static inline int order_score(const Board& b, Move m, int ply, const SearchHeuristics& H) {
+    int cap = capture_order_score(b, m);
+    if (cap != 0) return 1'000'000 + cap;
+
+    if (ply >= 0 && ply < (int)H.killers.size()) {
+        if (m == H.killers[ply][0]) return 900'000;
+        if (m == H.killers[ply][1]) return 890'000;
+    }
+
+    Square from = move_from(m);
+    Square to   = move_to(m);
+    return H.history[int(from)][int(to)];
+}
+
+static int qsearch(Board &b, int alpha, int beta, int depth) {
+    int stand_pat = evaluate(b);
+
+    if (stand_pat >= beta) return stand_pat;
+    if (stand_pat > alpha) alpha = stand_pat;
+
+    if (depth <= 0) return alpha;
+
+    MoveList moves = generate_pseudo_legal_moves(b);
+
+    ScoredMove noisy[256];
+    int noisy_count = 0;
+
+    for (int i = 0; i < moves.count; ++i) {
+        Move m = moves.moves[i];
+        int s = capture_order_score(b, m);
+        if (s == 0) continue;
+        noisy[noisy_count++] = {m, s};
+    }
+
+    std::sort(noisy, noisy + noisy_count, [](const ScoredMove& a, const ScoredMove& b) {
+        return a.score > b.score;
+    });
+
+    for (int i = 0; i < noisy_count; ++i) {
+        Move m = noisy[i].m;
+
+        Undo u;
+        if (!make_move(b, m, u)) continue;
+
+        int score = -qsearch(b, -beta, -alpha, depth - 1);
+
+        unmake_move(b, m, u);
+
+        if (score >= beta) return score;
+        if (score > alpha) alpha = score;
+    }
+
+    return alpha;
+}
+
+static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeuristics& H) {
+    if (depth == 0) return qsearch(b, alpha, beta, 8);
 
     MoveList moves = generate_legal_moves(b);
 
     if (moves.count == 0) {
         Square ksq = king_square(b, b.side_to_move);
-        if (is_square_attacked(b, ksq, flip(b.side_to_move)))
-            return -INF + 1; // checkmate
-        return 0; // stalemate
+        if (is_square_attacked(b, ksq, flip(b.side_to_move))) return -MATE_SCORE;
+        return 0;
     }
 
+    ScoredMove ordered[256];
     for (int i = 0; i < moves.count; ++i) {
-        Undo u;
-        make_move(b, moves.moves[i], u);
-        int score = -negamax(b, depth - 1, -beta, -alpha);
-        unmake_move(b, moves.moves[i], u);
+        Move m = moves.moves[i];
+        ordered[i] = {m, order_score(b, m, ply, H)};
+    }
 
-        if (score >= beta) return beta;
+    std::sort(ordered, ordered + moves.count, [](const ScoredMove& a, const ScoredMove& b) {
+        return a.score > b.score;
+    });
+
+    for (int i = 0; i < moves.count; ++i) {
+        Move m = ordered[i].m;
+
+        Undo u;
+        make_move(b, m, u);
+        int score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, H);
+        unmake_move(b, m, u);
+
+        if (score >= beta) {
+            // update heuristics only for quiet moves
+            if (!is_capture_or_promo(b, m)) {
+                H.store_killer(ply, m);
+                H.add_history(m, depth);
+            }
+            return score;
+        }
         if (score > alpha) alpha = score;
     }
     return alpha;
 }
 
-SearchResult search(Board& b, int max_depth) {
+SearchResult search(Board &b, int max_depth) {
     SearchResult result;
+
+    // Allocate requested depth + 2 for safety at root/child.
+    SearchHeuristics H(max_depth + 2);
 
     for (int depth = 1; depth <= max_depth; ++depth) {
         int alpha = -INF;
-        int beta = INF;
+        int beta  = INF;
         int best_score = -INF;
         Move best_move = MOVE_NONE;
 
         MoveList moves = generate_legal_moves(b);
+
+        // Root move ordering also uses the same scheme.
+        ScoredMove ordered[256];
         for (int i = 0; i < moves.count; ++i) {
+            Move m = moves.moves[i];
+            ordered[i] = {m, order_score(b, m, /*ply=*/0, H)};
+        }
+        std::sort(ordered, ordered + moves.count, [](const ScoredMove& a, const ScoredMove& b) {
+            return a.score > b.score;
+        });
+
+        for (int i = 0; i < moves.count; ++i) {
+            Move m = ordered[i].m;
+
             Undo u;
-            make_move(b, moves.moves[i], u);
-            int score = -negamax(b, depth - 1, -beta, -alpha);
-            unmake_move(b, moves.moves[i], u);
+            make_move(b, m, u);
+            int score = -negamax(b, depth - 1, -beta, -alpha, /*ply=*/1, H);
+            unmake_move(b, m, u);
 
             if (score > best_score) {
                 best_score = score;
-                best_move = moves.moves[i];
+                best_move = m;
             }
             if (score > alpha) alpha = score;
         }

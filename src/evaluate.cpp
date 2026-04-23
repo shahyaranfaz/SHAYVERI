@@ -2,6 +2,7 @@
 #include "types.h"
 
 
+// from https://www.chessprogramming.org/Simplified_Evaluation_Function#Piece_Values
 // Piece values (centipawns)
 static constexpr int PIECE_VALUES[PIECE_COUNT] = {
     0,    // NONE_PIECE
@@ -10,17 +11,17 @@ static constexpr int PIECE_VALUES[PIECE_COUNT] = {
     330,  // WB
     500,  // WR
     900,  // WQ
-    0,    // WK
+    20000,    // WK
    -100,  // BP
    -320,  // BN
    -330,  // BB
    -500,  // BR
    -900,  // BQ
-    0,    // BK
+    -20000,    // BK
 };
 
+// from https://www.chessprogramming.org/Simplified_Evaluation_Function#Piece_Values
 // Piece-square tables (white's perspective, rank 1 = index 0..7)
-// CPW Simplified Evaluation Function by Tomasz Michniewski
 static constexpr int PST_PAWN[64] = {
      0,  0,  0,  0,  0,  0,  0,  0,  // rank 1
      5, 10, 10,-20,-20, 10, 10,  5,  // rank 2

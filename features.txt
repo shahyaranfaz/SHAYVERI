@@ -1,9 +1,9 @@
 Search:
   - Negamax with alpha-beta pruning ✅
   - Iterative deepening ✅
-  - Quiescence search — urgent, fixes horizon effect on captures
-  - Move ordering — captures first (MVV-LVA), then killer moves, then history heuristic
-  - Transposition table + Zobrist hashing
+  - Quiescence search ✅
+  - Move ordering (MVV-LVA, then killer moves, then history heuristic) ✅
+  - Transposition table
   - Null move pruning
   - Late move reductions (LMR)
   - Aspiration windows
@@ -35,4 +35,4 @@ Infrastructure:
   - Zobrist hashing (needed for TT and repetition detection)
   - Magic bitboards (replace classical sliding attacks — big speed boost)
 
-Priority order: PSTs → quiescence → time management → TT+Zobrist → move ordering → the rest
+Priority order: time management → TT+Zobrist → move ordering → the rest
