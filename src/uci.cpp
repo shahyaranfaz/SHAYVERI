@@ -26,8 +26,8 @@ static void stop_search() {
 
 // opening book
 
-static uint64_t fnv64(const std::string& s) {
-    uint64_t h = 14695981039346656037ULL;
+static U64 fnv64(const std::string& s) {
+    U64 h = 14695981039346656037ULL;
     for (unsigned char c : s) {
         h ^= c;
         h *= 1099511628211ULL;
@@ -41,7 +41,7 @@ static std::string probe_book(const std::vector<std::string>& history) {
         if (i > 0) prefix += ' ';
         prefix += history[i];
     }
-    uint64_t key = fnv64(prefix);
+    U64 key = fnv64(prefix);
     for (int i = 0; i < OPENING_BOOK_SIZE; ++i) {
         if (OPENING_BOOK[i].key == key)
             return std::string(OPENING_BOOK[i].move);

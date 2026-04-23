@@ -11,7 +11,7 @@ U64 perft(Board &b, int depth) {
     MoveList moves = generate_legal_moves(b);
     for (int i = 0; i < moves.count; ++i) {
         Undo u;
-        make_move(b, moves.moves[i], u);
+        if (!make_move(b, moves.moves[i], u)) continue;
         count += perft(b, depth - 1);
         unmake_move(b, moves.moves[i], u);
     }

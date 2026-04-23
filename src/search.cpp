@@ -185,7 +185,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
         Move m = ordered[i].m;
 
         Undo u;
-        make_move(b, m, u);
+        if (!make_move(b, m, u)) continue
         int score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, H);
         unmake_move(b, m, u);
 
@@ -230,8 +230,8 @@ SearchResult search(Board &b, int max_depth) {
             Move m = ordered[i].m;
 
             Undo u;
-            make_move(b, m, u);
-            int score = -negamax(b, depth - 1, -beta, -alpha, /*ply=*/1, H);
+            if (!make_move(b, m, u)) continue;
+            int score = -negamax(b, depth - 1, -beta, -alpha, 1, H);
             unmake_move(b, m, u);
 
             if (score > best_score) {

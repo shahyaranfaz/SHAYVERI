@@ -47,7 +47,7 @@ Infrastructure:
   - bench command
 
 Priority order:
-  - Zobrist → TT → repetition
+  - TT → repetition
   - Check extensions + SEE
   - King safety + pawn structure + tapered eval
   - Futility pruning + delta pruning

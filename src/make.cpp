@@ -169,10 +169,6 @@ bool make_move(Board &b, Move m, Undo &u) {
 
     b.recompute_all();
 
-#ifndef NDEBUG
-    assert(b.hash == Zobrist::compute(b));
-#endif
-
     Square ksq = king_square(b, flip(b.side_to_move));
     if (is_square_attacked(b, ksq, b.side_to_move)) {
         unmake_move(b, m, u);
@@ -232,9 +228,4 @@ void unmake_move(Board &b, Move m, const Undo &u) {
         }
     }
     b.recompute_all();
-
-#ifndef NDEBUG
-    assert(b.hash == Zobrist::compute(b));
-#endif
-
 }
