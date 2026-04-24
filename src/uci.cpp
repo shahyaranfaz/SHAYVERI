@@ -25,6 +25,13 @@ static void stop_search() {
         search_thread.join();
 }
 
+static bool is_threefold(const std::vector<U64>& hh, int start, U64 key) {
+    int c = 0;
+    for (int i = start; i < (int)hh.size(); ++i)
+        if (hh[i] == key) ++c;
+    return c >= 3;
+}
+
 // opening book
 
 static U64 fnv64(const std::string& s) {
@@ -113,6 +120,10 @@ int main() {
     set_startpos(b);
     std::vector<std::string> move_history;
 
+    std::vector<U64> hash_history;
+    hash_history.clear();
+    hash_history.push_back(b.hash);
+
     std::string line;
     while (std::getline(std::cin, line)) {
         std::istringstream iss(line);
@@ -129,6 +140,8 @@ int main() {
 
         } else if (token == "ucinewgame") {
             set_startpos(b);
+            hash_history.clear();
+            hash_history.push_back(b.hash);
             move_history.clear();
             TT.clear();
 
@@ -138,12 +151,15 @@ int main() {
             move_history.clear();
             if (pos == "startpos") {
                 set_startpos(b);
+                hash_history.clear();
+                hash_history.push_back(b.hash);
             } else if (pos == "fen") {
                 std::string fen, part;
                 for (int i = 0; i < 6 && iss >> part; ++i)
                     fen += (i ? " " : "") + part;
-                if (!set_from_fen(b, fen))
-                    set_startpos(b);
+                if (!set_from_fen(b, fen)) set_startpos(b);
+                hash_history.clear();
+                hash_history.push_back(b.hash);
             }
             std::string moves_token;
             if (iss >> moves_token && moves_token == "moves") {
@@ -152,8 +168,10 @@ int main() {
                     Move m = uci_to_move(b, mv);
                     if (m != MOVE_NONE) {
                         Undo u;
-                        if (make_move(b, m, u))
+                        if (make_move(b, m, u)) {
                             move_history.push_back(mv);
+                            hash_history.push_back(b.hash);
+                        }
                     }
                 }
             }
@@ -184,8 +202,13 @@ int main() {
                 int alloc = infinite ? 60000 : (movetime > 0 ? movetime : my_time / 20 + my_inc / 2);
                 if (alloc < 10) alloc = 10;
 
+                int start = (int)hash_history.size() - 1 - b.half_move;
+                if (start < 0) start = 0;
+
+                std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
+
                 Board b_copy = b;
-                search_thread = std::thread([b_copy, alloc]() mutable {
+                search_thread = std::thread([b_copy, alloc, rep]() mutable {
                     // timer thread to set stop flag
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
                     std::thread timer([alloc, timer_active]() {
@@ -193,7 +216,7 @@ int main() {
                         if (*timer_active) g_stop = true;
                     });
 
-                    SearchResult result = search(b_copy, 64);
+                    SearchResult result = search(b_copy, 64, rep.data(), (int)rep.size());
                     *timer_active = false;
                     g_stop = true; // make timer exit cleanly if still sleeping
                     timer.join();

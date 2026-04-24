@@ -115,6 +115,12 @@ static inline int order_score(const Board& b, Move m, int ply, const SearchHeuri
     return H.history[int(from)][int(to)];
 }
 
+static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len) {
+    for (int i = rep_len - 1; i >= 0; --i)
+        if (rep_stack[i] == key) return true;
+    return false;
+}
+
 static int qsearch(Board &b, int alpha, int beta, int depth) {
     if (g_stop) return 0;
     node_count++;
@@ -158,11 +164,14 @@ static int qsearch(Board &b, int alpha, int beta, int depth) {
     return alpha;
 }
 
-static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeuristics& H) {
+static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeuristics &H, U64 *rep_stack, int rep_len) {
     if (g_stop) return 0;
     node_count++;
 
     U64 key = b.hash;
+
+    if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1)) return 0;
+
     int original_alpha = alpha;
     Move tt_move = MOVE_NONE;
     if (const TTEntry *curr = TT.probe(key)) {
@@ -205,7 +214,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
 
         Undo u;
         if (!make_move(b, m, u)) continue;
-        int score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, H);
+        rep_stack[rep_len] = b.hash;
+        int score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1);
         unmake_move(b, m, u);
 
         if (score >= beta) {
@@ -229,11 +239,27 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
     return alpha;
 }
 
-SearchResult search(Board &b, int max_depth) {
+SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len) {
     SearchResult result;
     SearchHeuristics H;
     node_count = 0;
     g_stop = false;
+
+    U64 rep_stack[MAX_PLY];
+    int rep_len = 0;
+
+    if (rep_init && rep_init_len > 0) {
+        rep_len = std::min(rep_init_len, MAX_PLY);
+        for (int i = 0; i < rep_len; ++i)
+            rep_stack[i] = rep_init[i];
+    }
+
+    if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
+        if (rep_len < MAX_PLY)
+            rep_stack[rep_len++] = b.hash;
+        else
+            rep_stack[MAX_PLY - 1] = b.hash;
+    }
 
     for (int depth = 1; depth <= max_depth; ++depth) {
         int alpha = -INF;
@@ -262,7 +288,8 @@ SearchResult search(Board &b, int max_depth) {
 
             Undo u;
             if (!make_move(b, m, u)) continue;
-            int score = -negamax(b, depth - 1, -beta, -alpha, 1, H);
+            rep_stack[rep_len] = b.hash;
+            int score = -negamax(b, depth - 1, -beta, -alpha, 1, H, rep_stack, rep_len + 1);
             unmake_move(b, m, u);
 
             if (score > best_score) {

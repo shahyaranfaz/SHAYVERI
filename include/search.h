@@ -15,6 +15,6 @@ struct SearchResult {
     U64 nodes = 0;
 };
 
-SearchResult search(Board &b, int max_depth);
+SearchResult search(Board &b, int max_depth, const U64 *rep_stack, int rep_len);
 
 #endif

@@ -3,11 +3,11 @@ Search:
   - Iterative deepening ✅
   - Quiescence search ✅
   - Move ordering (MVV-LVA, then killer moves, then history heuristic) ✅
-  - Transposition table
+  - Transposition table ✅
   - Null move pruning
   - Late move reductions (LMR)
   - Aspiration windows
-  - Repetition detection (2-fold during search, 3-fold draw claim)
+  - Repetition detection (2-fold during search, 3-fold draw claim) ✅
   - Futility pruning — skip moves near leaf nodes that can't improve alpha, big speedup
   - Delta pruning — in qsearch, skip captures that can't raise alpha even with a big swing
   - Check extensions — extend search by 1 ply when in check, prevents missing forced mates
@@ -47,7 +47,6 @@ Infrastructure:
   - bench command
 
 Priority order:
-  - TT → repetition
   - Check extensions + SEE
   - King safety + pawn structure + tapered eval
   - Futility pruning + delta pruning
