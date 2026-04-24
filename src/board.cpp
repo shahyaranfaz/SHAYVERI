@@ -1,5 +1,7 @@
 #include "board.h"
 
+#include "zobrist.h"
+
 void Board::clear() {
     bit_boards.fill(0);
     occupancies.fill(0);

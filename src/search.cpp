@@ -178,6 +178,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
         tt_move = curr->best;
         if (curr->depth >= depth) {
             int s = curr->score;
+            if (s > MATE_SCORE - MAX_PLY) s -= ply;
+            if (s < -MATE_SCORE + MAX_PLY) s += ply;
+
             if (curr->flag == TT_EXACT) return s;
             if (curr->flag == TT_LOWER) alpha = std::max(alpha, s);
             else if (curr->flag == TT_UPPER) beta = std::min(beta, s);
@@ -220,7 +223,10 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
 
         if (score >= beta) {
             // store cutoff as LOWER bound
-            TT.store(key, depth, score, TT_LOWER, m);
+            int store_score = score;
+            if (store_score > MATE_SCORE - MAX_PLY) store_score += ply;
+            if (store_score < -MATE_SCORE + MAX_PLY) store_score -= ply;
+            TT.store(key, depth, store_score, TT_LOWER, m);
             if (!is_capture_or_promo(b, m)) {
                 H.store_killer(ply, m);
                 H.add_history(m, depth);
@@ -234,8 +240,11 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
         }
     }
     // store final node result
+    int store_alpha = alpha;
+    if (store_alpha > MATE_SCORE - MAX_PLY) store_alpha += ply;
+    if (store_alpha < -MATE_SCORE + MAX_PLY) store_alpha -= ply;
     TTFlag flag = (alpha <= original_alpha) ? TT_UPPER : TT_EXACT;
-    TT.store(key, depth, alpha, flag, best_move);
+    TT.store(key, depth, store_alpha, flag, best_move);
     return alpha;
 }
 
@@ -245,7 +254,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     node_count = 0;
     g_stop = false;
 
-    U64 rep_stack[MAX_PLY];
+    U64 rep_stack[MAX_PLY * 2];
     int rep_len = 0;
 
     if (rep_init && rep_init_len > 0) {

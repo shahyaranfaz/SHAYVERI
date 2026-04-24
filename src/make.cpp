@@ -187,7 +187,6 @@ void unmake_move(Board &b, Move m, const Undo &u) {
     b.en_passant = u.en_passant;
     b.half_move = u.half_move;
     b.full_move = u.full_move;
-    b.hash = u.hash;
 
     Piece piece_to = b.get_piece(to);
 
@@ -228,4 +227,5 @@ void unmake_move(Board &b, Move m, const Undo &u) {
         }
     }
     b.recompute_all();
+    b.hash = u.hash;
 }

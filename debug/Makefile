@@ -4,10 +4,14 @@ INCLUDES := -I../include
 
 SRC := \
 	../src/board.cpp \
-  	../src/fen.cpp \
-  	../src/attacks.cpp \
-  	../src/make.cpp \
-  	../src/move_gen.cpp \
+	../src/fen.cpp \
+	../src/attacks.cpp \
+	../src/make.cpp \
+	../src/move_gen.cpp \
+	../src/evaluate.cpp \
+	../src/search.cpp \
+	../src/zobrist.cpp \
+	../src/tt.cpp \
   	perft.cpp
 
 BIN := perft
