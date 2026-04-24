@@ -15,15 +15,42 @@ Search:
 
 Evaluation:
   - Piece-square tables ✅
+  - Bishop pair bonus ✅
   - Tapered eval (interpolate between midgame/endgame PSTs based on material)
-  - Basic king safety (pawn shield, open files near king)
-  - Pawn structure (doubled, isolated, passed pawns)
-  - Mobility (count legal moves as a bonus)
-  - Bishop pair bonuses ✅
-  - Rook on open/semi-open file bonus
+  - Pawn structure
+    * Passed pawns (including connected/outside passers)
+    * Candidate passers
+    * Isolated pawns
+    * Doubled / backward pawns
+    * Pawn chains (support vs weak links)
+    * Pawn storms (king-side / center space tension)
+    * Pawn islands
+  - King safety
+    * Pawn shield integrity
+    * Open files toward king
+    * Enemy pressure in king zone
+    * Escape squares / king mobility
+  - Piece activity
+    * Mobility for all pieces (legal moves weighted by piece type)
+    * Territory bonuses (center / enemy half / 7th rank penetration)
+    * Openness effects (file/diagonal/rank openness as mobility multipliers)
+  - Coordination / connectivity (attack-defense graph)
+    * Defended pieces (mutual protection graph)
+    * Shared attack targets (multiple attackers on same square/piece)
+    * Batteries (rook/queen, bishop/queen alignments)
+    * Support chains between pieces (non-pawn connectivity)
+  - Tactical pressure (forcing dynamics)
+    * Attacks on undefended pieces
+    * Pins / skewers / x-ray pressure
+    * Overloaded defenders
+    * Unreciprocated attack pressure (one-way attacker without equal counter-threat)
+  - Outpost squares (positional anchors)
+    * Knight outposts
+    * Bishop outposts
+    * Rook outposts (open files / 7th rank)
+    * Queen outposts (central pressure squares)
   - Tempo / side to move bonus (small flat bonus for having the move)
-  - Outpost squares for knights — knight on e5/d5 with no pawn to kick it
-  - Connected rooks bonus
+  - Initiative / development advantage (opening-phase scaling, tempo-based pressure conversion)
 
 Opening:
   - Opening book from 2600+ games in TWIC ✅
@@ -47,7 +74,7 @@ Infrastructure:
   - bench command
 
 Priority order:
-  - King safety + pawn structure + tapered eval
+  - Evaluation overhaul
   - Futility pruning + delta pruning
   - Null move → LMR → aspiration windows
   - Rook/knight bonuses + mobility
