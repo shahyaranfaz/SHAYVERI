@@ -72,13 +72,15 @@ Infrastructure:
   - Zobrist hashing ✅
   - Magic bitboards (replace classical sliding attacks — big speed boost)
   - bench command
+  - Major, rigorous testing suite
 
 Priority order:
   - Evaluation overhaul
   - Futility pruning + delta pruning
   - Null move → LMR → aspiration windows
-  - Rook/knight bonuses + mobility
   - Magic bitboards
   - Syzygy
   - searchmoves support
   - pv line
+  - bench command
+  - Major, rigorous testing suite
