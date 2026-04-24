@@ -5,6 +5,7 @@
 #include "move_gen.h"
 #include "opening_book.h"
 #include "search.h"
+#include "tt.h"
 #include "zobrist.h"
 
 #include <atomic>
@@ -59,8 +60,15 @@ static std::string move_to_uci(Move m) {
     std::string s = sq_to_str(move_from(m)) + sq_to_str(move_to(m));
     PieceType promo = move_promo(m);
     if (promo != NONE_PTYPE) {
-        const char* promos = "?pnbrq";
-        s += promos[promo];
+        char pc = 0;
+        switch (promo) {
+            case 1: pc = 'n'; break;
+            case 2: pc = 'b'; break;
+            case 3: pc = 'r'; break;
+            case 4: pc = 'q'; break;
+            default: break;
+        }
+        if (pc) s += pc;
     }
     return s;
 }
@@ -77,10 +85,10 @@ static Move uci_to_move(Board& b, const std::string& uci) {
     PieceType promo = NONE_PTYPE;
     if (uci.size() == 5) {
         switch (uci[4]) {
-            case 'n': promo = KNIGHT; break;
-            case 'b': promo = BISHOP; break;
-            case 'r': promo = ROOK; break;
-            case 'q': promo = QUEEN; break;
+            case 'n': promo = PieceType(1); break;
+            case 'b': promo = PieceType(2); break;
+            case 'r': promo = PieceType(3); break;
+            case 'q': promo = PieceType(4); break;
             default: break;
         }
     }
@@ -99,6 +107,7 @@ int main() {
     std::cin.tie(nullptr);
 
     Zobrist::init();
+    TT.resize(64);
 
     Board b;
     set_startpos(b);
@@ -121,6 +130,7 @@ int main() {
         } else if (token == "ucinewgame") {
             set_startpos(b);
             move_history.clear();
+            TT.clear();
 
         } else if (token == "position") {
             std::string pos;
@@ -142,8 +152,8 @@ int main() {
                     Move m = uci_to_move(b, mv);
                     if (m != MOVE_NONE) {
                         Undo u;
-                        make_move(b, m, u);
-                        move_history.push_back(mv);
+                        if (make_move(b, m, u))
+                            move_history.push_back(mv);
                     }
                 }
             }

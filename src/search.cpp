@@ -5,6 +5,7 @@
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
+#include "tt.h"
 
 #include <algorithm>
 #include <climits>
@@ -161,6 +162,20 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
     if (g_stop) return 0;
     node_count++;
 
+    U64 key = b.hash;
+    int original_alpha = alpha;
+    Move tt_move = MOVE_NONE;
+    if (const TTEntry *curr = TT.probe(key)) {
+        tt_move = curr->best;
+        if (curr->depth >= depth) {
+            int s = curr->score;
+            if (curr->flag == TT_EXACT) return s;
+            if (curr->flag == TT_LOWER) alpha = std::max(alpha, s);
+            else if (curr->flag == TT_UPPER) beta = std::min(beta, s);
+            if (alpha >= beta) return s;
+        }
+    }
+
     if (depth == 0) return qsearch(b, alpha, beta, 8);
 
     MoveList moves = generate_legal_moves(b);
@@ -171,10 +186,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
         return 0;
     }
 
+    Move best_move = MOVE_NONE;
+
     ScoredMove ordered[256];
     for (int i = 0; i < moves.count; ++i) {
         Move m = moves.moves[i];
-        ordered[i] = {m, order_score(b, m, ply, H)};
+        int s = order_score(b, m, ply, H);
+        if (tt_move != MOVE_NONE && m == tt_move) s += 2000000; // try TT move first
+        ordered[i] = {m, s};
     }
 
     std::sort(ordered, ordered + moves.count, [](const ScoredMove& a, const ScoredMove& b) {
@@ -185,20 +204,28 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
         Move m = ordered[i].m;
 
         Undo u;
-        if (!make_move(b, m, u)) continue
+        if (!make_move(b, m, u)) continue;
         int score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, H);
         unmake_move(b, m, u);
 
         if (score >= beta) {
-            // update heuristics only for quiet moves
+            // store cutoff as LOWER bound
+            TT.store(key, depth, score, TT_LOWER, m);
             if (!is_capture_or_promo(b, m)) {
                 H.store_killer(ply, m);
                 H.add_history(m, depth);
             }
             return score;
         }
-        if (score > alpha) alpha = score;
+
+        if (score > alpha) {
+            alpha = score;
+            best_move = m;
+        }
     }
+    // store final node result
+    TTFlag flag = (alpha <= original_alpha) ? TT_UPPER : TT_EXACT;
+    TT.store(key, depth, alpha, flag, best_move);
     return alpha;
 }
 
@@ -215,12 +242,16 @@ SearchResult search(Board &b, int max_depth) {
         Move best_move = MOVE_NONE;
 
         MoveList moves = generate_legal_moves(b);
+        Move tt_root = MOVE_NONE;
+        if (const TTEntry* e = TT.probe(b.hash)) tt_root = e->best;
 
         // Root move ordering also uses the same scheme.
         ScoredMove ordered[256];
         for (int i = 0; i < moves.count; ++i) {
             Move m = moves.moves[i];
-            ordered[i] = {m, order_score(b, m, 0, H)};
+            int s = order_score(b, m, 0, H);
+            if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
+            ordered[i] = {m, s};
         }
         std::sort(ordered, ordered + moves.count, [](const ScoredMove& a, const ScoredMove& b) {
             return a.score > b.score;
