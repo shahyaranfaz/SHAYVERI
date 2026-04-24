@@ -5,6 +5,7 @@
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
+#include "see.h"
 #include "tt.h"
 
 #include <algorithm>
@@ -149,7 +150,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth) {
 
     for (int i = 0; i < noisy_count; ++i) {
         Move m = noisy[i].m;
-
+        if (!is_promo(m) && b.get_piece(move_to(m)) != NONE_PIECE && !see_ge_zero(b, m)) continue;
         Undo u;
         if (!make_move(b, m, u)) continue;
 
@@ -190,11 +191,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
 
     if (depth == 0) return qsearch(b, alpha, beta, 8);
 
+    Square ksq = king_square(b, b.side_to_move);
+    bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
+    if (in_check && depth < 2 && ply < MAX_PLY - 1) depth++;
+
     MoveList moves = generate_legal_moves(b);
 
     if (moves.count == 0) {
-        Square ksq = king_square(b, b.side_to_move);
-        if (is_square_attacked(b, ksq, flip(b.side_to_move))) return -MATE_SCORE;
+        if (in_check) return -MATE_SCORE;
         return 0;
     }
 

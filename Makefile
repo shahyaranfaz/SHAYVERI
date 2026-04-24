@@ -13,7 +13,8 @@ SRC := \
 	src/search.cpp \
 	src/uci.cpp \
 	src/zobrist.cpp \
-	src/tt.cpp
+	src/tt.cpp \
+	src/see.cpp
 
 BIN := shaybot
 BIN_WIN := shaybot.exe

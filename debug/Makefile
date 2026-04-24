@@ -12,6 +12,7 @@ SRC := \
 	../src/search.cpp \
 	../src/zobrist.cpp \
 	../src/tt.cpp \
+	../src/see.cpp \
   	perft.cpp
 
 BIN := perft
