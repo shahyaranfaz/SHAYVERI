@@ -7,17 +7,16 @@
 #include "zobrist.h"
 
 static Piece promo_piece(Colour side_to_move, PieceType promo) {
-    // promo: 1=N,2=B,3=R,4=Q
     if (side_to_move == WHITE) {
-        if (promo == 1) return WN;
-        if (promo == 2) return WB;
-        if (promo == 3) return WR;
-        if (promo == 4) return WQ;
+        if (promo == KNIGHT) return WN;
+        if (promo == BISHOP) return WB;
+        if (promo == ROOK)   return WR;
+        if (promo == QUEEN)  return WQ;
     } else {
-        if (promo == 1) return BN;
-        if (promo == 2) return BB;
-        if (promo == 3) return BR;
-        if (promo == 4) return BQ;
+        if (promo == KNIGHT) return BN;
+        if (promo == BISHOP) return BB;
+        if (promo == ROOK)   return BR;
+        if (promo == QUEEN)  return BQ;
     }
     return NONE_PIECE;
 }

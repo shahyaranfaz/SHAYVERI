@@ -69,10 +69,10 @@ static std::string move_to_uci(Move m) {
     if (promo != NONE_PTYPE) {
         char pc = 0;
         switch (promo) {
-            case 1: pc = 'n'; break;
-            case 2: pc = 'b'; break;
-            case 3: pc = 'r'; break;
-            case 4: pc = 'q'; break;
+            case KNIGHT: pc = 'n'; break;
+            case BISHOP: pc = 'b'; break;
+            case ROOK: pc = 'r'; break;
+            case QUEEN: pc = 'q'; break;
             default: break;
         }
         if (pc) s += pc;
@@ -92,10 +92,10 @@ static Move uci_to_move(Board& b, const std::string& uci) {
     PieceType promo = NONE_PTYPE;
     if (uci.size() == 5) {
         switch (uci[4]) {
-            case 'n': promo = PieceType(1); break;
-            case 'b': promo = PieceType(2); break;
-            case 'r': promo = PieceType(3); break;
-            case 'q': promo = PieceType(4); break;
+            case 'n': promo = KNIGHT; break;
+            case 'b': promo = BISHOP; break;
+            case 'r': promo = ROOK; break;
+            case 'q': promo = QUEEN; break;
             default: break;
         }
     }
@@ -176,59 +176,67 @@ int main() {
                 }
             }
 
-        } else if (token == "go") {
-            std::string book_move = probe_book(move_history);
-            if (!book_move.empty()) {
+    } else if (token == "go") {
+        std::string book_move = probe_book(move_history);
+        bool use_book = false;
+        if (!book_move.empty()) {
+            Move m = uci_to_move(b, book_move);
+            if (m != MOVE_NONE) {
                 std::cout << "bestmove " << book_move << "\n";
-            } else {
-                stop_search(); // stop any existing search
+                use_book = true;
+            }
+        }
+        if (!use_book) {
+            stop_search();
 
-                // parse wtime/btime/winc/binc/infinite
-                bool infinite = false;
-                int wtime = 0, btime = 0, winc = 0, binc = 0, movetime = 0;
-                std::string tok;
-                while (iss >> tok) {
-                    if (tok == "infinite") infinite = true;
-                    else if (tok == "wtime") iss >> wtime;
-                    else if (tok == "btime") iss >> btime;
-                    else if (tok == "winc") iss >> winc;
-                    else if (tok == "binc") iss >> binc;
-                    else if (tok == "movetime") iss >> movetime;
+            bool infinite = false;
+            int wtime = 0, btime = 0, winc = 0, binc = 0, movetime = 0;
+            std::string tok;
+            while (iss >> tok) {
+                if (tok == "infinite") infinite = true;
+                else if (tok == "wtime") iss >> wtime;
+                else if (tok == "btime") iss >> btime;
+                else if (tok == "winc") iss >> winc;
+                else if (tok == "binc") iss >> binc;
+                else if (tok == "movetime") iss >> movetime;
+            }
+
+            int my_time = (b.side_to_move == WHITE) ? wtime : btime;
+            int my_inc  = (b.side_to_move == WHITE) ? winc  : binc;
+            int alloc = infinite ? 60000 : (movetime > 0 ? movetime : my_time / 20 + my_inc / 2);
+            if (alloc < 10) alloc = 10;
+
+            int start = (int)hash_history.size() - 1 - b.half_move;
+            if (start < 0) start = 0;
+
+            std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
+
+            Board b_copy = b;
+            search_thread = std::thread([b_copy, alloc, rep]() mutable {
+                auto timer_active = std::make_shared<std::atomic<bool>>(true);
+                std::thread timer([alloc, timer_active]() {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(alloc));
+                    if (*timer_active) g_stop = true;
+                });
+
+                SearchResult result = search(b_copy, 64, rep.data(), (int)rep.size());
+                *timer_active = false;
+                g_stop = true;
+                timer.join();
+
+                if (result.best_move == MOVE_NONE) {
+                    MoveList legal = generate_legal_moves(b_copy);
+                    if (legal.count > 0) result.best_move = legal.moves[0];
                 }
 
-                // compute time to use in ms
-                int my_time = (b.side_to_move == WHITE) ? wtime : btime;
-                int my_inc  = (b.side_to_move == WHITE) ? winc  : binc;
-                int alloc = infinite ? 60000 : (movetime > 0 ? movetime : my_time / 20 + my_inc / 2);
-                if (alloc < 10) alloc = 10;
-
-                int start = (int)hash_history.size() - 1 - b.half_move;
-                if (start < 0) start = 0;
-
-                std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
-
-                Board b_copy = b;
-                search_thread = std::thread([b_copy, alloc, rep]() mutable {
-                    // timer thread to set stop flag
-                    auto timer_active = std::make_shared<std::atomic<bool>>(true);
-                    std::thread timer([alloc, timer_active]() {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(alloc));
-                        if (*timer_active) g_stop = true;
-                    });
-
-                    SearchResult result = search(b_copy, 64, rep.data(), (int)rep.size());
-                    *timer_active = false;
-                    g_stop = true; // make timer exit cleanly if still sleeping
-                    timer.join();
-
-                    std::cout << "info depth " << result.depth
-                              << " score cp " << result.score
-                              << " nodes " << result.nodes << "\n";
-                    std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
-                    std::cout.flush();
-                });
-            }
-        } else if (token == "stop") {
+                std::cout << "info depth " << result.depth
+                        << " score cp " << result.score
+                        << " nodes " << result.nodes << "\n";
+                std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
+                std::cout.flush();
+            });
+        }
+    } else if (token == "stop") {
             stop_search();
         } else if (token == "quit") {
             stop_search();
