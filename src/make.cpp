@@ -6,6 +6,17 @@
 
 #include "zobrist.h"
 
+static const int CASTLING_RIGHTS_MASK[64] = {
+    13, 15, 15, 15, 12, 15, 15, 14,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+     7, 15, 15, 15,  3, 15, 15, 11
+};
+
 static Piece promo_piece(Colour side_to_move, PieceType promo) {
     if (side_to_move == WHITE) {
         if (promo == KNIGHT) return WN;
@@ -23,9 +34,18 @@ static Piece promo_piece(Colour side_to_move, PieceType promo) {
 
 static void remove_piece(Board &b, Piece p, Square sq) {
     b.bit_boards[p] &= ~bb_square(sq);
+    b.occupancies[get_colour(p)] &= ~bb_square(sq); // Update occupancy
+    b.occupied &= ~bb_square(sq); // Update total occupancy
+    b.mailbox[sq] = NONE_PIECE; // Update mailbox
+    b.hash ^= Zobrist::pieces[p][sq]; // Keep hash in sync
 }
+
 static void add_piece(Board &b, Piece p, Square sq) {
     b.bit_boards[p] |= bb_square(sq);
+    b.occupancies[get_colour(p)] |= bb_square(sq);
+    b.occupied |= bb_square(sq);
+    b.mailbox[sq] = p;
+    b.hash ^= Zobrist::pieces[p][sq];
 }
 
 static void clear_castling_if_rook_king_moved(Board &b, Piece moved, Square from) {
@@ -56,175 +76,151 @@ static void clear_castling_if_rook_captured(Board &b, Piece captured, Square to)
     }
 }
 
+void update_castling(Board &b, Square from, Square to) {
+    b.hash ^= Zobrist::castlings[b.castling];
+    b.castling &= CASTLING_RIGHTS_MASK[from];
+    b.castling &= CASTLING_RIGHTS_MASK[to]; // Important: handles rook captures
+    b.hash ^= Zobrist::castlings[b.castling];
+}
+
 bool make_move(Board &b, Move m, Undo &u) {
+    Square from = move_from(m);
+    Square to = move_to(m);
+    PieceType promo = move_promo(m);
+    Piece moved = b.get_piece(from);
+    Piece captured = b.get_piece(to);
+
+    // 1. Store state for undo
+    u.hash = b.hash;
     u.castling = b.castling;
     u.en_passant = b.en_passant;
     u.half_move = b.half_move;
     u.full_move = b.full_move;
-    u.hash = b.hash;
-    u.captured = NONE_PIECE;
+    u.captured = captured;
+    u.was_ep = false;
+    u.was_castle = false;
 
-    Square from = move_from(m);
-    Square to = move_to(m);
-    PieceType promo = move_promo(m);
-
-    Piece moved = b.get_piece(from);
-    if (moved == NONE_PIECE) return false;
-    if (b.side_to_move != get_colour(moved)) return false;
-
-    const int old_castling = b.castling & 15;
-    const Square old_ep = b.en_passant;
-    b.hash ^= Zobrist::castlings[old_castling];
-    if (old_ep != SQ_NONE) b.hash ^= Zobrist::en_passants[get_file(old_ep)];
-
-    Piece captured = b.get_piece(to);
-
-    bool is_ep = false;
-    if ((moved == WP || moved == BP) && to == b.en_passant && captured == NONE_PIECE) {
-        is_ep = true;
-        Square cap = (b.side_to_move == WHITE) ? (to - 8) : (to + 8);
-        captured = b.get_piece(cap);
-        if (captured == NONE_PIECE) { b.hash = u.hash; return false; }
-        u.captured = captured;
-        b.hash ^= Zobrist::pieces[captured][cap];
-        remove_piece(b, captured, cap);
-    } else if (captured != NONE_PIECE) {
-        u.captured = captured;
-        b.hash ^= Zobrist::pieces[captured][to];
-        remove_piece(b, captured, to);
-        clear_castling_if_rook_captured(b, captured, to);
+    // 2. Handle En Passant Hash
+    if (b.en_passant != SQ_NONE) {
+        b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
     }
-    u.was_ep = is_ep;
-    b.hash ^= Zobrist::pieces[moved][from];
-    remove_piece(b, moved, from);
 
-    if (promo && (moved == WP || moved == BP)) {
-        Piece pp = promo_piece(b.side_to_move, promo);
-        if (pp == NONE_PIECE) { b.hash = u.hash; return false; }
-        b.hash ^= Zobrist::pieces[pp][to];
-        add_piece(b, pp, to);
+    // 3. Handle captures
+    if (captured != NONE_PIECE) {
+        remove_piece(b, captured, to);
+        b.half_move = 0;
+    } else if (get_type(moved) == PAWN && to == b.en_passant) {
+        u.was_ep = true;
+        Square cap_sq = (b.side_to_move == WHITE) ? to - 8 : to + 8;
+        u.captured = b.get_piece(cap_sq);
+        remove_piece(b, u.captured, cap_sq);
+        b.half_move = 0;
+    }
+
+    // 4. Handle Castling movement
+    if (get_type(moved) == KING && std::abs(get_file(from) - get_file(to)) == 2) {
+        u.was_castle = true;
+        if (to == make_square(FILE_G, RANK_1)) {
+            remove_piece(b, WR, make_square(FILE_H, RANK_1));
+            add_piece(b, WR, make_square(FILE_F, RANK_1));
+        }
+        else if (to == make_square(FILE_C, RANK_1)) {
+            remove_piece(b, WR, make_square(FILE_A, RANK_1));
+            add_piece(b, WR, make_square(FILE_D, RANK_1));
+        }
+        else if (to == make_square(FILE_G, RANK_8)) {
+            remove_piece(b, BR, make_square(FILE_H, RANK_8));
+            add_piece(b, BR, make_square(FILE_F, RANK_8));
+        }
+        else if (to == make_square(FILE_C, RANK_8)) {
+            remove_piece(b, BR, make_square(FILE_A, RANK_8));
+            add_piece(b, BR, make_square(FILE_D, RANK_8));
+        }
+    }
+
+    // 5. Update Castling rights hash/state
+    update_castling(b, from, to);
+
+    // 6. Move the piece
+    remove_piece(b, moved, from);
+    if (promo != NONE_PTYPE) {
+        add_piece(b, promo_piece(b.side_to_move, promo), to);
     } else {
-        b.hash ^= Zobrist::pieces[moved][to];
         add_piece(b, moved, to);
     }
 
-    bool is_castle = (moved == WK || moved == BK) && (from == make_square(FILE_E, (b.side_to_move==WHITE?RANK_1:RANK_8))) &&
-                     (to == make_square(FILE_G, (b.side_to_move==WHITE?RANK_1:RANK_8)) ||
-                      to == make_square(FILE_C, (b.side_to_move==WHITE?RANK_1:RANK_8)));
-    if (is_castle) {
-        if (b.side_to_move == WHITE) {
-            if (to == make_square(FILE_G, RANK_1)) { // king side
-                Square rook_from = make_square(FILE_H, RANK_1);
-                Square rook_to = make_square(FILE_F, RANK_1);
-                b.hash ^= Zobrist::pieces[WR][rook_from];
-                b.hash ^= Zobrist::pieces[WR][rook_to];
-                remove_piece(b, WR, rook_from);
-                add_piece(b, WR, rook_to);
-            } else { // queen side
-                Square rook_from = make_square(FILE_A, RANK_1);
-                Square rook_to = make_square(FILE_D, RANK_1);
-                b.hash ^= Zobrist::pieces[WR][rook_from];
-                b.hash ^= Zobrist::pieces[WR][rook_to];
-                remove_piece(b, WR, rook_from);
-                add_piece(b, WR, rook_to);
-            }
-            b.castling &= ~(WHITE_KINGSIDE | WHITE_QUEENSIDE);
-        } else {
-            if (to == make_square(FILE_G, RANK_8)) {
-                Square rook_from = make_square(FILE_H, RANK_8);
-                Square rook_to = make_square(FILE_F, RANK_8);
-                b.hash ^= Zobrist::pieces[BR][rook_from];
-                b.hash ^= Zobrist::pieces[BR][rook_to];
-                remove_piece(b, BR, rook_from);
-                add_piece(b, BR, rook_to);
-            } else {
-                Square rook_from = make_square(FILE_A, RANK_8);
-                Square rook_to = make_square(FILE_D, RANK_8);
-                b.hash ^= Zobrist::pieces[BR][rook_from];
-                b.hash ^= Zobrist::pieces[BR][rook_to];
-                remove_piece(b, BR, rook_from);
-                add_piece(b, BR, rook_to);
-            }
-            b.castling &= ~(BLACK_KINGSIDE | BLACK_QUEENSIDE);
-        }
-    }
-    u.was_castle = is_castle;
-    clear_castling_if_rook_king_moved(b, moved, from);
-
+    // 7. Update En Passant square
     b.en_passant = SQ_NONE;
-    if (moved == WP && get_rank(from) == RANK_2 && get_rank(to) == RANK_4) b.en_passant = from + 8;
-    if (moved == BP && get_rank(from) == RANK_7 && get_rank(to) == RANK_5) b.en_passant = from - 8;
+    if (get_type(moved) == PAWN) {
+        b.half_move = 0;
+        if (std::abs(from - to) == 16) {
+            b.en_passant = (from + to) / 2;
+            b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
+        }
+    } else {
+        b.half_move++;
+    }
 
-    b.hash ^= Zobrist::castlings[b.castling & 15];
-    if (b.en_passant != SQ_NONE) b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
-
-    if (moved == WP || moved == BP || u.captured != NONE_PIECE) b.half_move = 0;
-    else b.half_move++;
-
+    // 8. Final state updates
     if (b.side_to_move == BLACK) b.full_move++;
-
     b.side_to_move = flip(b.side_to_move);
     b.hash ^= Zobrist::sides;
 
-    b.recompute_all();
-
-    Square ksq = king_square(b, flip(b.side_to_move));
-    if (is_square_attacked(b, ksq, b.side_to_move)) {
+    // 9. Legality check
+    if (is_square_attacked(b, king_square(b, flip(b.side_to_move)), b.side_to_move)) {
         unmake_move(b, m, u);
         return false;
     }
+
     return true;
 }
 
 void unmake_move(Board &b, Move m, const Undo &u) {
     b.side_to_move = flip(b.side_to_move);
+
     Square from = move_from(m);
     Square to = move_to(m);
-    PieceType promo = move_promo(m);
+    Piece moved_to_sq = b.get_piece(to);
 
+    // 1. Reverse piece movement (handling promotion)
+    remove_piece(b, moved_to_sq, to);
+    Piece original_piece = (move_promo(m) != NONE_PTYPE)
+                           ? (b.side_to_move == WHITE ? WP : BP)
+                           : moved_to_sq;
+    add_piece(b, original_piece, from);
+
+    // 2. Restore captured piece
+    if (u.was_ep) {
+        Square cap_sq = (b.side_to_move == WHITE) ? to - 8 : to + 8;
+        add_piece(b, u.captured, cap_sq);
+    } else if (u.captured != NONE_PIECE) {
+        add_piece(b, u.captured, to);
+    }
+
+    // 3. Reverse castling rook move
+    if (u.was_castle) {
+        if (to == make_square(FILE_G, RANK_1)) {
+            remove_piece(b, WR, make_square(FILE_F, RANK_1));
+            add_piece(b, WR, make_square(FILE_H, RANK_1));
+        }
+        else if (to == make_square(FILE_C, RANK_1)) {
+            remove_piece(b, WR, make_square(FILE_D, RANK_1));
+            add_piece(b, WR, make_square(FILE_A, RANK_1));
+        }
+        else if (to == make_square(FILE_G, RANK_8)) {
+            remove_piece(b, BR, make_square(FILE_F, RANK_8));
+            add_piece(b, BR, make_square(FILE_H, RANK_8));
+        }
+        else if (to == make_square(FILE_C, RANK_8)) {
+            remove_piece(b, BR, make_square(FILE_D, RANK_8));
+            add_piece(b, BR, make_square(FILE_A, RANK_8));
+        }
+    }
+
+    // 4. Restore state variables
     b.castling = u.castling;
     b.en_passant = u.en_passant;
     b.half_move = u.half_move;
     b.full_move = u.full_move;
-
-    Piece piece_to = b.get_piece(to);
-
-    // undo rook move if castling
-    if (u.was_castle) {
-        if (b.side_to_move == WHITE) {
-            if (to == make_square(FILE_G, RANK_1)) {
-                remove_piece(b, WR, make_square(FILE_F, RANK_1));
-                add_piece(b, WR, make_square(FILE_H, RANK_1));
-            } else {
-                remove_piece(b, WR, make_square(FILE_D, RANK_1));
-                add_piece(b, WR, make_square(FILE_A, RANK_1));
-            }
-        } else {
-            if (to == make_square(FILE_G, RANK_8)) {
-                remove_piece(b, BR, make_square(FILE_F, RANK_8));
-                add_piece(b, BR, make_square(FILE_H, RANK_8));
-            } else {
-                remove_piece(b, BR, make_square(FILE_D, RANK_8));
-                add_piece(b, BR, make_square(FILE_A, RANK_8));
-            }
-        }
-    }
-
-    // undo piece move (handle promotion)
-    remove_piece(b, piece_to, to);
-
-    Piece moved_back = piece_to;
-    if (promo) moved_back = (b.side_to_move == WHITE) ? WP : BP;
-    add_piece(b, moved_back, from);
-
-    if (u.captured != NONE_PIECE) {
-        if (u.was_ep) {
-            Square cap_square = (b.side_to_move == WHITE) ? (to - 8) : (to + 8);
-            add_piece(b, u.captured, cap_square);
-        } else {
-            add_piece(b, u.captured, to);
-        }
-    }
-    b.recompute_all();
     b.hash = u.hash;
 }

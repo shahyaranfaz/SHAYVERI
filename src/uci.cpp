@@ -204,6 +204,8 @@ int main() {
             int my_time = (b.side_to_move == WHITE) ? wtime : btime;
             int my_inc  = (b.side_to_move == WHITE) ? winc  : binc;
             int alloc = infinite ? 60000 : (movetime > 0 ? movetime : my_time / 20 + my_inc / 2);
+            if (!infinite && movetime == 0 && alloc >= my_time) alloc = my_time - 50;
+            // 50ms safety buffer to prevent flagging
             if (alloc < 10) alloc = 10;
 
             int start = (int)hash_history.size() - 1 - b.half_move;

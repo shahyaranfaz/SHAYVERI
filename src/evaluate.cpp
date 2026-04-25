@@ -845,9 +845,14 @@ static int count_pins(const Board &b, Colour attacker) {
             Square sq = make_square(File(cf), Rank(cr));
             Piece p = b.mailbox[sq];
             if (p != NONE_PIECE) {
-                if (pinned_sq == SQ_NONE && get_colour(p) == defender && p != (defender == WHITE ? WK : BK)) {
-                    pinned_sq = sq;
+                if (pinned_sq == SQ_NONE) {
+                    if (get_colour(p) == defender && p != (defender == WHITE ? WK : BK))
+                        pinned_sq = sq;
+                    else
+                        return;
                 } else {
+                    // Hit the second piece. valid pin if king.
+                    if (p == (defender == WHITE ? WK : BK)) count += 1;
                     return;
                 }
             }

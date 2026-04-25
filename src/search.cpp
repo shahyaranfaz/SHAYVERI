@@ -92,7 +92,7 @@ static inline int capture_order_score(const Board& b, Move m) {
         victim = get_type(victim_piece);
     }
 
-    return 100000 + (PTYPE_VALUES[victim] - PTYPE_VALUES[attacker]);
+    return 100000 + (10 * PTYPE_VALUES[victim]) - PTYPE_VALUES[attacker];
 }
 
 static inline bool is_capture_or_promo(const Board& b, Move m) {
@@ -104,7 +104,13 @@ static inline bool is_capture_or_promo(const Board& b, Move m) {
 // captures first (MVV/LVA), then killer, then history
 static inline int order_score(const Board& b, Move m, int ply, const SearchHeuristics& H) {
     int cap = capture_order_score(b, m);
-    if (cap != 0) return 1000000 + cap;
+    if (cap != 0) {
+        if (see_ge_zero(b, m)) {
+            return 1000000 + cap; // Good capture
+        } else {
+            return 800000 + cap;  // Bad capture
+        }
+    }
 
     if (ply >= 0 && ply < MAX_PLY) {
         if (m == H.killers[ply][0]) return 900000;
@@ -193,12 +199,12 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
 
     Square ksq = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
-    if (in_check && depth < 2 && ply < MAX_PLY - 1) depth++;
+    if (in_check && ply < MAX_PLY - 1) depth++;
 
     MoveList moves = generate_legal_moves(b);
 
     if (moves.count == 0) {
-        if (in_check) return -MATE_SCORE;
+        if (in_check) return -MATE_SCORE + ply;
         return 0;
     }
 
@@ -313,10 +319,12 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         }
         if (g_stop) break;
 
-        result.best_move = best_move;
-        result.score = best_score;
-        result.depth = depth;
-        result.nodes = node_count;
+        if (best_move != MOVE_NONE) {
+            result.best_move = best_move;
+            result.score = best_score;
+            result.depth = depth;
+            result.nodes = node_count;
+        }
     }
     return result;
 }
