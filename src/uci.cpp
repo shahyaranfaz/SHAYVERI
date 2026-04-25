@@ -50,58 +50,6 @@ static std::string probe_book(const std::vector<std::string>& history) {
     return "";
 }
 
-static std::string move_to_uci(Move m) {
-    auto sq_to_str = [](Square s) -> std::string {
-        std::string r;
-        r += char('a' + get_file(s));
-        r += char('1' + get_rank(s));
-        return r;
-    };
-    std::string s = sq_to_str(move_from(m)) + sq_to_str(move_to(m));
-    PieceType promo = move_promo(m);
-    if (promo != NONE_PTYPE) {
-        char pc = 0;
-        switch (promo) {
-            case KNIGHT: pc = 'n'; break;
-            case BISHOP: pc = 'b'; break;
-            case ROOK: pc = 'r'; break;
-            case QUEEN: pc = 'q'; break;
-            default: break;
-        }
-        if (pc) s += pc;
-    }
-    return s;
-}
-
-static Move uci_to_move(Board& b, const std::string& uci) {
-    if (uci.size() < 4) return MOVE_NONE;
-    File ff = File(uci[0] - 'a');
-    Rank fr = Rank(uci[1] - '1');
-    File tf = File(uci[2] - 'a');
-    Rank tr = Rank(uci[3] - '1');
-    Square from = make_square(ff, fr);
-    Square to = make_square(tf, tr);
-
-    PieceType promo = NONE_PTYPE;
-    if (uci.size() == 5) {
-        switch (uci[4]) {
-            case 'n': promo = KNIGHT; break;
-            case 'b': promo = BISHOP; break;
-            case 'r': promo = ROOK; break;
-            case 'q': promo = QUEEN; break;
-            default: break;
-        }
-    }
-
-    MoveList legal = generate_legal_moves(b);
-    for (int i = 0; i < legal.count; ++i) {
-        Move m = legal.moves[i];
-        if (move_from(m) == from && move_to(m) == to && move_promo(m) == promo)
-            return m;
-    }
-    return MOVE_NONE;
-}
-
 int main() {
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
@@ -224,9 +172,6 @@ int main() {
                     if (legal.count > 0) result.best_move = legal.moves[0];
                 }
 
-                std::cout << "info depth " << result.depth
-                        << " score cp " << result.score
-                        << " nodes " << result.nodes << "\n";
                 std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
                 std::cout.flush();
             });

@@ -15,6 +15,10 @@ struct SearchResult {
     U64 nodes = 0;
 };
 
+std::string move_to_uci(Move m);
+
+Move uci_to_move(Board& b, const std::string& uci);
+
 SearchResult search(Board &b, int max_depth, const U64 *rep_stack, int rep_len);
 
 #endif

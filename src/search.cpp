@@ -10,7 +10,9 @@
 #include "zobrist.h"
 
 #include <algorithm>
+#include <chrono>
 #include <climits>
+#include <iostream>
 #include <cstring>
 
 static constexpr int MAX_PLY    = 128;
@@ -54,6 +56,58 @@ struct SearchHeuristics {
             history[int(from)][int(to)] /= 2;
     }
 };
+
+std::string move_to_uci(Move m) {
+    auto sq_to_str = [](Square s) -> std::string {
+        std::string r;
+        r += char('a' + get_file(s));
+        r += char('1' + get_rank(s));
+        return r;
+    };
+    std::string s = sq_to_str(move_from(m)) + sq_to_str(move_to(m));
+    PieceType promo = move_promo(m);
+    if (promo != NONE_PTYPE) {
+        char pc = 0;
+        switch (promo) {
+            case KNIGHT: pc = 'n'; break;
+            case BISHOP: pc = 'b'; break;
+            case ROOK: pc = 'r'; break;
+            case QUEEN: pc = 'q'; break;
+            default: break;
+        }
+        if (pc) s += pc;
+    }
+    return s;
+}
+
+Move uci_to_move(Board& b, const std::string& uci) {
+    if (uci.size() < 4) return MOVE_NONE;
+    File ff = File(uci[0] - 'a');
+    Rank fr = Rank(uci[1] - '1');
+    File tf = File(uci[2] - 'a');
+    Rank tr = Rank(uci[3] - '1');
+    Square from = make_square(ff, fr);
+    Square to = make_square(tf, tr);
+
+    PieceType promo = NONE_PTYPE;
+    if (uci.size() == 5) {
+        switch (uci[4]) {
+            case 'n': promo = KNIGHT; break;
+            case 'b': promo = BISHOP; break;
+            case 'r': promo = ROOK; break;
+            case 'q': promo = QUEEN; break;
+            default: break;
+        }
+    }
+
+    MoveList legal = generate_legal_moves(b);
+    for (int i = 0; i < legal.count; ++i) {
+        Move m = legal.moves[i];
+        if (move_from(m) == from && move_to(m) == to && move_promo(m) == promo)
+            return m;
+    }
+    return MOVE_NONE;
+}
 
 static inline bool is_endgame(const Board &b) {
     return !(b.bit_boards[WQ] | b.bit_boards[BQ]);
@@ -143,11 +197,6 @@ static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Quiescence search
-//
-// When in check we cannot use stand-pat — the side to move has no "do nothing"
-// option.  We therefore search ALL moves as evasions and skip every pruning
-// heuristic that assumes a quiet stand-pat baseline (SEE filter, delta pruning).
-// A hard depth floor stops runaway evasion chains in artificial positions.
 // ─────────────────────────────────────────────────────────────────────────────
 static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
     if (g_stop) return 0;
@@ -175,7 +224,6 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
     for (int i = 0; i < moves.count; ++i) {
         Move m = moves.moves[i];
         int s  = capture_order_score(b, m);
-        // In check: include quiet evasions; out of check: captures/promos only
         if (!in_check && s == 0) continue;
         noisy[noisy_count++] = {m, s};
     }
@@ -191,11 +239,9 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
         Move m = noisy[i].m;
 
         if (!in_check) {
-            // SEE filter: skip losing captures (not promos, not ep)
             if (!is_promo(m) && b.get_piece(move_to(m)) != NONE_PIECE && !see_ge_zero(b, m))
                 continue;
 
-            // Delta pruning
             Piece vp = b.get_piece(move_to(m));
             int victim_val = 0;
             if (vp != NONE_PIECE)
@@ -215,11 +261,12 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
         int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1);
         unmake_move(b, m, u);
 
+        if (g_stop) return 0; // Fix: Prevent garbage scores propagating from aborted Q-search
+
         if (score >= beta) return score;
         if (score > alpha) alpha = score;
     }
 
-    // In check with no legal moves → checkmate
     if (in_check && legal_count == 0) return -MATE_SCORE + ply;
 
     return alpha;
@@ -227,11 +274,6 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Negamax
-//
-// Uses generate_pseudo_legal_moves; make_move enforces legality.
-// Terminal detection (checkmate / stalemate) happens after the move loop once
-// legal_count is known — no need for a separate generate_legal_moves pass.
-// Futility and LMR conditions use legal_count, not the sorted-candidate index.
 // ─────────────────────────────────────────────────────────────────────────────
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                    SearchHeuristics &H, U64 *rep_stack, int rep_len) {
@@ -282,6 +324,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         int score = -negamax(b, depth - 1 - R, -beta, -beta + 1,
                              ply + 1, H, rep_stack, rep_len);
         unmake_null_move(b, u);
+
+        if (g_stop) return 0; // Fix: Stop using garbage null move scores on abort
+
         if (score >= beta) return score;
     }
 
@@ -311,8 +356,6 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         bool is_quiet = !is_capture_or_promo(b, m);
 
         // ── 3. Futility pruning ──────────────────────────────────────────────
-        // Skip the very first legal move so we always have a score to return.
-        // legal_count (not i) reflects how many moves have actually been made.
         if (do_futility && is_quiet && legal_count >= 1 &&
             m != tt_move &&
             m != H.killers[ply][0] &&
@@ -322,15 +365,13 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
 
         Undo u;
-        if (!make_move(b, m, u)) continue; // legality check
+        if (!make_move(b, m, u)) continue;
         legal_count++;
         rep_stack[rep_len] = b.hash;
 
         int score;
 
         // ── 4. Late move reductions ──────────────────────────────────────────
-        // legal_count (not i) is the correct gate: we want at least 3 legal
-        // moves to have been searched before reducing.
         if (depth >= 3 && legal_count > 3 && is_quiet &&
             m != tt_move &&
             m != H.killers[ply][0] &&
@@ -342,7 +383,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
             score = -negamax(b, depth - 1 - reduction,
                              -alpha - 1, -alpha,
                              ply + 1, H, rep_stack, rep_len + 1);
-            if (score > alpha)
+
+            // Fix: Check for abort before committing to full depth search
+            if (!g_stop && score > alpha)
                 score = -negamax(b, depth - 1, -beta, -alpha,
                                  ply + 1, H, rep_stack, rep_len + 1);
         } else {
@@ -351,6 +394,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
 
         unmake_move(b, m, u);
+
+        if (g_stop) return 0; // Fix: Stop storing garbage scores in bounds variables/TT
 
         if (score >= beta) {
             int ss = score;
@@ -372,7 +417,6 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     }
 
     // ── Terminal detection ───────────────────────────────────────────────────
-    // Done here rather than up front: avoids the cost of generate_legal_moves.
     if (legal_count == 0)
         return in_check ? -MATE_SCORE + ply : 0;
 
@@ -416,7 +460,6 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         int  best_score_this_depth = -INF;
         Move best_move_this_depth  = MOVE_NONE;
 
-        // Pseudo-legal at root — same pattern as negamax
         MoveList pseudo = generate_pseudo_legal_moves(b);
 
         Move tt_root = MOVE_NONE;
@@ -456,7 +499,6 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             if (score > alpha) alpha = score;
         }
 
-        // Terminal position (checkmate or stalemate at root)
         if (legal_root_count == 0) {
             Square ksq    = king_square(b, b.side_to_move);
             bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
@@ -468,6 +510,37 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         final_best_score = best_score_this_depth;
         final_best_move  = best_move_this_depth;
         completed_depth  = depth;
+
+        // --- NEW GUI OUTPUT CODE ---
+        // 1. Calculate Time & NPS
+        static auto start_time = std::chrono::steady_clock::now();
+        auto now = std::chrono::steady_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+        if (ms == 0) ms = 1; // Prevent division by zero
+        int nps = (node_count * 1000) / ms;
+
+        // 2. Extract PV (Principal Variation) from Transposition Table
+        std::string pv_line = move_to_uci(best_move_this_depth);
+        Board b_pv = b;
+        Undo u_pv;
+        if (make_move(b_pv, best_move_this_depth, u_pv)) {
+            for (int i = 0; i < depth - 1; ++i) {
+                if (const TTEntry* e = TT.probe(b_pv.hash)) {
+                    if (e->best != MOVE_NONE) {
+                        pv_line += " " + move_to_uci(e->best);
+                        if (!make_move(b_pv, e->best, u_pv)) break;
+                    } else break;
+                } else break;
+            }
+        }
+
+        std::cout << "info depth " << depth
+                  << " score cp " << best_score_this_depth
+                  << " time " << ms
+                  << " nodes " << node_count
+                  << " nps " << nps
+                  << " pv " << pv_line << "\n";
+        std::cout.flush();
     }
 
     return {final_best_move, final_best_score, completed_depth, node_count};

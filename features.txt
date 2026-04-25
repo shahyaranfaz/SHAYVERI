@@ -9,11 +9,15 @@ Search:
   - SEE (Static Exchange Evaluation) ✅
   - Prefer draw to loss ✅
   - Futility pruning ✅
-  - Reverse delta pruning ✅
+  - Reverse futility pruning ✅
   - Delta pruning ✅
   - Null move pruning ✅
   - Late move reductions (LMR) ✅
   - Aspiration windows
+  - Principal Variation Search (PVS)
+  - Internal Iterative Deepening (IID)
+  - Singular Extensions
+
 
 Evaluation:
   - Piece-square tables ✅
@@ -53,6 +57,9 @@ Evaluation:
     * Queen outposts (central pressure squares) ✅
   - Tempo / side to move bonus (small flat bonus for having the move) ✅
   - Initiative / development advantage (opening-phase scaling, tempo-based pressure conversion) ✅
+  - Countermove History
+  - Follow-up History
+  - Automated Tuning (Texel's Tuning Method)
 
 Opening:
   - Opening book from 2600+ games in TWIC ✅
@@ -75,12 +82,6 @@ Infrastructure:
   - Magic bitboards (replace classical sliding attacks — big speed boost)
   - bench command
   - Major, rigorous testing suite
-
-Priority order:
-  - Aspiration windows
-  - Magic bitboards
-  - Syzygy
-  - searchmoves support
-  - pv line
-  - bench command
-  - Major, rigorous testing suite
+  - Lazy SMP
+  - Dynamic Time Management
+  - Add same options/commands as stockfish, etc
