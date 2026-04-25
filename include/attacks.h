@@ -14,4 +14,6 @@ bool is_square_attacked(const Board &b, Square sq, Colour attacker);
 
 Square king_square(const Board &b, Colour c);
 
+void init_attacks();
+
 #endif

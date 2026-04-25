@@ -130,7 +130,7 @@ bool make_move(Board &b, Move m, Undo &u) {
             b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
         }
     } else {
-        b.half_move++;
+        if (captured == NONE_PIECE) b.half_move++;  // Don't increment if step 3 already reset it
     }
 
     // 8. Final state updates

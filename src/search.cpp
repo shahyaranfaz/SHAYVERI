@@ -523,7 +523,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
         // --- NEW GUI OUTPUT CODE ---
         // 1. Calculate Time & NPS
-        static auto start_time = std::chrono::steady_clock::now();
+        auto start_time = std::chrono::steady_clock::now();
         auto now = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
         if (ms == 0) ms = 1; // Prevent division by zero

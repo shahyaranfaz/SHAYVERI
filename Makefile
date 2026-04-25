@@ -1,6 +1,6 @@
 CXX := clang++
-CXXFLAGS := -std=c++20 -O3 -Wall -Wextra -Wpedantic
-LDFLAGS := -lpthread
+CXXFLAGS := -std=c++20 -O3 -mbmi2 -march=native -Wall -Wextra -Wpedantic
+LDFLAGS := -lpthread -flto
 INCLUDES := -Iinclude
 
 SRC := \
@@ -19,8 +19,8 @@ SRC := \
 BIN := shaybot
 BIN_WIN := shaybot.exe
 CXX_WIN := x86_64-w64-mingw32-g++
-CXXFLAGS_WIN := -std=c++20 -O3
-LDFLAGS_WIN := -lpthread -static
+CXXFLAGS_WIN := -std=c++20 -O3 -mbmi2 -march=native
+LDFLAGS_WIN := -lpthread -static -flto
 
 all: $(BIN)
 

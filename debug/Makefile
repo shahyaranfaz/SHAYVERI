@@ -1,5 +1,5 @@
 CXX := clang++
-CXXFLAGS ?= -std=c++20 -O2 -g -Wall -Wextra -Wpedantic
+CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
 
 SRC := \

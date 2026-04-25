@@ -85,7 +85,7 @@ UCI Protocol:
 
 Infrastructure:
   - Zobrist hashing ✅
-  - Magic bitboards (replace classical sliding attacks — big speed boost)
+  - Pext bitboards ✅
   - Major, rigorous testing suite
   - Lazy SMP
   - Dynamic Time Management

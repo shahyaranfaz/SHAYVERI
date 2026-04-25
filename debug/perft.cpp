@@ -1,5 +1,6 @@
 #include "board.h"
 #include "make.h"
+#include "attacks.h"
 #include "move_gen.h"
 
 #include <iostream>
@@ -31,6 +32,7 @@ int main(int argc, char **argv) {
     Board b;
     std::string mode = argv[1];
     int depth = 0;
+    init_attacks();
 
     if (mode == "startpos") {
         if (argc != 3) { usage(); return 1; }

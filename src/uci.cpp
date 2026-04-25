@@ -57,6 +57,7 @@ int main() {
     std::cin.tie(nullptr);
 
     Zobrist::init();
+    init_attacks();
     TT.resize(64);
 
     Board b;
@@ -170,8 +171,10 @@ if (token == "uci") {
             if (!book_move.empty()) {
                 Move m = uci_to_move(b, book_move);
                 if (m != MOVE_NONE) {
-                    // Info output for book moves so the GUI displays evaluations properly
-                    int book_eval = evaluate(b);
+                    Undo book_undo;
+                    make_move(b, m, book_undo);
+                    int book_eval = -evaluate(b);  // Evaluate AFTER the move, from the previous side's perspective
+                    unmake_move(b, m, book_undo);
                     std::cout << "info depth 1 score cp " << book_eval << " pv " << book_move << "\n";
                     std::cout << "bestmove " << book_move << "\n";
                     use_book = true;
