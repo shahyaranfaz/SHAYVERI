@@ -259,10 +259,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply, SearchHeur
 }
 
 SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len) {
-    SearchResult result;
-    SearchHeuristics H;
     node_count = 0;
     g_stop = false;
+
+    SearchHeuristics H;
+
+    Move final_best_move = MOVE_NONE;
+    int final_best_score = -INF;
+    int completed_depth = 0;
 
     U64 rep_stack[MAX_PLY * 2];
     int rep_len = 0;
@@ -283,10 +287,15 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     for (int depth = 1; depth <= max_depth; ++depth) {
         int alpha = -INF;
         int beta  = INF;
-        int best_score = -INF;
-        Move best_move = MOVE_NONE;
+        int best_score_this_depth = -INF;
+        Move best_move_this_depth = MOVE_NONE;
 
         MoveList moves = generate_legal_moves(b);
+        if (moves.count == 0) {
+            Square ksq = king_square(b, b.side_to_move);
+            bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
+            return {MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, 0};
+        }
         Move tt_root = MOVE_NONE;
         if (const TTEntry* e = TT.probe(b.hash)) tt_root = e->best;
 
@@ -311,20 +320,19 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             int score = -negamax(b, depth - 1, -beta, -alpha, 1, H, rep_stack, rep_len + 1);
             unmake_move(b, m, u);
 
-            if (score > best_score) {
-                best_score = score;
-                best_move = m;
+            if (g_stop) break;
+
+            if (score > best_score_this_depth) {
+                best_score_this_depth = score;
+                best_move_this_depth = m;
             }
-            if (score > alpha) alpha = score;
         }
+
         if (g_stop) break;
 
-        if (best_move != MOVE_NONE) {
-            result.best_move = best_move;
-            result.score = best_score;
-            result.depth = depth;
-            result.nodes = node_count;
-        }
+        final_best_score = best_score_this_depth;
+        final_best_move = best_move_this_depth;
+        completed_depth = depth;
     }
-    return result;
+    return {final_best_move, final_best_score, completed_depth};
 }

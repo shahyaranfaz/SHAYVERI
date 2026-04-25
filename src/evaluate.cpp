@@ -1073,14 +1073,11 @@ int evaluate(const Board &b) {
     mg += dev_diff * opening_scale / MAX_PHASE;
 
     int pressure_diff = popcount(white_attacks.all & b.occupancies[BLACK]) - popcount(black_attacks.all & b.occupancies[WHITE]);
+    mg += pressure_diff * opening_scale / MAX_PHASE; // Apply pressure advantage objectively
     if (b.side_to_move == WHITE) {
-        mg += TEMPO_BONUS;
-        eg += TEMPO_BONUS;
-        mg += pressure_diff * opening_scale / MAX_PHASE;
+        mg += TEMPO_BONUS; eg += TEMPO_BONUS;
     } else {
-        mg -= TEMPO_BONUS;
-        eg -= TEMPO_BONUS;
-        mg -= pressure_diff * opening_scale / MAX_PHASE;
+        mg -= TEMPO_BONUS; eg -= TEMPO_BONUS;
     }
 
     int score = (mg * phase + eg * (MAX_PHASE - phase)) / MAX_PHASE;
