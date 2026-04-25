@@ -74,14 +74,18 @@ UCI Protocol:
   - stop command handling ✅
   - info output (depth, score, nodes) ✅
   - Invalid FEN fallback to startpos ✅
-  - searchmoves support
-  - pv line
+  - searchmoves support ✅
+  - pv line ✅
+  - Add same options/commands as stockfish, etc ✅
+  - show hash ✅
+  - show eval, info for book moves too ✅
+  - show mate in X, etc ✅
+  - bench command ✅
+  - show pondermo, ponderhi,tb
 
 Infrastructure:
   - Zobrist hashing ✅
   - Magic bitboards (replace classical sliding attacks — big speed boost)
-  - bench command
   - Major, rigorous testing suite
   - Lazy SMP
   - Dynamic Time Management
-  - Add same options/commands as stockfish, etc

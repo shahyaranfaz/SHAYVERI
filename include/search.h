@@ -5,6 +5,7 @@
 #include "move.h"
 
 #include <atomic>
+#include <vector>
 
 extern std::atomic<bool> g_stop;
 
@@ -19,6 +20,6 @@ std::string move_to_uci(Move m);
 
 Move uci_to_move(Board& b, const std::string& uci);
 
-SearchResult search(Board &b, int max_depth, const U64 *rep_stack, int rep_len);
+SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len, const std::vector<Move>& search_moves);
 
 #endif

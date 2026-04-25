@@ -433,7 +433,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 // ─────────────────────────────────────────────────────────────────────────────
 // Root search  (iterative deepening)
 // ─────────────────────────────────────────────────────────────────────────────
-SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len) {
+SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len, const std::vector<Move> &search_moves) {
     node_count = 0;
     g_stop     = false;
 
@@ -481,6 +481,16 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
         for (int i = 0; i < pseudo.count; ++i) {
             Move m = ordered[i].m;
+
+            // Filter by searchmoves if the GUI provided any
+            if (!search_moves.empty()) {
+                bool found = false;
+                for (Move sm : search_moves) {
+                    if (sm == m) { found = true; break; }
+                }
+                if (!found) continue;
+            }
+
             Undo u;
             if (!make_move(b, m, u)) continue;
             legal_root_count++;
@@ -534,8 +544,18 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             }
         }
 
+        std::string score_str;
+        if (std::abs(best_score_this_depth) > MATE_SCORE - MAX_PLY) {
+            int mate_dist = MATE_SCORE - std::abs(best_score_this_depth);
+            int mate_moves = (mate_dist + 1) / 2;
+            if (best_score_this_depth < 0) mate_moves = -mate_moves;
+            score_str = "mate " + std::to_string(mate_moves);
+        } else {
+            score_str = "cp " + std::to_string(best_score_this_depth);
+        }
+
         std::cout << "info depth " << depth
-                  << " score cp " << best_score_this_depth
+                  << " score " << score_str
                   << " time " << ms
                   << " nodes " << node_count
                   << " nps " << nps
