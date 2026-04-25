@@ -48,34 +48,6 @@ static void add_piece(Board &b, Piece p, Square sq) {
     b.hash ^= Zobrist::pieces[p][sq];
 }
 
-static void clear_castling_if_rook_king_moved(Board &b, Piece moved, Square from) {
-    if (moved == WK)
-        b.castling &= ~(WHITE_KINGSIDE | WHITE_QUEENSIDE);
-    else if (moved == BK)
-        b.castling &= ~(BLACK_KINGSIDE | BLACK_QUEENSIDE);
-    else if (moved == WR) {
-        if (from == make_square(FILE_H, RANK_1)) b.castling &= ~WHITE_KINGSIDE;
-        if (from == make_square(FILE_A, RANK_1)) b.castling &= ~WHITE_QUEENSIDE;
-    } else if (moved == BR) {
-        if (from == make_square(FILE_H, RANK_8)) b.castling &= ~BLACK_KINGSIDE;
-        if (from == make_square(FILE_A, RANK_8)) b.castling &= ~BLACK_QUEENSIDE;
-    }
-}
-
-static void clear_castling_if_rook_captured(Board &b, Piece captured, Square to) {
-    if (captured == WR) {
-        if (to == make_square(FILE_H, RANK_1))
-            b.castling &= ~WHITE_KINGSIDE;
-        if (to == make_square(FILE_A, RANK_1))
-            b.castling &= ~WHITE_QUEENSIDE;
-    } else if (captured == BR) {
-        if (to == make_square(FILE_H, RANK_8))
-            b.castling &= ~BLACK_KINGSIDE;
-        if (to == make_square(FILE_A, RANK_8))
-            b.castling &= ~BLACK_QUEENSIDE;
-    }
-}
-
 void update_castling(Board &b, Square from, Square to) {
     b.hash ^= Zobrist::castlings[b.castling];
     b.castling &= CASTLING_RIGHTS_MASK[from];

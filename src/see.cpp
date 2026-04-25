@@ -77,19 +77,31 @@ static inline U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 
     return 0;
 }
 
-int see(const Board& b, Move m) {
+int see(const Board &b, Move m) {
     Square from = move_from(m);
-    Square to = move_to(m);
+    Square to   = move_to(m);
 
     Piece attacker_orig = piece_on_square(b, from);
-    Piece captured_orig = piece_on_square(b, to);
+    if (attacker_orig == NONE_PIECE) return 0;
 
-    if (attacker_orig == NONE_PIECE || captured_orig == NONE_PIECE) return 0;
+    // Determine the captured piece, accounting for en passant
+    Piece captured_orig = piece_on_square(b, to);
+    Square ep_cap_sq = SQ_NONE;
+    if (captured_orig == NONE_PIECE) {
+        // Could be en passant
+        Piece p = attacker_orig;
+        if ((p == WP || p == BP) && to == b.en_passant) {
+            ep_cap_sq = (get_colour(p) == WHITE) ? to - 8 : to + 8;
+            captured_orig = piece_on_square(b, ep_cap_sq);
+        }
+        if (captured_orig == NONE_PIECE) return 0; // genuinely quiet
+    }
 
     int gain[32];
     int depth = 0;
     U64 occ = b.occupied;
     occ &= ~bb_square(from);
+    if (ep_cap_sq != SQ_NONE) occ &= ~bb_square(ep_cap_sq); // remove ep pawn
     gain[depth] = ptype_value(captured_orig);
 
     Colour side = flip(get_colour(attacker_orig));

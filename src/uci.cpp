@@ -25,13 +25,6 @@ static void stop_search() {
         search_thread.join();
 }
 
-static bool is_threefold(const std::vector<U64>& hh, int start, U64 key) {
-    int c = 0;
-    for (int i = start; i < (int)hh.size(); ++i)
-        if (hh[i] == key) ++c;
-    return c >= 3;
-}
-
 // opening book
 
 static U64 fnv64(const std::string& s) {

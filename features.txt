@@ -4,15 +4,16 @@ Search:
   - Quiescence search ✅
   - Move ordering (MVV-LVA, then killer moves, then history heuristic) ✅
   - Transposition table ✅
-  - Null move pruning
-  - Late move reductions (LMR)
-  - Aspiration windows
   - Repetition detection (2-fold during search, 3-fold draw claim) ✅
-  - Prefer draw to loss
-  - Futility pruning — skip moves near leaf nodes that can't improve alpha, big speedup
-  - Delta pruning — in qsearch, skip captures that can't raise alpha even with a big swing
   - Check extensions ✅
   - SEE (Static Exchange Evaluation) ✅
+  - Prefer draw to loss ✅
+  - Futility pruning ✅
+  - Reverse delta pruning ✅
+  - Delta pruning ✅
+  - Null move pruning ✅
+  - Late move reductions (LMR) ✅
+  - Aspiration windows
 
 Evaluation:
   - Piece-square tables ✅
@@ -76,8 +77,7 @@ Infrastructure:
   - Major, rigorous testing suite
 
 Priority order:
-  - Futility pruning + delta pruning
-  - Null move → LMR → aspiration windows
+  - Aspiration windows
   - Magic bitboards
   - Syzygy
   - searchmoves support
