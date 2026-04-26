@@ -9,12 +9,14 @@
 #include "tt.h"
 #include "zobrist.h"
 
+#include <atomic>
 #include <algorithm>
 #include <chrono>
 #include <climits>
 #include <iostream>
 #include <cstring>
 #include <cmath>
+#include <memory>
 
 static constexpr int MAX_PLY    = 128;
 static constexpr int INF        = 1000000;
@@ -23,6 +25,33 @@ static constexpr int PTYPE_VALUES[7] = {0, 100, 320, 330, 500, 900, 0};
 
 std::atomic<bool> g_stop = false;
 static U64 node_count = 0;
+
+// Centralized Tuning Parameters for SPSA/Texel
+namespace Tune {
+    // Singular Extensions
+    int se_min_depth       = 8;
+    int se_depth_margin    = 3;
+    int se_margin          = 20;
+    int se_reduction_denom = 2; // e.g. se_depth = (depth - 1) / denom
+
+    // Continuation Histories & Updates
+    int history_max          = 16384;
+    int history_bonus_mult   = 300;
+    int history_bonus_sub    = 200;
+    int history_bonus_limit  = 1500;
+
+    int main_history_weight  = 100;
+    int cmh_weight           = 100;
+    int fmh_weight           = 100;
+
+    // Pruning Margins
+    int rfp_margin_mult      = 120;
+    int fp_base              = 150;
+    int fp_mult              = 150;
+    int lmp_base             = 3;
+    int lmp_mult             = 2;
+    int see_pruning_margin   = -100;
+}
 
 // Precomputed LMR table
 static int LMR_TABLE[64][256];
@@ -43,16 +72,26 @@ struct ScoredMove {
     int score;
 };
 
+// Tracks state across plies for histories and extensions
+struct StackInfo {
+    Move move;
+    Piece piece;
+    Move excluded_move;
+};
+
 struct SearchHeuristics {
     Move killers[MAX_PLY][2];
-    int history[64][64];
+    int history[2][64][64]; // [side_to_move][from][to]
+
+    // Continuation Histories
+    int counter_move_history[16][64][16][64]; // [prev_pc][prev_to][curr_pc][curr_to]
+    int follow_up_history[16][64][16][64];    // [prev2_pc][prev2_to][curr_pc][curr_to]
 
     SearchHeuristics() {
-        for (int i = 0; i < MAX_PLY; ++i) {
-            killers[i][0] = MOVE_NONE;
-            killers[i][1] = MOVE_NONE;
-        }
+        std::memset(killers, 0, sizeof(killers));
         std::memset(history, 0, sizeof(history));
+        std::memset(counter_move_history, 0, sizeof(counter_move_history));
+        std::memset(follow_up_history, 0, sizeof(follow_up_history));
     }
 
     inline void store_killer(int ply, Move m) {
@@ -62,16 +101,9 @@ struct SearchHeuristics {
         killers[ply][0] = m;
     }
 
-    inline void add_history(Move m, int depth) {
-        Square from = move_from(m);
-        Square to   = move_to(m);
-        int bonus = depth * depth; // Quadratic history bonus
-        history[int(from)][int(to)] += bonus;
-        if (history[int(from)][int(to)] > 1000000) {
-            for (int r = 0; r < 64; ++r)
-                for (int c = 0; c < 64; ++c)
-                    history[r][c] /= 2;
-        }
+    // Gravity-based, SPSA-friendly history update
+    inline void update_history(int& entry, int bonus) {
+        entry += bonus - entry * std::abs(bonus) / Tune::history_max;
     }
 };
 
@@ -89,8 +121,8 @@ std::string move_to_uci(Move m) {
         switch (promo) {
             case KNIGHT: pc = 'n'; break;
             case BISHOP: pc = 'b'; break;
-            case ROOK: pc = 'r'; break;
-            case QUEEN: pc = 'q'; break;
+            case ROOK:   pc = 'r'; break;
+            case QUEEN:  pc = 'q'; break;
             default: break;
         }
         if (pc) s += pc;
@@ -194,18 +226,12 @@ static inline bool is_capture_or_promo(const Board& b, Move m) {
     return b.get_piece(move_to(m)) != NONE_PIECE;
 }
 
-// Overhauled Move Ordering
-static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H) {
-    int cap = capture_order_score(b, m); // This acts as your MVV/LVA fallback
+static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H, StackInfo* ss) {
+    int cap = capture_order_score(b, m);
     if (cap != 0) {
         int see_val = see(b, m);
-        if (see_val >= 0) {
-            // Good captures: prioritize by actual material won, then MVV/LVA
-            return 1000000 + (see_val * 100) + cap;
-        } else {
-            // Bad captures: prioritize those that lose the least material
-            return 700000 + (see_val * 100) + cap;
-        }
+        if (see_val >= 0) return 1000000 + (see_val * 100) + cap;
+        return 700000 + (see_val * 100) + cap;
     }
 
     if (ply >= 0 && ply < MAX_PLY) {
@@ -213,8 +239,25 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
         if (m == H.killers[ply][1]) return 890000;
     }
 
-    // Quiet moves sorted by history score
-    return H.history[int(move_from(m))][int(move_to(m))];
+    int pc = static_cast<int>(b.get_piece(move_from(m))) & 15;
+    int to = static_cast<int>(move_to(m)) & 63;
+    int stm = static_cast<int>(b.side_to_move) & 1;
+
+    int history_score = H.history[stm][int(move_from(m))][to] * Tune::main_history_weight;
+
+    // Check bounds for previous plies
+    if (ply >= 1 && ss[-1].move != MOVE_NONE) {
+        int prev_pc = static_cast<int>(ss[-1].piece) & 15;
+        int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
+        history_score += H.counter_move_history[prev_pc][prev_to][pc][to] * Tune::cmh_weight;
+    }
+    if (ply >= 2 && ss[-2].move != MOVE_NONE) {
+        int prev2_pc = static_cast<int>(ss[-2].piece) & 15;
+        int prev2_to = static_cast<int>(move_to(ss[-2].move)) & 63;
+        history_score += H.follow_up_history[prev2_pc][prev2_to][pc][to] * Tune::fmh_weight;
+    }
+
+    return history_score / 100;
 }
 
 static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len) {
@@ -223,7 +266,6 @@ static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len) {
     return false;
 }
 
-// Quiescence search
 static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
     if (g_stop) return 0;
     node_count++;
@@ -267,7 +309,6 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
             int victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_capture(b, m) ? PTYPE_VALUES[PAWN] : 0);
             if (move_promo(m) != NONE_PTYPE) victim_val += PTYPE_VALUES[move_promo(m)];
 
-            // Delta pruning
             if (stand_pat + victim_val + 150 < alpha)
                 continue;
         }
@@ -290,32 +331,39 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
     return alpha;
 }
 
-// Negamax with Principal Variation Search (PVS)
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
-                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node) {
+                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss) {
     if (g_stop) return 0;
     node_count++;
 
     const U64 key = b.hash;
 
+    // Basic Draw Detection
     if (b.half_move >= 100) return 0;
     if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1)) return 0;
 
     const int original_alpha = alpha;
     Move tt_move = MOVE_NONE;
+    int tt_score = 0;
+    int tt_depth = -1;
+    int tt_bound = -1; // -1 represents "No entry found"
 
     if (const TTEntry *e = TT.probe(key)) {
-        tt_move = e->best;
-        if (e->depth >= depth) {
-            int s = e->score;
+        tt_move  = e->best;
+        tt_score = e->score;
+        tt_depth = e->depth;
+        tt_bound = e->flag;
+
+        if (tt_depth >= depth) {
+            int s = tt_score;
             if (s > MATE_SCORE - MAX_PLY) s -= ply;
             else if (s < -MATE_SCORE + MAX_PLY) s += ply;
 
-            // Only prune based on TT if it's not a PV node
-            if (!pv_node) {
-                if (e->flag == TT_EXACT) return s;
-                if (e->flag == TT_LOWER) alpha = std::max(alpha, s);
-                else if (e->flag == TT_UPPER) beta = std::min(beta, s);
+            // Only prune if we are not in a singular extension check
+            if (!pv_node && ss->excluded_move == MOVE_NONE) {
+                if (tt_bound == TT_EXACT) return s;
+                if (tt_bound == TT_LOWER) alpha = std::max(alpha, s);
+                else if (tt_bound == TT_UPPER) beta = std::min(beta, s);
                 if (alpha >= beta) return s;
             }
         }
@@ -325,143 +373,171 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
-
     if (in_check && ply < MAX_PLY - 1) depth++;
 
     const int static_eval = evaluate(b);
 
     // Reverse Futility Pruning
-    if (!pv_node && !in_check && depth <= 5) {
-        int eval_margin = 120 * depth;
-        if (static_eval - eval_margin >= beta)
+    if (!pv_node && !in_check && depth <= 5 && ss->excluded_move == MOVE_NONE) {
+        if (static_eval - (Tune::rfp_margin_mult * depth) >= beta)
             return static_eval;
     }
 
     // Null Move Pruning
-    if (!pv_node && !in_check && depth >= 3 && static_eval >= beta && !is_endgame(b)) {
+    if (!pv_node && !in_check && depth >= 3 && static_eval >= beta && !is_endgame(b) && ss->excluded_move == MOVE_NONE) {
         const int R = 3 + depth / 4;
         Undo u;
         make_null_move(b, u);
-        int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1, H, rep_stack, rep_len, false);
+        ss->move = MOVE_NONE;
+        ss->piece = NONE_PIECE;
+        int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1, H, rep_stack, rep_len, false, ss + 1);
         unmake_null_move(b, u);
 
         if (g_stop) return 0;
         if (score >= beta) return score;
     }
 
-    MoveList pseudo = generate_pseudo_legal_moves(b);
+    // Singular Extensions
+    int extension = 0;
+    if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::se_min_depth
+        && tt_move != MOVE_NONE && tt_bound != TT_UPPER && tt_depth >= depth - Tune::se_depth_margin
+        && std::abs(tt_score) < MATE_SCORE - MAX_PLY) {
 
+        int r_beta = tt_score - Tune::se_margin;
+        int se_depth = (depth - 1) / Tune::se_reduction_denom;
+
+        ss->excluded_move = tt_move;
+        int score = negamax(b, se_depth, r_beta - 1, r_beta, ply, H, rep_stack, rep_len, false, ss);
+        ss->excluded_move = MOVE_NONE;
+
+        if (score < r_beta) extension = 1;
+    }
+
+    MoveList pseudo = generate_pseudo_legal_moves(b);
     ScoredMove ordered[256];
     for (int i = 0; i < pseudo.count; ++i) {
         Move m = pseudo.moves[i];
-        int s  = order_score(b, m, ply, H);
+        int s  = order_score(b, m, ply, H, ss);
         if (tt_move != MOVE_NONE && m == tt_move) s += 2000000;
         ordered[i] = {m, s};
     }
     std::sort(ordered, ordered + pseudo.count, [](const ScoredMove& a, const ScoredMove& b) { return a.score > b.score; });
 
-    Move best_move  = MOVE_NONE;
-    int  legal_count = 0;
-
-    // LMP Threshold
-    int lmp_threshold = 3 + 2 * depth * depth;
+    Move best_move = MOVE_NONE;
+    int legal_count = 0;
+    int quiet_count = 0;
+    Move quiets_played[256];
 
     for (int i = 0; i < pseudo.count; ++i) {
         Move m = ordered[i].m;
+        if (m == ss->excluded_move) continue;
+
         bool is_quiet = !is_capture_or_promo(b, m);
 
-        // Late Move Pruning (LMP)
-        if (!pv_node && !in_check && is_quiet && legal_count > lmp_threshold)
-            continue;
-
-        // Futility Pruning
-        if (!pv_node && !in_check && is_quiet && depth <= 4 && m != tt_move && m != H.killers[ply][0] && m != H.killers[ply][1]) {
-            if (static_eval + 150 + 150 * depth <= alpha)
-                continue;
+        // Pruning (LMP, Futility)
+        if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
+            if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
+            if (is_quiet && depth <= 4 && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
         }
 
-        // SEE Pruning for Bad Captures
-        if (!pv_node && !in_check && !is_quiet && depth <= 4 && m != tt_move) {
-            // Allow tactical sacrifices at slightly higher depth, but strictly prune awful ones
-            int see_margin = -100 * depth;
-            if (see(b, m) < see_margin) continue;
-        }
-
+        Piece moved_piece = b.get_piece(move_from(m));
         Undo u;
         if (!make_move(b, m, u)) continue;
+
         legal_count++;
+        if (is_quiet) quiets_played[quiet_count++] = m;
         rep_stack[rep_len] = b.hash;
+        ss->move = m;
+        ss->piece = moved_piece;
 
         int score;
+        int d_ext = (m == tt_move) ? extension : 0;
 
-        // Principal Variation Search (PVS) & LMR
+        // PVS Logic with LMR
         if (legal_count == 1) {
-            // First move: Full window search
-            score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, pv_node);
+            score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, pv_node, ss + 1);
         } else {
-            // Late Move Reduction calculation
             int reduction = 0;
-            if (depth >= 3 && legal_count > 1 && is_quiet && m != tt_move && m != H.killers[ply][0] && m != H.killers[ply][1]) {
-                int capped_d = std::min(depth, 63);
-                int capped_l = std::min(legal_count, 255);
-                reduction = LMR_TABLE[capped_d][capped_l];
-
-                if (!pv_node) reduction++; // Increase reduction for non-PV nodes
-                reduction = std::min(reduction, depth - 2);
-                reduction = std::max(reduction, 0);
+            if (depth >= 3 && is_quiet && m != tt_move && m != H.killers[ply][0]) {
+                reduction = LMR_TABLE[std::min(depth, 63)][std::min(legal_count, 255)];
+                if (!pv_node) reduction++;
+                reduction = std::clamp(reduction, 0, depth - 2);
             }
 
-            // Null window search
-            score = -negamax(b, depth - 1 - reduction, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false);
-
-            // Re-search if LMR failed high, or PVS expects a better score
-            if (score > alpha && reduction > 0) {
-                score = -negamax(b, depth - 1, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false);
-            }
-            if (pv_node && score > alpha && score < beta) {
-                score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, true);
-            }
+            score = -negamax(b, depth - 1 - reduction + d_ext, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false, ss + 1);
+            if (score > alpha && reduction > 0)
+                score = -negamax(b, depth - 1 + d_ext, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false, ss + 1);
+            if (pv_node && score > alpha && score < beta)
+                score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, true, ss + 1);
         }
 
         unmake_move(b, m, u);
-
         if (g_stop) return 0;
 
         if (score >= beta) {
-            int ss = score;
-            if (ss >  MATE_SCORE - MAX_PLY) ss += ply;
-            if (ss < -MATE_SCORE + MAX_PLY) ss -= ply;
-            TT.store(key, depth, ss, TT_LOWER, m);
-
+            if (ss->excluded_move == MOVE_NONE) {
+                int tt_s = (score > MATE_SCORE - MAX_PLY) ? score + ply : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
+                TT.store(key, depth, tt_s, TT_LOWER, m);
+            }
             if (is_quiet) {
                 H.store_killer(ply, m);
-                H.add_history(m, depth);
+                int bonus = std::min(Tune::history_bonus_limit, Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
+
+                auto update_all = [&](Move move, int p_idx, int bns) {
+                    int f = move_from(move);
+                    int t = move_to(move);
+                    H.update_history(H.history[int(b.side_to_move)][f][t], bns);
+
+                    if (ss[-1].move != MOVE_NONE) {
+                        int p1 = static_cast<int>(ss[-1].piece) & 15;
+                        int t1 = static_cast<int>(move_to(ss[-1].move)) & 63;
+                        H.update_history(H.counter_move_history[p1][t1][p_idx][t], bns);
+                    }
+                    if (ss[-2].move != MOVE_NONE) {
+                        int p2 = static_cast<int>(ss[-2].piece) & 15;
+                        int t2 = static_cast<int>(move_to(ss[-2].move)) & 63;
+                        H.update_history(H.follow_up_history[p2][t2][p_idx][t], bns);
+                    }
+                };
+
+                int moved_pc_idx = static_cast<int>(moved_piece) & 15;
+                update_all(m, moved_pc_idx, bonus);
+                for (int j = 0; j < quiet_count - 1; ++j) {
+                    int q_pc_idx = static_cast<int>(b.get_piece(move_from(quiets_played[j]))) & 15;
+                    update_all(quiets_played[j], q_pc_idx, -bonus);
+                }
             }
             return score;
         }
 
         if (score > alpha) {
-            alpha    = score;
+            alpha = score;
             best_move = m;
         }
     }
 
     if (legal_count == 0) return in_check ? -MATE_SCORE + ply : 0;
 
-    int sa = alpha;
-    if (sa >  MATE_SCORE - MAX_PLY) sa += ply;
-    if (sa < -MATE_SCORE + MAX_PLY) sa -= ply;
-    TT.store(key, depth, sa, (alpha <= original_alpha) ? TT_UPPER : TT_EXACT, best_move);
+    if (ss->excluded_move == MOVE_NONE) {
+        int tt_s = (alpha > MATE_SCORE - MAX_PLY) ? alpha + ply : (alpha < -MATE_SCORE + MAX_PLY ? alpha - ply : alpha);
+        TT.store(key, depth, tt_s, (alpha <= original_alpha) ? TT_UPPER : TT_EXACT, best_move);
+    }
 
     return alpha;
 }
 
-// Root search (Iterative deepening + Aspiration Windows)
 SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len, const std::vector<Move> &search_moves) {
     node_count = 0;
     g_stop     = false;
 
-    SearchHeuristics H;
+    auto H_ptr = std::make_unique<SearchHeuristics>();
+    SearchHeuristics &H = *H_ptr;
+
+    // Stack setup to handle history states (allows up to ss[-2] safely at root)
+    StackInfo st[MAX_PLY + 5];
+    std::memset(st, 0, sizeof(st));
+    StackInfo* ss = st + 2;
+
     Move final_best_move  = MOVE_NONE;
     int  final_best_score = -INF;
     int  completed_depth  = 0;
@@ -478,11 +554,9 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         else                   rep_stack[MAX_PLY - 1] = b.hash;
     }
 
-    // Timer initialized BEFORE depth loops
     auto start_time = std::chrono::steady_clock::now();
 
     for (int depth = 1; depth <= max_depth; ++depth) {
-        // Setup Aspiration Window
         int window_alpha = -INF;
         int window_beta  = INF;
         int delta = 25;
@@ -493,7 +567,6 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         }
 
         while (true) {
-            // Internal window state that tracking mutations during the move loop
             int current_alpha = window_alpha;
             int current_beta  = window_beta;
 
@@ -508,7 +581,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             ScoredMove ordered[256];
             for (int i = 0; i < pseudo.count; ++i) {
                 Move m = pseudo.moves[i];
-                int  s = order_score(b, m, 0, H);
+                int  s = order_score(b, m, 0, H, ss);
                 if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
                 ordered[i] = {m, s};
             }
@@ -530,13 +603,16 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                 legal_root_count++;
                 rep_stack[rep_len] = b.hash;
 
+                ss->move = m;
+                ss->piece = b.get_piece(move_from(m));
+
                 int score;
                 if (legal_root_count == 1) {
-                    score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true);
+                    score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true, ss + 1);
                 } else {
-                    score = -negamax(b, depth - 1, -current_alpha - 1, -current_alpha, 1, H, rep_stack, rep_len + 1, false);
+                    score = -negamax(b, depth - 1, -current_alpha - 1, -current_alpha, 1, H, rep_stack, rep_len + 1, false, ss + 1);
                     if (score > current_alpha && score < current_beta) {
-                        score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true);
+                        score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true, ss + 1);
                     }
                 }
 
@@ -549,7 +625,6 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                     best_move_this_depth  = m;
                 }
 
-                // Track internally without corrupting the bounds check below
                 if (score > current_alpha) current_alpha = score;
             }
 
@@ -561,32 +636,29 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                 return {MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, 0};
             }
 
-            // Aspiration Window Check - Comparing against preserved 'window' state
             if (best_score_this_depth <= window_alpha && window_alpha > -INF) {
                 window_alpha = std::max(-INF, window_alpha - delta);
-                delta *= 2; // Widening lower bound
-                continue; // Re-search
+                delta *= 2;
+                continue;
             } else if (best_score_this_depth >= window_beta && window_beta < INF) {
                 window_beta = std::min(INF, window_beta + delta);
-                delta *= 2; // Widening upper bound
-                continue; // Re-search
+                delta *= 2;
+                continue;
             }
 
             final_best_score = best_score_this_depth;
             final_best_move  = best_move_this_depth;
             completed_depth  = depth;
-            break; // Aspiration window hit
+            break;
         }
 
         if (g_stop) break;
 
-        // Calculate Time & NPS
         auto now = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
         if (ms == 0) ms = 1;
         U64 nps = (node_count * 1000ULL) / ms;
 
-        // Extract PV
         std::string pv_line = move_to_uci(final_best_move);
         Board b_pv = b;
         Undo u_pv;

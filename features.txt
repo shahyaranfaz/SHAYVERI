@@ -16,10 +16,10 @@ Search:
   - Aspiration windows ✅
   - Principal Variation Search (PVS) ✅
   - Late Move Pruning (LMP) ✅
-  - Singular Extensions
-  - Countermove History
-  - Follow-up History
-  - Continuation history (follow-up history is part of this)
+  - Singular Extensions ✅
+  - Countermove History ✅
+  - Follow-up History ✅
+  - Continuation history (follow-up history is part of this) ✅
 
 Evaluation:
   - Piece-square tables ✅
