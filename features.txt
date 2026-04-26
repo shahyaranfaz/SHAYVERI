@@ -13,12 +13,12 @@ Search:
   - Delta pruning ✅
   - Null move pruning ✅
   - Late move reductions (LMR) ✅
-  - Aspiration windows
-  - Principal Variation Search (PVS)
-  - Internal Iterative Reduction (IIR)
+  - Aspiration windows ✅
+  - Principal Variation Search (PVS) ✅
+  - Late Move Pruning (LMP) ✅
   - Singular Extensions
-  - Late Move Pruning (LMP) - prune moves beyond a certain count at low depths
-  - SEE pruning in main search (already have in qsearch)
+  - Improve SEE and add to main search
+  - tt improvements
 
 Evaluation:
   - Piece-square tables ✅
@@ -62,6 +62,9 @@ Evaluation:
   - Follow-up History
   - Continuation history (follow-up history is part of this)
   - Automated Tuning (Texel's Tuning Method)
+  - king danger scaling
+  - threat eval
+
 
 Opening:
   - Opening book from 2600+ games in TWIC ✅
