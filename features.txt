@@ -15,9 +15,10 @@ Search:
   - Late move reductions (LMR) ✅
   - Aspiration windows
   - Principal Variation Search (PVS)
-  - Internal Iterative Deepening (IID)
+  - Internal Iterative Reduction (IIR)
   - Singular Extensions
-
+  - Late Move Pruning (LMP) - prune moves beyond a certain count at low depths
+  - SEE pruning in main search (already have in qsearch)
 
 Evaluation:
   - Piece-square tables ✅
@@ -59,6 +60,7 @@ Evaluation:
   - Initiative / development advantage (opening-phase scaling, tempo-based pressure conversion) ✅
   - Countermove History
   - Follow-up History
+  - Continuation history (follow-up history is part of this)
   - Automated Tuning (Texel's Tuning Method)
 
 Opening:
