@@ -1,0 +1,31 @@
+Endgame:
+  - Syzygy tablebases (perfect play with ≤7 pieces)
+  - Basic KPK/KQK/KRK patterns as fallback if no tablebases
+
+UCI Protocol:
+  - Add options:
+    * Hash
+    * Threads
+    * Ponder
+    * MultiPV
+    * Clear Hash
+    * Move Overhead
+    * UCI_LimitStrength
+    * UCI_Elo
+    * EvalFile
+    * SyzygyPath
+    * UCI_ShowWDL
+    * Contempt
+    * OwnBook
+    * UCI_AnalyseMode
+    * SyzygyProbeDepth
+    * Syzygy50MoveRule
+  - show pondermove, ponderhit, tb
+
+Infrastructure:
+  - Major, rigorous testing suite
+  - Lazy SMP
+  - Dynamic Time Management
+
+ Auto-tuning:
+  - TBD

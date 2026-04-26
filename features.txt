@@ -61,8 +61,7 @@ Evaluation:
   - Initiative / development advantage (opening-phase scaling, tempo-based pressure conversion) ✅
   - king danger scaling ✅
   - threat eval ✅
-  - book eval should be precomputed and stored somewhere for accuracy, as it is unreliable currently (wild swings in early game)
-  - Automated Tuning (Texel's Tuning Method)
+  - book eval precomputed ✅
 
 Opening:
   - Opening book from 2600+ games in TWIC ✅
@@ -85,13 +84,21 @@ UCI Protocol:
   - bench command ✅
   - Add options:
     * Hash
-    * Clear
-    * Ponder
-    * OwnBook
-    * Move Overhead
     * Threads
-    * Contempt
+    * Ponder
     * MultiPV
+    * Clear Hash
+    * Move Overhead
+    * UCI_LimitStrength
+    * UCI_Elo
+    * EvalFile
+    * SyzygyPath
+    * UCI_ShowWDL
+    * Contempt
+    * OwnBook
+    * UCI_AnalyseMode
+    * SyzygyProbeDepth
+    * Syzygy50MoveRule
   - show pondermove, ponderhit, tb
 
 Infrastructure:
@@ -100,3 +107,6 @@ Infrastructure:
   - Major, rigorous testing suite
   - Lazy SMP
   - Dynamic Time Management
+
+ Auto-tuning:
+  - TBD
