@@ -27,29 +27,19 @@ static void stop_search() {
         search_thread.join();
 }
 
-// opening book
+static const BookEntry *probe_book(U64 zobrist_key) {
+    // Binary search for the key in our sorted array
+    auto it = std::lower_bound(OPENING_BOOK, OPENING_BOOK + OPENING_BOOK_SIZE, zobrist_key,
+                               [](const BookEntry &entry, U64 key) {
+                                   return entry.key < key;
+                               });
 
-static U64 fnv64(const std::string& s) {
-    U64 h = 14695981039346656037ULL;
-    for (unsigned char c : s) {
-        h ^= c;
-        h *= 1099511628211ULL;
+    // Check if we found the exact key
+    if (it != OPENING_BOOK + OPENING_BOOK_SIZE && it->key == zobrist_key) {
+        return it;
     }
-    return h;
-}
 
-static std::string probe_book(const std::vector<std::string>& history) {
-    std::string prefix;
-    for (int i = 0; i < (int)history.size(); ++i) {
-        if (i > 0) prefix += ' ';
-        prefix += history[i];
-    }
-    U64 key = fnv64(prefix);
-    for (int i = 0; i < OPENING_BOOK_SIZE; ++i) {
-        if (OPENING_BOOK[i].key == key)
-            return std::string(OPENING_BOOK[i].move);
-    }
-    return "";
+    return nullptr;
 }
 
 int main() {
@@ -74,14 +64,13 @@ int main() {
         std::string token;
         iss >> token;
 
-if (token == "uci") {
+        if (token == "uci") {
             std::cout << "id name ShayBot\n";
             std::cout << "id author Shahyar\n";
             std::cout << "option name Hash type spin default 64 min 1 max 32768\n";
             std::cout << "option name Clear Hash type button\n";
             std::cout << "option name Ponder type check default false\n";
             std::cout << "uciok\n";
-
         } else if (token == "setoption") {
             std::string skip, name;
             iss >> skip; // Skip the word "name"
@@ -96,7 +85,6 @@ if (token == "uci") {
             } else if (opt_name == "Clear Hash") {
                 TT.clear();
             }
-
         } else if (token == "bench") {
             std::vector<std::string> bench_fens = {
                 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -108,7 +96,7 @@ if (token == "uci") {
             std::cout << "Running bench..." << std::endl;
             auto start_time = std::chrono::steady_clock::now();
 
-            for (const auto& fen : bench_fens) {
+            for (const auto &fen: bench_fens) {
                 Board bench_b;
                 set_from_fen(bench_b, fen);
                 std::vector<Move> sm; // empty searchmoves
@@ -124,17 +112,14 @@ if (token == "uci") {
             std::cout << "Time : " << ms << " ms\n";
             std::cout << "NPS  : " << (total_nodes * 1000) / ms << "\n";
             std::cout << "===========================\n";
-
         } else if (token == "isready") {
             std::cout << "readyok\n";
-
         } else if (token == "ucinewgame") {
             set_startpos(b);
             hash_history.clear();
             hash_history.push_back(b.hash);
             move_history.clear();
             TT.clear();
-
         } else if (token == "position") {
             std::string pos;
             iss >> pos;
@@ -166,65 +151,69 @@ if (token == "uci") {
                 }
             }
         } else if (token == "go") {
-            std::string book_move = probe_book(move_history);
-            bool use_book = false;
-            if (!book_move.empty()) {
-                Move m = uci_to_move(b, book_move);
+            // 1. Probe the book using the current board hash
+            // No need to recompute; b.hash is already maintained by make_move
+            const BookEntry *entry = probe_book(b.hash);
+
+            if (entry) {
+                Move m = uci_to_move(b, entry->move);
                 if (m != MOVE_NONE) {
-                    Undo book_undo;
-                    make_move(b, m, book_undo);
-                    int book_eval = -evaluate(b);  // Evaluate AFTER the move, from the previous side's perspective
-                    unmake_move(b, m, book_undo);
-                    std::cout << "info depth 1 score cp " << book_eval << " pv " << book_move << "\n";
-                    std::cout << "bestmove " << book_move << "\n";
-                    use_book = true;
+                    // Convert float eval to centipawns
+                    int book_eval_cp = int(entry->evaluation * 100.0f);
+                    if (b.side_to_move == BLACK) book_eval_cp = -book_eval_cp;
+
+                    std::cout << "info depth 24 score cp " << book_eval_cp
+                            << " pv " << entry->move << " (book)" << std::endl;
+                    std::cout << "bestmove " << entry->move << std::endl;
+
+                    continue;
                 }
             }
-            if (!use_book) {
-                stop_search();
 
-                bool infinite = false;
-                int wtime = 0, btime = 0, winc = 0, binc = 0, movetime = 0;
-                std::vector<Move> searchmoves;
-                std::string tok;
-                while (iss >> tok) {
-                    if (tok == "infinite") infinite = true;
-                    else if (tok == "wtime") iss >> wtime;
-                    else if (tok == "btime") iss >> btime;
-                    else if (tok == "winc") iss >> winc;
-                    else if (tok == "binc") iss >> binc;
-                    else if (tok == "movetime") iss >> movetime;
-                    else if (tok == "searchmoves") {
-                        std::string sm_str;
-                        // consume all the remaining tokens as moves until end of stream
-                        while (iss >> sm_str) {
-                            Move sm = uci_to_move(b, sm_str);
-                            if (sm != MOVE_NONE) searchmoves.push_back(sm);
-                        }
+            stop_search();
+
+            bool infinite = false;
+            int wtime = 0, btime = 0, winc = 0, binc = 0, movetime = 0;
+            std::vector<Move> searchmoves;
+            std::string tok;
+            while (iss >> tok) {
+                if (tok == "infinite") infinite = true;
+                else if (tok == "wtime") iss >> wtime;
+                else if (tok == "btime") iss >> btime;
+                else if (tok == "winc") iss >> winc;
+                else if (tok == "binc") iss >> binc;
+                else if (tok == "movetime") iss >> movetime;
+                else if (tok == "searchmoves") {
+                    std::string sm_str;
+                    // consume all the remaining tokens as moves until end of stream
+                    while (iss >> sm_str) {
+                        Move sm = uci_to_move(b, sm_str);
+                        if (sm != MOVE_NONE) searchmoves.push_back(sm);
                     }
                 }
+            }
 
             int my_time = (b.side_to_move == WHITE) ? wtime : btime;
-            int my_inc  = (b.side_to_move == WHITE) ? winc  : binc;
+            int my_inc = (b.side_to_move == WHITE) ? winc : binc;
             int alloc = infinite ? 60000 : (movetime > 0 ? movetime : my_time / 20 + my_inc / 2);
             if (!infinite && movetime == 0 && alloc >= my_time) alloc = my_time - 50;
             // 50ms safety buffer to prevent flagging
             if (alloc < 10) alloc = 10;
 
-            int start = (int)hash_history.size() - 1 - b.half_move;
+            int start = (int) hash_history.size() - 1 - b.half_move;
             if (start < 0) start = 0;
 
             std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
 
             Board b_copy = b;
             search_thread = std::thread([b_copy, alloc, rep, searchmoves]() mutable {
-                auto timer_active = std::make_shared<std::atomic<bool>>(true);
+                auto timer_active = std::make_shared<std::atomic<bool> >(true);
                 std::thread timer([alloc, timer_active]() {
                     std::this_thread::sleep_for(std::chrono::milliseconds(alloc));
                     if (*timer_active) g_stop = true;
                 });
 
-                SearchResult result = search(b_copy, 64, rep.data(), (int)rep.size(), searchmoves);
+                SearchResult result = search(b_copy, 64, rep.data(), (int) rep.size(), searchmoves);
                 *timer_active = false;
                 g_stop = true;
                 timer.join();
@@ -237,8 +226,7 @@ if (token == "uci") {
                 std::cout << "bestmove " << move_to_uci(result.best_move) << "\n";
                 std::cout.flush();
             });
-        }
-    } else if (token == "stop") {
+        } else if (token == "stop") {
             stop_search();
         } else if (token == "quit") {
             stop_search();
