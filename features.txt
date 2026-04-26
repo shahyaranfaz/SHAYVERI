@@ -19,6 +19,9 @@ Search:
   - Singular Extensions
   - Improve SEE and add to main search
   - tt improvements
+  - Countermove History
+  - Follow-up History
+  - Continuation history (follow-up history is part of this)
 
 Evaluation:
   - Piece-square tables ✅
@@ -58,13 +61,10 @@ Evaluation:
     * Queen outposts (central pressure squares) ✅
   - Tempo / side to move bonus (small flat bonus for having the move) ✅
   - Initiative / development advantage (opening-phase scaling, tempo-based pressure conversion) ✅
-  - Countermove History
-  - Follow-up History
-  - Continuation history (follow-up history is part of this)
-  - Automated Tuning (Texel's Tuning Method)
-  - king danger scaling
-  - threat eval
+  - king danger scaling ✅
+  - threat eval ✅
   - book eval should be precomputed and stored somewhere for accuracy, as it is unreliable currently (wild swings in early game)
+  - Automated Tuning (Texel's Tuning Method)
 
 Opening:
   - Opening book from 2600+ games in TWIC ✅
