@@ -195,12 +195,17 @@ static inline bool is_capture_or_promo(const Board& b, Move m) {
 }
 
 // Overhauled Move Ordering
-static inline int order_score(const Board& b, Move m, int ply, const SearchHeuristics& H) {
-    int cap = capture_order_score(b, m);
+static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H) {
+    int cap = capture_order_score(b, m); // This acts as your MVV/LVA fallback
     if (cap != 0) {
-        // Good/neutral captures vs Bad captures
-        if (see_ge_zero(b, m)) return 1000000 + cap; // Favorable captures
-        else return 700000 + cap;                   // Unfavorable captures
+        int see_val = see(b, m);
+        if (see_val >= 0) {
+            // Good captures: prioritize by actual material won, then MVV/LVA
+            return 1000000 + (see_val * 100) + cap;
+        } else {
+            // Bad captures: prioritize those that lose the least material
+            return 700000 + (see_val * 100) + cap;
+        }
     }
 
     if (ply >= 0 && ply < MAX_PLY) {
@@ -373,6 +378,13 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (!pv_node && !in_check && is_quiet && depth <= 4 && m != tt_move && m != H.killers[ply][0] && m != H.killers[ply][1]) {
             if (static_eval + 150 + 150 * depth <= alpha)
                 continue;
+        }
+
+        // SEE Pruning for Bad Captures
+        if (!pv_node && !in_check && !is_quiet && depth <= 4 && m != tt_move) {
+            // Allow tactical sacrifices at slightly higher depth, but strictly prune awful ones
+            int see_margin = -100 * depth;
+            if (see(b, m) < see_margin) continue;
         }
 
         Undo u;

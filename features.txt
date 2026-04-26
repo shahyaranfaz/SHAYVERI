@@ -17,8 +17,6 @@ Search:
   - Principal Variation Search (PVS) ✅
   - Late Move Pruning (LMP) ✅
   - Singular Extensions
-  - Improve SEE and add to main search
-  - tt improvements
   - Countermove History
   - Follow-up History
   - Continuation history (follow-up history is part of this)
