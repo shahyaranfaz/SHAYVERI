@@ -64,7 +64,7 @@ Evaluation:
   - Automated Tuning (Texel's Tuning Method)
   - king danger scaling
   - threat eval
-
+  - book eval should be precomputed and stored somewhere for accuracy, as it is unreliable currently (wild swings in early game)
 
 Opening:
   - Opening book from 2600+ games in TWIC ✅
@@ -81,12 +81,20 @@ UCI Protocol:
   - Invalid FEN fallback to startpos ✅
   - searchmoves support ✅
   - pv line ✅
-  - Add same options/commands as stockfish, etc ✅
   - show hash ✅
-  - show eval, info for book moves too ✅
-  - show mate in X, etc ✅
+  - show eval for book moves ✅
+  - show mate in X ✅
   - bench command ✅
-  - show pondermo, ponderhi,tb
+  - Add options:
+    * Hash
+    * Clear
+    * Ponder
+    * OwnBook
+    * Move Overhead
+    * Threads
+    * Contempt
+    * MultiPV
+  - show pondermove, ponderhit, tb
 
 Infrastructure:
   - Zobrist hashing ✅
