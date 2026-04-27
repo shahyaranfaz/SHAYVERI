@@ -11,7 +11,7 @@
 extern std::atomic<bool> g_stop;
 extern std::atomic<U64> node_count;
 
-using IterCallback = std::function<void(int, Move, int, U64, int64_t)>;
+using IterCallback = std::function<void(int, Move, int, U64, I64)>;
 
 struct SearchResult {
     Move best_move = MOVE_NONE;

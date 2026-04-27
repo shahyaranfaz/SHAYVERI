@@ -44,17 +44,17 @@ public:
     bool hard_expired() const;
 
     // Milliseconds since init() was called.
-    int64_t elapsed_ms() const;
+    I64 elapsed_ms() const;
 
     // Soft / hard limits (ms) — exposed for the timer thread.
-    int64_t soft_ms() const { return soft_ms_; }
-    int64_t hard_ms() const { return hard_ms_; }
+    I64 soft_ms() const { return soft_ms_; }
+    I64 hard_ms() const { return hard_ms_; }
 
 private:
     std::chrono::steady_clock::time_point start_;
 
-    int64_t soft_ms_ = 0;
-    int64_t hard_ms_ = 0;
+    I64 soft_ms_ = 0;
+    I64 hard_ms_ = 0;
 
     // Move-stability tracking
     Move  prev_best_     = MOVE_NONE;

@@ -245,8 +245,8 @@ int main() {
                     std::thread timer([hard_ms, timer_active]() {
                         // Sleep in small increments so we can exit early
                         // if the search finishes before the hard limit.
-                        const int64_t slice = 5; // ms
-                        int64_t slept = 0;
+                        const I64 slice = 5; // ms
+                        I64 slept = 0;
                         while (*timer_active && slept < hard_ms) {
                             std::this_thread::sleep_for(
                                 std::chrono::milliseconds(slice));
@@ -257,7 +257,7 @@ int main() {
 
                     // Per-iteration callback: dynamic soft-limit logic
                     IterCallback on_iter = [](int depth, Move best, int score,
-                                             U64 /*nodes*/, int64_t /*ms*/) {
+                                             U64 /*nodes*/, I64 /*ms*/) {
                         if (g_time_manager.on_iter(depth, best, score))
                             g_stop = true;
                     };
