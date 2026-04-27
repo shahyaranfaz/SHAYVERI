@@ -1,18 +1,19 @@
-import chess
-import chess.engine
 import os
 import threading
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, FIRST_COMPLETED, wait
 
+import chess
+import chess.engine
+
 try:
     import orjson
-    _json_dumps = lambda obj: orjson.dumps(obj).decode()
+    _json_dumps_bytes = lambda obj: orjson.dumps(obj)
     _json_loads = orjson.loads
 except ImportError:
     import json as _json_fallback
-    _json_dumps = lambda obj: _json_fallback.dumps(obj)
-    _json_loads = _json_fallback.loads
+    _json_dumps_bytes = lambda obj: _json_fallback.dumps(obj).encode("utf-8")
+    _json_loads = lambda b: _json_fallback.loads(b.decode("utf-8"))
 
 try:
     import pandas as pd
@@ -24,16 +25,30 @@ except ImportError:
 # --- CONFIGURATION ---
 STOCKFISH_PATH = "stockfish"
 BOOK_DEPTH = 18
+
 CACHE_FILE = "eval_cache.json"
 SAVE_INTERVAL = 500
-MAX_WORKERS = os.cpu_count()
-STOCKFISH_HASH_MB = 256
-MAX_LIVE_FUTURES = MAX_WORKERS * 4
 
-# IMPORTANT:
-# This file MUST be produced by your C++ engine using the same Zobrist::init()
-# (same platform/libc++/libstdc++ build you care about).
+# Keep workers at physical cores-ish by default; override via env if you want.
+# 13700KS: 8P+8E. Stockfish depth 18 with 1 thread/engine tends to like fewer
+# workers than logical cores; try 16 first, then tune.
+MAX_WORKERS = int(os.getenv("BOOK_WORKERS", str(os.cpu_count() or 16)))
+
+# Per-worker hash for Stockfish. Total RAM = workers * hash.
+STOCKFISH_HASH_MB = int(os.getenv("SF_HASH_MB", "256"))
+
+# Bound number of in-flight futures to keep RAM flat.
+MAX_LIVE_FUTURES = int(os.getenv("MAX_LIVE_FUTURES", str(MAX_WORKERS * 4)))
+
+# Must be produced by your C++ dumper compiled from the same build/toolchain.
 ZOBRIST_KEYS_FILE = "zobrist_keys.json"
+
+# CSV input
+CSV_FILE = "table.csv"
+MAX_PLIES_PER_ROW = 30
+
+# Book filtering
+MIN_TOTAL_PLAYS = 5  # don't emit entries with <5 total occurrences
 
 
 # ---------------- ZOBRIST (EXACT MATCH VIA C++ DUMP) ----------------
@@ -45,21 +60,13 @@ def _u64(x) -> int:
 def load_zobrist_keys(path: str):
     if not os.path.exists(path):
         raise FileNotFoundError(
-            f"{path} not found.\n\n"
-            "To make Python match C++ exactly, dump the Zobrist arrays from your C++ build "
-            "after Zobrist::init() into this JSON file."
+            f"{path} not found.\n"
+            f"Run your C++ dumper (dump_keys) to generate {path} first."
         )
 
     with open(path, "rb") as f:
         data = _json_loads(f.read())
 
-    # Expected schema:
-    # {
-    #   "pieces": [[...64...], ... PIECE_COUNT ...],
-    #   "sides": <u64>,
-    #   "castlings": [...16...],
-    #   "en_passants": [...8...]
-    # }
     pieces = [[_u64(v) for v in row] for row in data["pieces"]]
     sides = _u64(data["sides"])
     castlings = [_u64(v) for v in data["castlings"]]
@@ -79,21 +86,17 @@ def load_zobrist_keys(path: str):
 
 def compute_zobrist_from_cpp_dump(board: chess.Board, pieces, sides, castlings, en_passants) -> int:
     """
-    Mirrors zobrist.cpp exactly:
+    Mirrors src/zobrist.cpp exactly:
 
       - pieces indexed by C++ Piece enum:
         0 NONE, 1..6 WP..WK, 7..12 BP..BK
       - side XOR if black to move
-      - castlings[castling_bits & 15]
+      - castlings[bits 0..15]
       - en_passants[file] if ep exists
     """
     h = 0
 
-    # python-chess piece_map gives squares 0..63, Piece(piece_type 1..6, color bool)
     for sq, p in board.piece_map().items():
-        # Map to C++ Piece enum index:
-        # WP=1..WK=6, BP=7..BK=12
-        # python-chess: piece_type 1..6, color: True=WHITE, False=BLACK
         p_idx = p.piece_type + (0 if p.color == chess.WHITE else 6)
         h ^= pieces[p_idx][sq]
 
@@ -113,18 +116,21 @@ def compute_zobrist_from_cpp_dump(board: chess.Board, pieces, sides, castlings, 
     return _u64(h)
 
 
-# --- PERSISTENT WORKER (Stockfish per process) ---
+# --- STOCKFISH WORKER (persistent engine per process) ---
 worker_engine = None
 
 def init_worker():
     global worker_engine
     worker_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    worker_engine.configure({"Hash": STOCKFISH_HASH_MB, "Threads": 1})
+    worker_engine.configure({
+        "Hash": STOCKFISH_HASH_MB,
+        "Threads": 1,
+    })
 
 def analyze_position(args):
-    """Returns (zobrist_key_str, eval_float)"""
+    """Returns (zobrist_key_str, eval_float)."""
     global worker_engine
-    fen, key_str = args
+    key_str, fen = args
     board = chess.Board(fen)
     info = worker_engine.analyse(board, chess.engine.Limit(depth=BOOK_DEPTH))
     score = info["score"].white()
@@ -140,8 +146,10 @@ _save_lock = threading.Lock()
 
 def _save_cache_thread(cache_snapshot, path):
     with _save_lock:
-        with open(path, "wb") as f:
-            f.write(_json_dumps(cache_snapshot).encode())
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(_json_dumps_bytes(cache_snapshot))
+        os.replace(tmp, path)
 
 def save_cache_async(cache: dict, path: str):
     snapshot = dict(cache)
@@ -149,53 +157,77 @@ def save_cache_async(cache: dict, path: str):
     t.start()
 
 
-# --- MAIN ---
+def read_rows():
+    if _has_pandas:
+        df = pd.read_csv(CSV_FILE, encoding="utf-8-sig")
+        return df.to_dict("records")
+
+    with open(CSV_FILE, newline="", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
+
+
+def build_book(rows, pieces, sides, castlings, en_passants):
+    """
+    Build book keyed by engine Zobrist key directly.
+
+    This avoids:
+      - a second "fen -> key" pass
+      - re-parsing FEN into boards just to hash
+      - long FEN strings as dict keys
+    """
+    book = defaultdict(lambda: {"fen": "", "moves": defaultdict(int)})
+
+    for row in rows:
+        board = chess.Board()
+        moves = str(row["Moves"]).split()[:MAX_PLIES_PER_ROW]
+        played = int(row["Played"])
+
+        for m_str in moves:
+            key_str = str(compute_zobrist_from_cpp_dump(board, pieces, sides, castlings, en_passants))
+
+            # Save one representative FEN per key (for Stockfish analysis)
+            if not book[key_str]["fen"]:
+                book[key_str]["fen"] = board.fen()
+
+            try:
+                mv = board.push_san(m_str)  # if your CSV is UCI, change to push_uci for big speedup
+            except Exception:
+                break
+
+            book[key_str]["moves"][mv.uci()] += played
+
+    return book
+
+
 if __name__ == "__main__":
-    # Load Zobrist keys dumped from C++ so our keys match b.hash exactly.
     pieces, sides, castlings, en_passants = load_zobrist_keys(ZOBRIST_KEYS_FILE)
 
-    book = defaultdict(lambda: {"moves": defaultdict(int), "fen": ""})
     eval_cache = {}
-
     if os.path.exists(CACHE_FILE):
         print("Loading existing cache...")
         with open(CACHE_FILE, "rb") as f:
             eval_cache = _json_loads(f.read())
 
     print("Reading CSV...")
-    if _has_pandas:
-        df = pd.read_csv("table.csv", encoding="utf-8-sig")
-        rows = df.to_dict("records")
-    else:
-        with open("table.csv", newline="", encoding="utf-8-sig") as f:
-            rows = list(csv.DictReader(f))
+    rows = read_rows()
+    print(f"Rows: {len(rows)}")
 
-    # Build book frequencies
-    for row in rows:
-        board = chess.Board()
-        moves = str(row["Moves"]).split()[:30]
-        played = int(row["Played"])
+    print("Building book...")
+    book = build_book(rows, pieces, sides, castlings, en_passants)
 
-        for m_str in moves:
-            key = str(compute_zobrist_from_cpp_dump(board, pieces, sides, castlings, en_passants))
-            book[key]["fen"] = board.fen()
-            try:
-                move = board.push_san(m_str)
-                book[key]["moves"][move.uci()] += played
-            except Exception:
-                break
-
-    to_analyze = [(data["fen"], key) for key, data in book.items() if key not in eval_cache]
+    to_analyze = [(key, data["fen"]) for key, data in book.items() if data["fen"] and key not in eval_cache]
     total_to_do = len(to_analyze)
     print(f"Unique positions: {len(book)} | Cached: {len(eval_cache)} | To analyze: {total_to_do}")
 
     if to_analyze:
-        print(f"Starting parallel analysis with {MAX_WORKERS} workers...")
+        print(f"Starting parallel analysis with {MAX_WORKERS} workers "
+              f"(SF Hash {STOCKFISH_HASH_MB} MB each, in-flight futures cap {MAX_LIVE_FUTURES})...")
+
         with ProcessPoolExecutor(max_workers=MAX_WORKERS, initializer=init_worker) as executor:
             pending = set()
             it = iter(to_analyze)
-            count = 0
             submitted = 0
+            completed = 0
 
             def _fill_queue():
                 nonlocal submitted
@@ -212,33 +244,41 @@ if __name__ == "__main__":
                 done, pending = wait(pending, return_when=FIRST_COMPLETED)
                 _fill_queue()
 
-                for future in done:
-                    key_str, val = future.result()
+                for fut in done:
+                    key_str, val = fut.result()
                     eval_cache[key_str] = val
-                    count += 1
-                    if count % SAVE_INTERVAL == 0:
-                        pct = count / total_to_do * 100
-                        print(f"  {count}/{total_to_do} ({pct:.1f}%) — saving cache async...")
+                    completed += 1
+
+                    if completed % SAVE_INTERVAL == 0:
+                        pct = completed / total_to_do * 100
+                        print(f"  {completed}/{total_to_do} ({pct:.1f}%) — saving cache async...")
                         save_cache_async(eval_cache, CACHE_FILE)
 
-        with open(CACHE_FILE, "wb") as f:
-            f.write(_json_dumps(eval_cache).encode())
+        # final save
+        tmp = CACHE_FILE + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(_json_dumps_bytes(eval_cache))
+        os.replace(tmp, CACHE_FILE)
         print("Cache saved.")
 
     print("Generating header...")
     entries = []
-    for key, data in book.items():
-        if not data["moves"] or key not in eval_cache:
+    for key_str, data in book.items():
+        if key_str not in eval_cache:
             continue
-        if sum(data["moves"].values()) < 5:
+        if not data["moves"]:
             continue
-        best_move = max(data["moves"], key=data["moves"].get)
-        entries.append((int(key), best_move, eval_cache[key]))
+        if sum(data["moves"].values()) < MIN_TOTAL_PLAYS:
+            continue
 
+        best_move = max(data["moves"], key=data["moves"].get)
+        entries.append((int(key_str), best_move, float(eval_cache[key_str])))
+
+    # REQUIRED for uci.cpp binary search
     entries.sort(key=lambda x: x[0])
 
     os.makedirs("include", exist_ok=True)
-    with open("include/opening_book.h", "w") as out:
+    with open("include/opening_book.h", "w", encoding="utf-8") as out:
         out.write("#ifndef OPENING_BOOK_H\n#define OPENING_BOOK_H\n#include <cstdint>\n\n")
         out.write("struct BookEntry { U64 key; char move[6]; float evaluation; };\n\n")
         out.write("static constexpr BookEntry OPENING_BOOK[] = {\n")
