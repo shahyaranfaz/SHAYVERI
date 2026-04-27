@@ -2,7 +2,7 @@ import os
 import threading
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, FIRST_COMPLETED, wait
-
+import atexit
 import chess
 import chess.engine
 
@@ -23,28 +23,22 @@ except ImportError:
     _has_pandas = False
 
 # --- CONFIGURATION ---
-STOCKFISH_PATH = os.getenv("STOCKFISH_PATH", "stockfish")
-BOOK_DEPTH = int(os.getenv("BOOK_DEPTH", "18"))
+STOCKFISH_PATH = "./stockfish"
+BOOK_DEPTH = 8
 
-CACHE_FILE = os.getenv("CACHE_FILE", "eval_cache.json")
-SAVE_INTERVAL = int(os.getenv("SAVE_INTERVAL", "500"))
+CACHE_FILE = "eval_cache.json"
+SAVE_INTERVAL = 500
 
-# 13700KS: start with 16; try 12..24 depending on thermals/OS responsiveness.
-MAX_WORKERS = int(os.getenv("BOOK_WORKERS", "16"))
+MAX_WORKERS = 24
+STOCKFISH_HASH_MB = 1024
+MAX_LIVE_FUTURES = 96
 
-# Total RAM used by SF hash ~= MAX_WORKERS * STOCKFISH_HASH_MB
-STOCKFISH_HASH_MB = int(os.getenv("SF_HASH_MB", "256"))
+ZOBRIST_KEYS_FILE = "zobrist_keys.json"
 
-# Bound number of in-flight futures to keep RAM flat.
-MAX_LIVE_FUTURES = int(os.getenv("MAX_LIVE_FUTURES", str(MAX_WORKERS * 4)))
+CSV_FILE = "table.csv"
+MAX_PLIES_PER_ROW = 30
 
-ZOBRIST_KEYS_FILE = os.getenv("ZOBRIST_KEYS_FILE", "zobrist_keys.json")
-
-CSV_FILE = os.getenv("CSV_FILE", "table.csv")
-MAX_PLIES_PER_ROW = int(os.getenv("MAX_PLIES_PER_ROW", "30"))
-
-# Book filtering
-MIN_TOTAL_PLAYS = int(os.getenv("MIN_TOTAL_PLAYS", "5"))
+MIN_TOTAL_PLAYS = 5
 
 
 # ---------------- ZOBRIST (EXACT MATCH VIA C++ DUMP) ----------------
@@ -81,12 +75,9 @@ def load_zobrist_keys(path: str):
 
 
 def compute_zobrist_from_cpp_dump(board: chess.Board, pieces, sides, castlings, en_passants) -> int:
-    """Mirrors src/zobrist.cpp exactly."""
     h = 0
 
     for sq, p in board.piece_map().items():
-        # C++ Piece enum indexing:
-        # WP..WK = 1..6, BP..BK = 7..12
         p_idx = p.piece_type + (0 if p.color == chess.WHITE else 6)
         h ^= pieces[p_idx][sq]
 
@@ -106,7 +97,7 @@ def compute_zobrist_from_cpp_dump(board: chess.Board, pieces, sides, castlings, 
     return _u64(h)
 
 
-# --- STOCKFISH WORKER (persistent engine per process) ---
+# --- STOCKFISH WORKER ---
 worker_engine = None
 
 def init_worker():
@@ -114,9 +105,15 @@ def init_worker():
     worker_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
     worker_engine.configure({"Hash": STOCKFISH_HASH_MB, "Threads": 1})
 
+    def cleanup():
+        try:
+            worker_engine.quit()
+        except Exception:
+            pass
+
+    atexit.register(cleanup)
+
 def analyze_position(args):
-    """Returns (zobrist_key_str, eval_float)."""
-    global worker_engine
     key_str, fen = args
     board = chess.Board(fen)
     info = worker_engine.analyse(board, chess.engine.Limit(depth=BOOK_DEPTH))
@@ -128,7 +125,7 @@ def analyze_position(args):
     return key_str, float(val)
 
 
-# --- BACKGROUND CACHE SAVER ---
+# --- CACHE SAVER ---
 _save_lock = threading.Lock()
 
 def _atomic_write_bytes(path: str, data: bytes):
@@ -150,16 +147,11 @@ def read_rows():
     if _has_pandas:
         df = pd.read_csv(CSV_FILE, encoding="utf-8-sig")
         return df.to_dict("records")
-
     with open(CSV_FILE, newline="", encoding="utf-8-sig") as f:
         return list(csv.DictReader(f))
 
 
 def build_book_uci(rows, pieces, sides, castlings, en_passants):
-    """
-    Build book keyed by engine Zobrist key directly.
-    Moves are UCI like 'e2e4' (fast).
-    """
     book = defaultdict(lambda: {"fen": "", "moves": defaultdict(int)})
 
     for row in rows:
@@ -168,7 +160,6 @@ def build_book_uci(rows, pieces, sides, castlings, en_passants):
         played = int(row["Played"])
 
         for uci in moves:
-            # record current position before applying this ply
             key_str = str(compute_zobrist_from_cpp_dump(board, pieces, sides, castlings, en_passants))
 
             if not book[key_str]["fen"]:
@@ -182,6 +173,16 @@ def build_book_uci(rows, pieces, sides, castlings, en_passants):
             book[key_str]["moves"][uci] += played
 
     return book
+
+
+def fill_queue(executor, pending, it, submitted_box, total_to_do):
+    # submitted_box is [submitted_int]
+    while len(pending) < MAX_LIVE_FUTURES and submitted_box[0] < total_to_do:
+        args = next(it, None)
+        if args is None:
+            break
+        pending.add(executor.submit(analyze_position, args))
+        submitted_box[0] += 1
 
 
 if __name__ == "__main__":
@@ -211,34 +212,27 @@ if __name__ == "__main__":
         with ProcessPoolExecutor(max_workers=MAX_WORKERS, initializer=init_worker) as executor:
             pending = set()
             it = iter(to_analyze)
-            submitted = 0
+            submitted_box = [0]
             completed = 0
 
-            def _fill_queue():
-                nonlocal submitted
-                while len(pending) < MAX_LIVE_FUTURES and submitted < total_to_do:
-                    args = next(it, None)
-                    if args is None:
-                        break
-                    pending.add(executor.submit(analyze_position, args))
-                    submitted += 1
-
-            _fill_queue()
+            fill_queue(executor, pending, it, submitted_box, total_to_do)
 
             while pending:
                 done, pending = wait(pending, return_when=FIRST_COMPLETED)
-                _fill_queue()
+                fill_queue(executor, pending, it, submitted_box, total_to_do)
 
                 for fut in done:
                     key_str, val = fut.result()
                     eval_cache[key_str] = val
                     completed += 1
 
-                    if completed % SAVE_INTERVAL == 0:
+                    if completed % 1 == 0:
                         pct = completed / total_to_do * 100
                         print(f"  {completed}/{total_to_do} ({pct:.1f}%) — saving cache async...")
                         save_cache_async(eval_cache, CACHE_FILE)
+                    
 
+        print("GOT OUT")
         _atomic_write_bytes(CACHE_FILE, _json_dumps_bytes(eval_cache))
         print("Cache saved.")
 
@@ -255,8 +249,7 @@ if __name__ == "__main__":
         best_move = max(data["moves"], key=data["moves"].get)
         entries.append((int(key_str), best_move, float(eval_cache[key_str])))
 
-    # REQUIRED for uci.cpp binary search
-    entries.sort(key=lambda x: x[0])
+    entries.sort(key=lambda x: x[0])  # required for binary search
 
     os.makedirs("include", exist_ok=True)
     with open("include/opening_book.h", "w", encoding="utf-8") as out:
