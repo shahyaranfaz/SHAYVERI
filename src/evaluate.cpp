@@ -11,279 +11,19 @@ namespace ShayBot {
 using namespace Tune;
 
 namespace {
-// Piece values (used for material + PST evaluation)
-static constexpr int PIECE_VALUES_MG[PIECE_COUNT] = {
-    0, 100, 320, 330, 500, 900, 0,
-       100, 320, 330, 500, 900, 0,
-};
-static constexpr int PIECE_VALUES_EG[PIECE_COUNT] = {
-    0, 100, 310, 330, 510, 900, 0,
-       100, 310, 330, 510, 900, 0,
-};
-static constexpr int PTYPE_VALUE[7] = { 0, 100, 320, 330, 500, 900, 20000 };
 
-// ============================================================
-// Piece-square tables (white perspective, a1=index 0)
-// ============================================================
-static constexpr int PST_PAWN_MG[64] = {
-     0,  0,  0,  0,  0,  0,  0,  0,
-     5, 10, 10,-20,-20, 10, 10,  5,
-     5, -5,-10,  0,  0,-10, -5,  5,
-     0,  0,  0, 20, 20,  0,  0,  0,
-     5,  5, 10, 25, 25, 10,  5,  5,
-    10, 10, 20, 30, 30, 20, 10, 10,
-    50, 50, 50, 50, 50, 50, 50, 50,
-     0,  0,  0,  0,  0,  0,  0,  0,
-};
-static constexpr int PST_PAWN_EG[64] = {
-     0,  0,  0,  0,  0,  0,  0,  0,
-    10, 15, 15, -5, -5, 15, 15, 10,
-    10,  0,  0, 10, 10,  0,  0, 10,
-     5,  5, 10, 20, 20, 10,  5,  5,
-    10, 10, 20, 30, 30, 20, 10, 10,
-    20, 20, 30, 40, 40, 30, 20, 20,
-    60, 60, 60, 60, 60, 60, 60, 60,
-     0,  0,  0,  0,  0,  0,  0,  0,
-};
-static constexpr int PST_KNIGHT_MG[64] = {
-    -50,-40,-30,-30,-30,-30,-40,-50,
-    -40,-20,  0,  5,  5,  0,-20,-40,
-    -30,  5, 10, 15, 15, 10,  5,-30,
-    -30,  0, 15, 20, 20, 15,  0,-30,
-    -30,  5, 15, 20, 20, 15,  5,-30,
-    -30,  0, 10, 15, 15, 10,  0,-30,
-    -40,-20,  0,  0,  0,  0,-20,-40,
-    -50,-40,-30,-30,-30,-30,-40,-50,
-};
-static constexpr int PST_KNIGHT_EG[64] = {
-    -40,-30,-20,-20,-20,-20,-30,-40,
-    -30,-10,  0,  5,  5,  0,-10,-30,
-    -20,  5, 10, 15, 15, 10,  5,-20,
-    -20,  0, 15, 20, 20, 15,  0,-20,
-    -20,  5, 15, 20, 20, 15,  5,-20,
-    -20,  0, 10, 15, 15, 10,  0,-20,
-    -30,-10,  0,  0,  0,  0,-10,-30,
-    -40,-30,-20,-20,-20,-20,-30,-40,
-};
-static constexpr int PST_BISHOP_MG[64] = {
-    -20,-10,-10,-10,-10,-10,-10,-20,
-    -10,  5,  0,  0,  0,  0,  5,-10,
-    -10, 10, 10, 10, 10, 10, 10,-10,
-    -10,  0, 10, 10, 10, 10,  0,-10,
-    -10,  5,  5, 10, 10,  5,  5,-10,
-    -10,  0,  5, 10, 10,  5,  0,-10,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -20,-10,-10,-10,-10,-10,-10,-20,
-};
-static constexpr int PST_BISHOP_EG[64] = {
-    -15,-10,-10,-10,-10,-10,-10,-15,
-    -10,  5,  0,  0,  0,  0,  5,-10,
-    -10, 10, 10, 10, 10, 10, 10,-10,
-    -10,  0, 10, 10, 10, 10,  0,-10,
-    -10,  5,  5, 10, 10,  5,  5,-10,
-    -10,  0,  5, 10, 10,  5,  0,-10,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -15,-10,-10,-10,-10,-10,-10,-15,
-};
-static constexpr int PST_ROOK_MG[64] = {
-     0,  0,  0,  5,  5,  0,  0,  0,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-    -5,  0,  0,  0,  0,  0,  0, -5,
-     5, 10, 10, 10, 10, 10, 10,  5,
-     0,  0,  0,  0,  0,  0,  0,  0,
-};
-static constexpr int PST_ROOK_EG[64] = {
-     5,  5,  5, 10, 10,  5,  5,  5,
-     0,  0,  0,  5,  5,  0,  0,  0,
-     0,  0,  0,  5,  5,  0,  0,  0,
-     0,  0,  0,  5,  5,  0,  0,  0,
-     0,  0,  0,  5,  5,  0,  0,  0,
-     0,  0,  0,  5,  5,  0,  0,  0,
-    10, 10, 10, 15, 15, 10, 10, 10,
-     5,  5,  5, 10, 10,  5,  5,  5,
-};
-static constexpr int PST_QUEEN_MG[64] = {
-    -20,-10,-10, -5, -5,-10,-10,-20,
-    -10,  0,  5,  0,  0,  0,  0,-10,
-    -10,  5,  5,  5,  5,  5,  0,-10,
-      0,  0,  5,  5,  5,  5,  0, -5,
-     -5,  0,  5,  5,  5,  5,  0, -5,
-    -10,  0,  5,  5,  5,  5,  0,-10,
-    -10,  0,  0,  0,  0,  0,  0,-10,
-    -20,-10,-10, -5, -5,-10,-10,-20,
-};
-static constexpr int PST_QUEEN_EG[64] = {
-    -10, -5, -5, -5, -5, -5, -5,-10,
-     -5,  0,  5,  5,  5,  5,  0, -5,
-     -5,  5, 10, 10, 10, 10,  5, -5,
-     -5,  0, 10, 15, 15, 10,  0, -5,
-     -5,  0, 10, 15, 15, 10,  0, -5,
-     -5,  5, 10, 10, 10, 10,  5, -5,
-     -5,  0,  5,  5,  5,  5,  0, -5,
-    -10, -5, -5, -5, -5, -5, -5,-10,
-};
-static constexpr int PST_KING_MG[64] = {
-     20, 30, 10,  0,  0, 10, 30, 20,
-     20, 20,  0,  0,  0,  0, 20, 20,
-    -10,-20,-20,-20,-20,-20,-20,-10,
-    -20,-30,-30,-40,-40,-30,-30,-20,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-};
-static constexpr int PST_KING_EG[64] = {
-    -50,-30,-30,-30,-30,-30,-30,-50,
-    -30,-30,  0,  0,  0,  0,-30,-30,
-    -30,-10, 20, 30, 30, 20,-10,-30,
-    -30,-10, 30, 40, 40, 30,-10,-30,
-    -30,-10, 30, 40, 40, 30,-10,-30,
-    -30,-10, 20, 30, 30, 20,-10,-30,
-    -30,-20,-10,  0,  0,-10,-20,-30,
-    -50,-40,-30,-20,-20,-30,-40,-50,
-};
-
-// Pointer-array dispatch: avoids a switch on every piece-square lookup.
-// Index 0 (NONE_PTYPE) is null; valid range is 1..6.
-static constexpr const int* const PST_MG_TABLE[7] = {
+// PST dispatch tables — reference the inline arrays in tune.h.
+static const int* PST_MG_TABLE[7] = {
     nullptr,
     PST_PAWN_MG, PST_KNIGHT_MG, PST_BISHOP_MG,
     PST_ROOK_MG, PST_QUEEN_MG,  PST_KING_MG,
 };
-static constexpr const int* const PST_EG_TABLE[7] = {
+static const int* PST_EG_TABLE[7] = {
     nullptr,
     PST_PAWN_EG, PST_KNIGHT_EG, PST_BISHOP_EG,
     PST_ROOK_EG, PST_QUEEN_EG,  PST_KING_EG,
 };
 
-// ============================================================
-// Phase
-// ============================================================
-static constexpr int MAX_PHASE = 24;
-static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = {
-    0, 0, 1, 1, 2, 4, 0,
-       0, 1, 1, 2, 4, 0,
-};
-
-// ============================================================
-// Tuning constants
-// ============================================================
-static constexpr int TEMPO_BONUS                    = 8;
-static constexpr int BISHOP_PAIR_BONUS              = 30;
-
-// Pawn structure
-static constexpr int PASSED_PAWN_BONUS_MG[8]       = { 0,  5, 10, 20, 30, 50,  70, 0 };
-static constexpr int PASSED_PAWN_BONUS_EG[8]       = { 0, 10, 20, 40, 60, 90, 120, 0 };
-static constexpr int CANDIDATE_PAWN_BONUS_MG        = 8;
-static constexpr int CANDIDATE_PAWN_BONUS_EG        = 12;
-static constexpr int CONNECTED_PASSED_BONUS_MG      = 10;
-static constexpr int CONNECTED_PASSED_BONUS_EG      = 18;
-static constexpr int OUTSIDE_PASSED_BONUS_MG        = 8;
-static constexpr int OUTSIDE_PASSED_BONUS_EG        = 20;
-static constexpr int ISOLATED_PAWN_PENALTY_MG       = -12;
-static constexpr int ISOLATED_PAWN_PENALTY_EG       = -8;
-static constexpr int DOUBLED_PAWN_PENALTY_MG        = -14;
-static constexpr int DOUBLED_PAWN_PENALTY_EG        = -10;
-static constexpr int BACKWARD_PAWN_PENALTY_MG       = -10;
-static constexpr int BACKWARD_PAWN_PENALTY_EG       = -6;
-static constexpr int SUPPORTED_PAWN_BONUS_MG        = 6;
-static constexpr int WEAK_PAWN_PENALTY_MG           = -8;
-static constexpr int PAWN_ISLAND_PENALTY_MG         = -10;
-static constexpr int PAWN_ISLAND_PENALTY_EG         = -6;
-static constexpr int PAWN_CENTER_BONUS_MG           = 6;
-static constexpr int PAWN_CENTER_BONUS_EG           = 2;
-static constexpr int PAWN_EXT_CENTER_BONUS_MG       = 3;
-static constexpr int PAWN_EXT_CENTER_BONUS_EG       = 1;
-static constexpr int PAWN_STORM_BASE                = 4;
-static constexpr int PAWN_STORM_RANK_MULT           = 2;
-
-// King safety
-// Pawn shield / open-file penalties (applied flat in MG only)
-static constexpr int KING_SHIELD_MISSING_PENALTY    = -14;
-static constexpr int KING_OPEN_FILE_PENALTY         = -10;
-static constexpr int KING_SEMI_OPEN_FILE_PENALTY    = -6;
-static constexpr int KING_ESCAPE_BONUS              = 4;
-// Nonlinear danger: per-piece weight contributions to king_zone danger score.
-// danger_penalty = min(danger² / DIVISOR, MAX)  — scaled by phase.
-static constexpr int KING_ATTACKER_WEIGHT[7]        = { 0, 0, 2, 2, 3, 5, 0 };
-// Bonus added to the danger accumulator for N distinct attacker types in the zone.
-static constexpr int KING_ATTACK_COUNT_BONUS[8]     = { 0, 0, 3, 8, 16, 26, 38, 52 };
-static constexpr int KING_DANGER_DIVISOR            = 8;
-static constexpr int KING_DANGER_MAX                = 500;  // cap before phase scaling
-
-// Mobility
-static constexpr int MOBILITY_KNIGHT_MG             = 4;
-static constexpr int MOBILITY_BISHOP_MG             = 4;
-static constexpr int MOBILITY_ROOK_MG               = 2;
-static constexpr int MOBILITY_QUEEN_MG              = 1;
-static constexpr int MOBILITY_KNIGHT_EG             = 3;
-static constexpr int MOBILITY_BISHOP_EG             = 4;
-static constexpr int MOBILITY_ROOK_EG               = 3;
-static constexpr int MOBILITY_QUEEN_EG              = 2;
-
-// File/diagonal openness multipliers (percent-based, applied to mobility)
-static constexpr int OPEN_FILE_MULTIPLIER           = 120;
-static constexpr int SEMI_OPEN_FILE_MULTIPLIER      = 110;
-static constexpr int CLOSED_FILE_MULTIPLIER         = 100;
-static constexpr int BISHOP_OPENNESS_BASE           = 100;
-static constexpr int BISHOP_OPENNESS_MAX_BONUS      = 30;
-static constexpr int BISHOP_OPENNESS_SQUARE_WEIGHT  = 2;
-
-// Territory
-static constexpr int CENTER_BONUS                   = 8;
-static constexpr int EXT_CENTER_BONUS               = 4;
-static constexpr int ENEMY_HALF_BONUS               = 3;
-static constexpr int SEVENTH_RANK_BONUS_MG          = 20;
-static constexpr int SEVENTH_RANK_BONUS_EG          = 30;
-
-// Coordination
-static constexpr int DEFENDED_PIECE_BONUS           = 4;
-static constexpr int SHARED_TARGET_BONUS            = 8;
-static constexpr int BATTERY_ROOK_QUEEN_BONUS       = 12;
-static constexpr int BATTERY_BISHOP_QUEEN_BONUS     = 8;
-static constexpr int SUPPORT_CHAIN_BONUS            = 6;
-
-// Tactical pressure
-static constexpr int UNDEFENDED_ATTACK_BONUS        = 6;
-static constexpr int PIN_BONUS                      = 15;
-static constexpr int OVERLOADED_DEFENDER_BONUS      = 10;
-static constexpr int UNRECIPROCATED_PRESSURE_BONUS  = 2;
-static constexpr int UNDEFENDED_VALUE_DIVISOR       = 40;
-
-// Threats (new)
-// Bonus when one of our pawns attacks an enemy piece of the given type.
-static constexpr int THREAT_BY_PAWN_MG[7]          = { 0,  0, 60, 65, 75, 80,  0 };
-static constexpr int THREAT_BY_PAWN_EG[7]          = { 0,  0, 40, 45, 55, 60,  0 };
-// Bonus when one of our minors (N or B) attacks an enemy piece of higher value.
-static constexpr int THREAT_BY_MINOR_MG[7]         = { 0,  0,  0,  0, 30, 45,  0 };
-static constexpr int THREAT_BY_MINOR_EG[7]         = { 0,  0,  0,  0, 20, 30,  0 };
-// Bonus when one of our rooks attacks an enemy queen.
-static constexpr int THREAT_BY_ROOK_MG              = 25;
-static constexpr int THREAT_BY_ROOK_EG              = 18;
-// Penalty for each of our pieces that is attacked and completely undefended.
-// Base penalty plus a fraction of the piece's own value.
-static constexpr int HANGING_BASE_PENALTY_MG        = 20;
-static constexpr int HANGING_BASE_PENALTY_EG        = 12;
-static constexpr int HANGING_VALUE_DIVISOR          = 40;  // adds val/40 to mg penalty
-
-// Outposts
-static constexpr int KNIGHT_OUTPOST_MG              = 20;
-static constexpr int KNIGHT_OUTPOST_EG              = 14;
-static constexpr int BISHOP_OUTPOST_MG              = 12;
-static constexpr int BISHOP_OUTPOST_EG              = 8;
-static constexpr int ROOK_OUTPOST_MG                = 14;
-static constexpr int ROOK_OUTPOST_EG                = 12;
-static constexpr int QUEEN_OUTPOST_MG               = 10;
-static constexpr int QUEEN_OUTPOST_EG               = 8;
-
-// Development / initiative
-static constexpr int DEVELOPMENT_BONUS              = 5;
-static constexpr int CASTLED_BONUS                  = 12;
-
-// ============================================================
 // Utilities
 // ============================================================
 static inline int popcount(U64 bb) { return __builtin_popcountll(bb); }
@@ -401,12 +141,6 @@ static int phase_score(const Board &b) {
         + popcount(b.bit_boards[WQ] | b.bit_boards[BQ]) * 4;
     return std::min(phase, MAX_PHASE);
 }
-
-// ============================================================
-// PST lookup — direct pointer dereference, no branch.
-// ============================================================
-static inline int pst_mg(PieceType pt, int sq) { return PST_MG_TABLE[pt][sq]; }
-static inline int pst_eg(PieceType pt, int sq) { return PST_EG_TABLE[pt][sq]; }
 
 // ============================================================
 // Score accumulation helper
@@ -1156,3 +890,4 @@ int evaluate(const Board &b) {
     int score = (mg * phase + eg * (MAX_PHASE - phase)) / MAX_PHASE;
     return b.side_to_move == WHITE ? score : -score;
 }
+} // namespace ShayBot

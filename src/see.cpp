@@ -2,12 +2,13 @@
 #include "attacks.h"
 #include "make.h"
 #include "move.h"
+#include "tune.h"
 
 #include <algorithm>
 
 namespace ShayBot {
 
-static constexpr int SEE_VALUES[7] = { 0, 100, 320, 330, 500, 900, 20000 };
+using namespace Tune;
 
 static inline U64 attackers_to(const Board &b, Square sq, U64 occ) {
     int f = get_file(sq), r = get_rank(sq);
@@ -36,7 +37,7 @@ static inline U64 attackers_to(const Board &b, Square sq, U64 occ) {
 }
 
 static inline int ptype_value(Piece p) {
-    return SEE_VALUES[get_type(p)];
+    return PTYPE_VALUE[get_type(p)];
 }
 
 static inline U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 atks, Piece &piece_out) {

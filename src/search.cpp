@@ -1,4 +1,5 @@
 #include "search.h"
+#include "tune.h"
 
 #include "attacks.h"
 #include "evaluate.h"
@@ -18,40 +19,12 @@
 #include <cmath>
 #include <memory>
 
-static constexpr int MAX_PLY    = 128;
-static constexpr int INF        = 1000000;
-static constexpr int MATE_SCORE = 900000;
-static constexpr int PTYPE_VALUES[7] = {0, 100, 320, 330, 500, 900, 0};
+namespace ShayBot {
 
 std::atomic<bool> g_stop = false;
 std::atomic<U64> node_count = 0;
 
-// Centralized Tuning Parameters for SPSA/Texel
-namespace Tune {
-    // Singular Extensions
-    int se_min_depth       = 8;
-    int se_depth_margin    = 3;
-    int se_margin          = 20;
-    int se_reduction_denom = 2; // e.g. se_depth = (depth - 1) / denom
-
-    // Continuation Histories & Updates
-    int history_max          = 16384;
-    int history_bonus_mult   = 300;
-    int history_bonus_sub    = 200;
-    int history_bonus_limit  = 1500;
-
-    int main_history_weight  = 100;
-    int cmh_weight           = 100;
-    int fmh_weight           = 100;
-
-    // Pruning Margins
-    int rfp_margin_mult      = 120;
-    int fp_base              = 150;
-    int fp_mult              = 150;
-    int lmp_base             = 3;
-    int lmp_mult             = 2;
-    int see_pruning_margin   = -100;
-}
+using namespace Tune;
 
 // Precomputed LMR table
 static int LMR_TABLE[64][256];
@@ -633,7 +606,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             if (legal_root_count == 0) {
                 Square ksq = king_square(b, b.side_to_move);
                 bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
-                return {MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, 0};
+                return {MOVE_NONE, MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, 0};
             }
 
             if (best_score_this_depth <= window_alpha && window_alpha > -INF) {
@@ -699,5 +672,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         if (g_stop) break;
     }
 
-    return {final_best_move, final_best_score, completed_depth, node_count};
+    return {final_best_move, MOVE_NONE, final_best_score, completed_depth, static_cast<U64>(node_count.load())};
 }
+
+} // namespace ShayBot
