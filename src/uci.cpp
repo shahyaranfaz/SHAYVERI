@@ -163,7 +163,7 @@ int main() {
                     int book_eval_cp = static_cast<int>(entry->evaluation * 100.0f);
                     if (b.side_to_move == BLACK) book_eval_cp = -book_eval_cp;
 
-                    std::cout << "info depth 24 score cp " << book_eval_cp
+                    std::cout << "info depth 8 score cp " << book_eval_cp
                               << " pv " << entry->move << " (book)\n";
                     std::cout << "bestmove " << entry->move << "\n";
                     std::cout.flush();

@@ -67,8 +67,8 @@ Opening:
   - Opening book from 2600+ games in TWIC ✅
 
 Endgame:
-  - Syzygy tablebases (perfect play with ≤7 pieces)
-  - Basic KPK/KQK/KRK patterns as fallback if no tablebases
+  - Syzygy tablebases for 4 or fewer pieces
+  - Syzygy tablebase support for 5 to 7 pieces
 
 UCI Protocol:
   - uci, isready, ucinewgame, position, go, stop, quit ✅
