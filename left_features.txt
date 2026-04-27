@@ -4,17 +4,11 @@ Endgame:
 
 UCI Protocol:
   - Add options:
-    * Ponder
-    * MultiPV
-    * Minimum Thinking Time
     * nodestime
+    * movestogo
 
     * UCI_LimitStrength
     * UCI_Elo
-    * UCI_ShowWDL
-    * UCI_AnalyseMode
-    * UCI_chess960
-    * UCI_opponent
 
     * SyzygyPath
     * Syzygy50MoveRule
@@ -29,10 +23,10 @@ UCI Protocol:
     * BestBookMove
     * BookPath
 
-  - show pondermove, ponderhit, tb
+  - show tb
 
 Infrastructure:
   - Major, rigorous testing suite
 
-Auto-tuning:
+ Auto-tuning:
   - TBD
