@@ -124,5 +124,8 @@ Infrastructure:
   - Lazy SMP ✅
   - Dynamic Time Management ✅
 
- Auto-tuning:
+Auto-tuning:
+  - Texel and SPSA Tuning
+
+NNUE:
   - TBD

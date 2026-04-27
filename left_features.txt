@@ -28,5 +28,8 @@ UCI Protocol:
 Infrastructure:
   - Major, rigorous testing suite
 
- Auto-tuning:
+Auto-tuning:
+  - Texel and SPSA Tuning
+
+NNUE:
   - TBD
