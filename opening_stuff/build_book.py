@@ -23,32 +23,28 @@ except ImportError:
     _has_pandas = False
 
 # --- CONFIGURATION ---
-STOCKFISH_PATH = "stockfish"
-BOOK_DEPTH = 18
+STOCKFISH_PATH = os.getenv("STOCKFISH_PATH", "stockfish")
+BOOK_DEPTH = int(os.getenv("BOOK_DEPTH", "18"))
 
-CACHE_FILE = "eval_cache.json"
-SAVE_INTERVAL = 500
+CACHE_FILE = os.getenv("CACHE_FILE", "eval_cache.json")
+SAVE_INTERVAL = int(os.getenv("SAVE_INTERVAL", "500"))
 
-# Keep workers at physical cores-ish by default; override via env if you want.
-# 13700KS: 8P+8E. Stockfish depth 18 with 1 thread/engine tends to like fewer
-# workers than logical cores; try 16 first, then tune.
-MAX_WORKERS = int(os.getenv("BOOK_WORKERS", str(os.cpu_count() or 16)))
+# 13700KS: start with 16; try 12..24 depending on thermals/OS responsiveness.
+MAX_WORKERS = int(os.getenv("BOOK_WORKERS", "16"))
 
-# Per-worker hash for Stockfish. Total RAM = workers * hash.
+# Total RAM used by SF hash ~= MAX_WORKERS * STOCKFISH_HASH_MB
 STOCKFISH_HASH_MB = int(os.getenv("SF_HASH_MB", "256"))
 
 # Bound number of in-flight futures to keep RAM flat.
 MAX_LIVE_FUTURES = int(os.getenv("MAX_LIVE_FUTURES", str(MAX_WORKERS * 4)))
 
-# Must be produced by your C++ dumper compiled from the same build/toolchain.
-ZOBRIST_KEYS_FILE = "zobrist_keys.json"
+ZOBRIST_KEYS_FILE = os.getenv("ZOBRIST_KEYS_FILE", "zobrist_keys.json")
 
-# CSV input
-CSV_FILE = "table.csv"
-MAX_PLIES_PER_ROW = 30
+CSV_FILE = os.getenv("CSV_FILE", "table.csv")
+MAX_PLIES_PER_ROW = int(os.getenv("MAX_PLIES_PER_ROW", "30"))
 
 # Book filtering
-MIN_TOTAL_PLAYS = 5  # don't emit entries with <5 total occurrences
+MIN_TOTAL_PLAYS = int(os.getenv("MIN_TOTAL_PLAYS", "5"))
 
 
 # ---------------- ZOBRIST (EXACT MATCH VIA C++ DUMP) ----------------
@@ -61,7 +57,7 @@ def load_zobrist_keys(path: str):
     if not os.path.exists(path):
         raise FileNotFoundError(
             f"{path} not found.\n"
-            f"Run your C++ dumper (dump_keys) to generate {path} first."
+            f"Generate it with your C++ dump_keys tool first."
         )
 
     with open(path, "rb") as f:
@@ -85,18 +81,12 @@ def load_zobrist_keys(path: str):
 
 
 def compute_zobrist_from_cpp_dump(board: chess.Board, pieces, sides, castlings, en_passants) -> int:
-    """
-    Mirrors src/zobrist.cpp exactly:
-
-      - pieces indexed by C++ Piece enum:
-        0 NONE, 1..6 WP..WK, 7..12 BP..BK
-      - side XOR if black to move
-      - castlings[bits 0..15]
-      - en_passants[file] if ep exists
-    """
+    """Mirrors src/zobrist.cpp exactly."""
     h = 0
 
     for sq, p in board.piece_map().items():
+        # C++ Piece enum indexing:
+        # WP..WK = 1..6, BP..BK = 7..12
         p_idx = p.piece_type + (0 if p.color == chess.WHITE else 6)
         h ^= pieces[p_idx][sq]
 
@@ -122,10 +112,7 @@ worker_engine = None
 def init_worker():
     global worker_engine
     worker_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    worker_engine.configure({
-        "Hash": STOCKFISH_HASH_MB,
-        "Threads": 1,
-    })
+    worker_engine.configure({"Hash": STOCKFISH_HASH_MB, "Threads": 1})
 
 def analyze_position(args):
     """Returns (zobrist_key_str, eval_float)."""
@@ -144,17 +131,19 @@ def analyze_position(args):
 # --- BACKGROUND CACHE SAVER ---
 _save_lock = threading.Lock()
 
+def _atomic_write_bytes(path: str, data: bytes):
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as f:
+        f.write(data)
+    os.replace(tmp, path)
+
 def _save_cache_thread(cache_snapshot, path):
     with _save_lock:
-        tmp = path + ".tmp"
-        with open(tmp, "wb") as f:
-            f.write(_json_dumps_bytes(cache_snapshot))
-        os.replace(tmp, path)
+        _atomic_write_bytes(path, _json_dumps_bytes(cache_snapshot))
 
 def save_cache_async(cache: dict, path: str):
     snapshot = dict(cache)
-    t = threading.Thread(target=_save_cache_thread, args=(snapshot, path), daemon=True)
-    t.start()
+    threading.Thread(target=_save_cache_thread, args=(snapshot, path), daemon=True).start()
 
 
 def read_rows():
@@ -166,14 +155,10 @@ def read_rows():
         return list(csv.DictReader(f))
 
 
-def build_book(rows, pieces, sides, castlings, en_passants):
+def build_book_uci(rows, pieces, sides, castlings, en_passants):
     """
     Build book keyed by engine Zobrist key directly.
-
-    This avoids:
-      - a second "fen -> key" pass
-      - re-parsing FEN into boards just to hash
-      - long FEN strings as dict keys
+    Moves are UCI like 'e2e4' (fast).
     """
     book = defaultdict(lambda: {"fen": "", "moves": defaultdict(int)})
 
@@ -182,19 +167,19 @@ def build_book(rows, pieces, sides, castlings, en_passants):
         moves = str(row["Moves"]).split()[:MAX_PLIES_PER_ROW]
         played = int(row["Played"])
 
-        for m_str in moves:
+        for uci in moves:
+            # record current position before applying this ply
             key_str = str(compute_zobrist_from_cpp_dump(board, pieces, sides, castlings, en_passants))
 
-            # Save one representative FEN per key (for Stockfish analysis)
             if not book[key_str]["fen"]:
                 book[key_str]["fen"] = board.fen()
 
             try:
-                mv = board.push_san(m_str)  # if your CSV is UCI, change to push_uci for big speedup
+                board.push_uci(uci)
             except Exception:
                 break
 
-            book[key_str]["moves"][mv.uci()] += played
+            book[key_str]["moves"][uci] += played
 
     return book
 
@@ -212,8 +197,8 @@ if __name__ == "__main__":
     rows = read_rows()
     print(f"Rows: {len(rows)}")
 
-    print("Building book...")
-    book = build_book(rows, pieces, sides, castlings, en_passants)
+    print("Building book (UCI moves)...")
+    book = build_book_uci(rows, pieces, sides, castlings, en_passants)
 
     to_analyze = [(key, data["fen"]) for key, data in book.items() if data["fen"] and key not in eval_cache]
     total_to_do = len(to_analyze)
@@ -221,7 +206,7 @@ if __name__ == "__main__":
 
     if to_analyze:
         print(f"Starting parallel analysis with {MAX_WORKERS} workers "
-              f"(SF Hash {STOCKFISH_HASH_MB} MB each, in-flight futures cap {MAX_LIVE_FUTURES})...")
+              f"(depth {BOOK_DEPTH}, SF Hash {STOCKFISH_HASH_MB} MB each, futures cap {MAX_LIVE_FUTURES})...")
 
         with ProcessPoolExecutor(max_workers=MAX_WORKERS, initializer=init_worker) as executor:
             pending = set()
@@ -254,11 +239,7 @@ if __name__ == "__main__":
                         print(f"  {completed}/{total_to_do} ({pct:.1f}%) — saving cache async...")
                         save_cache_async(eval_cache, CACHE_FILE)
 
-        # final save
-        tmp = CACHE_FILE + ".tmp"
-        with open(tmp, "wb") as f:
-            f.write(_json_dumps_bytes(eval_cache))
-        os.replace(tmp, CACHE_FILE)
+        _atomic_write_bytes(CACHE_FILE, _json_dumps_bytes(eval_cache))
         print("Cache saved.")
 
     print("Generating header...")
