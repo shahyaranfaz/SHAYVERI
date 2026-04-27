@@ -83,22 +83,39 @@ UCI Protocol:
   - show mate in X ✅
   - bench command ✅
   - Add options:
+UCI Protocol:
+  - Add options:
     * Hash
+    * Clear Hash
     * Threads
+
     * Ponder
     * MultiPV
-    * Clear Hash
     * Move Overhead
+    * Minimum Thinking Time
+    * nodestime
+
     * UCI_LimitStrength
     * UCI_Elo
-    * EvalFile
-    * SyzygyPath
     * UCI_ShowWDL
+    * UCI_AnalyseMode
+    * UCI_chess960
+    * UCI_opponent
+
+
+    * SyzygyPath
+    * Syzygy50MoveRule
+    * SyzygyProbeLimit
+    * SyzygyProbeDepth
+
+    * Use NNUE
+    * EvalFile
+
     * Contempt
     * OwnBook
-    * UCI_AnalyseMode
-    * SyzygyProbeDepth
-    * Syzygy50MoveRule
+    * BestBookMove
+    * BookPath
+
   - show pondermove, ponderhit, tb
 
 Infrastructure:
