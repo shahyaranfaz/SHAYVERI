@@ -4,13 +4,8 @@ Endgame:
 
 UCI Protocol:
   - Add options:
-    * Hash
-    * Clear Hash
-    * Threads
-
     * Ponder
     * MultiPV
-    * Move Overhead
     * Minimum Thinking Time
     * nodestime
 
@@ -20,7 +15,6 @@ UCI Protocol:
     * UCI_AnalyseMode
     * UCI_chess960
     * UCI_opponent
-
 
     * SyzygyPath
     * Syzygy50MoveRule
@@ -39,8 +33,6 @@ UCI Protocol:
 
 Infrastructure:
   - Major, rigorous testing suite
-  - Lazy SMP
-  - Dynamic Time Management
 
  Auto-tuning:
   - TBD

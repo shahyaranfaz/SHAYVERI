@@ -83,15 +83,13 @@ UCI Protocol:
   - show mate in X ✅
   - bench command ✅
   - Add options:
-UCI Protocol:
-  - Add options:
-    * Hash
-    * Clear Hash
-    * Threads
+    * Hash ✅
+    * Clear Hash ✅
+    * Threads ✅
 
     * Ponder
     * MultiPV
-    * Move Overhead
+    * Move Overhead ✅
     * Minimum Thinking Time
     * nodestime
 
@@ -122,8 +120,8 @@ Infrastructure:
   - Zobrist hashing ✅
   - Pext bitboards ✅
   - Major, rigorous testing suite
-  - Lazy SMP
-  - Dynamic Time Management
+  - Lazy SMP ✅
+  - Dynamic Time Management ✅
 
  Auto-tuning:
   - TBD

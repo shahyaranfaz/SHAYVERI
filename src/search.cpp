@@ -24,7 +24,7 @@ static constexpr int MATE_SCORE = 900000;
 static constexpr int PTYPE_VALUES[7] = {0, 100, 320, 330, 500, 900, 0};
 
 std::atomic<bool> g_stop = false;
-static U64 node_count = 0;
+std::atomic<U64> node_count = 0;
 
 // Centralized Tuning Parameters for SPSA/Texel
 namespace Tune {
@@ -526,9 +526,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     return alpha;
 }
 
-SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len, const std::vector<Move> &search_moves) {
-    node_count = 0;
-    g_stop     = false;
+SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len,
+                    const std::vector<Move> &search_moves, IterCallback on_iter,
+                    bool silent) {
 
     auto H_ptr = std::make_unique<SearchHeuristics>();
     SearchHeuristics &H = *H_ptr;
@@ -683,13 +683,20 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             score_str = "cp " + std::to_string(final_best_score);
         }
 
-        std::cout << "info depth " << depth
-                  << " score " << score_str
-                  << " time " << ms
-                  << " nodes " << node_count
-                  << " nps " << nps
-                  << " pv " << pv_line << "\n";
-        std::cout.flush();
+        if (!silent) {
+            std::cout << "info depth " << depth
+                      << " score " << score_str
+                      << " time " << ms
+                      << " nodes " << node_count
+                      << " nps " << nps
+                      << " pv " << pv_line << "\n";
+            std::cout.flush();
+
+            if (on_iter && !g_stop)
+                on_iter(depth, final_best_move, final_best_score, node_count, ms);
+        }
+
+        if (g_stop) break;
     }
 
     return {final_best_move, final_best_score, completed_depth, node_count};

@@ -14,7 +14,8 @@ SRC := \
 	src/uci.cpp \
 	src/zobrist.cpp \
 	src/tt.cpp \
-	src/see.cpp
+	src/see.cpp \
+	src/time_manager.cpp
 
 BIN := shaybot
 BIN_WIN := shaybot.exe

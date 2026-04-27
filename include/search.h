@@ -5,9 +5,13 @@
 #include "move.h"
 
 #include <atomic>
+#include <functional>
 #include <vector>
 
 extern std::atomic<bool> g_stop;
+extern std::atomic<U64> node_count;
+
+using IterCallback = std::function<void(int, Move, int, U64, int64_t)>;
 
 struct SearchResult {
     Move best_move = MOVE_NONE;
@@ -20,6 +24,8 @@ std::string move_to_uci(Move m);
 
 Move uci_to_move(Board& b, const std::string& uci);
 
-SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len, const std::vector<Move>& search_moves);
+SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len,
+                    const std::vector<Move> &search_moves,
+                    IterCallback on_iter = nullptr, bool silent = false);
 
 #endif
