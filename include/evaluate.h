@@ -3,8 +3,12 @@
 
 #include "board.h"
 
-// Returns score in centipawns relative to side to move
-// Positive = side to move is better
+namespace ShayBot {
+
+// Returns score in centipawns relative to the side to move.
+// Positive means the side to move is better.
 int evaluate(const Board &b);
 
-#endif
+} // namespace ShayBot
+
+#endif // EVALUATE_H

@@ -1,6 +1,10 @@
 #ifndef OPENING_BOOK_H
 #define OPENING_BOOK_H
-#include <cstdint>
+
+#include "types.h"
+
+namespace ShayBot {
+
 
 struct BookEntry { U64 key; char move[6]; float evaluation; };
 
@@ -78178,4 +78182,7 @@ static constexpr BookEntry OPENING_BOOK[] = {
 };
 
 static constexpr int OPENING_BOOK_SIZE = 78170;
-#endif
+
+} // namespace ShayBot
+
+#endif // OPENING_BOOK_H

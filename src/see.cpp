@@ -1,48 +1,38 @@
 #include "see.h"
-
 #include "attacks.h"
 #include "make.h"
 #include "move.h"
 
 #include <algorithm>
 
-// values by PieceType index (NONE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING)
-static constexpr int SEE_VALUES[7] = {0, 100, 320, 330, 500, 900, 20000};
+namespace ShayBot {
 
-static inline U64 attackers_to(const Board& b, Square sq, U64 occ) {
+static constexpr int SEE_VALUES[7] = { 0, 100, 320, 330, 500, 900, 20000 };
+
+static inline U64 attackers_to(const Board &b, Square sq, U64 occ) {
     int f = get_file(sq), r = get_rank(sq);
 
-    U64 pawns = 0;
+    U64 wp_mask = 0, bp_mask = 0;
     if (r > 0) {
-        if (f > 0) pawns |= bb_square(make_square(File(f - 1), Rank(r - 1)));
-        if (f < 7) pawns |= bb_square(make_square(File(f + 1), Rank(r - 1)));
+        if (f > 0) wp_mask |= bb_square(make_square(File(f-1), Rank(r-1)));
+        if (f < 7) wp_mask |= bb_square(make_square(File(f+1), Rank(r-1)));
     }
-    U64 wp_atk = pawns & b.bit_boards[WP];
-
-    pawns = 0;
     if (r < 7) {
-        if (f > 0) pawns |= bb_square(make_square(File(f - 1), Rank(r + 1)));
-        if (f < 7) pawns |= bb_square(make_square(File(f + 1), Rank(r + 1)));
+        if (f > 0) bp_mask |= bb_square(make_square(File(f-1), Rank(r+1)));
+        if (f < 7) bp_mask |= bb_square(make_square(File(f+1), Rank(r+1)));
     }
 
-    U64 bp_atk = pawns & b.bit_boards[BP];
     U64 n_atk = knight_attacks(sq);
     U64 k_atk = king_attacks(sq);
     U64 b_atk = bishop_attacks(sq, occ);
     U64 r_atk = rook_attacks(sq, occ);
 
-    U64 attacks = 0;
-    attacks |= wp_atk | bp_atk;
+    U64 attacks = (wp_mask & b.bit_boards[WP]) | (bp_mask & b.bit_boards[BP]);
     attacks |= n_atk & (b.bit_boards[WN] | b.bit_boards[BN]);
     attacks |= k_atk & (b.bit_boards[WK] | b.bit_boards[BK]);
     attacks |= b_atk & (b.bit_boards[WB] | b.bit_boards[BB] | b.bit_boards[WQ] | b.bit_boards[BQ]);
     attacks |= r_atk & (b.bit_boards[WR] | b.bit_boards[BR] | b.bit_boards[WQ] | b.bit_boards[BQ]);
-
     return attacks & occ;
-}
-
-static inline Piece piece_on_square(const Board& b, Square sq) {
-    return b.get_piece(sq);
 }
 
 static inline int ptype_value(Piece p) {
@@ -50,29 +40,27 @@ static inline int ptype_value(Piece p) {
 }
 
 static inline U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 atks, Piece &piece_out) {
-    auto pick_from_bb = [&](U64 bb, Piece p) -> U64 {
+    auto pick = [&](U64 bb, Piece p) -> U64 {
         if (!bb) return 0;
-        Square s = __builtin_ctzll(bb);
         piece_out = p;
-        return bb_square(s);
+        return bb_square(__builtin_ctzll(bb));
     };
 
     if (side == WHITE) {
-        if (U64 bb = atks & b.bit_boards[WP]) return pick_from_bb(bb, WP);
-        if (U64 bb = atks & b.bit_boards[WN]) return pick_from_bb(bb, WN);
-        if (U64 bb = atks & b.bit_boards[WB]) return pick_from_bb(bb, WB);
-        if (U64 bb = atks & b.bit_boards[WR]) return pick_from_bb(bb, WR);
-        if (U64 bb = atks & b.bit_boards[WQ]) return pick_from_bb(bb, WQ);
-        if (U64 bb = atks & b.bit_boards[WK]) return pick_from_bb(bb, WK);
+        if (U64 bb = atks & b.bit_boards[WP]) return pick(bb, WP);
+        if (U64 bb = atks & b.bit_boards[WN]) return pick(bb, WN);
+        if (U64 bb = atks & b.bit_boards[WB]) return pick(bb, WB);
+        if (U64 bb = atks & b.bit_boards[WR]) return pick(bb, WR);
+        if (U64 bb = atks & b.bit_boards[WQ]) return pick(bb, WQ);
+        if (U64 bb = atks & b.bit_boards[WK]) return pick(bb, WK);
     } else {
-        if (U64 bb = atks & b.bit_boards[BP]) return pick_from_bb(bb, BP);
-        if (U64 bb = atks & b.bit_boards[BN]) return pick_from_bb(bb, BN);
-        if (U64 bb = atks & b.bit_boards[BB]) return pick_from_bb(bb, BB);
-        if (U64 bb = atks & b.bit_boards[BR]) return pick_from_bb(bb, BR);
-        if (U64 bb = atks & b.bit_boards[BQ]) return pick_from_bb(bb, BQ);
-        if (U64 bb = atks & b.bit_boards[BK]) return pick_from_bb(bb, BK);
+        if (U64 bb = atks & b.bit_boards[BP]) return pick(bb, BP);
+        if (U64 bb = atks & b.bit_boards[BN]) return pick(bb, BN);
+        if (U64 bb = atks & b.bit_boards[BB]) return pick(bb, BB);
+        if (U64 bb = atks & b.bit_boards[BR]) return pick(bb, BR);
+        if (U64 bb = atks & b.bit_boards[BQ]) return pick(bb, BQ);
+        if (U64 bb = atks & b.bit_boards[BK]) return pick(bb, BK);
     }
-
     piece_out = NONE_PIECE;
     return 0;
 }
@@ -81,32 +69,30 @@ int see(const Board &b, Move m) {
     Square from = move_from(m);
     Square to   = move_to(m);
 
-    Piece attacker_orig = piece_on_square(b, from);
+    Piece attacker_orig = b.get_piece(from);
     if (attacker_orig == NONE_PIECE) return 0;
 
-    // Determine the captured piece, accounting for en passant
-    Piece captured_orig = piece_on_square(b, to);
-    Square ep_cap_sq = SQ_NONE;
+    Piece  captured_orig = b.get_piece(to);
+    Square ep_cap_sq     = SQ_NONE;
     if (captured_orig == NONE_PIECE) {
-        // Could be en passant
         Piece p = attacker_orig;
         if ((p == WP || p == BP) && to == b.en_passant) {
-            ep_cap_sq = (get_colour(p) == WHITE) ? to - 8 : to + 8;
-            captured_orig = piece_on_square(b, ep_cap_sq);
+            ep_cap_sq    = (get_colour(p) == WHITE) ? to - 8 : to + 8;
+            captured_orig = b.get_piece(ep_cap_sq);
         }
-        if (captured_orig == NONE_PIECE) return 0; // genuinely quiet
+        if (captured_orig == NONE_PIECE) return 0;
     }
 
     int gain[32];
     int depth = 0;
     U64 occ = b.occupied;
     occ &= ~bb_square(from);
-    if (ep_cap_sq != SQ_NONE) occ &= ~bb_square(ep_cap_sq); // remove ep pawn
+    if (ep_cap_sq != SQ_NONE) occ &= ~bb_square(ep_cap_sq);
     gain[depth] = ptype_value(captured_orig);
 
-    Colour side = flip(get_colour(attacker_orig));
-    occ |= bb_square(to);
-    U64 atks = attackers_to(b, to, occ) & ~bb_square(to);
+    Colour side         = flip(get_colour(attacker_orig));
+    occ                |= bb_square(to);
+    U64   atks          = attackers_to(b, to, occ) & ~bb_square(to);
     Piece last_attacker = attacker_orig;
     depth++;
 
@@ -118,18 +104,18 @@ int see(const Board &b, Move m) {
         gain[depth] = ptype_value(last_attacker) - gain[depth - 1];
         if (std::max(-gain[depth - 1], gain[depth]) < 0) break;
 
-        occ &= ~pick;
-
-        atks &= ~pick;
-        atks = attackers_to(b, to, occ) & ~bb_square(to);
-
+        occ  &= ~pick;
+        atks  = attackers_to(b, to, occ) & ~bb_square(to);
         last_attacker = picked_piece;
-        side = flip(side);
+        side  = flip(side);
         depth++;
         if (depth >= 31) break;
     }
 
     while (--depth)
         gain[depth - 1] = -std::max(-gain[depth - 1], gain[depth]);
+
     return gain[0];
 }
+
+} // namespace ShayBot

@@ -1,23 +1,23 @@
 #include "board.h"
-
 #include "zobrist.h"
 
 #include <cctype>
 #include <sstream>
 #include <string>
 
+namespace ShayBot {
+
 bool set_from_fen(Board &b, const std::string &fen) {
     b.clear();
 
     std::istringstream iss(fen);
-    std::string board, side_to_move, castle, en_passant, half, full;
-    if (!(iss >> board >> side_to_move >> castle >> en_passant >> half >> full))
+    std::string board_str, side_str, castle, ep_str, half, full;
+    if (!(iss >> board_str >> side_str >> castle >> ep_str >> half >> full))
         return false;
 
-    // board
-    int r = 7;
-    int f = 0;
-    for (char c : board) {
+    // Board placement
+    int r = 7, f = 0;
+    for (char c : board_str) {
         if (c == '/') { r--; f = 0; continue; }
         if (std::isdigit((unsigned char)c)) { f += (c - '0'); continue; }
 
@@ -30,43 +30,34 @@ bool set_from_fen(Board &b, const std::string &fen) {
         f++;
     }
 
-    // side to move
-    if (side_to_move == "w")
-        b.side_to_move = WHITE;
-    else if (side_to_move == "b")
-        b.side_to_move = BLACK;
-    else
-        return false;
+    // Side to move
+    if (side_str == "w")       b.side_to_move = WHITE;
+    else if (side_str == "b")  b.side_to_move = BLACK;
+    else                       return false;
 
-    // castling
+    // Castling rights
     b.castling = 0;
     if (castle != "-") {
         for (char c : castle) {
-            if (c == 'K')
-                b.castling |= WHITE_KINGSIDE;
-            else if (c == 'Q')
-                b.castling |= WHITE_QUEENSIDE;
-            else if (c == 'k')
-                b.castling |= BLACK_KINGSIDE;
-            else if (c == 'q')
-                b.castling |= BLACK_QUEENSIDE;
-            else
-                return false;
+            if      (c == 'K') b.castling |= WHITE_KINGSIDE;
+            else if (c == 'Q') b.castling |= WHITE_QUEENSIDE;
+            else if (c == 'k') b.castling |= BLACK_KINGSIDE;
+            else if (c == 'q') b.castling |= BLACK_QUEENSIDE;
+            else               return false;
         }
     }
 
-    // en passant
-    if (en_passant == "-")
+    // En-passant square
+    if (ep_str == "-") {
         b.en_passant = SQ_NONE;
-    else {
-        if (en_passant.size() != 2) return false;
-        char file_c = en_passant[0], rank_c = en_passant[1];
-        if (file_c < 'a' || file_c > 'h') return false;
-        if (rank_c < '1' || rank_c > '8') return false;
-        b.en_passant = make_square(File(file_c - 'a'), Rank(rank_c - '1'));
+    } else {
+        if (ep_str.size() != 2) return false;
+        char fc = ep_str[0], rc = ep_str[1];
+        if (fc < 'a' || fc > 'h' || rc < '1' || rc > '8') return false;
+        b.en_passant = make_square(File(fc - 'a'), Rank(rc - '1'));
     }
 
-    // half and full move
+    // Half-move clock and full-move number
     try {
         b.half_move = std::stoi(half);
         b.full_move = std::stoi(full);
@@ -76,3 +67,5 @@ bool set_from_fen(Board &b, const std::string &fen) {
     b.hash = Zobrist::compute(b);
     return true;
 }
+
+} // namespace ShayBot

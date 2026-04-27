@@ -4,14 +4,17 @@
 #include "board.h"
 #include "move.h"
 
+namespace ShayBot {
+
 struct MoveList {
     Move moves[256];
-    int count = 0;
+    int  count = 0;
     void add(Move m) { moves[count++] = m; }
 };
 
 MoveList generate_pseudo_legal_moves(Board &b);
+MoveList generate_legal_moves(Board &b);
 
-MoveList generate_legal_moves(Board &b); // filters via make_move legality
+} // namespace ShayBot
 
-#endif
+#endif // MOVE_GEN_H

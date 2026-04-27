@@ -1,15 +1,17 @@
 #include "evaluate.h"
 #include "attacks.h"
 #include "types.h"
+#include "tune.h"
 
 #include <array>
 #include <algorithm>
 
-namespace {
+namespace ShayBot {
 
-// ============================================================
-// Piece values
-// ============================================================
+using namespace Tune;
+
+namespace {
+// Piece values (used for material + PST evaluation)
 static constexpr int PIECE_VALUES_MG[PIECE_COUNT] = {
     0, 100, 320, 330, 500, 900, 0,
        100, 320, 330, 500, 900, 0,
@@ -18,7 +20,6 @@ static constexpr int PIECE_VALUES_EG[PIECE_COUNT] = {
     0, 100, 310, 330, 510, 900, 0,
        100, 310, 330, 510, 900, 0,
 };
-// Indexed by PieceType — used for threat comparison and hanging-piece weighting.
 static constexpr int PTYPE_VALUE[7] = { 0, 100, 320, 330, 500, 900, 20000 };
 
 // ============================================================
