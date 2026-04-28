@@ -9,7 +9,7 @@ lower signal frequency.
 
 python3.10 lakas.py \
   --match-manager-path cutechess-cli \
-  --concurrency 18 \
+  --concurrency 20 \
   --optimizer oneplusone \
   --output-data-file batch1c.dat \
   --input-data-file  batch1c.dat \

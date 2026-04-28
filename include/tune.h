@@ -356,12 +356,12 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    50,   250,  "134"}},
     {"FP_Base",             {&fp_base,                TuningOption::INT,    100,   500,  "292"}},
     {"FP_Mult",            {&fp_mult,                 TuningOption::INT,   100,   800,  "400"}},
-    {"LMP_Base",           {&lmp_base,                TuningOption::INT,     2,    10,   "8"}},
+    {"LMP_Base",           {&lmp_base,                TuningOption::INT,     2,    10,   "6"}},
     {"LMP_Mult",           {&lmp_mult,                TuningOption::INT,     1,     6,   "1"}},
     {"SEE_Pruning_Margin", {&see_pruning_margin,      TuningOption::INT,  -300,   -50,  "-202"}},
     {"SE_Min_Depth",       {&se_min_depth,            TuningOption::INT,     6,    18,  "14"}},
     {"SE_Depth_Margin",    {&se_depth_margin,         TuningOption::INT,     1,     6,   "2"}},
-    {"SE_Margin",          {&se_margin,               TuningOption::INT,    20,   70,  "60"}},
+    {"SE_Margin",          {&se_margin,               TuningOption::INT,    20,    80,  "60"}},
     {"SE_Reduction_Denom", {&se_reduction_denom,      TuningOption::INT,     1,     4,   "3"}},
 
     // ── History ──────────────────────────────────────────────────
