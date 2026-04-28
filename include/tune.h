@@ -31,9 +31,9 @@ static constexpr int MATE_SCORE = 900000;
 inline int ASP_DELTA = 32;
 
 // Singular extensions
-inline int se_min_depth       = 14;
+inline int se_min_depth       = 9;
 inline int se_depth_margin    = 2;
-inline int se_margin          = 60;
+inline int se_margin          = 54;
 inline int se_reduction_denom = 3;
 
 // History gravity / bonus
@@ -48,12 +48,12 @@ inline int cmh_weight          = 100;
 inline int fmh_weight          = 100;
 
 // Pruning margins
-inline int rfp_margin_mult    = 134;
-inline int fp_base            = 292;
-inline int fp_mult            = 150;
-inline int lmp_base           = 8;
+inline int rfp_margin_mult    = 82;
+inline int fp_base            = 197;
+inline int fp_mult            = 657;
+inline int lmp_base           = 3;
 inline int lmp_mult           = 1;
-inline int see_pruning_margin = -202;
+inline int see_pruning_margin = -277;
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
 inline double lmr_base  = 1.236;
@@ -353,15 +353,15 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,     5,    100,  "32"}},
     {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,    0,    "1.236"}},
     {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,    0,    "1.796"}},
-    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    50,   250,  "134"}},
-    {"FP_Base",             {&fp_base,                TuningOption::INT,    100,   500,  "292"}},
-    {"FP_Mult",            {&fp_mult,                 TuningOption::INT,   100,   800,  "400"}},
-    {"LMP_Base",           {&lmp_base,                TuningOption::INT,     2,    10,   "6"}},
+    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    50,   250,  "82"}},
+    {"FP_Base",             {&fp_base,                TuningOption::INT,    100,   500,  "197"}},
+    {"FP_Mult",            {&fp_mult,                 TuningOption::INT,   100,   800,  "657"}},
+    {"LMP_Base",           {&lmp_base,                TuningOption::INT,     2,    10,   "3"}},
     {"LMP_Mult",           {&lmp_mult,                TuningOption::INT,     1,     6,   "1"}},
-    {"SEE_Pruning_Margin", {&see_pruning_margin,      TuningOption::INT,  -300,   -50,  "-202"}},
-    {"SE_Min_Depth",       {&se_min_depth,            TuningOption::INT,     6,    18,  "14"}},
+    {"SEE_Pruning_Margin", {&see_pruning_margin,      TuningOption::INT,  -300,   -50,  "-277"}},
+    {"SE_Min_Depth",       {&se_min_depth,            TuningOption::INT,     6,    18,  "9"}},
     {"SE_Depth_Margin",    {&se_depth_margin,         TuningOption::INT,     1,     6,   "2"}},
-    {"SE_Margin",          {&se_margin,               TuningOption::INT,    20,    80,  "60"}},
+    {"SE_Margin",          {&se_margin,               TuningOption::INT,    20,    80,  "54"}},
     {"SE_Reduction_Denom", {&se_reduction_denom,      TuningOption::INT,     1,     4,   "3"}},
 
     // ── History ──────────────────────────────────────────────────
