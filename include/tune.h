@@ -28,13 +28,13 @@ static constexpr int INF        = 1000000;
 static constexpr int MATE_SCORE = 900000;
 
 // Aspiration window initial delta
-inline int ASP_DELTA = 25;
+inline int ASP_DELTA = 32;
 
 // Singular extensions
-inline int se_min_depth       = 8;
-inline int se_depth_margin    = 3;
-inline int se_margin          = 20;
-inline int se_reduction_denom = 2;
+inline int se_min_depth       = 14;
+inline int se_depth_margin    = 2;
+inline int se_margin          = 60;
+inline int se_reduction_denom = 3;
 
 // History gravity / bonus
 inline int history_max         = 16384;
@@ -48,16 +48,16 @@ inline int cmh_weight          = 100;
 inline int fmh_weight          = 100;
 
 // Pruning margins
-inline int rfp_margin_mult    = 120;
-inline int fp_base            = 150;
+inline int rfp_margin_mult    = 134;
+inline int fp_base            = 292;
 inline int fp_mult            = 150;
-inline int lmp_base           = 3;
-inline int lmp_mult           = 2;
-inline int see_pruning_margin = -100;
+inline int lmp_base           = 8;
+inline int lmp_mult           = 1;
+inline int see_pruning_margin = -202;
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
-inline double lmr_base  = 0.75;
-inline double lmr_scale = 2.25;
+inline double lmr_base  = 1.236;
+inline double lmr_scale = 1.796;
 
 // ================================================================
 // Piece values
@@ -350,19 +350,19 @@ struct TuningOption {
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
     // ── Core search ──────────────────────────────────────────────
-    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    5,    100,  "25"}},
-    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE, 0,    0,    "0.75"}},
-    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE, 0,    0,    "2.25"}},
-    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    30,   300,  "120"}},
-    {"FP_Base",             {&fp_base,                TuningOption::INT,    30,   400,  "150"}},
-    {"FP_Mult",             {&fp_mult,                TuningOption::INT,    30,   400,  "150"}},
-    {"LMP_Base",            {&lmp_base,               TuningOption::INT,    1,    8,    "3"}},
-    {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,    1,    6,    "2"}},
-    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,    -300, 0,    "-100"}},
-    {"SE_Min_Depth",        {&se_min_depth,           TuningOption::INT,    4,    14,   "8"}},
-    {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,    1,    6,    "3"}},
-    {"SE_Margin",           {&se_margin,              TuningOption::INT,    5,    60,   "20"}},
-    {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,    1,    4,    "2"}},
+    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    5,    100,  "32"}},
+    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE, 0,    0,    "1.236"}},
+    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE, 0,    0,    "1.796"}},
+    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    30,   300,  "134"}},
+    {"FP_Base",             {&fp_base,                TuningOption::INT,    30,   400,  "292"}},
+    {"FP_Mult",            {&fp_mult,         TuningOption::INT,   200,   700,  "400"}},
+    {"LMP_Base",           {&lmp_base,        TuningOption::INT,     4,    16,   "8"}},
+    {"LMP_Mult",           {&lmp_mult,        TuningOption::INT,     1,     6,   "1"}},
+    {"SEE_Pruning_Margin", {&see_pruning_margin, TuningOption::INT, -300,   0,  "-202"}},
+    {"SE_Min_Depth",       {&se_min_depth,    TuningOption::INT,     8,    20,  "14"}},
+    {"SE_Depth_Margin",    {&se_depth_margin, TuningOption::INT,     1,     6,   "2"}},
+    {"SE_Margin",          {&se_margin,       TuningOption::INT,    30,   120,  "60"}},
+    {"SE_Reduction_Denom", {&se_reduction_denom, TuningOption::INT,  1,     4,   "3"}},
 
     // ── History ──────────────────────────────────────────────────
     {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,    100,  600,  "300"}},
