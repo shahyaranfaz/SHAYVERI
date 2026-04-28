@@ -9,22 +9,25 @@ lower signal frequency.
 
 python3.10 lakas.py \
   --match-manager-path cutechess-cli \
-  --concurrency 12 \
+  --concurrency 18 \
   --optimizer oneplusone \
-  --output-data-file batch1b_bounds.dat \
-  --input-data-file  batch1b_bounds.dat \
-  --optimizer-log-file batch1b_bounds_plot.txt \
+  --output-data-file batch1c.dat \
+  --input-data-file  batch1c.dat \
+  --optimizer-log-file batch1c_plot.txt \
   --base-time-sec 5 \
   --inc-time-sec 0.05 \
-  --budget 40 \
+  --budget 70 \
   --games-per-budget 200 \
   --engine ./shaybot \
   --opening-file ./start_opening/ogpt_chess_startpos.epd \
   --input-param "{\
-'FP_Mult':      {'init': 400, 'lower': 200, 'upper': 700}, \
-'LMP_Base':     {'init':   8, 'lower':   4, 'upper':  16}, \
-'SE_Min_Depth': {'init':  14, 'lower':   8, 'upper':  20}, \
-'SE_Margin':    {'init':  60, 'lower':  30, 'upper': 120} \
+'FP_Mult':           {'init': 400,  'lower': 100,  'upper': 800}, \
+'FP_Base':           {'init': 292,  'lower': 100,  'upper': 500}, \
+'LMP_Base':          {'init': 6,    'lower': 2,    'upper': 10}, \
+'SE_Min_Depth':      {'init': 14,   'lower': 6,    'upper': 18}, \
+'SE_Margin':         {'init': 45,   'lower': 20,   'upper': 80}, \
+'RFP_Margin':        {'init': 134,  'lower': 50,   'upper': 250}, \
+'SEE_Pruning_Margin':{'init': -202, 'lower': -300, 'upper': -50} \
 }"
 
 ================================================================
@@ -65,15 +68,15 @@ BATCH 1 – CORE SEARCH  (tune this first, highest leverage)
 [x] ASP_Delta           | Initial:   25 | Min:    5 | Max:  100 | Tuned:  32   |
 [x] LMR_Base            | Initial: 0.75 | Min:  --- | Max:  --- | Tuned: 1.236 | type string; c=0.05
 [x] LMR_Scale           | Initial: 2.25 | Min:  --- | Max:  --- | Tuned: 1.796 | type string; c=0.05
-[x] RFP_Margin          | Initial:  120 | Min:   30 | Max:  300 | Tuned: 134   |
-[x] FP_Base             | Initial:  150 | Min:   30 | Max:  400 | Tuned: 292   |
-[~] FP_Mult             | Initial:  150 | Min:  200 | Max:  700 | Tuned: ___   | re-run (hit bound 400)
-[~] LMP_Base            | Initial:    3 | Min:    4 | Max:   16 | Tuned: ___   | re-run (hit bound 8)
+[~] RFP_Margin          | Initial:  120 | Min:   50 | Max:  250 | Tuned: ___   | rerun 2x
+[~] FP_Base             | Initial:  150 | Min:  100 | Max:  500 | Tuned: ___   | rerun 2x
+[~] FP_Mult             | Initial:  150 | Min:  100 | Max:  800 | Tuned: ___   | re-run 3x
+[~] LMP_Base            | Initial:    3 | Min:    2 | Max:   10 | Tuned: ___   | re-run 3x
 [x] LMP_Mult            | Initial:    2 | Min:    1 | Max:    6 | Tuned:   1   |
-[x] SEE_Pruning_Margin  | Initial: -100 | Min: -300 | Max:    0 | Tuned: -202  |
-[~] SE_Min_Depth        | Initial:    8 | Min:    8 | Max:   20 | Tuned: ___   | re-run (hit bound 14)
+[~] SEE_Pruning_Margin  | Initial: -100 | Min: -300 | Max:  -50 | Tuned: ___   | re-run 2x
+[~] SE_Min_Depth        | Initial:    8 | Min:    6 | Max:   18 | Tuned: ___   | re-run 3x
 [x] SE_Depth_Margin     | Initial:    3 | Min:    1 | Max:    6 | Tuned:   2   |
-[~] SE_Margin           | Initial:   20 | Min:   30 | Max:  120 | Tuned: ___   | re-run (hit bound 60)
+[~] SE_Margin           | Initial:   20 | Min:   20 | Max:   70 | Tuned: ___   | re-run 3x
 [x] SE_Reduction_Denom  | Initial:    2 | Min:    1 | Max:    4 | Tuned:   3   |
 
 ================================================================
