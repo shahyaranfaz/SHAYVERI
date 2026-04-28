@@ -103,8 +103,19 @@ int main() {
                 << "option name UCI_ShowWDL type check default false\n"
                 << "option name UCI_AnalyseMode type check default false\n"
                 << "option name UCI_Chess960 type check default false\n"
-                << "option name UCI_Opponent type string default \"\"\n"
-                << "uciok\n";
+                << "option name UCI_Opponent type string default \"\"\n";
+
+            for (auto const& [name, opt] : ShayBot::Tune::tuning_registry) {
+                if (opt.type == ShayBot::Tune::TuningOption::INT)
+                    std::cout << "option name " << name
+                              << " type spin default " << opt.default_str
+                              << " min " << opt.min_val
+                              << " max " << opt.max_val << "\n";
+                else
+                    std::cout << "option name " << name
+                              << " type string default " << opt.default_str << "\n";
+                 }
+            std::cout << "uciok\n";
         }
 
         // --------------------------------------------------------
@@ -146,6 +157,8 @@ int main() {
                 g_chess960 = (value == "true");
             else if (opt_name == "UCI_Opponent")
                 g_opponent = value;
+            else
+                Tune::handle_setoption(opt_name, value);
         }
 
         // --------------------------------------------------------

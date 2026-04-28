@@ -1,0 +1,308 @@
+Specifically: search params (LMR, RFP, FP) interact tightly with each other,
+so tune them first in isolation. Once your eval params shift in later batches,
+your LMR base may no longer be optimal — that's why Batch 1 gets a re-run after
+all eval batches complete. The final pass then locks everything in together. You
+never tune each param exactly once; the convergence is iterative. For Lakas
+specifically, ~3k–5k games per batch is usually enough to see convergence on the
+high-impact params; the king safety and threat arrays need more like 6k–8k due to
+lower signal frequency.
+
+python lakas.py \
+  --match-manager-path ./cutechess-cli \
+  --concurrency 4 \
+  --optimizer oneplusone \
+  --output-data-file batch1_search.dat \
+  --input-data-file  batch1_search.dat \
+  --optimizer-log-file batch1_search_plot.txt \
+  --base-time-sec 5 \
+  --inc-time-sec 0.05 \
+  --budget 60 \
+  --games-per-budget 200 \
+  --engine ./ShayBot \
+  --opening-file ./start_opening/ogpt_chess_startpos.epd \
+  --input-param "{\
+'ASP_Delta':          {'init':   25, 'lower':    5, 'upper':  100}, \
+'LMR_Base':           {'init': 0.75, 'lower':  0.3, 'upper':  1.5}, \
+'LMR_Scale':          {'init': 2.25, 'lower':  1.0, 'upper':  4.0}, \
+'RFP_Margin':         {'init':  120, 'lower':   30, 'upper':  300}, \
+'FP_Base':            {'init':  150, 'lower':   30, 'upper':  400}, \
+'FP_Mult':            {'init':  150, 'lower':   30, 'upper':  400}, \
+'LMP_Base':           {'init':    3, 'lower':    1, 'upper':    8}, \
+'LMP_Mult':           {'init':    2, 'lower':    1, 'upper':    6}, \
+'SEE_Pruning_Margin': {'init': -100, 'lower': -300, 'upper':    0}, \
+'SE_Min_Depth':       {'init':    8, 'lower':    4, 'upper':   14}, \
+'SE_Depth_Margin':    {'init':    3, 'lower':    1, 'upper':    6}, \
+'SE_Margin':          {'init':   20, 'lower':    5, 'upper':   60}, \
+'SE_Reduction_Denom': {'init':    2, 'lower':    1, 'upper':    4} \
+}"
+
+================================================================
+  SHAYBOT  –  SPSA TUNING TRACKER  (Lakas)
+================================================================
+Format per row:
+  [STATUS] Name | Initial | Min | Max | Tuned | Notes
+
+STATUS codes:
+  [ ] not started
+  [~] in progress
+  [x] converged / done
+  [!] re-run queued (value still drifting)
+  [-] skipped / not tuning this pass
+
+Strategy overview
+-----------------
+DO NOT tune all params at once – SPSA gradient estimates get swamped
+by noise from too many simultaneous perturbations.
+
+Recommended flow:
+  1. Run each batch below (~3 000–6 000 games per batch).
+  2. After all batches complete, re-run Batch 1 (search params can
+     drift once eval params shift).
+  3. Run a FINAL PASS with every param that moved > 5% from its
+     initial value, all together (~10 000+ games).
+  4. PSTs are NOT tuned here – use a Texel / gradient tuner instead.
+
+Lakas C values (perturbation size) guidance:
+  Integer params  : c = max(1, round(0.002 * |initial|))
+  LMR_Base/Scale  : c = 0.05
+
+================================================================
+BATCH 1 – CORE SEARCH  (tune this first, highest leverage)
+================================================================
+13 parameters
+
+[ ] ASP_Delta           | Initial:   25 | Min:    5 | Max:  100 | Tuned: ___ |
+[ ] LMR_Base            | Initial: 0.75 | Min:  --- | Max:  --- | Tuned: ___ | type string; c=0.05
+[ ] LMR_Scale           | Initial: 2.25 | Min:  --- | Max:  --- | Tuned: ___ | type string; c=0.05
+[ ] RFP_Margin          | Initial:  120 | Min:   30 | Max:  300 | Tuned: ___ |
+[ ] FP_Base             | Initial:  150 | Min:   30 | Max:  400 | Tuned: ___ |
+[ ] FP_Mult             | Initial:  150 | Min:   30 | Max:  400 | Tuned: ___ |
+[ ] LMP_Base            | Initial:    3 | Min:    1 | Max:    8 | Tuned: ___ |
+[ ] LMP_Mult            | Initial:    2 | Min:    1 | Max:    6 | Tuned: ___ |
+[ ] SEE_Pruning_Margin  | Initial: -100 | Min: -300 | Max:    0 | Tuned: ___ |
+[ ] SE_Min_Depth        | Initial:    8 | Min:    4 | Max:   14 | Tuned: ___ |
+[ ] SE_Depth_Margin     | Initial:    3 | Min:    1 | Max:    6 | Tuned: ___ |
+[ ] SE_Margin           | Initial:   20 | Min:    5 | Max:   60 | Tuned: ___ |
+[ ] SE_Reduction_Denom  | Initial:    2 | Min:    1 | Max:    4 | Tuned: ___ |
+
+================================================================
+BATCH 2 – HISTORY / MOVE ORDERING
+================================================================
+6 parameters
+
+[ ] History_Bonus_Mult  | Initial:  300 | Min:  100 | Max:  600 | Tuned: ___ |
+[ ] History_Bonus_Sub   | Initial:  200 | Min:   50 | Max:  400 | Tuned: ___ |
+[ ] History_Bonus_Limit | Initial: 1500 | Min:  500 | Max: 3000 | Tuned: ___ |
+[ ] Main_History_Weight | Initial:  100 | Min:   50 | Max:  200 | Tuned: ___ |
+[ ] CMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned: ___ |
+[ ] FMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned: ___ |
+
+================================================================
+BATCH 3 – CORE EVAL  (misc + mobility)
+================================================================
+12 parameters
+
+[ ] Tempo_Bonus         | Initial:    8 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] Bishop_Pair_Bonus   | Initial:   30 | Min:   10 | Max:   60 | Tuned: ___ |
+[ ] Development_Bonus   | Initial:    5 | Min:    0 | Max:   20 | Tuned: ___ |
+[ ] Castled_Bonus       | Initial:   12 | Min:    0 | Max:   40 | Tuned: ___ |
+[ ] Mobility_Knight_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: ___ |
+[ ] Mobility_Bishop_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: ___ |
+[ ] Mobility_Rook_MG    | Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
+[ ] Mobility_Queen_MG   | Initial:    1 | Min:    0 | Max:    6 | Tuned: ___ |
+[ ] Mobility_Knight_EG  | Initial:    3 | Min:    0 | Max:   12 | Tuned: ___ |
+[ ] Mobility_Bishop_EG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: ___ |
+[ ] Mobility_Rook_EG    | Initial:    3 | Min:    0 | Max:   10 | Tuned: ___ |
+[ ] Mobility_Queen_EG   | Initial:    2 | Min:    0 | Max:    6 | Tuned: ___ |
+
+================================================================
+BATCH 4 – PAWN STRUCTURE
+================================================================
+16 parameters
+
+[ ] Isolated_MG         | Initial:  -12 | Min:  -40 | Max:    0 | Tuned: ___ |
+[ ] Isolated_EG         | Initial:   -8 | Min:  -30 | Max:    0 | Tuned: ___ |
+[ ] Doubled_MG          | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: ___ |
+[ ] Doubled_EG          | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
+[ ] Backward_MG         | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
+[ ] Backward_EG         | Initial:   -6 | Min:  -20 | Max:    0 | Tuned: ___ |
+[ ] Supported_Pawn_MG   | Initial:    6 | Min:    0 | Max:   20 | Tuned: ___ |
+[ ] Weak_Pawn_MG        | Initial:   -8 | Min:  -30 | Max:    0 | Tuned: ___ |
+[ ] Pawn_Island_MG      | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
+[ ] Pawn_Island_EG      | Initial:   -6 | Min:  -20 | Max:    0 | Tuned: ___ |
+[ ] Pawn_Center_MG      | Initial:    6 | Min:    0 | Max:   20 | Tuned: ___ |
+[ ] Pawn_Center_EG      | Initial:    2 | Min:    0 | Max:   10 | Tuned: ___ |
+[ ] Pawn_ExtCenter_MG   | Initial:    3 | Min:    0 | Max:   12 | Tuned: ___ |
+[ ] Pawn_ExtCenter_EG   | Initial:    1 | Min:    0 | Max:    6 | Tuned: ___ |
+[ ] Pawn_Storm_Base     | Initial:    4 | Min:    0 | Max:   15 | Tuned: ___ |
+[ ] Pawn_Storm_Rank_Mult| Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
+
+================================================================
+BATCH 5 – PASSED PAWNS
+================================================================
+18 parameters
+
+[ ] PassedMG_R1         | Initial:    5 | Min:    0 | Max:   20 | Tuned: ___ |
+[ ] PassedMG_R2         | Initial:   10 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] PassedMG_R3         | Initial:   20 | Min:    0 | Max:   50 | Tuned: ___ |
+[ ] PassedMG_R4         | Initial:   30 | Min:    0 | Max:   80 | Tuned: ___ |
+[ ] PassedMG_R5         | Initial:   50 | Min:    0 | Max:  120 | Tuned: ___ |
+[ ] PassedMG_R6         | Initial:   70 | Min:    0 | Max:  150 | Tuned: ___ |
+[ ] PassedEG_R1         | Initial:   10 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] PassedEG_R2         | Initial:   20 | Min:    0 | Max:   50 | Tuned: ___ |
+[ ] PassedEG_R3         | Initial:   40 | Min:    0 | Max:   80 | Tuned: ___ |
+[ ] PassedEG_R4         | Initial:   60 | Min:    0 | Max:  130 | Tuned: ___ |
+[ ] PassedEG_R5         | Initial:   90 | Min:    0 | Max:  180 | Tuned: ___ |
+[ ] PassedEG_R6         | Initial:  120 | Min:    0 | Max:  220 | Tuned: ___ |
+[ ] Candidate_Pawn_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] Candidate_Pawn_EG   | Initial:   12 | Min:    0 | Max:   40 | Tuned: ___ |
+[ ] Connected_Passed_MG | Initial:   10 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] Connected_Passed_EG | Initial:   18 | Min:    0 | Max:   50 | Tuned: ___ |
+[ ] Outside_Passed_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] Outside_Passed_EG   | Initial:   20 | Min:    0 | Max:   60 | Tuned: ___ |
+
+================================================================
+BATCH 6 – KING SAFETY
+================================================================
+16 parameters
+
+[ ] King_Shield_Penalty    | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: ___ |
+[ ] King_Open_File_Penalty | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
+[ ] King_SemiOpen_Penalty  | Initial:   -6 | Min:  -20 | Max:    0 | Tuned: ___ |
+[ ] King_Escape_Bonus      | Initial:    4 | Min:    0 | Max:   15 | Tuned: ___ |
+[ ] King_Danger_Divisor    | Initial:    8 | Min:    2 | Max:   20 | Tuned: ___ |
+[ ] King_Danger_Max        | Initial:  500 | Min:  100 | Max:  800 | Tuned: ___ |
+[ ] King_Attacker_Knight   | Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
+[ ] King_Attacker_Bishop   | Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
+[ ] King_Attacker_Rook     | Initial:    3 | Min:    0 | Max:   10 | Tuned: ___ |
+[ ] King_Attacker_Queen    | Initial:    5 | Min:    0 | Max:   14 | Tuned: ___ |
+[ ] KingAtk_2              | Initial:    3 | Min:    0 | Max:   15 | Tuned: ___ |
+[ ] KingAtk_3              | Initial:    8 | Min:    0 | Max:   25 | Tuned: ___ |
+[ ] KingAtk_4              | Initial:   16 | Min:    0 | Max:   50 | Tuned: ___ |
+[ ] KingAtk_5              | Initial:   26 | Min:    0 | Max:   80 | Tuned: ___ |
+[ ] KingAtk_6              | Initial:   38 | Min:    0 | Max:  100 | Tuned: ___ |
+[ ] KingAtk_7              | Initial:   52 | Min:    0 | Max:  130 | Tuned: ___ |
+
+================================================================
+BATCH 7 – THREATS, HANGING, OUTPOSTS, COORDINATION
+================================================================
+37 parameters
+
+-- Tactical pressure --
+[ ] Undefended_Attack_Bonus   | Initial:   6 | Min:    0 | Max:   20 | Tuned: ___ |
+[ ] Pin_Bonus                 | Initial:  15 | Min:    0 | Max:   40 | Tuned: ___ |
+[ ] Overloaded_Defender_Bonus | Initial:  10 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] Unrec_Pressure_Bonus      | Initial:   2 | Min:    0 | Max:   10 | Tuned: ___ |
+[ ] Undefended_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: ___ |
+
+-- Threats (pawn) --
+[ ] Threat_Pawn_Knight_MG  | Initial:  60 | Min:   20 | Max:  120 | Tuned: ___ |
+[ ] Threat_Pawn_Bishop_MG  | Initial:  65 | Min:   20 | Max:  120 | Tuned: ___ |
+[ ] Threat_Pawn_Rook_MG    | Initial:  75 | Min:   25 | Max:  130 | Tuned: ___ |
+[ ] Threat_Pawn_Queen_MG   | Initial:  80 | Min:   25 | Max:  150 | Tuned: ___ |
+[ ] Threat_Pawn_Knight_EG  | Initial:  40 | Min:   10 | Max:   90 | Tuned: ___ |
+[ ] Threat_Pawn_Bishop_EG  | Initial:  45 | Min:   10 | Max:   90 | Tuned: ___ |
+[ ] Threat_Pawn_Rook_EG    | Initial:  55 | Min:   15 | Max:  100 | Tuned: ___ |
+[ ] Threat_Pawn_Queen_EG   | Initial:  60 | Min:   15 | Max:  110 | Tuned: ___ |
+
+-- Threats (minor) --
+[ ] Threat_Minor_Rook_MG   | Initial:  30 | Min:    0 | Max:   80 | Tuned: ___ |
+[ ] Threat_Minor_Queen_MG  | Initial:  45 | Min:    0 | Max:  100 | Tuned: ___ |
+[ ] Threat_Minor_Rook_EG   | Initial:  20 | Min:    0 | Max:   60 | Tuned: ___ |
+[ ] Threat_Minor_Queen_EG  | Initial:  30 | Min:    0 | Max:   80 | Tuned: ___ |
+
+-- Threats (rook) --
+[ ] Threat_Rook_MG         | Initial:  25 | Min:    0 | Max:   70 | Tuned: ___ |
+[ ] Threat_Rook_EG         | Initial:  18 | Min:    0 | Max:   50 | Tuned: ___ |
+
+-- Hanging --
+[ ] Hanging_Penalty_MG     | Initial:  20 | Min:    0 | Max:   60 | Tuned: ___ |
+[ ] Hanging_Penalty_EG     | Initial:  12 | Min:    0 | Max:   40 | Tuned: ___ |
+[ ] Hanging_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: ___ |
+
+-- Outposts --
+[ ] Knight_Outpost_MG      | Initial:  20 | Min:    0 | Max:   50 | Tuned: ___ |
+[ ] Knight_Outpost_EG      | Initial:  14 | Min:    0 | Max:   35 | Tuned: ___ |
+[ ] Bishop_Outpost_MG      | Initial:  12 | Min:    0 | Max:   35 | Tuned: ___ |
+[ ] Bishop_Outpost_EG      | Initial:   8 | Min:    0 | Max:   25 | Tuned: ___ |
+[ ] Rook_Outpost_MG        | Initial:  14 | Min:    0 | Max:   35 | Tuned: ___ |
+[ ] Rook_Outpost_EG        | Initial:  12 | Min:    0 | Max:   30 | Tuned: ___ |
+[ ] Queen_Outpost_MG       | Initial:  10 | Min:    0 | Max:   25 | Tuned: ___ |
+[ ] Queen_Outpost_EG       | Initial:   8 | Min:    0 | Max:   20 | Tuned: ___ |
+
+-- Territory & coordination --
+[ ] Center_Bonus           | Initial:   8 | Min:    0 | Max:   20 | Tuned: ___ |
+[ ] Ext_Center_Bonus       | Initial:   4 | Min:    0 | Max:   12 | Tuned: ___ |
+[ ] Enemy_Half_Bonus       | Initial:   3 | Min:    0 | Max:   10 | Tuned: ___ |
+[ ] Seventh_Rank_MG        | Initial:  20 | Min:    5 | Max:   50 | Tuned: ___ |
+[ ] Seventh_Rank_EG        | Initial:  30 | Min:    5 | Max:   70 | Tuned: ___ |
+[ ] Defended_Piece_Bonus   | Initial:   4 | Min:    0 | Max:   15 | Tuned: ___ |
+[ ] Shared_Target_Bonus    | Initial:   8 | Min:    0 | Max:   25 | Tuned: ___ |
+[ ] Battery_Rook_Queen     | Initial:  12 | Min:    0 | Max:   35 | Tuned: ___ |
+[ ] Battery_Bishop_Queen   | Initial:   8 | Min:    0 | Max:   25 | Tuned: ___ |
+[ ] Support_Chain_Bonus    | Initial:   6 | Min:    0 | Max:   20 | Tuned: ___ |
+[ ] Open_File_Mult         | Initial: 120 | Min:  100 | Max:  150 | Tuned: ___ |
+[ ] Semi_Open_File_Mult    | Initial: 110 | Min:  100 | Max:  130 | Tuned: ___ |
+[ ] Bishop_Openness_Max    | Initial:  30 | Min:    0 | Max:   60 | Tuned: ___ |
+[ ] Bishop_Openness_SqWt   | Initial:   2 | Min:    0 | Max:    6 | Tuned: ___ |
+
+================================================================
+BATCH 1 RE-RUN  (after all eval batches are done)
+================================================================
+Re-run Batch 1 params – eval changes can shift optimal search values.
+Copy tuned values from Batch 1 above as new "Initial" before re-running.
+
+[ ] ASP_Delta           | Initial: ___ (from B1) | Tuned: ___ |
+[ ] LMR_Base            | Initial: ___ (from B1) | Tuned: ___ |
+[ ] LMR_Scale           | Initial: ___ (from B1) | Tuned: ___ |
+[ ] RFP_Margin          | Initial: ___ (from B1) | Tuned: ___ |
+[ ] FP_Base             | Initial: ___ (from B1) | Tuned: ___ |
+[ ] FP_Mult             | Initial: ___ (from B1) | Tuned: ___ |
+[ ] SEE_Pruning_Margin  | Initial: ___ (from B1) | Tuned: ___ |
+[ ] SE_Margin           | Initial: ___ (from B1) | Tuned: ___ |
+
+================================================================
+FINAL PASS  (all params that shifted > 5% from their original value)
+================================================================
+Run ~10 000–15 000 games.
+Fill in names + starting values here once all batches complete:
+
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+[ ] __________________ | Initial: ___ | Tuned: ___ |
+
+================================================================
+DO NOT TUNE VIA SPSA  (structural / discontinuous)
+================================================================
+  history_max         – hard ceiling, not a gradient param
+  MAX_PLY             – array-size constant
+  INF / MATE_SCORE    – sentinel values
+  MAX_PHASE           – structural
+  PHASE_WEIGHTS       – structural
+  PTYPE_VALUE[6]      – king = 20000 (SEE sentinel, must stay large)
+  PTYPE_VALUES[6]     – king = 0 (MVV-LVA sentinel)
+  CLOSED_FILE_MULT    – baseline = 100, the others are relative to it
+  PST_* (all)         – 64 values each; use Texel / gradient tuner
+
+================================================================
+PARAM TOTALS
+================================================================
+  Batch 1  –  13 params  (core search)
+  Batch 2  –   6 params  (history)
+  Batch 3  –  12 params  (misc eval + mobility)
+  Batch 4  –  16 params  (pawn structure)
+  Batch 5  –  18 params  (passed pawns)
+  Batch 6  –  16 params  (king safety)
+  Batch 7  –  44 params  (threats / outposts / coordination)
+  B1 re-run–   8 params
+  Final    –  variable
+  ─────────────────
+  TOTAL    ~ 125 params  (not counting PSTs)
+================================================================
