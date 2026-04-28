@@ -250,7 +250,7 @@ int main() {
                         }
 
                         std::cout << "info depth 8 score cp " << book_eval_cp
-                                  << " pv " << entry->move << " (book)\n"
+                                  << " pv " << entry->move << " \n"
                                   << "bestmove " << entry->move
                                   << ponder_str << "\n";
                         std::cout.flush();

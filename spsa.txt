@@ -7,9 +7,9 @@ specifically, ~3k–5k games per batch is usually enough to see convergence on t
 high-impact params; the king safety and threat arrays need more like 6k–8k due to
 lower signal frequency.
 
-python lakas.py \
-  --match-manager-path ./cutechess-cli \
-  --concurrency 4 \
+python3.10 lakas.py \
+  --match-manager-path cutechess-cli \
+  --concurrency 12 \
   --optimizer oneplusone \
   --output-data-file batch1_search.dat \
   --input-data-file  batch1_search.dat \
@@ -18,7 +18,7 @@ python lakas.py \
   --inc-time-sec 0.05 \
   --budget 60 \
   --games-per-budget 200 \
-  --engine ./ShayBot \
+  --engine ./shaybot \
   --opening-file ./start_opening/ogpt_chess_startpos.epd \
   --input-param "{\
 'ASP_Delta':          {'init':   25, 'lower':    5, 'upper':  100}, \
