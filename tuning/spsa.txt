@@ -9,25 +9,24 @@ lower signal frequency.
 
 python3.10 lakas.py \
   --match-manager-path cutechess-cli \
-  --concurrency 20 \
+  --concurrency 23 \
   --optimizer oneplusone \
-  --output-data-file batch1c.dat \
-  --input-data-file  batch1c.dat \
-  --optimizer-log-file batch1c_plot.txt \
+  --output-data-file batch2.dat \
+  --input-data-file  batch2.dat \
+  --optimizer-log-file batch2.txt \
   --base-time-sec 5 \
   --inc-time-sec 0.05 \
-  --budget 70 \
+  --budget 80 \
   --games-per-budget 200 \
   --engine ./shaybot \
   --opening-file ./start_opening/ogpt_chess_startpos.epd \
-  --input-param "{\
-'FP_Mult':           {'init': 400,  'lower': 100,  'upper': 800}, \
-'FP_Base':           {'init': 292,  'lower': 100,  'upper': 500}, \
-'LMP_Base':          {'init': 6,    'lower': 2,    'upper': 10}, \
-'SE_Min_Depth':      {'init': 14,   'lower': 6,    'upper': 18}, \
-'SE_Margin':         {'init': 45,   'lower': 20,   'upper': 80}, \
-'RFP_Margin':        {'init': 134,  'lower': 50,   'upper': 250}, \
-'SEE_Pruning_Margin':{'init': -202, 'lower': -300, 'upper': -50} \
+  --input-param "{ \
+'History_Bonus_Mult':  {'init': 300,  'lower': 100, 'upper': 600}, \
+'History_Bonus_Sub':   {'init': 200,  'lower': 50,  'upper': 400}, \
+'History_Bonus_Limit': {'init': 1500, 'lower': 500, 'upper': 3000}, \
+'Main_History_Weight': {'init': 100,  'lower': 50,  'upper': 200}, \
+'CMH_Weight':          {'init': 100,  'lower': 0,   'upper': 200}, \
+'FMH_Weight':          {'init': 100,  'lower': 0,   'upper': 200} \
 }"
 
 ================================================================
@@ -68,16 +67,16 @@ BATCH 1 – CORE SEARCH  (tune this first, highest leverage)
 [x] ASP_Delta           | Initial:   25 | Min:    5 | Max:  100 | Tuned:  32   |
 [x] LMR_Base            | Initial: 0.75 | Min:  --- | Max:  --- | Tuned: 1.236 | type string; c=0.05
 [x] LMR_Scale           | Initial: 2.25 | Min:  --- | Max:  --- | Tuned: 1.796 | type string; c=0.05
-[~] RFP_Margin          | Initial:  120 | Min:   50 | Max:  250 | Tuned: ___   | rerun 2x
-[~] FP_Base             | Initial:  150 | Min:  100 | Max:  500 | Tuned: ___   | rerun 2x
-[~] FP_Mult             | Initial:  150 | Min:  100 | Max:  800 | Tuned: ___   | re-run 3x
-[~] LMP_Base            | Initial:    3 | Min:    2 | Max:   10 | Tuned: ___   | re-run 3x
-[x] LMP_Mult            | Initial:    2 | Min:    1 | Max:    6 | Tuned:   1   |
-[~] SEE_Pruning_Margin  | Initial: -100 | Min: -300 | Max:  -50 | Tuned: ___   | re-run 2x
-[~] SE_Min_Depth        | Initial:    8 | Min:    6 | Max:   18 | Tuned: ___   | re-run 3x
-[x] SE_Depth_Margin     | Initial:    3 | Min:    1 | Max:    6 | Tuned:   2   |
-[~] SE_Margin           | Initial:   20 | Min:   20 | Max:   70 | Tuned: ___   | re-run 3x
-[x] SE_Reduction_Denom  | Initial:    2 | Min:    1 | Max:    4 | Tuned:   3   |
+[x] RFP_Margin          | Initial:  120 | Min:   50 | Max:  250 | Tuned:    82 | re-run 2x
+[x] FP_Base             | Initial:  150 | Min:  100 | Max:  500 | Tuned:   197 | re-run 2x
+[x] FP_Mult             | Initial:  150 | Min:  100 | Max:  800 | Tuned:   657 | re-run 3x
+[x] LMP_Base            | Initial:    3 | Min:    2 | Max:   10 | Tuned:     3 | re-run 3x
+[x] LMP_Mult            | Initial:    2 | Min:    1 | Max:    6 | Tuned:     1 |
+[x] SEE_Pruning_Margin  | Initial: -100 | Min: -300 | Max:  -50 | Tuned:  -277 | re-run 2x
+[x] SE_Min_Depth        | Initial:    8 | Min:    6 | Max:   18 | Tuned:     9 | re-run 3x
+[x] SE_Depth_Margin     | Initial:    3 | Min:    1 | Max:    6 | Tuned:     2 |
+[x] SE_Margin           | Initial:   20 | Min:   20 | Max:   70 | Tuned:    54 | re-run 3x
+[x] SE_Reduction_Denom  | Initial:    2 | Min:    1 | Max:    4 | Tuned:     3 |
 
 ================================================================
 BATCH 2 – HISTORY / MOVE ORDERING

@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 using SIZE_T = std::size_t;
 

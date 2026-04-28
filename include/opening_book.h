@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 
 struct BookEntry { U64 key; char move[6]; float evaluation; };

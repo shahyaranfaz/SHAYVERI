@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 static const int CASTLING_RIGHTS_MASK[64] = {
     13, 15, 15, 15, 12, 15, 15, 14,

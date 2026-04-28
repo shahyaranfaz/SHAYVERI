@@ -5,7 +5,7 @@
 #include <sstream>
 #include <string>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 bool set_from_fen(Board &b, const std::string &fen) {
     b.clear();

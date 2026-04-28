@@ -7,7 +7,7 @@
 #include <chrono>
 #include <cstdint>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 struct TimeControl {
     int    wtime         = 0;

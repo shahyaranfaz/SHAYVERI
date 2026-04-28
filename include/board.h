@@ -6,7 +6,7 @@
 #include <array>
 #include <string>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 enum Castling : int {
     WHITE_KINGSIDE  = 1 << 0,

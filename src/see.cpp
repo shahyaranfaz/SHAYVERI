@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 using namespace Tune;
 

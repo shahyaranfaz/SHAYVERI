@@ -2,7 +2,7 @@
 
 #include <random>
 
-namespace ShayBot {
+namespace SHAYVERI {
 namespace Zobrist {
 
 U64 pieces[PIECE_COUNT][64];

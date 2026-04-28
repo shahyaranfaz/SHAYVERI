@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 using I8  = std::int8_t;
 using I16 = std::int16_t;

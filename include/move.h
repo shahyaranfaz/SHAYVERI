@@ -8,7 +8,7 @@
 //   bits  6-11 : to square
 //   bits 12-15 : promotion piece type (0=none, 1=N, 2=B, 3=R, 4=Q)
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 using Move = U32;
 

@@ -21,7 +21,7 @@
 #include <thread>
 #include <vector>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 // ----------------------------------------------------------------
 // UCI options (written by setoption, read by go / search)
@@ -65,7 +65,7 @@ static const BookEntry *probe_book(U64 zobrist_key) {
 
 // main() must be at global scope (C++ entry point)
 int main() {
-    using namespace ShayBot;
+    using namespace SHAYVERI;
 
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
@@ -105,8 +105,8 @@ int main() {
                 << "option name UCI_Chess960 type check default false\n"
                 << "option name UCI_Opponent type string default \"\"\n";
 
-            for (auto const& [name, opt] : ShayBot::Tune::tuning_registry) {
-                if (opt.type == ShayBot::Tune::TuningOption::INT)
+            for (auto const& [name, opt] : SHAYVERI::Tune::tuning_registry) {
+                if (opt.type == SHAYVERI::Tune::TuningOption::INT)
                     std::cout << "option name " << name
                               << " type spin default " << opt.default_str
                               << " min " << opt.min_val

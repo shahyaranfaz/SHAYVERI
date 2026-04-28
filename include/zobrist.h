@@ -4,7 +4,7 @@
 #include "board.h"
 #include "types.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 namespace Zobrist {
 
 extern U64 pieces[PIECE_COUNT][64];

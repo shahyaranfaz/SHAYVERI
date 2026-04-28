@@ -19,7 +19,7 @@
 #include <cmath>
 #include <memory>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 std::atomic<bool> g_stop = false;
 std::atomic<U64> node_count = 0;

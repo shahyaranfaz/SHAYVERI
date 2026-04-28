@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 TranspositionTable TT;
 

@@ -3,7 +3,7 @@
 
 #include "board.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 // Returns score in centipawns relative to the side to move.
 // Positive means the side to move is better.

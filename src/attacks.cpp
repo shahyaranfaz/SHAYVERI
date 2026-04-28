@@ -2,7 +2,7 @@
 #include <cassert>
 #include <immintrin.h>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 static bool is_valid_square(int f, int r) {
     return f >= 0 && f < 8 && r >= 0 && r < 8;

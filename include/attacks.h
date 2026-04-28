@@ -3,7 +3,7 @@
 
 #include "board.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 U64    pawn_attacks(Colour c, Square from);
 U64    knight_attacks(Square from);

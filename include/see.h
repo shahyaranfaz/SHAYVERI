@@ -4,7 +4,7 @@
 #include "board.h"
 #include "move.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 int  see(const Board &b, Move m);
 

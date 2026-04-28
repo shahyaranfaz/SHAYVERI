@@ -4,7 +4,7 @@
 #include "board.h"
 #include "move.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 struct MoveList {
     Move moves[256];

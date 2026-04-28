@@ -8,7 +8,7 @@
 #include <functional>
 #include <vector>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 extern std::atomic<bool> g_stop;
 extern std::atomic<U64>  node_count;

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 TimeManager g_time_manager;
 

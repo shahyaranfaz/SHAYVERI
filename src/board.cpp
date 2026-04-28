@@ -1,7 +1,7 @@
 #include "board.h"
 #include "zobrist.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 void Board::clear() {
     bit_boards.fill(0);

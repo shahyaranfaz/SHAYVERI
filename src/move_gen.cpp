@@ -2,7 +2,7 @@
 #include "attacks.h"
 #include "make.h"
 
-namespace ShayBot {
+namespace SHAYVERI {
 
 static void push_moves_from_mask(MoveList &out, Square from, U64 mask) {
     while (mask) {
