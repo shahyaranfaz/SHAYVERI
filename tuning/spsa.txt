@@ -83,12 +83,12 @@ BATCH 2 – HISTORY / MOVE ORDERING
 ================================================================
 6 parameters
 
-[ ] History_Bonus_Mult  | Initial:  300 | Min:  100 | Max:  600 | Tuned: ___ |
-[ ] History_Bonus_Sub   | Initial:  200 | Min:   50 | Max:  400 | Tuned: ___ |
-[ ] History_Bonus_Limit | Initial: 1500 | Min:  500 | Max: 3000 | Tuned: ___ |
-[ ] Main_History_Weight | Initial:  100 | Min:   50 | Max:  200 | Tuned: ___ |
-[ ] CMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned: ___ |
-[ ] FMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned: ___ |
+[x] History_Bonus_Mult  | Initial:  300 | Min:  100 | Max:  600 | Tuned:  488 |
+[x] History_Bonus_Sub   | Initial:  200 | Min:   50 | Max:  400 | Tuned:  170 |
+[x] History_Bonus_Limit | Initial: 1500 | Min:  500 | Max: 3000 | Tuned: 2842 |
+[x] Main_History_Weight | Initial:  100 | Min:   50 | Max:  200 | Tuned:   78 |
+[x] CMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned:   61 |
+[x] FMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned:   33 |
 
 ================================================================
 BATCH 3 – CORE EVAL  (misc + mobility)
