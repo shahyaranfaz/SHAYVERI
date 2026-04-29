@@ -9,30 +9,36 @@ lower signal frequency.
 
 python3.10 lakas.py \
   --match-manager-path cutechess-cli \
-  --concurrency 23 \
+  --concurrency 16 \
   --optimizer oneplusone \
-  --output-data-file batch3_$(hostname).dat \
-  --input-data-file  batch3_$(hostname).dat \
-  --optimizer-log-file batch3_$(hostname).txt \
+  --output-data-file "batch5_$(hostname).dat" \
+  --input-data-file  "batch5_$(hostname).dat" \
+  --optimizer-log-file "batch5_$(hostname).log" \
   --base-time-sec 5 \
   --inc-time-sec 0.05 \
-  --budget 20 \
+  --budget 125 \
   --games-per-budget 200 \
   --engine ./shaybot \
   --opening-file ./start_opening/ogpt_chess_startpos.epd \
   --input-param "{ \
-'Tempo_Bonus':         {'init': 8,  'lower': 0,  'upper': 30}, \
-'Bishop_Pair_Bonus':   {'init': 30, 'lower': 10, 'upper': 60}, \
-'Development_Bonus':   {'init': 5,  'lower': 0,  'upper': 20}, \
-'Castled_Bonus':       {'init': 12, 'lower': 0,  'upper': 40}, \
-'Mobility_Knight_MG':  {'init': 4,  'lower': 0,  'upper': 12}, \
-'Mobility_Bishop_MG':  {'init': 4,  'lower': 0,  'upper': 12}, \
-'Mobility_Rook_MG':    {'init': 2,  'lower': 0,  'upper': 8}, \
-'Mobility_Queen_MG':   {'init': 1,  'lower': 0,  'upper': 6}, \
-'Mobility_Knight_EG':  {'init': 3,  'lower': 0,  'upper': 12}, \
-'Mobility_Bishop_EG':  {'init': 4,  'lower': 0,  'upper': 12}, \
-'Mobility_Rook_EG':    {'init': 3,  'lower': 0,  'upper': 10}, \
-'Mobility_Queen_EG':   {'init': 2,  'lower': 0,  'upper': 6} \
+'PassedMG_R1':           {'init': 5,   'lower': 0, 'upper': 20}, \
+'PassedMG_R2':           {'init': 10,  'lower': 0, 'upper': 30}, \
+'PassedMG_R3':           {'init': 20,  'lower': 0, 'upper': 50}, \
+'PassedMG_R4':           {'init': 30,  'lower': 0, 'upper': 80}, \
+'PassedMG_R5':           {'init': 50,  'lower': 0, 'upper': 120}, \
+'PassedMG_R6':           {'init': 70,  'lower': 0, 'upper': 150}, \
+'PassedEG_R1':           {'init': 10,  'lower': 0, 'upper': 30}, \
+'PassedEG_R2':           {'init': 20,  'lower': 0, 'upper': 50}, \
+'PassedEG_R3':           {'init': 40,  'lower': 0, 'upper': 80}, \
+'PassedEG_R4':           {'init': 60,  'lower': 0, 'upper': 130}, \
+'PassedEG_R5':           {'init': 90,  'lower': 0, 'upper': 180}, \
+'PassedEG_R6':           {'init': 120, 'lower': 0, 'upper': 220}, \
+'Candidate_Pawn_MG':     {'init': 8,   'lower': 0, 'upper': 30}, \
+'Candidate_Pawn_EG':     {'init': 12,  'lower': 0, 'upper': 40}, \
+'Connected_Passed_MG':   {'init': 10,  'lower': 0, 'upper': 30}, \
+'Connected_Passed_EG':   {'init': 18,  'lower': 0, 'upper': 50}, \
+'Outside_Passed_MG':     {'init': 8,   'lower': 0, 'upper': 30}, \
+'Outside_Passed_EG':     {'init': 20,  'lower': 0, 'upper': 60} \
 }"
 
 ================================================================
@@ -119,22 +125,22 @@ BATCH 4 – PAWN STRUCTURE
 ================================================================
 16 parameters
 
-[ ] Isolated_MG         | Initial:  -12 | Min:  -40 | Max:    0 | Tuned: ___ |
-[ ] Isolated_EG         | Initial:   -8 | Min:  -30 | Max:    0 | Tuned: ___ |
-[ ] Doubled_MG          | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: ___ |
-[ ] Doubled_EG          | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
-[ ] Backward_MG         | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
-[ ] Backward_EG         | Initial:   -6 | Min:  -20 | Max:    0 | Tuned: ___ |
-[ ] Supported_Pawn_MG   | Initial:    6 | Min:    0 | Max:   20 | Tuned: ___ |
-[ ] Weak_Pawn_MG        | Initial:   -8 | Min:  -30 | Max:    0 | Tuned: ___ |
-[ ] Pawn_Island_MG      | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
-[ ] Pawn_Island_EG      | Initial:   -6 | Min:  -20 | Max:    0 | Tuned: ___ |
-[ ] Pawn_Center_MG      | Initial:    6 | Min:    0 | Max:   20 | Tuned: ___ |
-[ ] Pawn_Center_EG      | Initial:    2 | Min:    0 | Max:   10 | Tuned: ___ |
-[ ] Pawn_ExtCenter_MG   | Initial:    3 | Min:    0 | Max:   12 | Tuned: ___ |
-[ ] Pawn_ExtCenter_EG   | Initial:    1 | Min:    0 | Max:    6 | Tuned: ___ |
-[ ] Pawn_Storm_Base     | Initial:    4 | Min:    0 | Max:   15 | Tuned: ___ |
-[ ] Pawn_Storm_Rank_Mult| Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
+[x] Isolated_MG         | Initial:  -12 | Min:  -40 | Max:    0 | Tuned:  -2 |
+[x] Isolated_EG         | Initial:   -8 | Min:  -30 | Max:    0 | Tuned:  -2 |
+[x] Doubled_MG          | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: -10 |
+[x] Doubled_EG          | Initial:  -10 | Min:  -30 | Max:    0 | Tuned:  -6 |
+[x] Backward_MG         | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: -13 |
+[x] Backward_EG         | Initial:   -6 | Min:  -20 | Max:    0 | Tuned:  -2 |
+[x] Supported_Pawn_MG   | Initial:    6 | Min:    0 | Max:   20 | Tuned:  15 |
+[x] Weak_Pawn_MG        | Initial:   -8 | Min:  -30 | Max:    0 | Tuned: -18 |
+[x] Pawn_Island_MG      | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: -28 |
+[x] Pawn_Island_EG      | Initial:   -6 | Min:  -20 | Max:    0 | Tuned:  -4 |
+[x] Pawn_Center_MG      | Initial:    6 | Min:    0 | Max:   20 | Tuned:   8 |
+[x] Pawn_Center_EG      | Initial:    2 | Min:    0 | Max:   10 | Tuned:   0 |
+[x] Pawn_ExtCenter_MG   | Initial:    3 | Min:    0 | Max:   12 | Tuned:   0 |
+[x] Pawn_ExtCenter_EG   | Initial:    1 | Min:    0 | Max:    6 | Tuned:   3 |
+[x] Pawn_Storm_Base     | Initial:    4 | Min:    0 | Max:   15 | Tuned:   2 |
+[x] Pawn_Storm_Rank_Mult| Initial:    2 | Min:    0 | Max:    8 | Tuned:   1 |
 
 ================================================================
 BATCH 5 – PASSED PAWNS
@@ -185,7 +191,7 @@ BATCH 6 – KING SAFETY
 ================================================================
 BATCH 7 – THREATS, HANGING, OUTPOSTS, COORDINATION
 ================================================================
-37 parameters
+44 parameters
 
 -- Tactical pressure --
 [ ] Undefended_Attack_Bonus   | Initial:   6 | Min:    0 | Max:   20 | Tuned: ___ |

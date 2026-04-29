@@ -234,26 +234,26 @@ inline int OUTSIDE_PASSED_BONUS_MG   =  8;
 inline int OUTSIDE_PASSED_BONUS_EG   = 20;
 
 // Pawn structure penalties
-inline int ISOLATED_PAWN_PENALTY_MG = -12;
-inline int ISOLATED_PAWN_PENALTY_EG =  -8;
-inline int DOUBLED_PAWN_PENALTY_MG  = -14;
-inline int DOUBLED_PAWN_PENALTY_EG  = -10;
-inline int BACKWARD_PAWN_PENALTY_MG = -10;
-inline int BACKWARD_PAWN_PENALTY_EG =  -6;
-inline int SUPPORTED_PAWN_BONUS_MG  =   6;
-inline int WEAK_PAWN_PENALTY_MG     =  -8;
-inline int PAWN_ISLAND_PENALTY_MG   = -10;
-inline int PAWN_ISLAND_PENALTY_EG   =  -6;
+inline int ISOLATED_PAWN_PENALTY_MG = -2; //
+inline int ISOLATED_PAWN_PENALTY_EG =  -2; //
+inline int DOUBLED_PAWN_PENALTY_MG  = -10; //
+inline int DOUBLED_PAWN_PENALTY_EG  = -6; //
+inline int BACKWARD_PAWN_PENALTY_MG = -13; //
+inline int BACKWARD_PAWN_PENALTY_EG =  -2; //
+inline int SUPPORTED_PAWN_BONUS_MG  =   15; //
+inline int WEAK_PAWN_PENALTY_MG     =  -18; //
+inline int PAWN_ISLAND_PENALTY_MG   = -28; //
+inline int PAWN_ISLAND_PENALTY_EG   =  -4; //
 
 // Pawn center control
-inline int PAWN_CENTER_BONUS_MG     = 6;
-inline int PAWN_CENTER_BONUS_EG     = 2;
-inline int PAWN_EXT_CENTER_BONUS_MG = 3;
-inline int PAWN_EXT_CENTER_BONUS_EG = 1;
+inline int PAWN_CENTER_BONUS_MG     = 8; //
+inline int PAWN_CENTER_BONUS_EG     = 0; //
+inline int PAWN_EXT_CENTER_BONUS_MG = 0; //
+inline int PAWN_EXT_CENTER_BONUS_EG = 3; //
 
 // Pawn storm toward enemy king
-inline int PAWN_STORM_BASE      = 4;
-inline int PAWN_STORM_RANK_MULT = 2;
+inline int PAWN_STORM_BASE      = 2; //
+inline int PAWN_STORM_RANK_MULT = 1; //
 
 // King safety
 inline int KING_SHIELD_MISSING_PENALTY = -14;
@@ -389,22 +389,22 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Mobility_Queen_EG",   {&MOBILITY_QUEEN_EG,     TuningOption::INT,    0,    6,    "1"}},
 
     // ── Pawn structure ────────────────────────────────────────────
-    {"Isolated_MG",         {&ISOLATED_PAWN_PENALTY_MG, TuningOption::INT, -40,  0,    "-12"}},
-    {"Isolated_EG",         {&ISOLATED_PAWN_PENALTY_EG, TuningOption::INT, -30,  0,    "-8"}},
-    {"Doubled_MG",          {&DOUBLED_PAWN_PENALTY_MG,  TuningOption::INT, -40,  0,    "-14"}},
-    {"Doubled_EG",          {&DOUBLED_PAWN_PENALTY_EG,  TuningOption::INT, -30,  0,    "-10"}},
-    {"Backward_MG",         {&BACKWARD_PAWN_PENALTY_MG, TuningOption::INT, -30,  0,    "-10"}},
-    {"Backward_EG",         {&BACKWARD_PAWN_PENALTY_EG, TuningOption::INT, -20,  0,    "-6"}},
-    {"Supported_Pawn_MG",   {&SUPPORTED_PAWN_BONUS_MG,  TuningOption::INT,  0,   20,   "6"}},
-    {"Weak_Pawn_MG",        {&WEAK_PAWN_PENALTY_MG,     TuningOption::INT, -30,  0,    "-8"}},
-    {"Pawn_Island_MG",      {&PAWN_ISLAND_PENALTY_MG,   TuningOption::INT, -30,  0,    "-10"}},
-    {"Pawn_Island_EG",      {&PAWN_ISLAND_PENALTY_EG,   TuningOption::INT, -20,  0,    "-6"}},
-    {"Pawn_Center_MG",      {&PAWN_CENTER_BONUS_MG,     TuningOption::INT,  0,   20,   "6"}},
-    {"Pawn_Center_EG",      {&PAWN_CENTER_BONUS_EG,     TuningOption::INT,  0,   10,   "2"}},
-    {"Pawn_ExtCenter_MG",   {&PAWN_EXT_CENTER_BONUS_MG, TuningOption::INT,  0,   12,   "3"}},
-    {"Pawn_ExtCenter_EG",   {&PAWN_EXT_CENTER_BONUS_EG, TuningOption::INT,  0,   6,    "1"}},
-    {"Pawn_Storm_Base",     {&PAWN_STORM_BASE,           TuningOption::INT,  0,   15,   "4"}},
-    {"Pawn_Storm_Rank_Mult",{&PAWN_STORM_RANK_MULT,      TuningOption::INT,  0,   8,    "2"}},
+    {"Isolated_MG",         {&ISOLATED_PAWN_PENALTY_MG, TuningOption::INT, -40,  0,    "-2"}},
+    {"Isolated_EG",         {&ISOLATED_PAWN_PENALTY_EG, TuningOption::INT, -30,  0,    "-2"}},
+    {"Doubled_MG",          {&DOUBLED_PAWN_PENALTY_MG,  TuningOption::INT, -40,  0,    "-10"}},
+    {"Doubled_EG",          {&DOUBLED_PAWN_PENALTY_EG,  TuningOption::INT, -30,  0,    "-6"}},
+    {"Backward_MG",         {&BACKWARD_PAWN_PENALTY_MG, TuningOption::INT, -30,  0,    "-13"}},
+    {"Backward_EG",         {&BACKWARD_PAWN_PENALTY_EG, TuningOption::INT, -20,  0,    "-2"}},
+    {"Supported_Pawn_MG",   {&SUPPORTED_PAWN_BONUS_MG,  TuningOption::INT,  0,   20,   "15"}},
+    {"Weak_Pawn_MG",        {&WEAK_PAWN_PENALTY_MG,     TuningOption::INT, -30,  0,    "-18"}},
+    {"Pawn_Island_MG",      {&PAWN_ISLAND_PENALTY_MG,   TuningOption::INT, -30,  0,    "-28"}},
+    {"Pawn_Island_EG",      {&PAWN_ISLAND_PENALTY_EG,   TuningOption::INT, -20,  0,    "-4"}},
+    {"Pawn_Center_MG",      {&PAWN_CENTER_BONUS_MG,     TuningOption::INT,  0,   20,   "8"}},
+    {"Pawn_Center_EG",      {&PAWN_CENTER_BONUS_EG,     TuningOption::INT,  0,   10,   "0"}},
+    {"Pawn_ExtCenter_MG",   {&PAWN_EXT_CENTER_BONUS_MG, TuningOption::INT,  0,   12,   "0"}},
+    {"Pawn_ExtCenter_EG",   {&PAWN_EXT_CENTER_BONUS_EG, TuningOption::INT,  0,   6,    "3"}},
+    {"Pawn_Storm_Base",     {&PAWN_STORM_BASE,           TuningOption::INT,  0,   15,   "2"}},
+    {"Pawn_Storm_Rank_Mult",{&PAWN_STORM_RANK_MULT,      TuningOption::INT,  0,   8,    "1"}},
 
     // ── Passed pawns (ranks 1-6; ranks 0 and 7 are always 0) ──────
     {"PassedMG_R1",         {&PASSED_PAWN_BONUS_MG[1], TuningOption::INT,  0,   20,   "5"}},
