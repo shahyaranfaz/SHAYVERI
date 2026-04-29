@@ -23,9 +23,9 @@ namespace Tune {
 // ================================================================
 
 // Compile-time limits (used in array sizes / constant expressions)
-static constexpr int MAX_PLY    = 128;
-static constexpr int INF        = 1000000;
-static constexpr int MATE_SCORE = 900000;
+static constexpr int MAX_PLY    = 128; //
+static constexpr int INF        = 1000000; //
+static constexpr int MATE_SCORE = 900000; //
 
 // Aspiration window initial delta
 inline int ASP_DELTA = 32; //
@@ -37,7 +37,7 @@ inline int se_margin          = 54; //
 inline int se_reduction_denom = 3; //
 
 // History gravity / bonus
-inline int history_max         = 16384;
+inline int history_max         = 16384; //
 inline int history_bonus_mult  = 488; //
 inline int history_bonus_sub   = 179; //
 inline int history_bonus_limit = 2842; //
@@ -74,16 +74,16 @@ inline int PIECE_VALUES_EG[PIECE_COUNT] = {
 };
 
 // Indexed by PieceType (0-6).  King = 20000 for SEE termination.
-inline int PTYPE_VALUE[7]  = { 0, 100, 320, 330,  500,  900, 20000 };
+inline int PTYPE_VALUE[7]  = { 0, 100, 320, 330,  500,  900, 20000 }; //
 // Indexed by PieceType (0-6).  King = 0 for MVV-LVA / capture ordering.
-inline int PTYPE_VALUES[7] = { 0, 100, 320, 330,  500,  900,     0 };
+inline int PTYPE_VALUES[7] = { 0, 100, 320, 330,  500,  900,     0 }; //
 
 // ================================================================
 // Phase (tapered eval)
 // ================================================================
 
-inline int MAX_PHASE = 24;
-inline int PHASE_WEIGHTS[PIECE_COUNT] = {
+inline int MAX_PHASE = 24; //
+inline int PHASE_WEIGHTS[PIECE_COUNT] = { //
     0, 0, 1, 1, 2, 4, 0,
        0, 1, 1, 2, 4, 0,
 };
@@ -278,7 +278,7 @@ inline int MOBILITY_QUEEN_EG  = 1; //
 // File/diagonal openness multipliers (percent)
 inline int OPEN_FILE_MULTIPLIER          = 120;
 inline int SEMI_OPEN_FILE_MULTIPLIER     = 110;
-inline int CLOSED_FILE_MULTIPLIER        = 100;
+inline int CLOSED_FILE_MULTIPLIER        = 100; //
 inline int BISHOP_OPENNESS_BASE          = 100;
 inline int BISHOP_OPENNESS_MAX_BONUS     =  30;
 inline int BISHOP_OPENNESS_SQUARE_WEIGHT =   2;
@@ -298,26 +298,26 @@ inline int BATTERY_BISHOP_QUEEN_BONUS =  8;
 inline int SUPPORT_CHAIN_BONUS        =  6;
 
 // Tactical pressure
-inline int UNDEFENDED_ATTACK_BONUS        =  6;
-inline int PIN_BONUS                      = 15;
-inline int OVERLOADED_DEFENDER_BONUS      = 10;
-inline int UNRECIPROCATED_PRESSURE_BONUS  =  2;
-inline int UNDEFENDED_VALUE_DIVISOR       = 40;
+inline int UNDEFENDED_ATTACK_BONUS        =  19; //
+inline int PIN_BONUS                      = 35; //
+inline int OVERLOADED_DEFENDER_BONUS      = 0; //
+inline int UNRECIPROCATED_PRESSURE_BONUS  =  5; //
+inline int UNDEFENDED_VALUE_DIVISOR       = 65; //
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
-inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 60, 65, 75, 80,  0 };
-inline int THREAT_BY_PAWN_EG[7]  = { 0,  0, 40, 45, 55, 60,  0 };
+inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 44, 87, 109, 92,  0 }; //
+inline int THREAT_BY_PAWN_EG[7]  = { 0,  0, 78, 90,  41, 70,  0 }; //
 // Bonus when a minor attacks an enemy piece of higher value
-inline int THREAT_BY_MINOR_MG[7] = { 0,  0,  0,  0, 30, 45,  0 };
-inline int THREAT_BY_MINOR_EG[7] = { 0,  0,  0,  0, 20, 30,  0 };
+inline int THREAT_BY_MINOR_MG[7] = { 0,  0,  0,  0, 24, 12,  0 }; //
+inline int THREAT_BY_MINOR_EG[7] = { 0,  0,  0,  0, 11, 51,  0 }; //
 // Bonus when a rook attacks an enemy queen
-inline int THREAT_BY_ROOK_MG = 25;
-inline int THREAT_BY_ROOK_EG = 18;
+inline int THREAT_BY_ROOK_MG = 60; //
+inline int THREAT_BY_ROOK_EG = 47; //
 
 // Hanging piece penalties
-inline int HANGING_BASE_PENALTY_MG = 20;
-inline int HANGING_BASE_PENALTY_EG = 12;
-inline int HANGING_VALUE_DIVISOR   = 40;
+inline int HANGING_BASE_PENALTY_MG = 58; //
+inline int HANGING_BASE_PENALTY_EG = 0; //
+inline int HANGING_VALUE_DIVISOR   = 27; //
 
 // Outposts
 inline int KNIGHT_OUTPOST_MG = 20;
@@ -461,34 +461,34 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Support_Chain_Bonus",        {&SUPPORT_CHAIN_BONUS,        TuningOption::INT, 0,  20,  "6"}},
 
     // ── Tactical pressure ─────────────────────────────────────────
-    {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT, 0,   20,  "6"}},
-    {"Pin_Bonus",                 {&PIN_BONUS,                     TuningOption::INT, 0,   40,  "15"}},
-    {"Overloaded_Defender_Bonus", {&OVERLOADED_DEFENDER_BONUS,     TuningOption::INT, 0,   30,  "10"}},
-    {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS, TuningOption::INT, 0,   10,  "2"}},
-    {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,      TuningOption::INT, 10,  100, "40"}},
+    {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT, 0,   20,  "19"}},
+    {"Pin_Bonus",                 {&PIN_BONUS,                     TuningOption::INT, 0,   40,  "35"}},
+    {"Overloaded_Defender_Bonus", {&OVERLOADED_DEFENDER_BONUS,     TuningOption::INT, 0,   30,  "0"}},
+    {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS, TuningOption::INT, 0,   10,  "5"}},
+    {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,      TuningOption::INT, 10,  100, "65"}},
 
     // ── Threats ───────────────────────────────────────────────────
     // Pawn threats vs piece types 2-5 (knight/bishop/rook/queen)
-    {"Threat_Pawn_Knight_MG", {&THREAT_BY_PAWN_MG[2], TuningOption::INT, 20, 120, "60"}},
-    {"Threat_Pawn_Bishop_MG", {&THREAT_BY_PAWN_MG[3], TuningOption::INT, 20, 120, "65"}},
-    {"Threat_Pawn_Rook_MG",   {&THREAT_BY_PAWN_MG[4], TuningOption::INT, 25, 130, "75"}},
-    {"Threat_Pawn_Queen_MG",  {&THREAT_BY_PAWN_MG[5], TuningOption::INT, 25, 150, "80"}},
-    {"Threat_Pawn_Knight_EG", {&THREAT_BY_PAWN_EG[2], TuningOption::INT, 10,  90, "40"}},
-    {"Threat_Pawn_Bishop_EG", {&THREAT_BY_PAWN_EG[3], TuningOption::INT, 10,  90, "45"}},
-    {"Threat_Pawn_Rook_EG",   {&THREAT_BY_PAWN_EG[4], TuningOption::INT, 15, 100, "55"}},
-    {"Threat_Pawn_Queen_EG",  {&THREAT_BY_PAWN_EG[5], TuningOption::INT, 15, 110, "60"}},
+    {"Threat_Pawn_Knight_MG", {&THREAT_BY_PAWN_MG[2], TuningOption::INT, 20, 120, "44"}},
+    {"Threat_Pawn_Bishop_MG", {&THREAT_BY_PAWN_MG[3], TuningOption::INT, 20, 120, "87"}},
+    {"Threat_Pawn_Rook_MG",   {&THREAT_BY_PAWN_MG[4], TuningOption::INT, 25, 130, "109"}},
+    {"Threat_Pawn_Queen_MG",  {&THREAT_BY_PAWN_MG[5], TuningOption::INT, 25, 150, "92"}},
+    {"Threat_Pawn_Knight_EG", {&THREAT_BY_PAWN_EG[2], TuningOption::INT, 10,  90, "78"}},
+    {"Threat_Pawn_Bishop_EG", {&THREAT_BY_PAWN_EG[3], TuningOption::INT, 10,  90, "90"}},
+    {"Threat_Pawn_Rook_EG",   {&THREAT_BY_PAWN_EG[4], TuningOption::INT, 15, 100, "41"}},
+    {"Threat_Pawn_Queen_EG",  {&THREAT_BY_PAWN_EG[5], TuningOption::INT, 15, 110, "70"}},
     // Minor threats vs rook/queen
-    {"Threat_Minor_Rook_MG",  {&THREAT_BY_MINOR_MG[4], TuningOption::INT, 0,  80, "30"}},
-    {"Threat_Minor_Queen_MG", {&THREAT_BY_MINOR_MG[5], TuningOption::INT, 0, 100, "45"}},
-    {"Threat_Minor_Rook_EG",  {&THREAT_BY_MINOR_EG[4], TuningOption::INT, 0,  60, "20"}},
-    {"Threat_Minor_Queen_EG", {&THREAT_BY_MINOR_EG[5], TuningOption::INT, 0,  80, "30"}},
+    {"Threat_Minor_Rook_MG",  {&THREAT_BY_MINOR_MG[4], TuningOption::INT, 0,  80, "24"}},
+    {"Threat_Minor_Queen_MG", {&THREAT_BY_MINOR_MG[5], TuningOption::INT, 0, 100, "12"}},
+    {"Threat_Minor_Rook_EG",  {&THREAT_BY_MINOR_EG[4], TuningOption::INT, 0,  60, "11"}},
+    {"Threat_Minor_Queen_EG", {&THREAT_BY_MINOR_EG[5], TuningOption::INT, 0,  80, "51"}},
     // Rook threatens queen
-    {"Threat_Rook_MG",        {&THREAT_BY_ROOK_MG, TuningOption::INT,  0,  70, "25"}},
-    {"Threat_Rook_EG",        {&THREAT_BY_ROOK_EG, TuningOption::INT,  0,  50, "18"}},
+    {"Threat_Rook_MG",        {&THREAT_BY_ROOK_MG, TuningOption::INT,  0,  70, "60"}},
+    {"Threat_Rook_EG",        {&THREAT_BY_ROOK_EG, TuningOption::INT,  0,  50, "47"}},
     // Hanging
-    {"Hanging_Penalty_MG",    {&HANGING_BASE_PENALTY_MG, TuningOption::INT,  0,  60, "20"}},
-    {"Hanging_Penalty_EG",    {&HANGING_BASE_PENALTY_EG, TuningOption::INT,  0,  40, "12"}},
-    {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT, 10, 100, "40"}},
+    {"Hanging_Penalty_MG",    {&HANGING_BASE_PENALTY_MG, TuningOption::INT,  0,  60, "58"}},
+    {"Hanging_Penalty_EG",    {&HANGING_BASE_PENALTY_EG, TuningOption::INT,  0,  40, "0"}},
+    {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT, 10, 100, "27"}},
 
     // ── Outposts ──────────────────────────────────────────────────
     {"Knight_Outpost_MG",  {&KNIGHT_OUTPOST_MG, TuningOption::INT, 0, 50, "20"}},

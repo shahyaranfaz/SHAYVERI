@@ -9,49 +9,11 @@ lower signal frequency.
 
 python3.10 lakas.py \
   --match-manager-path cutechess-cli \
-  --concurrency 23 \
-  --optimizer oneplusone \
-  --output-data-file "batch7a_$(hostname).dat" \
-  --input-data-file  "batch7a_$(hostname).dat" \
-  --optimizer-log-file "batch7a_$(hostname).log" \
-  --base-time-sec 5 \
-  --inc-time-sec 0.05 \
-  --budget 40 \
-  --games-per-budget 200 \
-  --engine ./shaybot \
---opening-file ./start_opening/ogpt_chess_startpos.epd \
-  --input-param "{ \
-'Undefended_Attack_Bonus':   {'init': 6,   'lower': 0,   'upper': 20}, \
-'Pin_Bonus':                 {'init': 15,  'lower': 0,   'upper': 40}, \
-'Overloaded_Defender_Bonus': {'init': 10,  'lower': 0,   'upper': 30}, \
-'Unrec_Pressure_Bonus':      {'init': 2,   'lower': 0,   'upper': 10}, \
-'Undefended_Value_Div':      {'init': 40,  'lower': 10,  'upper': 100}, \
-'Threat_Pawn_Knight_MG':     {'init': 60,  'lower': 20,  'upper': 120}, \
-'Threat_Pawn_Bishop_MG':     {'init': 65,  'lower': 20,  'upper': 120}, \
-'Threat_Pawn_Rook_MG':       {'init': 75,  'lower': 25,  'upper': 130}, \
-'Threat_Pawn_Queen_MG':      {'init': 80,  'lower': 25,  'upper': 150}, \
-'Threat_Pawn_Knight_EG':     {'init': 40,  'lower': 10,  'upper': 90}, \
-'Threat_Pawn_Bishop_EG':     {'init': 45,  'lower': 10,  'upper': 90}, \
-'Threat_Pawn_Rook_EG':       {'init': 55,  'lower': 15,  'upper': 100}, \
-'Threat_Pawn_Queen_EG':      {'init': 60,  'lower': 15,  'upper': 110}, \
-'Threat_Minor_Rook_MG':      {'init': 30,  'lower': 0,   'upper': 80}, \
-'Threat_Minor_Queen_MG':     {'init': 45,  'lower': 0,   'upper': 100}, \
-'Threat_Minor_Rook_EG':      {'init': 20,  'lower': 0,   'upper': 60}, \
-'Threat_Minor_Queen_EG':     {'init': 30,  'lower': 0,   'upper': 80}, \
-'Threat_Rook_MG':            {'init': 25,  'lower': 0,   'upper': 70}, \
-'Threat_Rook_EG':            {'init': 18,  'lower': 0,   'upper': 50}, \
-'Hanging_Penalty_MG':        {'init': 20,  'lower': 0,   'upper': 60}, \
-'Hanging_Penalty_EG':        {'init': 12,  'lower': 0,   'upper': 40}, \
-'Hanging_Value_Div':         {'init': 40,  'lower': 10,  'upper': 100} \
-}"
-
-python3.10 lakas.py \
-  --match-manager-path cutechess-cli \
   --concurrency 12 \
   --optimizer oneplusone \
-  --output-data-file "batch7b_$(hostname).dat" \
-  --input-data-file  "batch7b_$(hostname).dat" \
-  --optimizer-log-file "batch7b_$(hostname).log" \
+  --output-data-file "batch8_$(hostname).dat" \
+  --input-data-file  "batch8_$(hostname).dat" \
+  --optimizer-log-file "batch8_$(hostname).log" \
   --base-time-sec 5 \
   --inc-time-sec 0.05 \
   --budget 40 \
@@ -243,41 +205,48 @@ BATCH 6 – KING SAFETY
 Budgets: 180
 
 ================================================================
-BATCH 7 – THREATS, HANGING, OUTPOSTS, COORDINATION
+BATCH 7 – THREATS, HANGING
 ================================================================
-44 parameters
+22 parameters
 
 -- Tactical pressure --
-[ ] Undefended_Attack_Bonus   | Initial:   6 | Min:    0 | Max:   20 | Tuned: ___ |
-[ ] Pin_Bonus                 | Initial:  15 | Min:    0 | Max:   40 | Tuned: ___ |
-[ ] Overloaded_Defender_Bonus | Initial:  10 | Min:    0 | Max:   30 | Tuned: ___ |
-[ ] Unrec_Pressure_Bonus      | Initial:   2 | Min:    0 | Max:   10 | Tuned: ___ |
-[ ] Undefended_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: ___ |
+[x] Undefended_Attack_Bonus   | Initial:   6 | Min:    0 | Max:   20 | Tuned: 19 |
+[x] Pin_Bonus                 | Initial:  15 | Min:    0 | Max:   40 | Tuned: 35 |
+[x] Overloaded_Defender_Bonus | Initial:  10 | Min:    0 | Max:   30 | Tuned:  0 |
+[x] Unrec_Pressure_Bonus      | Initial:   2 | Min:    0 | Max:   10 | Tuned:  5 |
+[x] Undefended_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: 65 |
 
 -- Threats (pawn) --
-[ ] Threat_Pawn_Knight_MG  | Initial:  60 | Min:   20 | Max:  120 | Tuned: ___ |
-[ ] Threat_Pawn_Bishop_MG  | Initial:  65 | Min:   20 | Max:  120 | Tuned: ___ |
-[ ] Threat_Pawn_Rook_MG    | Initial:  75 | Min:   25 | Max:  130 | Tuned: ___ |
-[ ] Threat_Pawn_Queen_MG   | Initial:  80 | Min:   25 | Max:  150 | Tuned: ___ |
-[ ] Threat_Pawn_Knight_EG  | Initial:  40 | Min:   10 | Max:   90 | Tuned: ___ |
-[ ] Threat_Pawn_Bishop_EG  | Initial:  45 | Min:   10 | Max:   90 | Tuned: ___ |
-[ ] Threat_Pawn_Rook_EG    | Initial:  55 | Min:   15 | Max:  100 | Tuned: ___ |
-[ ] Threat_Pawn_Queen_EG   | Initial:  60 | Min:   15 | Max:  110 | Tuned: ___ |
+[x] Threat_Pawn_Knight_MG  | Initial:  60 | Min:   20 | Max:  120 | Tuned:  44 |
+[x] Threat_Pawn_Bishop_MG  | Initial:  65 | Min:   20 | Max:  120 | Tuned:  87 |
+[x] Threat_Pawn_Rook_MG    | Initial:  75 | Min:   25 | Max:  130 | Tuned: 109 |
+[x] Threat_Pawn_Queen_MG   | Initial:  80 | Min:   25 | Max:  150 | Tuned:  92 |
+[x] Threat_Pawn_Knight_EG  | Initial:  40 | Min:   10 | Max:   90 | Tuned:  78 |
+[x] Threat_Pawn_Bishop_EG  | Initial:  45 | Min:   10 | Max:   90 | Tuned:  90 |
+[x] Threat_Pawn_Rook_EG    | Initial:  55 | Min:   15 | Max:  100 | Tuned:  41 |
+[x] Threat_Pawn_Queen_EG   | Initial:  60 | Min:   15 | Max:  110 | Tuned:  70 |
 
 -- Threats (minor) --
-[ ] Threat_Minor_Rook_MG   | Initial:  30 | Min:    0 | Max:   80 | Tuned: ___ |
-[ ] Threat_Minor_Queen_MG  | Initial:  45 | Min:    0 | Max:  100 | Tuned: ___ |
-[ ] Threat_Minor_Rook_EG   | Initial:  20 | Min:    0 | Max:   60 | Tuned: ___ |
-[ ] Threat_Minor_Queen_EG  | Initial:  30 | Min:    0 | Max:   80 | Tuned: ___ |
+[x] Threat_Minor_Rook_MG   | Initial:  30 | Min:    0 | Max:   80 | Tuned: 24 |
+[x] Threat_Minor_Queen_MG  | Initial:  45 | Min:    0 | Max:  100 | Tuned: 12 |
+[x] Threat_Minor_Rook_EG   | Initial:  20 | Min:    0 | Max:   60 | Tuned: 11 |
+[x] Threat_Minor_Queen_EG  | Initial:  30 | Min:    0 | Max:   80 | Tuned: 51 |
 
 -- Threats (rook) --
-[ ] Threat_Rook_MG         | Initial:  25 | Min:    0 | Max:   70 | Tuned: ___ |
-[ ] Threat_Rook_EG         | Initial:  18 | Min:    0 | Max:   50 | Tuned: ___ |
+[x] Threat_Rook_MG         | Initial:  25 | Min:    0 | Max:   70 | Tuned: 60 |
+[x] Threat_Rook_EG         | Initial:  18 | Min:    0 | Max:   50 | Tuned: 47 |
 
 -- Hanging --
-[ ] Hanging_Penalty_MG     | Initial:  20 | Min:    0 | Max:   60 | Tuned: ___ |
-[ ] Hanging_Penalty_EG     | Initial:  12 | Min:    0 | Max:   40 | Tuned: ___ |
-[ ] Hanging_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: ___ |
+[x] Hanging_Penalty_MG     | Initial:  20 | Min:    0 | Max:   60 | Tuned: 58 |
+[x] Hanging_Penalty_EG     | Initial:  12 | Min:    0 | Max:   40 | Tuned:  0 |
+[x] Hanging_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: 27 |
+
+Budgets: 240
+
+================================================================
+BATCH 8 – OUTPOSTS, COORDINATION
+================================================================
+22 parameters
 
 -- Outposts --
 [ ] Knight_Outpost_MG      | Initial:  20 | Min:    0 | Max:   50 | Tuned: ___ |
@@ -304,6 +273,8 @@ BATCH 7 – THREATS, HANGING, OUTPOSTS, COORDINATION
 [ ] Semi_Open_File_Mult    | Initial: 110 | Min:  100 | Max:  130 | Tuned: ___ |
 [ ] Bishop_Openness_Max    | Initial:  30 | Min:    0 | Max:   60 | Tuned: ___ |
 [ ] Bishop_Openness_SqWt   | Initial:   2 | Min:    0 | Max:    6 | Tuned: ___ |
+
+Budgets: 240
 
 ================================================================
 BATCH 1 RE-RUN  (after all eval batches are done)
