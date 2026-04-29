@@ -28,36 +28,36 @@ static constexpr int INF        = 1000000;
 static constexpr int MATE_SCORE = 900000;
 
 // Aspiration window initial delta
-inline int ASP_DELTA = 32;
+inline int ASP_DELTA = 32; //
 
 // Singular extensions
-inline int se_min_depth       = 9;
-inline int se_depth_margin    = 2;
-inline int se_margin          = 54;
-inline int se_reduction_denom = 3;
+inline int se_min_depth       = 9; //
+inline int se_depth_margin    = 2; //
+inline int se_margin          = 54; //
+inline int se_reduction_denom = 3; //
 
 // History gravity / bonus
 inline int history_max         = 16384;
-inline int history_bonus_mult  = 488;
-inline int history_bonus_sub   = 179;
-inline int history_bonus_limit = 2842;
+inline int history_bonus_mult  = 488; //
+inline int history_bonus_sub   = 179; //
+inline int history_bonus_limit = 2842; //
 
 // History blending weights (percent, divided by 100 before accumulation)
-inline int main_history_weight = 78;
-inline int cmh_weight          = 61;
-inline int fmh_weight          = 33;
+inline int main_history_weight = 78; //
+inline int cmh_weight          = 61; //
+inline int fmh_weight          = 33; //
 
 // Pruning margins
-inline int rfp_margin_mult    = 82;
-inline int fp_base            = 197;
-inline int fp_mult            = 657;
-inline int lmp_base           = 3;
-inline int lmp_mult           = 1;
-inline int see_pruning_margin = -277;
+inline int rfp_margin_mult    = 82; //
+inline int fp_base            = 197; //
+inline int fp_mult            = 657; //
+inline int lmp_base           = 3; //
+inline int lmp_mult           = 1; //
+inline int see_pruning_margin = -277; //
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
-inline double lmr_base  = 1.236;
-inline double lmr_scale = 1.796;
+inline double lmr_base  = 1.236; //
+inline double lmr_scale = 1.796; //
 
 // ================================================================
 // Piece values
@@ -218,8 +218,8 @@ inline int PST_KING_EG[64] = {
 // ================================================================
 
 // Misc
-inline int TEMPO_BONUS       = 8;
-inline int BISHOP_PAIR_BONUS = 30;
+inline int TEMPO_BONUS       = 24; //
+inline int BISHOP_PAIR_BONUS = 21; //
 
 // Passed pawns (indexed by relative rank 0-7)
 inline int PASSED_PAWN_BONUS_MG[8] = { 0,  5, 10, 20,  30,  50,  70, 0 };
@@ -266,14 +266,14 @@ inline int KING_DANGER_DIVISOR         =   8;
 inline int KING_DANGER_MAX             = 500;
 
 // Mobility
-inline int MOBILITY_KNIGHT_MG = 4;
-inline int MOBILITY_BISHOP_MG = 4;
-inline int MOBILITY_ROOK_MG   = 2;
-inline int MOBILITY_QUEEN_MG  = 1;
-inline int MOBILITY_KNIGHT_EG = 3;
-inline int MOBILITY_BISHOP_EG = 4;
-inline int MOBILITY_ROOK_EG   = 3;
-inline int MOBILITY_QUEEN_EG  = 2;
+inline int MOBILITY_KNIGHT_MG = 6; //
+inline int MOBILITY_BISHOP_MG = 11; //
+inline int MOBILITY_ROOK_MG   = 5; //
+inline int MOBILITY_QUEEN_MG  = 5; //
+inline int MOBILITY_KNIGHT_EG = 5; //
+inline int MOBILITY_BISHOP_EG = 5; //
+inline int MOBILITY_ROOK_EG   = 2; //
+inline int MOBILITY_QUEEN_EG  = 1; //
 
 // File/diagonal openness multipliers (percent)
 inline int OPEN_FILE_MULTIPLIER          = 120;
@@ -330,8 +330,8 @@ inline int QUEEN_OUTPOST_MG  = 10;
 inline int QUEEN_OUTPOST_EG  =  8;
 
 // Development / initiative
-inline int DEVELOPMENT_BONUS = 5;
-inline int CASTLED_BONUS     = 12;
+inline int DEVELOPMENT_BONUS = 12; //
+inline int CASTLED_BONUS     = 8; //
 
 // ================================================================
 // Tuning infrastructure
@@ -373,20 +373,20 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,    0,    200,  "33"}},
 
     // ── Eval – misc ───────────────────────────────────────────────
-    {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,    0,    30,   "8"}},
-    {"Bishop_Pair_Bonus",   {&BISHOP_PAIR_BONUS,      TuningOption::INT,    10,   60,   "30"}},
-    {"Development_Bonus",   {&DEVELOPMENT_BONUS,      TuningOption::INT,    0,    20,   "5"}},
-    {"Castled_Bonus",       {&CASTLED_BONUS,          TuningOption::INT,    0,    40,   "12"}},
+    {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,    0,    30,   "24"}},
+    {"Bishop_Pair_Bonus",   {&BISHOP_PAIR_BONUS,      TuningOption::INT,    10,   60,   "21"}},
+    {"Development_Bonus",   {&DEVELOPMENT_BONUS,      TuningOption::INT,    0,    20,   "12"}},
+    {"Castled_Bonus",       {&CASTLED_BONUS,          TuningOption::INT,    0,    40,   "8"}},
 
     // ── Mobility ─────────────────────────────────────────────────
-    {"Mobility_Knight_MG",  {&MOBILITY_KNIGHT_MG,    TuningOption::INT,    0,    12,   "4"}},
-    {"Mobility_Bishop_MG",  {&MOBILITY_BISHOP_MG,    TuningOption::INT,    0,    12,   "4"}},
-    {"Mobility_Rook_MG",    {&MOBILITY_ROOK_MG,      TuningOption::INT,    0,    8,    "2"}},
-    {"Mobility_Queen_MG",   {&MOBILITY_QUEEN_MG,     TuningOption::INT,    0,    6,    "1"}},
-    {"Mobility_Knight_EG",  {&MOBILITY_KNIGHT_EG,    TuningOption::INT,    0,    12,   "3"}},
-    {"Mobility_Bishop_EG",  {&MOBILITY_BISHOP_EG,    TuningOption::INT,    0,    12,   "4"}},
-    {"Mobility_Rook_EG",    {&MOBILITY_ROOK_EG,      TuningOption::INT,    0,    10,   "3"}},
-    {"Mobility_Queen_EG",   {&MOBILITY_QUEEN_EG,     TuningOption::INT,    0,    6,    "2"}},
+    {"Mobility_Knight_MG",  {&MOBILITY_KNIGHT_MG,    TuningOption::INT,    0,    12,   "6"}},
+    {"Mobility_Bishop_MG",  {&MOBILITY_BISHOP_MG,    TuningOption::INT,    0,    12,   "11"}},
+    {"Mobility_Rook_MG",    {&MOBILITY_ROOK_MG,      TuningOption::INT,    0,    8,    "5"}},
+    {"Mobility_Queen_MG",   {&MOBILITY_QUEEN_MG,     TuningOption::INT,    0,    6,    "5"}},
+    {"Mobility_Knight_EG",  {&MOBILITY_KNIGHT_EG,    TuningOption::INT,    0,    12,   "5"}},
+    {"Mobility_Bishop_EG",  {&MOBILITY_BISHOP_EG,    TuningOption::INT,    0,    12,   "5"}},
+    {"Mobility_Rook_EG",    {&MOBILITY_ROOK_EG,      TuningOption::INT,    0,    10,   "2"}},
+    {"Mobility_Queen_EG",   {&MOBILITY_QUEEN_EG,     TuningOption::INT,    0,    6,    "1"}},
 
     // ── Pawn structure ────────────────────────────────────────────
     {"Isolated_MG",         {&ISOLATED_PAWN_PENALTY_MG, TuningOption::INT, -40,  0,    "-12"}},

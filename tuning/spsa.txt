@@ -11,22 +11,28 @@ python3.10 lakas.py \
   --match-manager-path cutechess-cli \
   --concurrency 23 \
   --optimizer oneplusone \
-  --output-data-file batch2.dat \
-  --input-data-file  batch2.dat \
-  --optimizer-log-file batch2.txt \
+  --output-data-file batch3_$(hostname).dat \
+  --input-data-file  batch3_$(hostname).dat \
+  --optimizer-log-file batch3_$(hostname).txt \
   --base-time-sec 5 \
   --inc-time-sec 0.05 \
-  --budget 80 \
+  --budget 20 \
   --games-per-budget 200 \
   --engine ./shaybot \
   --opening-file ./start_opening/ogpt_chess_startpos.epd \
   --input-param "{ \
-'History_Bonus_Mult':  {'init': 300,  'lower': 100, 'upper': 600}, \
-'History_Bonus_Sub':   {'init': 200,  'lower': 50,  'upper': 400}, \
-'History_Bonus_Limit': {'init': 1500, 'lower': 500, 'upper': 3000}, \
-'Main_History_Weight': {'init': 100,  'lower': 50,  'upper': 200}, \
-'CMH_Weight':          {'init': 100,  'lower': 0,   'upper': 200}, \
-'FMH_Weight':          {'init': 100,  'lower': 0,   'upper': 200} \
+'Tempo_Bonus':         {'init': 8,  'lower': 0,  'upper': 30}, \
+'Bishop_Pair_Bonus':   {'init': 30, 'lower': 10, 'upper': 60}, \
+'Development_Bonus':   {'init': 5,  'lower': 0,  'upper': 20}, \
+'Castled_Bonus':       {'init': 12, 'lower': 0,  'upper': 40}, \
+'Mobility_Knight_MG':  {'init': 4,  'lower': 0,  'upper': 12}, \
+'Mobility_Bishop_MG':  {'init': 4,  'lower': 0,  'upper': 12}, \
+'Mobility_Rook_MG':    {'init': 2,  'lower': 0,  'upper': 8}, \
+'Mobility_Queen_MG':   {'init': 1,  'lower': 0,  'upper': 6}, \
+'Mobility_Knight_EG':  {'init': 3,  'lower': 0,  'upper': 12}, \
+'Mobility_Bishop_EG':  {'init': 4,  'lower': 0,  'upper': 12}, \
+'Mobility_Rook_EG':    {'init': 3,  'lower': 0,  'upper': 10}, \
+'Mobility_Queen_EG':   {'init': 2,  'lower': 0,  'upper': 6} \
 }"
 
 ================================================================
@@ -95,18 +101,18 @@ BATCH 3 – CORE EVAL  (misc + mobility)
 ================================================================
 12 parameters
 
-[ ] Tempo_Bonus         | Initial:    8 | Min:    0 | Max:   30 | Tuned: ___ |
-[ ] Bishop_Pair_Bonus   | Initial:   30 | Min:   10 | Max:   60 | Tuned: ___ |
-[ ] Development_Bonus   | Initial:    5 | Min:    0 | Max:   20 | Tuned: ___ |
-[ ] Castled_Bonus       | Initial:   12 | Min:    0 | Max:   40 | Tuned: ___ |
-[ ] Mobility_Knight_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: ___ |
-[ ] Mobility_Bishop_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: ___ |
-[ ] Mobility_Rook_MG    | Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
-[ ] Mobility_Queen_MG   | Initial:    1 | Min:    0 | Max:    6 | Tuned: ___ |
-[ ] Mobility_Knight_EG  | Initial:    3 | Min:    0 | Max:   12 | Tuned: ___ |
-[ ] Mobility_Bishop_EG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: ___ |
-[ ] Mobility_Rook_EG    | Initial:    3 | Min:    0 | Max:   10 | Tuned: ___ |
-[ ] Mobility_Queen_EG   | Initial:    2 | Min:    0 | Max:    6 | Tuned: ___ |
+[x] Tempo_Bonus         | Initial:    8 | Min:    0 | Max:   30 | Tuned: 24 |
+[x] Bishop_Pair_Bonus   | Initial:   30 | Min:   10 | Max:   60 | Tuned: 21 |
+[x] Development_Bonus   | Initial:    5 | Min:    0 | Max:   20 | Tuned: 12 |
+[x] Castled_Bonus       | Initial:   12 | Min:    0 | Max:   40 | Tuned: 8  |
+[x] Mobility_Knight_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: 6  |
+[x] Mobility_Bishop_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: 11 |
+[x] Mobility_Rook_MG    | Initial:    2 | Min:    0 | Max:    8 | Tuned:  5 | 
+[x] Mobility_Queen_MG   | Initial:    1 | Min:    0 | Max:    6 | Tuned:  5 |
+[x] Mobility_Knight_EG  | Initial:    3 | Min:    0 | Max:   12 | Tuned:  5 |
+[x] Mobility_Bishop_EG  | Initial:    4 | Min:    0 | Max:   12 | Tuned:  5 |
+[x] Mobility_Rook_EG    | Initial:    3 | Min:    0 | Max:   10 | Tuned:  2 |
+[x] Mobility_Queen_EG   | Initial:    2 | Min:    0 | Max:    6 | Tuned:  1 |
 
 ================================================================
 BATCH 4 – PAWN STRUCTURE
