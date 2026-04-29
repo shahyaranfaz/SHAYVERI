@@ -256,14 +256,14 @@ inline int PAWN_STORM_BASE      = 2; //
 inline int PAWN_STORM_RANK_MULT = 1; //
 
 // King safety
-inline int KING_SHIELD_MISSING_PENALTY = -14;
-inline int KING_OPEN_FILE_PENALTY      = -10;
-inline int KING_SEMI_OPEN_FILE_PENALTY =  -6;
-inline int KING_ESCAPE_BONUS           =   4;
-inline int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2, 2, 3, 5, 0 };
-inline int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 3, 8, 16, 26, 38, 52 };
-inline int KING_DANGER_DIVISOR         =   8;
-inline int KING_DANGER_MAX             = 500;
+inline int KING_SHIELD_MISSING_PENALTY = -27; //
+inline int KING_OPEN_FILE_PENALTY      = -26; //
+inline int KING_SEMI_OPEN_FILE_PENALTY =  -4; //
+inline int KING_ESCAPE_BONUS           =   4; //
+inline int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  4,  3, 12, 0 }; //
+inline int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 8, 24, 36, 44, 30, 18 }; //
+inline int KING_DANGER_DIVISOR         =   8; //
+inline int KING_DANGER_MAX             = 634; //
 
 // Mobility
 inline int MOBILITY_KNIGHT_MG = 6; //
@@ -427,24 +427,24 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Outside_Passed_EG",   {&OUTSIDE_PASSED_BONUS_EG,   TuningOption::INT, 0,  60,   "20"}},
 
     // ── King safety ───────────────────────────────────────────────
-    {"King_Shield_Penalty",    {&KING_SHIELD_MISSING_PENALTY, TuningOption::INT, -40,  0,    "-14"}},
-    {"King_Open_File_Penalty", {&KING_OPEN_FILE_PENALTY,      TuningOption::INT, -30,  0,    "-10"}},
-    {"King_SemiOpen_Penalty",  {&KING_SEMI_OPEN_FILE_PENALTY, TuningOption::INT, -20,  0,    "-6"}},
+    {"King_Shield_Penalty",    {&KING_SHIELD_MISSING_PENALTY, TuningOption::INT, -40,  0,    "-27"}},
+    {"King_Open_File_Penalty", {&KING_OPEN_FILE_PENALTY,      TuningOption::INT, -30,  0,    "-26"}},
+    {"King_SemiOpen_Penalty",  {&KING_SEMI_OPEN_FILE_PENALTY, TuningOption::INT, -20,  0,    "-4"}},
     {"King_Escape_Bonus",      {&KING_ESCAPE_BONUS,           TuningOption::INT,  0,   15,   "4"}},
     {"King_Danger_Divisor",    {&KING_DANGER_DIVISOR,         TuningOption::INT,  2,   20,   "8"}},
-    {"King_Danger_Max",        {&KING_DANGER_MAX,             TuningOption::INT,  100, 800,  "500"}},
+    {"King_Danger_Max",        {&KING_DANGER_MAX,             TuningOption::INT,  100, 800,  "634"}},
     // Attacker weights – indices 2-5 (0,1,6 are always 0)
     {"King_Attacker_Knight",   {&KING_ATTACKER_WEIGHT[2],     TuningOption::INT,  0,   8,    "2"}},
-    {"King_Attacker_Bishop",   {&KING_ATTACKER_WEIGHT[3],     TuningOption::INT,  0,   8,    "2"}},
+    {"King_Attacker_Bishop",   {&KING_ATTACKER_WEIGHT[3],     TuningOption::INT,  0,   8,    "4"}},
     {"King_Attacker_Rook",     {&KING_ATTACKER_WEIGHT[4],     TuningOption::INT,  0,   10,   "3"}},
-    {"King_Attacker_Queen",    {&KING_ATTACKER_WEIGHT[5],     TuningOption::INT,  0,   14,   "5"}},
+    {"King_Attacker_Queen",    {&KING_ATTACKER_WEIGHT[5],     TuningOption::INT,  0,   14,   "12"}},
     // Attack count bonus – indices 2-7 (0,1 are always 0)
-    {"KingAtk_2",              {&KING_ATTACK_COUNT_BONUS[2],  TuningOption::INT,  0,   15,   "3"}},
-    {"KingAtk_3",              {&KING_ATTACK_COUNT_BONUS[3],  TuningOption::INT,  0,   25,   "8"}},
-    {"KingAtk_4",              {&KING_ATTACK_COUNT_BONUS[4],  TuningOption::INT,  0,   50,   "16"}},
-    {"KingAtk_5",              {&KING_ATTACK_COUNT_BONUS[5],  TuningOption::INT,  0,   80,   "26"}},
-    {"KingAtk_6",              {&KING_ATTACK_COUNT_BONUS[6],  TuningOption::INT,  0,   100,  "38"}},
-    {"KingAtk_7",              {&KING_ATTACK_COUNT_BONUS[7],  TuningOption::INT,  0,   130,  "52"}},
+    {"KingAtk_2",              {&KING_ATTACK_COUNT_BONUS[2],  TuningOption::INT,  0,   15,   "8"}},
+    {"KingAtk_3",              {&KING_ATTACK_COUNT_BONUS[3],  TuningOption::INT,  0,   25,   "24"}},
+    {"KingAtk_4",              {&KING_ATTACK_COUNT_BONUS[4],  TuningOption::INT,  0,   50,   "36"}},
+    {"KingAtk_5",              {&KING_ATTACK_COUNT_BONUS[5],  TuningOption::INT,  0,   80,   "44"}},
+    {"KingAtk_6",              {&KING_ATTACK_COUNT_BONUS[6],  TuningOption::INT,  0,   100,  "30"}},
+    {"KingAtk_7",              {&KING_ATTACK_COUNT_BONUS[7],  TuningOption::INT,  0,   130,  "18"}},
 
     // ── Territory ─────────────────────────────────────────────────
     {"Center_Bonus",          {&CENTER_BONUS,          TuningOption::INT,  0,   20,   "8"}},

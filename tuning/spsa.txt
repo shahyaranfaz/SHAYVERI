@@ -11,32 +11,76 @@ python3.10 lakas.py \
   --match-manager-path cutechess-cli \
   --concurrency 23 \
   --optimizer oneplusone \
-  --output-data-file "batch6_$(hostname).dat" \
-  --input-data-file  "batch6_$(hostname).dat" \
-  --optimizer-log-file "batch6_$(hostname).log" \
+  --output-data-file "batch7a_$(hostname).dat" \
+  --input-data-file  "batch7a_$(hostname).dat" \
+  --optimizer-log-file "batch7a_$(hostname).log" \
   --base-time-sec 5 \
   --inc-time-sec 0.05 \
-  --budget 30 \
+  --budget 40 \
   --games-per-budget 200 \
   --engine ./shaybot \
-  --opening-file ./start_opening/ogpt_chess_startpos.epd \
+--opening-file ./start_opening/ogpt_chess_startpos.epd \
   --input-param "{ \
-'King_Shield_Penalty':   {'init': -14, 'lower': -40,  'upper': 0}, \
-'King_Open_File_Penalty':{'init': -10, 'lower': -30,  'upper': 0}, \
-'King_SemiOpen_Penalty': {'init': -6,  'lower': -20,  'upper': 0}, \
-'King_Escape_Bonus':     {'init': 4,   'lower': 0,    'upper': 15}, \
-'King_Danger_Divisor':   {'init': 8,   'lower': 2,    'upper': 20}, \
-'King_Danger_Max':       {'init': 500, 'lower': 100,  'upper': 800}, \
-'King_Attacker_Knight':  {'init': 2,   'lower': 0,    'upper': 8}, \
-'King_Attacker_Bishop':  {'init': 2,   'lower': 0,    'upper': 8}, \
-'King_Attacker_Rook':    {'init': 3,   'lower': 0,    'upper': 10}, \
-'King_Attacker_Queen':   {'init': 5,   'lower': 0,    'upper': 14}, \
-'KingAtk_2':             {'init': 3,   'lower': 0,    'upper': 15}, \
-'KingAtk_3':             {'init': 8,   'lower': 0,    'upper': 25}, \
-'KingAtk_4':             {'init': 16,  'lower': 0,    'upper': 50}, \
-'KingAtk_5':             {'init': 26,  'lower': 0,    'upper': 80}, \
-'KingAtk_6':             {'init': 38,  'lower': 0,    'upper': 100}, \
-'KingAtk_7':             {'init': 52,  'lower': 0,    'upper': 130} \
+'Undefended_Attack_Bonus':   {'init': 6,   'lower': 0,   'upper': 20}, \
+'Pin_Bonus':                 {'init': 15,  'lower': 0,   'upper': 40}, \
+'Overloaded_Defender_Bonus': {'init': 10,  'lower': 0,   'upper': 30}, \
+'Unrec_Pressure_Bonus':      {'init': 2,   'lower': 0,   'upper': 10}, \
+'Undefended_Value_Div':      {'init': 40,  'lower': 10,  'upper': 100}, \
+'Threat_Pawn_Knight_MG':     {'init': 60,  'lower': 20,  'upper': 120}, \
+'Threat_Pawn_Bishop_MG':     {'init': 65,  'lower': 20,  'upper': 120}, \
+'Threat_Pawn_Rook_MG':       {'init': 75,  'lower': 25,  'upper': 130}, \
+'Threat_Pawn_Queen_MG':      {'init': 80,  'lower': 25,  'upper': 150}, \
+'Threat_Pawn_Knight_EG':     {'init': 40,  'lower': 10,  'upper': 90}, \
+'Threat_Pawn_Bishop_EG':     {'init': 45,  'lower': 10,  'upper': 90}, \
+'Threat_Pawn_Rook_EG':       {'init': 55,  'lower': 15,  'upper': 100}, \
+'Threat_Pawn_Queen_EG':      {'init': 60,  'lower': 15,  'upper': 110}, \
+'Threat_Minor_Rook_MG':      {'init': 30,  'lower': 0,   'upper': 80}, \
+'Threat_Minor_Queen_MG':     {'init': 45,  'lower': 0,   'upper': 100}, \
+'Threat_Minor_Rook_EG':      {'init': 20,  'lower': 0,   'upper': 60}, \
+'Threat_Minor_Queen_EG':     {'init': 30,  'lower': 0,   'upper': 80}, \
+'Threat_Rook_MG':            {'init': 25,  'lower': 0,   'upper': 70}, \
+'Threat_Rook_EG':            {'init': 18,  'lower': 0,   'upper': 50}, \
+'Hanging_Penalty_MG':        {'init': 20,  'lower': 0,   'upper': 60}, \
+'Hanging_Penalty_EG':        {'init': 12,  'lower': 0,   'upper': 40}, \
+'Hanging_Value_Div':         {'init': 40,  'lower': 10,  'upper': 100} \
+}"
+
+python3.10 lakas.py \
+  --match-manager-path cutechess-cli \
+  --concurrency 12 \
+  --optimizer oneplusone \
+  --output-data-file "batch7b_$(hostname).dat" \
+  --input-data-file  "batch7b_$(hostname).dat" \
+  --optimizer-log-file "batch7b_$(hostname).log" \
+  --base-time-sec 5 \
+  --inc-time-sec 0.05 \
+  --budget 40 \
+  --games-per-budget 200 \
+  --engine ./shaybot \
+--opening-file ./start_opening/ogpt_chess_startpos.epd \
+  --input-param "{ \
+'Knight_Outpost_MG':         {'init': 20,  'lower': 0,   'upper': 50}, \
+'Knight_Outpost_EG':         {'init': 14,  'lower': 0,   'upper': 35}, \
+'Bishop_Outpost_MG':         {'init': 12,  'lower': 0,   'upper': 35}, \
+'Bishop_Outpost_EG':         {'init': 8,   'lower': 0,   'upper': 25}, \
+'Rook_Outpost_MG':           {'init': 14,  'lower': 0,   'upper': 35}, \
+'Rook_Outpost_EG':           {'init': 12,  'lower': 0,   'upper': 30}, \
+'Queen_Outpost_MG':          {'init': 10,  'lower': 0,   'upper': 25}, \
+'Queen_Outpost_EG':          {'init': 8,   'lower': 0,   'upper': 20}, \
+'Center_Bonus':              {'init': 8,   'lower': 0,   'upper': 20}, \
+'Ext_Center_Bonus':          {'init': 4,   'lower': 0,   'upper': 12}, \
+'Enemy_Half_Bonus':          {'init': 3,   'lower': 0,   'upper': 10}, \
+'Seventh_Rank_MG':           {'init': 20,  'lower': 5,   'upper': 50}, \
+'Seventh_Rank_EG':           {'init': 30,  'lower': 5,   'upper': 70}, \
+'Defended_Piece_Bonus':      {'init': 4,   'lower': 0,   'upper': 15}, \
+'Shared_Target_Bonus':       {'init': 8,   'lower': 0,   'upper': 25}, \
+'Battery_Rook_Queen':        {'init': 12,  'lower': 0,   'upper': 35}, \
+'Battery_Bishop_Queen':      {'init': 8,   'lower': 0,   'upper': 25}, \
+'Support_Chain_Bonus':       {'init': 6,   'lower': 0,   'upper': 20}, \
+'Open_File_Mult':            {'init': 120, 'lower': 100, 'upper': 150}, \
+'Semi_Open_File_Mult':       {'init': 110, 'lower': 100, 'upper': 130}, \
+'Bishop_Openness_Max':       {'init': 30,  'lower': 0,   'upper': 60}, \
+'Bishop_Openness_SqWt':      {'init': 2,   'lower': 0,   'upper': 6} \
 }"
 
 ================================================================
@@ -88,6 +132,8 @@ BATCH 1 – CORE SEARCH  (tune this first, highest leverage)
 [x] SE_Margin           | Initial:   20 | Min:   20 | Max:   70 | Tuned:    54 | re-run 3x
 [x] SE_Reduction_Denom  | Initial:    2 | Min:    1 | Max:    4 | Tuned:     3 |
 
+Budgets: 60-40-70
+
 ================================================================
 BATCH 2 – HISTORY / MOVE ORDERING
 ================================================================
@@ -99,6 +145,8 @@ BATCH 2 – HISTORY / MOVE ORDERING
 [x] Main_History_Weight | Initial:  100 | Min:   50 | Max:  200 | Tuned:   78 |
 [x] CMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned:   61 |
 [x] FMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned:   33 |
+
+Budgets: 150
 
 ================================================================
 BATCH 3 – CORE EVAL  (misc + mobility)
@@ -117,6 +165,8 @@ BATCH 3 – CORE EVAL  (misc + mobility)
 [x] Mobility_Bishop_EG  | Initial:    4 | Min:    0 | Max:   12 | Tuned:  5 |
 [x] Mobility_Rook_EG    | Initial:    3 | Min:    0 | Max:   10 | Tuned:  2 |
 [x] Mobility_Queen_EG   | Initial:    2 | Min:    0 | Max:    6 | Tuned:  1 |
+
+Budgets: 160
 
 ================================================================
 BATCH 4 – PAWN STRUCTURE
@@ -139,6 +189,8 @@ BATCH 4 – PAWN STRUCTURE
 [x] Pawn_ExtCenter_EG   | Initial:    1 | Min:    0 | Max:    6 | Tuned:   3 |
 [x] Pawn_Storm_Base     | Initial:    4 | Min:    0 | Max:   15 | Tuned:   2 |
 [x] Pawn_Storm_Rank_Mult| Initial:    2 | Min:    0 | Max:    8 | Tuned:   1 |
+
+Budgets: 180
 
 ================================================================
 BATCH 5 – PASSED PAWNS
@@ -164,27 +216,31 @@ BATCH 5 – PASSED PAWNS
 [x] Outside_Passed_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned:   8 |
 [x] Outside_Passed_EG   | Initial:   20 | Min:    0 | Max:   60 | Tuned:  20 |
 
+Budgets: 230
+
 ================================================================
 BATCH 6 – KING SAFETY
 ================================================================
 16 parameters
 
-[ ] King_Shield_Penalty    | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: ___ |
-[ ] King_Open_File_Penalty | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: ___ |
-[ ] King_SemiOpen_Penalty  | Initial:   -6 | Min:  -20 | Max:    0 | Tuned: ___ |
-[ ] King_Escape_Bonus      | Initial:    4 | Min:    0 | Max:   15 | Tuned: ___ |
-[ ] King_Danger_Divisor    | Initial:    8 | Min:    2 | Max:   20 | Tuned: ___ |
-[ ] King_Danger_Max        | Initial:  500 | Min:  100 | Max:  800 | Tuned: ___ |
-[ ] King_Attacker_Knight   | Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
-[ ] King_Attacker_Bishop   | Initial:    2 | Min:    0 | Max:    8 | Tuned: ___ |
-[ ] King_Attacker_Rook     | Initial:    3 | Min:    0 | Max:   10 | Tuned: ___ |
-[ ] King_Attacker_Queen    | Initial:    5 | Min:    0 | Max:   14 | Tuned: ___ |
-[ ] KingAtk_2              | Initial:    3 | Min:    0 | Max:   15 | Tuned: ___ |
-[ ] KingAtk_3              | Initial:    8 | Min:    0 | Max:   25 | Tuned: ___ |
-[ ] KingAtk_4              | Initial:   16 | Min:    0 | Max:   50 | Tuned: ___ |
-[ ] KingAtk_5              | Initial:   26 | Min:    0 | Max:   80 | Tuned: ___ |
-[ ] KingAtk_6              | Initial:   38 | Min:    0 | Max:  100 | Tuned: ___ |
-[ ] KingAtk_7              | Initial:   52 | Min:    0 | Max:  130 | Tuned: ___ |
+[x] King_Shield_Penalty    | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: -27 |
+[x] King_Open_File_Penalty | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: -26 |
+[x] King_SemiOpen_Penalty  | Initial:   -6 | Min:  -20 | Max:    0 | Tuned:  -4 |
+[x] King_Escape_Bonus      | Initial:    4 | Min:    0 | Max:   15 | Tuned:   4 |
+[x] King_Danger_Divisor    | Initial:    8 | Min:    2 | Max:   20 | Tuned:   8 |
+[x] King_Danger_Max        | Initial:  500 | Min:  100 | Max:  800 | Tuned: 634 |
+[x] King_Attacker_Knight   | Initial:    2 | Min:    0 | Max:    8 | Tuned:   2 |
+[x] King_Attacker_Bishop   | Initial:    2 | Min:    0 | Max:    8 | Tuned:   4 |
+[x] King_Attacker_Rook     | Initial:    3 | Min:    0 | Max:   10 | Tuned:   3 |
+[x] King_Attacker_Queen    | Initial:    5 | Min:    0 | Max:   14 | Tuned:  12 |
+[x] KingAtk_2              | Initial:    3 | Min:    0 | Max:   15 | Tuned:   8 |
+[x] KingAtk_3              | Initial:    8 | Min:    0 | Max:   25 | Tuned:  24 |
+[x] KingAtk_4              | Initial:   16 | Min:    0 | Max:   50 | Tuned:  36 | 
+[x] KingAtk_5              | Initial:   26 | Min:    0 | Max:   80 | Tuned:  44 |
+[x] KingAtk_6              | Initial:   38 | Min:    0 | Max:  100 | Tuned:  30 |
+[x] KingAtk_7              | Initial:   52 | Min:    0 | Max:  130 | Tuned:  18 |
+
+Budgets: 180
 
 ================================================================
 BATCH 7 – THREATS, HANGING, OUTPOSTS, COORDINATION
