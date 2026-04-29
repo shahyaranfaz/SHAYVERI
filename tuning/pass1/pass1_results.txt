@@ -1,0 +1,243 @@
+python3.10 lakas.py \
+  --match-manager-path cutechess-cli \
+  --concurrency 23 \
+  --optimizer oneplusone \
+  --output-data-file "batch8_$(hostname).dat" \
+  --input-data-file  "batch8_$(hostname).dat" \
+  --optimizer-log-file "batch8_$(hostname).log" \
+  --base-time-sec 5 \
+  --inc-time-sec 0.05 \
+  --budget 40 \
+  --games-per-budget 200 \
+  --engine ./shaybot \
+--opening-file ./start_opening/ogpt_chess_startpos.epd \
+  --input-param "{ \
+}"
+
+================================================================
+  SHAYBOT  –  SPSA TUNING TRACKER  (Lakas)
+================================================================
+Format per row:
+  [STATUS] Name | Initial | Min | Max | Tuned | Notes
+
+STATUS codes:
+  [ ] not started
+  [~] in progress
+  [x] converged / done
+  [!] re-run queued (value still drifting)
+  [-] skipped / not tuning this pass
+
+Lakas C values (perturbation size) guidance:
+  Integer params  : c = max(1, round(0.002 * |initial|))
+  LMR_Base/Scale  : c = 0.05
+
+================================================================
+BATCH 1 – CORE SEARCH  (tune this first, highest leverage)
+================================================================
+13 parameters
+
+[x] ASP_Delta           | Initial:   25 | Min:    5 | Max:  100 | Tuned:  32   |
+[x] LMR_Base            | Initial: 0.75 | Min:  --- | Max:  --- | Tuned: 1.236 | type string; c=0.05
+[x] LMR_Scale           | Initial: 2.25 | Min:  --- | Max:  --- | Tuned: 1.796 | type string; c=0.05
+[x] RFP_Margin          | Initial:  120 | Min:   50 | Max:  250 | Tuned:    82 | re-run 2x
+[x] FP_Base             | Initial:  150 | Min:  100 | Max:  500 | Tuned:   197 | re-run 2x
+[x] FP_Mult             | Initial:  150 | Min:  100 | Max:  800 | Tuned:   657 | re-run 3x
+[x] LMP_Base            | Initial:    3 | Min:    2 | Max:   10 | Tuned:     3 | re-run 3x
+[x] LMP_Mult            | Initial:    2 | Min:    1 | Max:    6 | Tuned:     1 |
+[x] SEE_Pruning_Margin  | Initial: -100 | Min: -300 | Max:  -50 | Tuned:  -277 | re-run 2x
+[x] SE_Min_Depth        | Initial:    8 | Min:    6 | Max:   18 | Tuned:     9 | re-run 3x
+[x] SE_Depth_Margin     | Initial:    3 | Min:    1 | Max:    6 | Tuned:     2 |
+[x] SE_Margin           | Initial:   20 | Min:   20 | Max:   70 | Tuned:    54 | re-run 3x
+[x] SE_Reduction_Denom  | Initial:    2 | Min:    1 | Max:    4 | Tuned:     3 |
+
+Budgets: 60-40-70
+1a: {"#parametrization": "Instrumentation(Tuple(),Dict(ASP_Delta=Scalar{Cl(5,100,b),Int}[sigma=Scalar{exp=2.03}],FP_Base=Scalar{Cl(30,400,b),Int}[sigma=Scalar{exp=2.03}],FP_Mult=Scalar{Cl(30,400,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(1,8,b),Int}[sigma=Scalar{exp=2.03}],LMP_Mult=Scalar{Cl(1,6,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(0.3,1.5,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1,4,b)}[sigma=Scalar{exp=2.03}],RFP_Margin=Scalar{Cl(30,300,b),Int}[sigma=Scalar{exp=2.03}],SEE_Pruning_Margin=Scalar{Cl(-300,0,b),Int}[sigma=Scalar{exp=2.03}],SE_Depth_Margin=Scalar{Cl(1,6,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(5,60,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(4,14,b),Int}[sigma=Scalar{exp=2.03}],SE_Reduction_Denom=Scalar{Cl(1,4,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-27 20:46:20", "#num-ask": 36, "#num-tell": 36, "#num-tell-not-asked": 1, "#uid": "7465a93af8754576be9a38838b6bb54c", "#lineage": "39188e359841461c9cfea19e90156887", "#generation": 5, "#parents_uids": ["2e1187f2b78341d180171b7ec5147062"], "#loss": 0.31999999999999995, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "ASP_Delta": 32, "ASP_Delta#sigma": 15.833333333333334, "ASP_Delta#sigma#sigma": 1.0, "FP_Base": 292, "FP_Base#sigma": 61.666666666666686, "FP_Base#sigma#sigma": 1.0, "FP_Mult": 400, "FP_Mult#sigma": 61.666666666666686, "FP_Mult#sigma#sigma": 1.0, "LMP_Base": 8, "LMP_Base#sigma": 1.1666666666666667, "LMP_Base#sigma#sigma": 1.0, "LMP_Mult": 1, "LMP_Mult#sigma": 0.8333333333333334, "LMP_Mult#sigma#sigma": 1.0, "LMR_Base": 1.2363190763787468, "LMR_Base#sigma": 0.19999999999999996, "LMR_Base#sigma#sigma": 1.0, "LMR_Scale": 1.7956734860976344, "LMR_Scale#sigma": 0.5, "LMR_Scale#sigma#sigma": 1.0, "RFP_Margin": 134, "RFP_Margin#sigma": 44.99999999999999, "RFP_Margin#sigma#sigma": 1.0, "SEE_Pruning_Margin": -202, "SEE_Pruning_Margin#sigma": 50.000000000000014, "SEE_Pruning_Margin#sigma#sigma": 1.0, "SE_Depth_Margin": 2, "SE_Depth_Margin#sigma": 0.8333333333333334, "SE_Depth_Margin#sigma#sigma": 1.0, "SE_Margin": 60, "SE_Margin#sigma": 9.166666666666666, "SE_Margin#sigma#sigma": 1.0, "SE_Min_Depth": 14, "SE_Min_Depth#sigma": 1.6666666666666667, "SE_Min_Depth#sigma#sigma": 1.0, "SE_Reduction_Denom": 3, "SE_Reduction_Denom#sigma": 0.5, "SE_Reduction_Denom#sigma#sigma": 1.0}
+1b: {"#parametrization": "Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(200,700,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(4,16,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(30,120,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(8,20,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-28 09:06:09", "#num-ask": 33, "#num-tell": 33, "#num-tell-not-asked": 1, "#uid": "c30bb73430474beba16fa7660322541c", "#lineage": "d3af8aa59a3f4f32afdfff195bcdb642", "#generation": 9, "#parents_uids": ["778de35b27ae4d6fb68138367f3504fa"], "#loss": 0.43999999999999995, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "FP_Mult": 700, "FP_Mult#sigma": 83.33333333333336, "FP_Mult#sigma#sigma": 1.0, "LMP_Base": 4, "LMP_Base#sigma": 2.0, "LMP_Base#sigma#sigma": 1.0, "SE_Margin": 30, "SE_Margin#sigma": 15.000000000000002, "SE_Margin#sigma#sigma": 1.0, "SE_Min_Depth": 20, "SE_Min_Depth#sigma": 2.0, "SE_Min_Depth#sigma#sigma": 1.0}
+1c: {"#parametrization": "Instrumentation(Tuple(),Dict(FP_Base=Scalar{Cl(100,500,b),Int}[sigma=Scalar{exp=2.03}],FP_Mult=Scalar{Cl(100,800,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(2,10,b),Int}[sigma=Scalar{exp=2.03}],RFP_Margin=Scalar{Cl(50,250,b),Int}[sigma=Scalar{exp=2.03}],SEE_Pruning_Margin=Scalar{Cl(-300,-50,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(20,80,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(6,18,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-28 13:50:59", "#num-ask": 6, "#num-tell": 6, "#num-tell-not-asked": 1, "#uid": "c5525c3ced484d73b1c6ce2eca7c8708", "#lineage": "5b4703c5a23242dda7fdfced4e0e6ec2", "#generation": 3, "#parents_uids": ["82a117b075904787afc9f875d478402a"], "#loss": 0.41500000000000004, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "FP_Base": 197, "FP_Base#sigma": 66.66666666666669, "FP_Base#sigma#sigma": 1.0, "FP_Mult": 657, "FP_Mult#sigma": 116.66666666666669, "FP_Mult#sigma#sigma": 1.0, "LMP_Base": 3, "LMP_Base#sigma": 1.3333333333333333, "LMP_Base#sigma#sigma": 1.0, "RFP_Margin": 82, "RFP_Margin#sigma": 33.33333333333334, "RFP_Margin#sigma#sigma": 1.0, "SEE_Pruning_Margin": -277, "SEE_Pruning_Margin#sigma": 41.66666666666668, "SEE_Pruning_Margin#sigma#sigma": 1.0, "SE_Margin": 54, "SE_Margin#sigma": 10.000000000000005, "SE_Margin#sigma#sigma": 1.0, "SE_Min_Depth": 9, "SE_Min_Depth#sigma": 2.0, "SE_Min_Depth#sigma#sigma": 1.0}
+
+================================================================
+BATCH 2 – HISTORY / MOVE ORDERING
+================================================================
+6 parameters
+
+[x] History_Bonus_Mult  | Initial:  300 | Min:  100 | Max:  600 | Tuned:  488 |
+[x] History_Bonus_Sub   | Initial:  200 | Min:   50 | Max:  400 | Tuned:  170 |
+[x] History_Bonus_Limit | Initial: 1500 | Min:  500 | Max: 3000 | Tuned: 2842 |
+[x] Main_History_Weight | Initial:  100 | Min:   50 | Max:  200 | Tuned:   78 |
+[x] CMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned:   61 |
+[x] FMH_Weight          | Initial:  100 | Min:    0 | Max:  200 | Tuned:   33 |
+
+Budgets: 150
+2: {"#parametrization": "Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(0,200,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,200,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(500,3000,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(100,600,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(50,400,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(50,200,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-28 17:40:51", "#num-ask": 11, "#num-tell": 11, "#num-tell-not-asked": 1, "#uid": "2f4f405e4dbf4654938684f2f0a818bb", "#lineage": "0db97b01cb7e4e59820fbb49cc5c38a0", "#generation": 3, "#parents_uids": ["25846f7063c94afe9e07a93945d118b0"], "#loss": 0.43000000000000005, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "CMH_Weight": 61, "CMH_Weight#sigma": 33.33333333333334, "CMH_Weight#sigma#sigma": 1.0, "FMH_Weight": 33, "FMH_Weight#sigma": 33.33333333333334, "FMH_Weight#sigma#sigma": 1.0, "History_Bonus_Limit": 2842, "History_Bonus_Limit#sigma": 416.6666666666667, "History_Bonus_Limit#sigma#sigma": 1.0, "History_Bonus_Mult": 488, "History_Bonus_Mult#sigma": 83.33333333333336, "History_Bonus_Mult#sigma#sigma": 1.0, "History_Bonus_Sub": 170, "History_Bonus_Sub#sigma": 58.33333333333335, "History_Bonus_Sub#sigma#sigma": 1.0, "Main_History_Weight": 78, "Main_History_Weight#sigma": 24.999999999999993, "Main_History_Weight#sigma#sigma": 1.0}
+
+================================================================
+BATCH 3 – CORE EVAL  (misc + mobility)
+================================================================
+12 parameters
+
+[x] Tempo_Bonus         | Initial:    8 | Min:    0 | Max:   30 | Tuned: 24 |
+[x] Bishop_Pair_Bonus   | Initial:   30 | Min:   10 | Max:   60 | Tuned: 21 |
+[x] Development_Bonus   | Initial:    5 | Min:    0 | Max:   20 | Tuned: 12 |
+[x] Castled_Bonus       | Initial:   12 | Min:    0 | Max:   40 | Tuned: 8  |
+[x] Mobility_Knight_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: 6  |
+[x] Mobility_Bishop_MG  | Initial:    4 | Min:    0 | Max:   12 | Tuned: 11 |
+[x] Mobility_Rook_MG    | Initial:    2 | Min:    0 | Max:    8 | Tuned:  5 | 
+[x] Mobility_Queen_MG   | Initial:    1 | Min:    0 | Max:    6 | Tuned:  5 |
+[x] Mobility_Knight_EG  | Initial:    3 | Min:    0 | Max:   12 | Tuned:  5 |
+[x] Mobility_Bishop_EG  | Initial:    4 | Min:    0 | Max:   12 | Tuned:  5 |
+[x] Mobility_Rook_EG    | Initial:    3 | Min:    0 | Max:   10 | Tuned:  2 |
+[x] Mobility_Queen_EG   | Initial:    2 | Min:    0 | Max:    6 | Tuned:  1 |
+
+Budgets: 160
+3: {"#parametrization": "Instrumentation(Tuple(),Dict(Bishop_Pair_Bonus=Scalar{Cl(10,60,b),Int}[sigma=Scalar{exp=2.03}],Castled_Bonus=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Development_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_EG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_EG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_EG=Scalar{Cl(0,6,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_MG=Scalar{Cl(0,6,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_EG=Scalar{Cl(0,10,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_MG=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Tempo_Bonus=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-28 22:33:10", "#num-ask": 17, "#num-tell": 17, "#num-tell-not-asked": 1, "#uid": "d2be434fb10149ab9b308c4c226bf836", "#lineage": "d782eaba707d405385a16890c3bfd6ad", "#generation": 3, "#parents_uids": ["c9c61969a6be4825b3df9b7c0fbd038a"], "#loss": 0.41000000000000003, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "Bishop_Pair_Bonus": 21, "Bishop_Pair_Bonus#sigma": 8.333333333333334, "Bishop_Pair_Bonus#sigma#sigma": 1.0, "Castled_Bonus": 8, "Castled_Bonus#sigma": 6.666666666666668, "Castled_Bonus#sigma#sigma": 1.0, "Development_Bonus": 12, "Development_Bonus#sigma": 3.333333333333334, "Development_Bonus#sigma#sigma": 1.0, "Mobility_Bishop_EG": 5, "Mobility_Bishop_EG#sigma": 2.0, "Mobility_Bishop_EG#sigma#sigma": 1.0, "Mobility_Bishop_MG": 11, "Mobility_Bishop_MG#sigma": 2.0, "Mobility_Bishop_MG#sigma#sigma": 1.0, "Mobility_Knight_EG": 5, "Mobility_Knight_EG#sigma": 2.0, "Mobility_Knight_EG#sigma#sigma": 1.0, "Mobility_Knight_MG": 6, "Mobility_Knight_MG#sigma": 2.0, "Mobility_Knight_MG#sigma#sigma": 1.0, "Mobility_Queen_EG": 1, "Mobility_Queen_EG#sigma": 1.0, "Mobility_Queen_EG#sigma#sigma": 1.0, "Mobility_Queen_MG": 5, "Mobility_Queen_MG#sigma": 1.0, "Mobility_Queen_MG#sigma#sigma": 1.0, "Mobility_Rook_EG": 2, "Mobility_Rook_EG#sigma": 1.6666666666666667, "Mobility_Rook_EG#sigma#sigma": 1.0, "Mobility_Rook_MG": 5, "Mobility_Rook_MG#sigma": 1.3333333333333333, "Mobility_Rook_MG#sigma#sigma": 1.0, "Tempo_Bonus": 24, "Tempo_Bonus#sigma": 4.999999999999999, "Tempo_Bonus#sigma#sigma": 1.0}
+
+================================================================
+BATCH 4 – PAWN STRUCTURE
+================================================================
+16 parameters
+
+[x] Isolated_MG         | Initial:  -12 | Min:  -40 | Max:    0 | Tuned:  -2 |
+[x] Isolated_EG         | Initial:   -8 | Min:  -30 | Max:    0 | Tuned:  -2 |
+[x] Doubled_MG          | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: -10 |
+[x] Doubled_EG          | Initial:  -10 | Min:  -30 | Max:    0 | Tuned:  -6 |
+[x] Backward_MG         | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: -13 |
+[x] Backward_EG         | Initial:   -6 | Min:  -20 | Max:    0 | Tuned:  -2 |
+[x] Supported_Pawn_MG   | Initial:    6 | Min:    0 | Max:   20 | Tuned:  15 |
+[x] Weak_Pawn_MG        | Initial:   -8 | Min:  -30 | Max:    0 | Tuned: -18 |
+[x] Pawn_Island_MG      | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: -28 |
+[x] Pawn_Island_EG      | Initial:   -6 | Min:  -20 | Max:    0 | Tuned:  -4 |
+[x] Pawn_Center_MG      | Initial:    6 | Min:    0 | Max:   20 | Tuned:   8 |
+[x] Pawn_Center_EG      | Initial:    2 | Min:    0 | Max:   10 | Tuned:   0 |
+[x] Pawn_ExtCenter_MG   | Initial:    3 | Min:    0 | Max:   12 | Tuned:   0 |
+[x] Pawn_ExtCenter_EG   | Initial:    1 | Min:    0 | Max:    6 | Tuned:   3 |
+[x] Pawn_Storm_Base     | Initial:    4 | Min:    0 | Max:   15 | Tuned:   2 |
+[x] Pawn_Storm_Rank_Mult| Initial:    2 | Min:    0 | Max:    8 | Tuned:   1 |
+
+Budgets: 180
+4: {"#parametrization": "Instrumentation(Tuple(),Dict(Backward_EG=Scalar{Cl(-20,0,b),Int}[sigma=Scalar{exp=2.03}],Backward_MG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_EG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_MG=Scalar{Cl(-40,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_EG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_MG=Scalar{Cl(-40,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Center_EG=Scalar{Cl(0,10,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Center_MG=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],Pawn_ExtCenter_EG=Scalar{Cl(0,6,b),Int}[sigma=Scalar{exp=2.03}],Pawn_ExtCenter_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_EG=Scalar{Cl(-20,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_MG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Base=Scalar{Cl(0,15,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Rank_Mult=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Supported_Pawn_MG=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],Weak_Pawn_MG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-29 00:03:58", "#num-ask": 25, "#num-tell": 25, "#num-tell-not-asked": 1, "#uid": "65ac7df826304fe087d4680368c52d7d", "#lineage": "7a821a89330c4988860d41131aaec98f", "#generation": 4, "#parents_uids": ["2a31b987675d483abbbd4ad07d2a7367"], "#loss": 0.4175, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "Backward_EG": -2, "Backward_EG#sigma": 3.333333333333334, "Backward_EG#sigma#sigma": 1.0, "Backward_MG": -13, "Backward_MG#sigma": 4.999999999999999, "Backward_MG#sigma#sigma": 1.0, "Doubled_EG": -6, "Doubled_EG#sigma": 4.999999999999999, "Doubled_EG#sigma#sigma": 1.0, "Doubled_MG": -10, "Doubled_MG#sigma": 6.666666666666668, "Doubled_MG#sigma#sigma": 1.0, "Isolated_EG": -2, "Isolated_EG#sigma": 4.999999999999999, "Isolated_EG#sigma#sigma": 1.0, "Isolated_MG": -2, "Isolated_MG#sigma": 6.666666666666668, "Isolated_MG#sigma#sigma": 1.0, "Pawn_Center_EG": 0, "Pawn_Center_EG#sigma": 1.6666666666666667, "Pawn_Center_EG#sigma#sigma": 1.0, "Pawn_Center_MG": 8, "Pawn_Center_MG#sigma": 3.333333333333334, "Pawn_Center_MG#sigma#sigma": 1.0, "Pawn_ExtCenter_EG": 3, "Pawn_ExtCenter_EG#sigma": 1.0, "Pawn_ExtCenter_EG#sigma#sigma": 1.0, "Pawn_ExtCenter_MG": 0, "Pawn_ExtCenter_MG#sigma": 2.0, "Pawn_ExtCenter_MG#sigma#sigma": 1.0, "Pawn_Island_EG": -4, "Pawn_Island_EG#sigma": 3.333333333333334, "Pawn_Island_EG#sigma#sigma": 1.0, "Pawn_Island_MG": -28, "Pawn_Island_MG#sigma": 4.999999999999999, "Pawn_Island_MG#sigma#sigma": 1.0, "Pawn_Storm_Base": 2, "Pawn_Storm_Base#sigma": 2.5, "Pawn_Storm_Base#sigma#sigma": 1.0, "Pawn_Storm_Rank_Mult": 1, "Pawn_Storm_Rank_Mult#sigma": 1.3333333333333333, "Pawn_Storm_Rank_Mult#sigma#sigma": 1.0, "Supported_Pawn_MG": 15, "Supported_Pawn_MG#sigma": 3.333333333333334, "Supported_Pawn_MG#sigma#sigma": 1.0, "Weak_Pawn_MG": -18, "Weak_Pawn_MG#sigma": 4.999999999999999, "Weak_Pawn_MG#sigma#sigma": 1.0}
+
+================================================================
+BATCH 5 – PASSED PAWNS
+================================================================
+18 parameters
+
+[x] PassedMG_R1         | Initial:    5 | Min:    0 | Max:   20 | Tuned:   5 |
+[x] PassedMG_R2         | Initial:   10 | Min:    0 | Max:   30 | Tuned:  10 |
+[x] PassedMG_R3         | Initial:   20 | Min:    0 | Max:   50 | Tuned:  20 |
+[x] PassedMG_R4         | Initial:   30 | Min:    0 | Max:   80 | Tuned:  30 |
+[x] PassedMG_R5         | Initial:   50 | Min:    0 | Max:  120 | Tuned:  50 |
+[x] PassedMG_R6         | Initial:   70 | Min:    0 | Max:  150 | Tuned:  70 |
+[x] PassedEG_R1         | Initial:   10 | Min:    0 | Max:   30 | Tuned:  10 |
+[x] PassedEG_R2         | Initial:   20 | Min:    0 | Max:   50 | Tuned:  20 |
+[x] PassedEG_R3         | Initial:   40 | Min:    0 | Max:   80 | Tuned:  40 |
+[x] PassedEG_R4         | Initial:   60 | Min:    0 | Max:  130 | Tuned:  60 |
+[x] PassedEG_R5         | Initial:   90 | Min:    0 | Max:  180 | Tuned:  90 |
+[x] PassedEG_R6         | Initial:  120 | Min:    0 | Max:  220 | Tuned: 120 |
+[x] Candidate_Pawn_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned:   8 |
+[x] Candidate_Pawn_EG   | Initial:   12 | Min:    0 | Max:   40 | Tuned:  12 |
+[x] Connected_Passed_MG | Initial:   10 | Min:    0 | Max:   30 | Tuned:  10 |
+[x] Connected_Passed_EG | Initial:   18 | Min:    0 | Max:   50 | Tuned:  18 |
+[x] Outside_Passed_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned:   8 |
+[x] Outside_Passed_EG   | Initial:   20 | Min:    0 | Max:   60 | Tuned:  20 |
+
+Budgets: 230
+5: {"#parametrization": "Instrumentation(Tuple(),Dict(Candidate_Pawn_EG=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Candidate_Pawn_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Connected_Passed_EG=Scalar{Cl(0,50,b),Int}[sigma=Scalar{exp=2.03}],Connected_Passed_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Outside_Passed_EG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Outside_Passed_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],PassedEG_R1=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],PassedEG_R2=Scalar{Cl(0,50,b),Int}[sigma=Scalar{exp=2.03}],PassedEG_R3=Scalar{Cl(0,80,b),Int}[sigma=Scalar{exp=2.03}],PassedEG_R4=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],PassedEG_R5=Scalar{Cl(0,180,b),Int}[sigma=Scalar{exp=2.03}],PassedEG_R6=Scalar{Cl(0,220,b),Int}[sigma=Scalar{exp=2.03}],PassedMG_R1=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],PassedMG_R2=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],PassedMG_R3=Scalar{Cl(0,50,b),Int}[sigma=Scalar{exp=2.03}],PassedMG_R4=Scalar{Cl(0,80,b),Int}[sigma=Scalar{exp=2.03}],PassedMG_R5=Scalar{Cl(0,120,b),Int}[sigma=Scalar{exp=2.03}],PassedMG_R6=Scalar{Cl(0,150,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-29 01:53:41", "#num-ask": 103, "#num-tell": 103, "#num-tell-not-asked": 1, "#uid": "f684197604c04eb587863f4f3a8e77bb", "#lineage": "91af848ebf0746aba96d7095cbdfc10e", "#generation": 5, "#parents_uids": ["7f999eba84f6481fba5f37b2a6194590"], "#loss": 0.43500000000000005, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "Candidate_Pawn_EG": 12, "Candidate_Pawn_EG#sigma": 6.666666666666668, "Candidate_Pawn_EG#sigma#sigma": 1.0, "Candidate_Pawn_MG": 8, "Candidate_Pawn_MG#sigma": 4.999999999999999, "Candidate_Pawn_MG#sigma#sigma": 1.0, "Connected_Passed_EG": 18, "Connected_Passed_EG#sigma": 8.333333333333334, "Connected_Passed_EG#sigma#sigma": 1.0, "Connected_Passed_MG": 10, "Connected_Passed_MG#sigma": 4.999999999999999, "Connected_Passed_MG#sigma#sigma": 1.0, "Outside_Passed_EG": 20, "Outside_Passed_EG#sigma": 10.000000000000005, "Outside_Passed_EG#sigma#sigma": 1.0, "Outside_Passed_MG": 8, "Outside_Passed_MG#sigma": 4.999999999999999, "Outside_Passed_MG#sigma#sigma": 1.0, "PassedEG_R1": 10, "PassedEG_R1#sigma": 4.999999999999999, "PassedEG_R1#sigma#sigma": 1.0, "PassedEG_R2": 20, "PassedEG_R2#sigma": 8.333333333333334, "PassedEG_R2#sigma#sigma": 1.0, "PassedEG_R3": 40, "PassedEG_R3#sigma": 13.333333333333336, "PassedEG_R3#sigma#sigma": 1.0, "PassedEG_R4": 60, "PassedEG_R4#sigma": 21.666666666666675, "PassedEG_R4#sigma#sigma": 1.0, "PassedEG_R5": 90, "PassedEG_R5#sigma": 30.000000000000014, "PassedEG_R5#sigma#sigma": 1.0, "PassedEG_R6": 120, "PassedEG_R6#sigma": 36.66666666666668, "PassedEG_R6#sigma#sigma": 1.0, "PassedMG_R1": 5, "PassedMG_R1#sigma": 3.333333333333334, "PassedMG_R1#sigma#sigma": 1.0, "PassedMG_R2": 10, "PassedMG_R2#sigma": 4.999999999999999, "PassedMG_R2#sigma#sigma": 1.0, "PassedMG_R3": 20, "PassedMG_R3#sigma": 8.333333333333334, "PassedMG_R3#sigma#sigma": 1.0, "PassedMG_R4": 30, "PassedMG_R4#sigma": 13.333333333333336, "PassedMG_R4#sigma#sigma": 1.0, "PassedMG_R5": 50, "PassedMG_R5#sigma": 19.999999999999996, "PassedMG_R5#sigma#sigma": 1.0, "PassedMG_R6": 70, "PassedMG_R6#sigma": 24.999999999999993, "PassedMG_R6#sigma#sigma": 1.0}
+
+================================================================
+BATCH 6 – KING SAFETY
+================================================================
+16 parameters
+
+[x] King_Shield_Penalty    | Initial:  -14 | Min:  -40 | Max:    0 | Tuned: -27 |
+[x] King_Open_File_Penalty | Initial:  -10 | Min:  -30 | Max:    0 | Tuned: -26 |
+[x] King_SemiOpen_Penalty  | Initial:   -6 | Min:  -20 | Max:    0 | Tuned:  -4 |
+[x] King_Escape_Bonus      | Initial:    4 | Min:    0 | Max:   15 | Tuned:   4 |
+[x] King_Danger_Divisor    | Initial:    8 | Min:    2 | Max:   20 | Tuned:   8 |
+[x] King_Danger_Max        | Initial:  500 | Min:  100 | Max:  800 | Tuned: 634 |
+[x] King_Attacker_Knight   | Initial:    2 | Min:    0 | Max:    8 | Tuned:   2 |
+[x] King_Attacker_Bishop   | Initial:    2 | Min:    0 | Max:    8 | Tuned:   4 |
+[x] King_Attacker_Rook     | Initial:    3 | Min:    0 | Max:   10 | Tuned:   3 |
+[x] King_Attacker_Queen    | Initial:    5 | Min:    0 | Max:   14 | Tuned:  12 |
+[x] KingAtk_2              | Initial:    3 | Min:    0 | Max:   15 | Tuned:   8 |
+[x] KingAtk_3              | Initial:    8 | Min:    0 | Max:   25 | Tuned:  24 |
+[x] KingAtk_4              | Initial:   16 | Min:    0 | Max:   50 | Tuned:  36 | 
+[x] KingAtk_5              | Initial:   26 | Min:    0 | Max:   80 | Tuned:  44 |
+[x] KingAtk_6              | Initial:   38 | Min:    0 | Max:  100 | Tuned:  30 |
+[x] KingAtk_7              | Initial:   52 | Min:    0 | Max:  130 | Tuned:  18 |
+
+Budgets: 180
+6: {"#parametrization": "Instrumentation(Tuple(),Dict(KingAtk_2=Scalar{Cl(0,15,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_3=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_4=Scalar{Cl(0,50,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_5=Scalar{Cl(0,80,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_6=Scalar{Cl(0,100,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_7=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Bishop=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Knight=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Queen=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Rook=Scalar{Cl(0,10,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Divisor=Scalar{Cl(2,20,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Max=Scalar{Cl(100,800,b),Int}[sigma=Scalar{exp=2.03}],King_Escape_Bonus=Scalar{Cl(0,15,b),Int}[sigma=Scalar{exp=2.03}],King_Open_File_Penalty=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],King_SemiOpen_Penalty=Scalar{Cl(-20,0,b),Int}[sigma=Scalar{exp=2.03}],King_Shield_Penalty=Scalar{Cl(-40,0,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-29 10:20:47", "#num-ask": 29, "#num-tell": 29, "#num-tell-not-asked": 1, "#uid": "e914244016144590a8fe7945bee2a32a", "#lineage": "9493261313d34557bdb995674585ccbe", "#generation": 3, "#parents_uids": ["cddbcdd2761f447c9101b6bd4f09fd0c"], "#loss": 0.4225, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "KingAtk_2": 8, "KingAtk_2#sigma": 2.5, "KingAtk_2#sigma#sigma": 1.0, "KingAtk_3": 24, "KingAtk_3#sigma": 4.166666666666667, "KingAtk_3#sigma#sigma": 1.0, "KingAtk_4": 36, "KingAtk_4#sigma": 8.333333333333334, "KingAtk_4#sigma#sigma": 1.0, "KingAtk_5": 44, "KingAtk_5#sigma": 13.333333333333336, "KingAtk_5#sigma#sigma": 1.0, "KingAtk_6": 30, "KingAtk_6#sigma": 16.666666666666668, "KingAtk_6#sigma#sigma": 1.0, "KingAtk_7": 18, "KingAtk_7#sigma": 21.666666666666675, "KingAtk_7#sigma#sigma": 1.0, "King_Attacker_Bishop": 4, "King_Attacker_Bishop#sigma": 1.3333333333333333, "King_Attacker_Bishop#sigma#sigma": 1.0, "King_Attacker_Knight": 2, "King_Attacker_Knight#sigma": 1.3333333333333333, "King_Attacker_Knight#sigma#sigma": 1.0, "King_Attacker_Queen": 12, "King_Attacker_Queen#sigma": 2.3333333333333335, "King_Attacker_Queen#sigma#sigma": 1.0, "King_Attacker_Rook": 3, "King_Attacker_Rook#sigma": 1.6666666666666667, "King_Attacker_Rook#sigma#sigma": 1.0, "King_Danger_Divisor": 8, "King_Danger_Divisor#sigma": 3.0000000000000004, "King_Danger_Divisor#sigma#sigma": 1.0, "King_Danger_Max": 634, "King_Danger_Max#sigma": 116.66666666666669, "King_Danger_Max#sigma#sigma": 1.0, "King_Escape_Bonus": 4, "King_Escape_Bonus#sigma": 2.5, "King_Escape_Bonus#sigma#sigma": 1.0, "King_Open_File_Penalty": -26, "King_Open_File_Penalty#sigma": 4.999999999999999, "King_Open_File_Penalty#sigma#sigma": 1.0, "King_SemiOpen_Penalty": -4, "King_SemiOpen_Penalty#sigma": 3.333333333333334, "King_SemiOpen_Penalty#sigma#sigma": 1.0, "King_Shield_Penalty": -27, "King_Shield_Penalty#sigma": 6.666666666666668, "King_Shield_Penalty#sigma#sigma": 1.0}
+
+================================================================
+BATCH 7 – THREATS, HANGING
+================================================================
+22 parameters
+
+-- Tactical pressure --
+[x] Undefended_Attack_Bonus   | Initial:   6 | Min:    0 | Max:   20 | Tuned: 19 |
+[x] Pin_Bonus                 | Initial:  15 | Min:    0 | Max:   40 | Tuned: 35 |
+[x] Overloaded_Defender_Bonus | Initial:  10 | Min:    0 | Max:   30 | Tuned:  0 |
+[x] Unrec_Pressure_Bonus      | Initial:   2 | Min:    0 | Max:   10 | Tuned:  5 |
+[x] Undefended_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: 65 |
+
+-- Threats (pawn) --
+[x] Threat_Pawn_Knight_MG  | Initial:  60 | Min:   20 | Max:  120 | Tuned:  44 |
+[x] Threat_Pawn_Bishop_MG  | Initial:  65 | Min:   20 | Max:  120 | Tuned:  87 |
+[x] Threat_Pawn_Rook_MG    | Initial:  75 | Min:   25 | Max:  130 | Tuned: 109 |
+[x] Threat_Pawn_Queen_MG   | Initial:  80 | Min:   25 | Max:  150 | Tuned:  92 |
+[x] Threat_Pawn_Knight_EG  | Initial:  40 | Min:   10 | Max:   90 | Tuned:  78 |
+[x] Threat_Pawn_Bishop_EG  | Initial:  45 | Min:   10 | Max:   90 | Tuned:  90 |
+[x] Threat_Pawn_Rook_EG    | Initial:  55 | Min:   15 | Max:  100 | Tuned:  41 |
+[x] Threat_Pawn_Queen_EG   | Initial:  60 | Min:   15 | Max:  110 | Tuned:  70 |
+
+-- Threats (minor) --
+[x] Threat_Minor_Rook_MG   | Initial:  30 | Min:    0 | Max:   80 | Tuned: 24 |
+[x] Threat_Minor_Queen_MG  | Initial:  45 | Min:    0 | Max:  100 | Tuned: 12 |
+[x] Threat_Minor_Rook_EG   | Initial:  20 | Min:    0 | Max:   60 | Tuned: 11 |
+[x] Threat_Minor_Queen_EG  | Initial:  30 | Min:    0 | Max:   80 | Tuned: 51 |
+
+-- Threats (rook) --
+[x] Threat_Rook_MG         | Initial:  25 | Min:    0 | Max:   70 | Tuned: 60 |
+[x] Threat_Rook_EG         | Initial:  18 | Min:    0 | Max:   50 | Tuned: 47 |
+
+-- Hanging --
+[x] Hanging_Penalty_MG     | Initial:  20 | Min:    0 | Max:   60 | Tuned: 58 |
+[x] Hanging_Penalty_EG     | Initial:  12 | Min:    0 | Max:   40 | Tuned:  0 |
+[x] Hanging_Value_Div      | Initial:  40 | Min:   10 | Max:  100 | Tuned: 27 |
+
+Budgets: 240
+7: {"#parametrization": "Instrumentation(Tuple(),Dict(Hanging_Penalty_EG=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Hanging_Penalty_MG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Hanging_Value_Div=Scalar{Cl(10,100,b),Int}[sigma=Scalar{exp=2.03}],Overloaded_Defender_Bonus=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Pin_Bonus=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_EG=Scalar{Cl(0,80,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_MG=Scalar{Cl(0,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_EG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_MG=Scalar{Cl(0,80,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_EG=Scalar{Cl(10,90,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_MG=Scalar{Cl(20,120,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_EG=Scalar{Cl(10,90,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_MG=Scalar{Cl(20,120,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_EG=Scalar{Cl(15,110,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_MG=Scalar{Cl(25,150,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_EG=Scalar{Cl(15,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_MG=Scalar{Cl(25,130,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_EG=Scalar{Cl(0,50,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_MG=Scalar{Cl(0,70,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Attack_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Value_Div=Scalar{Cl(10,100,b),Int}[sigma=Scalar{exp=2.03}],Unrec_Pressure_Bonus=Scalar{Cl(0,10,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-29 12:40:09", "#num-ask": 18, "#num-tell": 18, "#num-tell-not-asked": 1, "#uid": "25fcae5223754d83aadb118a34eb4915", "#lineage": "bb98a05716f04c73a503f66b33166484", "#generation": 3, "#parents_uids": ["bcb10996d0144f85acb9a90919bd3c1c"], "#loss": 0.41000000000000003, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "Hanging_Penalty_EG": 0, "Hanging_Penalty_EG#sigma": 6.666666666666668, "Hanging_Penalty_EG#sigma#sigma": 1.0, "Hanging_Penalty_MG": 58, "Hanging_Penalty_MG#sigma": 10.000000000000005, "Hanging_Penalty_MG#sigma#sigma": 1.0, "Hanging_Value_Div": 27, "Hanging_Value_Div#sigma": 15.000000000000002, "Hanging_Value_Div#sigma#sigma": 1.0, "Overloaded_Defender_Bonus": 0, "Overloaded_Defender_Bonus#sigma": 4.999999999999999, "Overloaded_Defender_Bonus#sigma#sigma": 1.0, "Pin_Bonus": 35, "Pin_Bonus#sigma": 6.666666666666668, "Pin_Bonus#sigma#sigma": 1.0, "Threat_Minor_Queen_EG": 51, "Threat_Minor_Queen_EG#sigma": 13.333333333333336, "Threat_Minor_Queen_EG#sigma#sigma": 1.0, "Threat_Minor_Queen_MG": 12, "Threat_Minor_Queen_MG#sigma": 16.666666666666668, "Threat_Minor_Queen_MG#sigma#sigma": 1.0, "Threat_Minor_Rook_EG": 11, "Threat_Minor_Rook_EG#sigma": 10.000000000000005, "Threat_Minor_Rook_EG#sigma#sigma": 1.0, "Threat_Minor_Rook_MG": 24, "Threat_Minor_Rook_MG#sigma": 13.333333333333336, "Threat_Minor_Rook_MG#sigma#sigma": 1.0, "Threat_Pawn_Bishop_EG": 90, "Threat_Pawn_Bishop_EG#sigma": 13.333333333333336, "Threat_Pawn_Bishop_EG#sigma#sigma": 1.0, "Threat_Pawn_Bishop_MG": 87, "Threat_Pawn_Bishop_MG#sigma": 16.666666666666668, "Threat_Pawn_Bishop_MG#sigma#sigma": 1.0, "Threat_Pawn_Knight_EG": 78, "Threat_Pawn_Knight_EG#sigma": 13.333333333333336, "Threat_Pawn_Knight_EG#sigma#sigma": 1.0, "Threat_Pawn_Knight_MG": 44, "Threat_Pawn_Knight_MG#sigma": 16.666666666666668, "Threat_Pawn_Knight_MG#sigma#sigma": 1.0, "Threat_Pawn_Queen_EG": 70, "Threat_Pawn_Queen_EG#sigma": 15.833333333333334, "Threat_Pawn_Queen_EG#sigma#sigma": 1.0, "Threat_Pawn_Queen_MG": 92, "Threat_Pawn_Queen_MG#sigma": 20.83333333333334, "Threat_Pawn_Queen_MG#sigma#sigma": 1.0, "Threat_Pawn_Rook_EG": 41, "Threat_Pawn_Rook_EG#sigma": 14.166666666666666, "Threat_Pawn_Rook_EG#sigma#sigma": 1.0, "Threat_Pawn_Rook_MG": 109, "Threat_Pawn_Rook_MG#sigma": 17.500000000000007, "Threat_Pawn_Rook_MG#sigma#sigma": 1.0, "Threat_Rook_EG": 47, "Threat_Rook_EG#sigma": 8.333333333333334, "Threat_Rook_EG#sigma#sigma": 1.0, "Threat_Rook_MG": 60, "Threat_Rook_MG#sigma": 11.666666666666668, "Threat_Rook_MG#sigma#sigma": 1.0, "Undefended_Attack_Bonus": 19, "Undefended_Attack_Bonus#sigma": 3.333333333333334, "Undefended_Attack_Bonus#sigma#sigma": 1.0, "Undefended_Value_Div": 65, "Undefended_Value_Div#sigma": 15.000000000000002, "Undefended_Value_Div#sigma#sigma": 1.0, "Unrec_Pressure_Bonus": 5, "Unrec_Pressure_Bonus#sigma": 1.6666666666666667, "Unrec_Pressure_Bonus#sigma#sigma": 1.0}
+
+================================================================
+BATCH 8 – OUTPOSTS, COORDINATION
+================================================================
+22 parameters
+
+-- Outposts --
+[ ] Knight_Outpost_MG      | Initial:  20 | Min:    0 | Max:   50 | Tuned: 14 |
+[ ] Knight_Outpost_EG      | Initial:  14 | Min:    0 | Max:   35 | Tuned:  5 |
+[ ] Bishop_Outpost_MG      | Initial:  12 | Min:    0 | Max:   35 | Tuned: 11 |
+[ ] Bishop_Outpost_EG      | Initial:   8 | Min:    0 | Max:   25 | Tuned: 12 |
+[ ] Rook_Outpost_MG        | Initial:  14 | Min:    0 | Max:   35 | Tuned: 24 |
+[ ] Rook_Outpost_EG        | Initial:  12 | Min:    0 | Max:   30 | Tuned: 12 |
+[ ] Queen_Outpost_MG       | Initial:  10 | Min:    0 | Max:   25 | Tuned:  7 |
+[ ] Queen_Outpost_EG       | Initial:   8 | Min:    0 | Max:   20 | Tuned:  7 |
+
+-- Territory & coordination --
+[x] Center_Bonus           | Initial:   8 | Min:    0 | Max:   20 | Tuned:   8 |
+[x] Ext_Center_Bonus       | Initial:   4 | Min:    0 | Max:   12 | Tuned:   6 |
+[x] Enemy_Half_Bonus       | Initial:   3 | Min:    0 | Max:   10 | Tuned:   6 |
+[x] Seventh_Rank_MG        | Initial:  20 | Min:    5 | Max:   50 | Tuned:  13 |
+[x] Seventh_Rank_EG        | Initial:  30 | Min:    5 | Max:   70 | Tuned:  29 |
+[x] Defended_Piece_Bonus   | Initial:   4 | Min:    0 | Max:   15 | Tuned:   3 |
+[x] Shared_Target_Bonus    | Initial:   8 | Min:    0 | Max:   25 | Tuned:  11 |
+[x] Battery_Rook_Queen     | Initial:  12 | Min:    0 | Max:   35 | Tuned:  11 |
+[x] Battery_Bishop_Queen   | Initial:   8 | Min:    0 | Max:   25 | Tuned:   8 |
+[x] Support_Chain_Bonus    | Initial:   6 | Min:    0 | Max:   20 | Tuned:   7 |
+[x] Open_File_Mult         | Initial: 120 | Min:  100 | Max:  150 | Tuned: 129 |
+[x] Semi_Open_File_Mult    | Initial: 110 | Min:  100 | Max:  130 | Tuned: 113 |
+[x] Bishop_Openness_Max    | Initial:  30 | Min:    0 | Max:   60 | Tuned:  42 |
+[x] Bishop_Openness_SqWt   | Initial:   2 | Min:    0 | Max:    6 | Tuned:   2 |
+
+Budgets: 240
+8: {"#parametrization": "Instrumentation(Tuple(),Dict(Battery_Bishop_Queen=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Battery_Rook_Queen=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_Max=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_SqWt=Scalar{Cl(0,6,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_EG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_MG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Center_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],Defended_Piece_Bonus=Scalar{Cl(0,15,b),Int}[sigma=Scalar{exp=2.03}],Enemy_Half_Bonus=Scalar{Cl(0,10,b),Int}[sigma=Scalar{exp=2.03}],Ext_Center_Bonus=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_EG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_MG=Scalar{Cl(0,50,b),Int}[sigma=Scalar{exp=2.03}],Open_File_Mult=Scalar{Cl(100,150,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_EG=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_MG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_EG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_MG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Semi_Open_File_Mult=Scalar{Cl(100,130,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_EG=Scalar{Cl(5,70,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_MG=Scalar{Cl(5,50,b),Int}[sigma=Scalar{exp=2.03}],Shared_Target_Bonus=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Support_Chain_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedOnePlusOne(noise_handling='optimistic')", "#session": "26-04-29 15:37:14", "#num-ask": 40, "#num-tell": 40, "#num-tell-not-asked": 1, "#uid": "288e63b412f140ac896f61086334b364", "#lineage": "1392162392fc4b4c93b3a0e82191aa2f", "#generation": 6, "#parents_uids": ["193a2f1c30334b438465634bcca13d3e"], "#loss": 0.4275, "#optimizer#noise_handling": "optimistic", "#optimizer#tabu_length": "0", "#optimizer#mutation": "gaussian", "#optimizer#crossover": "False", "#optimizer#rotation": "False", "#optimizer#annealing": "none", "#optimizer#use_pareto": "False", "#optimizer#sparse": "False", "#optimizer#smoother": "False", "#optimizer#super_radii": "False", "#optimizer#roulette_size": "2", "#optimizer#antismooth": "55", "#optimizer#crossover_type": "none", "Battery_Bishop_Queen": 8, "Battery_Bishop_Queen#sigma": 4.166666666666667, "Battery_Bishop_Queen#sigma#sigma": 1.0, "Battery_Rook_Queen": 11, "Battery_Rook_Queen#sigma": 5.833333333333334, "Battery_Rook_Queen#sigma#sigma": 1.0, "Bishop_Openness_Max": 42, "Bishop_Openness_Max#sigma": 10.000000000000005, "Bishop_Openness_Max#sigma#sigma": 1.0, "Bishop_Openness_SqWt": 2, "Bishop_Openness_SqWt#sigma": 1.0, "Bishop_Openness_SqWt#sigma#sigma": 1.0, "Bishop_Outpost_EG": 12, "Bishop_Outpost_EG#sigma": 4.166666666666667, "Bishop_Outpost_EG#sigma#sigma": 1.0, "Bishop_Outpost_MG": 11, "Bishop_Outpost_MG#sigma": 5.833333333333334, "Bishop_Outpost_MG#sigma#sigma": 1.0, "Center_Bonus": 8, "Center_Bonus#sigma": 3.333333333333334, "Center_Bonus#sigma#sigma": 1.0, "Defended_Piece_Bonus": 3, "Defended_Piece_Bonus#sigma": 2.5, "Defended_Piece_Bonus#sigma#sigma": 1.0, "Enemy_Half_Bonus": 6, "Enemy_Half_Bonus#sigma": 1.6666666666666667, "Enemy_Half_Bonus#sigma#sigma": 1.0, "Ext_Center_Bonus": 6, "Ext_Center_Bonus#sigma": 2.0, "Ext_Center_Bonus#sigma#sigma": 1.0, "Knight_Outpost_EG": 5, "Knight_Outpost_EG#sigma": 5.833333333333334, "Knight_Outpost_EG#sigma#sigma": 1.0, "Knight_Outpost_MG": 14, "Knight_Outpost_MG#sigma": 8.333333333333334, "Knight_Outpost_MG#sigma#sigma": 1.0, "Open_File_Mult": 129, "Open_File_Mult#sigma": 8.333333333333334, "Open_File_Mult#sigma#sigma": 1.0, "Queen_Outpost_EG": 7, "Queen_Outpost_EG#sigma": 3.333333333333334, "Queen_Outpost_EG#sigma#sigma": 1.0, "Queen_Outpost_MG": 7, "Queen_Outpost_MG#sigma": 4.166666666666667, "Queen_Outpost_MG#sigma#sigma": 1.0, "Rook_Outpost_EG": 12, "Rook_Outpost_EG#sigma": 4.999999999999999, "Rook_Outpost_EG#sigma#sigma": 1.0, "Rook_Outpost_MG": 24, "Rook_Outpost_MG#sigma": 5.833333333333334, "Rook_Outpost_MG#sigma#sigma": 1.0, "Semi_Open_File_Mult": 113, "Semi_Open_File_Mult#sigma": 4.999999999999999, "Semi_Open_File_Mult#sigma#sigma": 1.0, "Seventh_Rank_EG": 29, "Seventh_Rank_EG#sigma": 10.833333333333337, "Seventh_Rank_EG#sigma#sigma": 1.0, "Seventh_Rank_MG": 13, "Seventh_Rank_MG#sigma": 7.500000000000001, "Seventh_Rank_MG#sigma#sigma": 1.0, "Shared_Target_Bonus": 11, "Shared_Target_Bonus#sigma": 4.166666666666667, "Shared_Target_Bonus#sigma#sigma": 1.0, "Support_Chain_Bonus": 7, "Support_Chain_Bonus#sigma": 3.333333333333334, "Support_Chain_Bonus#sigma#sigma": 1.0}

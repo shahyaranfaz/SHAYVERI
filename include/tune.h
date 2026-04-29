@@ -37,10 +37,10 @@ inline int se_margin          = 54; //
 inline int se_reduction_denom = 3; //
 
 // History gravity / bonus
-inline int history_max         = 16384; //
-inline int history_bonus_mult  = 488; //
-inline int history_bonus_sub   = 179; //
-inline int history_bonus_limit = 2842; //
+static constexpr int history_max = 16384; //
+inline int history_bonus_mult    =   488; //
+inline int history_bonus_sub     =   170; //
+inline int history_bonus_limit   =  2842; //
 
 // History blending weights (percent, divided by 100 before accumulation)
 inline int main_history_weight = 78; //
@@ -48,11 +48,11 @@ inline int cmh_weight          = 61; //
 inline int fmh_weight          = 33; //
 
 // Pruning margins
-inline int rfp_margin_mult    = 82; //
-inline int fp_base            = 197; //
-inline int fp_mult            = 657; //
-inline int lmp_base           = 3; //
-inline int lmp_mult           = 1; //
+inline int rfp_margin_mult    =   82; //
+inline int fp_base            =  197; //
+inline int fp_mult            =  657; //
+inline int lmp_base           =    3; //
+inline int lmp_mult           =    1; //
 inline int see_pruning_margin = -277; //
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
@@ -74,16 +74,16 @@ inline int PIECE_VALUES_EG[PIECE_COUNT] = {
 };
 
 // Indexed by PieceType (0-6).  King = 20000 for SEE termination.
-inline int PTYPE_VALUE[7]  = { 0, 100, 320, 330,  500,  900, 20000 }; //
+static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330,  500,  900, 20000 }; //
 // Indexed by PieceType (0-6).  King = 0 for MVV-LVA / capture ordering.
-inline int PTYPE_VALUES[7] = { 0, 100, 320, 330,  500,  900,     0 }; //
+static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330,  500,  900,     0 }; //
 
 // ================================================================
 // Phase (tapered eval)
 // ================================================================
 
-inline int MAX_PHASE = 24; //
-inline int PHASE_WEIGHTS[PIECE_COUNT] = { //
+static constexpr int MAX_PHASE = 24; //
+static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = { //
     0, 0, 1, 1, 2, 4, 0,
        0, 1, 1, 2, 4, 0,
 };
@@ -234,14 +234,14 @@ inline int OUTSIDE_PASSED_BONUS_MG   =  8; //
 inline int OUTSIDE_PASSED_BONUS_EG   = 20; //
 
 // Pawn structure penalties
-inline int ISOLATED_PAWN_PENALTY_MG = -2; //
+inline int ISOLATED_PAWN_PENALTY_MG =  -2; //
 inline int ISOLATED_PAWN_PENALTY_EG =  -2; //
 inline int DOUBLED_PAWN_PENALTY_MG  = -10; //
-inline int DOUBLED_PAWN_PENALTY_EG  = -6; //
+inline int DOUBLED_PAWN_PENALTY_EG  =  -6; //
 inline int BACKWARD_PAWN_PENALTY_MG = -13; //
 inline int BACKWARD_PAWN_PENALTY_EG =  -2; //
-inline int SUPPORTED_PAWN_BONUS_MG  =   15; //
-inline int WEAK_PAWN_PENALTY_MG     =  -18; //
+inline int SUPPORTED_PAWN_BONUS_MG  =  15; //
+inline int WEAK_PAWN_PENALTY_MG     = -18; //
 inline int PAWN_ISLAND_PENALTY_MG   = -28; //
 inline int PAWN_ISLAND_PENALTY_EG   =  -4; //
 
@@ -266,41 +266,41 @@ inline int KING_DANGER_DIVISOR         =   8; //
 inline int KING_DANGER_MAX             = 634; //
 
 // Mobility
-inline int MOBILITY_KNIGHT_MG = 6; //
+inline int MOBILITY_KNIGHT_MG =  6; //
 inline int MOBILITY_BISHOP_MG = 11; //
-inline int MOBILITY_ROOK_MG   = 5; //
-inline int MOBILITY_QUEEN_MG  = 5; //
-inline int MOBILITY_KNIGHT_EG = 5; //
-inline int MOBILITY_BISHOP_EG = 5; //
-inline int MOBILITY_ROOK_EG   = 2; //
-inline int MOBILITY_QUEEN_EG  = 1; //
+inline int MOBILITY_ROOK_MG   =  5; //
+inline int MOBILITY_QUEEN_MG  =  5; //
+inline int MOBILITY_KNIGHT_EG =  5; //
+inline int MOBILITY_BISHOP_EG =  5; //
+inline int MOBILITY_ROOK_EG   =  2; //
+inline int MOBILITY_QUEEN_EG  =  1; //
 
 // File/diagonal openness multipliers (percent)
-inline int OPEN_FILE_MULTIPLIER          = 120;
-inline int SEMI_OPEN_FILE_MULTIPLIER     = 110;
-inline int CLOSED_FILE_MULTIPLIER        = 100; //
-inline int BISHOP_OPENNESS_BASE          = 100;
-inline int BISHOP_OPENNESS_MAX_BONUS     =  30;
-inline int BISHOP_OPENNESS_SQUARE_WEIGHT =   2;
+inline int OPEN_FILE_MULTIPLIER             = 129; //
+inline int SEMI_OPEN_FILE_MULTIPLIER        = 113; //
+static constexpr int CLOSED_FILE_MULTIPLIER = 100; //
+static constexpr int BISHOP_OPENNESS_BASE   = 100; //
+inline int BISHOP_OPENNESS_MAX_BONUS        =  42; //
+inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2; //
 
 // Territory
-inline int CENTER_BONUS          =  8;
-inline int EXT_CENTER_BONUS      =  4;
-inline int ENEMY_HALF_BONUS      =  3;
-inline int SEVENTH_RANK_BONUS_MG = 20;
-inline int SEVENTH_RANK_BONUS_EG = 30;
+inline int CENTER_BONUS          =  8; //
+inline int EXT_CENTER_BONUS      =  6; //
+inline int ENEMY_HALF_BONUS      =  6; //
+inline int SEVENTH_RANK_BONUS_MG = 13; //
+inline int SEVENTH_RANK_BONUS_EG = 29; //
 
 // Coordination
-inline int DEFENDED_PIECE_BONUS       =  4;
-inline int SHARED_TARGET_BONUS        =  8;
-inline int BATTERY_ROOK_QUEEN_BONUS   = 12;
-inline int BATTERY_BISHOP_QUEEN_BONUS =  8;
-inline int SUPPORT_CHAIN_BONUS        =  6;
+inline int DEFENDED_PIECE_BONUS       =  3; //
+inline int SHARED_TARGET_BONUS        = 11; //
+inline int BATTERY_ROOK_QUEEN_BONUS   = 11; //
+inline int BATTERY_BISHOP_QUEEN_BONUS =  8; //
+inline int SUPPORT_CHAIN_BONUS        =  7; //
 
 // Tactical pressure
-inline int UNDEFENDED_ATTACK_BONUS        =  19; //
+inline int UNDEFENDED_ATTACK_BONUS        = 19; //
 inline int PIN_BONUS                      = 35; //
-inline int OVERLOADED_DEFENDER_BONUS      = 0; //
+inline int OVERLOADED_DEFENDER_BONUS      =  0; //
 inline int UNRECIPROCATED_PRESSURE_BONUS  =  5; //
 inline int UNDEFENDED_VALUE_DIVISOR       = 65; //
 
@@ -316,22 +316,22 @@ inline int THREAT_BY_ROOK_EG = 47; //
 
 // Hanging piece penalties
 inline int HANGING_BASE_PENALTY_MG = 58; //
-inline int HANGING_BASE_PENALTY_EG = 0; //
+inline int HANGING_BASE_PENALTY_EG =  0; //
 inline int HANGING_VALUE_DIVISOR   = 27; //
 
 // Outposts
-inline int KNIGHT_OUTPOST_MG = 20;
-inline int KNIGHT_OUTPOST_EG = 14;
-inline int BISHOP_OUTPOST_MG = 12;
-inline int BISHOP_OUTPOST_EG =  8;
-inline int ROOK_OUTPOST_MG   = 14;
-inline int ROOK_OUTPOST_EG   = 12;
-inline int QUEEN_OUTPOST_MG  = 10;
-inline int QUEEN_OUTPOST_EG  =  8;
+inline int KNIGHT_OUTPOST_MG = 14; //
+inline int KNIGHT_OUTPOST_EG =  5; //
+inline int BISHOP_OUTPOST_MG = 11; //
+inline int BISHOP_OUTPOST_EG = 12; //
+inline int ROOK_OUTPOST_MG   = 24; //
+inline int ROOK_OUTPOST_EG   = 12; //
+inline int QUEEN_OUTPOST_MG  =  7; //
+inline int QUEEN_OUTPOST_EG  =  7; //
 
 // Development / initiative
 inline int DEVELOPMENT_BONUS = 12; //
-inline int CASTLED_BONUS     = 8; //
+inline int CASTLED_BONUS     =  8; //
 
 // ================================================================
 // Tuning infrastructure
@@ -448,17 +448,17 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
     // ── Territory ─────────────────────────────────────────────────
     {"Center_Bonus",          {&CENTER_BONUS,          TuningOption::INT,  0,   20,   "8"}},
-    {"Ext_Center_Bonus",      {&EXT_CENTER_BONUS,      TuningOption::INT,  0,   12,   "4"}},
-    {"Enemy_Half_Bonus",      {&ENEMY_HALF_BONUS,      TuningOption::INT,  0,   10,   "3"}},
-    {"Seventh_Rank_MG",       {&SEVENTH_RANK_BONUS_MG, TuningOption::INT,  5,   50,   "20"}},
-    {"Seventh_Rank_EG",       {&SEVENTH_RANK_BONUS_EG, TuningOption::INT,  5,   70,   "30"}},
+    {"Ext_Center_Bonus",      {&EXT_CENTER_BONUS,      TuningOption::INT,  0,   12,   "6"}},
+    {"Enemy_Half_Bonus",      {&ENEMY_HALF_BONUS,      TuningOption::INT,  0,   10,   "6"}},
+    {"Seventh_Rank_MG",       {&SEVENTH_RANK_BONUS_MG, TuningOption::INT,  5,   50,   "13"}},
+    {"Seventh_Rank_EG",       {&SEVENTH_RANK_BONUS_EG, TuningOption::INT,  5,   70,   "29"}},
 
     // ── Coordination ─────────────────────────────────────────────
-    {"Defended_Piece_Bonus",       {&DEFENDED_PIECE_BONUS,       TuningOption::INT, 0,  15,  "4"}},
-    {"Shared_Target_Bonus",        {&SHARED_TARGET_BONUS,        TuningOption::INT, 0,  25,  "8"}},
-    {"Battery_Rook_Queen",         {&BATTERY_ROOK_QUEEN_BONUS,   TuningOption::INT, 0,  35,  "12"}},
+    {"Defended_Piece_Bonus",       {&DEFENDED_PIECE_BONUS,       TuningOption::INT, 0,  15,  "3"}},
+    {"Shared_Target_Bonus",        {&SHARED_TARGET_BONUS,        TuningOption::INT, 0,  25,  "11"}},
+    {"Battery_Rook_Queen",         {&BATTERY_ROOK_QUEEN_BONUS,   TuningOption::INT, 0,  35,  "11"}},
     {"Battery_Bishop_Queen",       {&BATTERY_BISHOP_QUEEN_BONUS, TuningOption::INT, 0,  25,  "8"}},
-    {"Support_Chain_Bonus",        {&SUPPORT_CHAIN_BONUS,        TuningOption::INT, 0,  20,  "6"}},
+    {"Support_Chain_Bonus",        {&SUPPORT_CHAIN_BONUS,        TuningOption::INT, 0,  20,  "7"}},
 
     // ── Tactical pressure ─────────────────────────────────────────
     {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT, 0,   20,  "19"}},
@@ -491,19 +491,19 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT, 10, 100, "27"}},
 
     // ── Outposts ──────────────────────────────────────────────────
-    {"Knight_Outpost_MG",  {&KNIGHT_OUTPOST_MG, TuningOption::INT, 0, 50, "20"}},
-    {"Knight_Outpost_EG",  {&KNIGHT_OUTPOST_EG, TuningOption::INT, 0, 35, "14"}},
-    {"Bishop_Outpost_MG",  {&BISHOP_OUTPOST_MG, TuningOption::INT, 0, 35, "12"}},
-    {"Bishop_Outpost_EG",  {&BISHOP_OUTPOST_EG, TuningOption::INT, 0, 25,  "8"}},
-    {"Rook_Outpost_MG",    {&ROOK_OUTPOST_MG,   TuningOption::INT, 0, 35, "14"}},
+    {"Knight_Outpost_MG",  {&KNIGHT_OUTPOST_MG, TuningOption::INT, 0, 50, "14"}},
+    {"Knight_Outpost_EG",  {&KNIGHT_OUTPOST_EG, TuningOption::INT, 0, 35, "5"}},
+    {"Bishop_Outpost_MG",  {&BISHOP_OUTPOST_MG, TuningOption::INT, 0, 35, "11"}},
+    {"Bishop_Outpost_EG",  {&BISHOP_OUTPOST_EG, TuningOption::INT, 0, 25,  "12"}},
+    {"Rook_Outpost_MG",    {&ROOK_OUTPOST_MG,   TuningOption::INT, 0, 35, "24"}},
     {"Rook_Outpost_EG",    {&ROOK_OUTPOST_EG,   TuningOption::INT, 0, 30, "12"}},
-    {"Queen_Outpost_MG",   {&QUEEN_OUTPOST_MG,  TuningOption::INT, 0, 25, "10"}},
-    {"Queen_Outpost_EG",   {&QUEEN_OUTPOST_EG,  TuningOption::INT, 0, 20,  "8"}},
+    {"Queen_Outpost_MG",   {&QUEEN_OUTPOST_MG,  TuningOption::INT, 0, 25, "7"}},
+    {"Queen_Outpost_EG",   {&QUEEN_OUTPOST_EG,  TuningOption::INT, 0, 20,  "7"}},
 
     // ── File / diagonal openness ──────────────────────────────────
-    {"Open_File_Mult",         {&OPEN_FILE_MULTIPLIER,          TuningOption::INT, 100, 150, "120"}},
-    {"Semi_Open_File_Mult",    {&SEMI_OPEN_FILE_MULTIPLIER,     TuningOption::INT, 100, 130, "110"}},
-    {"Bishop_Openness_Max",    {&BISHOP_OPENNESS_MAX_BONUS,     TuningOption::INT,   0,  60,  "30"}},
+    {"Open_File_Mult",         {&OPEN_FILE_MULTIPLIER,          TuningOption::INT, 100, 150, "129"}},
+    {"Semi_Open_File_Mult",    {&SEMI_OPEN_FILE_MULTIPLIER,     TuningOption::INT, 100, 130, "113"}},
+    {"Bishop_Openness_Max",    {&BISHOP_OPENNESS_MAX_BONUS,     TuningOption::INT,   0,  60,  "42"}},
     {"Bishop_Openness_SqWt",   {&BISHOP_OPENNESS_SQUARE_WEIGHT, TuningOption::INT,   0,   6,   "2"}},
 };
 
