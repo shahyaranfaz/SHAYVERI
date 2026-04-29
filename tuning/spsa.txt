@@ -9,36 +9,34 @@ lower signal frequency.
 
 python3.10 lakas.py \
   --match-manager-path cutechess-cli \
-  --concurrency 16 \
+  --concurrency 23 \
   --optimizer oneplusone \
-  --output-data-file "batch5_$(hostname).dat" \
-  --input-data-file  "batch5_$(hostname).dat" \
-  --optimizer-log-file "batch5_$(hostname).log" \
+  --output-data-file "batch6_$(hostname).dat" \
+  --input-data-file  "batch6_$(hostname).dat" \
+  --optimizer-log-file "batch6_$(hostname).log" \
   --base-time-sec 5 \
   --inc-time-sec 0.05 \
-  --budget 125 \
+  --budget 30 \
   --games-per-budget 200 \
   --engine ./shaybot \
   --opening-file ./start_opening/ogpt_chess_startpos.epd \
   --input-param "{ \
-'PassedMG_R1':           {'init': 5,   'lower': 0, 'upper': 20}, \
-'PassedMG_R2':           {'init': 10,  'lower': 0, 'upper': 30}, \
-'PassedMG_R3':           {'init': 20,  'lower': 0, 'upper': 50}, \
-'PassedMG_R4':           {'init': 30,  'lower': 0, 'upper': 80}, \
-'PassedMG_R5':           {'init': 50,  'lower': 0, 'upper': 120}, \
-'PassedMG_R6':           {'init': 70,  'lower': 0, 'upper': 150}, \
-'PassedEG_R1':           {'init': 10,  'lower': 0, 'upper': 30}, \
-'PassedEG_R2':           {'init': 20,  'lower': 0, 'upper': 50}, \
-'PassedEG_R3':           {'init': 40,  'lower': 0, 'upper': 80}, \
-'PassedEG_R4':           {'init': 60,  'lower': 0, 'upper': 130}, \
-'PassedEG_R5':           {'init': 90,  'lower': 0, 'upper': 180}, \
-'PassedEG_R6':           {'init': 120, 'lower': 0, 'upper': 220}, \
-'Candidate_Pawn_MG':     {'init': 8,   'lower': 0, 'upper': 30}, \
-'Candidate_Pawn_EG':     {'init': 12,  'lower': 0, 'upper': 40}, \
-'Connected_Passed_MG':   {'init': 10,  'lower': 0, 'upper': 30}, \
-'Connected_Passed_EG':   {'init': 18,  'lower': 0, 'upper': 50}, \
-'Outside_Passed_MG':     {'init': 8,   'lower': 0, 'upper': 30}, \
-'Outside_Passed_EG':     {'init': 20,  'lower': 0, 'upper': 60} \
+'King_Shield_Penalty':   {'init': -14, 'lower': -40,  'upper': 0}, \
+'King_Open_File_Penalty':{'init': -10, 'lower': -30,  'upper': 0}, \
+'King_SemiOpen_Penalty': {'init': -6,  'lower': -20,  'upper': 0}, \
+'King_Escape_Bonus':     {'init': 4,   'lower': 0,    'upper': 15}, \
+'King_Danger_Divisor':   {'init': 8,   'lower': 2,    'upper': 20}, \
+'King_Danger_Max':       {'init': 500, 'lower': 100,  'upper': 800}, \
+'King_Attacker_Knight':  {'init': 2,   'lower': 0,    'upper': 8}, \
+'King_Attacker_Bishop':  {'init': 2,   'lower': 0,    'upper': 8}, \
+'King_Attacker_Rook':    {'init': 3,   'lower': 0,    'upper': 10}, \
+'King_Attacker_Queen':   {'init': 5,   'lower': 0,    'upper': 14}, \
+'KingAtk_2':             {'init': 3,   'lower': 0,    'upper': 15}, \
+'KingAtk_3':             {'init': 8,   'lower': 0,    'upper': 25}, \
+'KingAtk_4':             {'init': 16,  'lower': 0,    'upper': 50}, \
+'KingAtk_5':             {'init': 26,  'lower': 0,    'upper': 80}, \
+'KingAtk_6':             {'init': 38,  'lower': 0,    'upper': 100}, \
+'KingAtk_7':             {'init': 52,  'lower': 0,    'upper': 130} \
 }"
 
 ================================================================
@@ -147,24 +145,24 @@ BATCH 5 – PASSED PAWNS
 ================================================================
 18 parameters
 
-[ ] PassedMG_R1         | Initial:    5 | Min:    0 | Max:   20 | Tuned: ___ |
-[ ] PassedMG_R2         | Initial:   10 | Min:    0 | Max:   30 | Tuned: ___ |
-[ ] PassedMG_R3         | Initial:   20 | Min:    0 | Max:   50 | Tuned: ___ |
-[ ] PassedMG_R4         | Initial:   30 | Min:    0 | Max:   80 | Tuned: ___ |
-[ ] PassedMG_R5         | Initial:   50 | Min:    0 | Max:  120 | Tuned: ___ |
-[ ] PassedMG_R6         | Initial:   70 | Min:    0 | Max:  150 | Tuned: ___ |
-[ ] PassedEG_R1         | Initial:   10 | Min:    0 | Max:   30 | Tuned: ___ |
-[ ] PassedEG_R2         | Initial:   20 | Min:    0 | Max:   50 | Tuned: ___ |
-[ ] PassedEG_R3         | Initial:   40 | Min:    0 | Max:   80 | Tuned: ___ |
-[ ] PassedEG_R4         | Initial:   60 | Min:    0 | Max:  130 | Tuned: ___ |
-[ ] PassedEG_R5         | Initial:   90 | Min:    0 | Max:  180 | Tuned: ___ |
-[ ] PassedEG_R6         | Initial:  120 | Min:    0 | Max:  220 | Tuned: ___ |
-[ ] Candidate_Pawn_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned: ___ |
-[ ] Candidate_Pawn_EG   | Initial:   12 | Min:    0 | Max:   40 | Tuned: ___ |
-[ ] Connected_Passed_MG | Initial:   10 | Min:    0 | Max:   30 | Tuned: ___ |
-[ ] Connected_Passed_EG | Initial:   18 | Min:    0 | Max:   50 | Tuned: ___ |
-[ ] Outside_Passed_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned: ___ |
-[ ] Outside_Passed_EG   | Initial:   20 | Min:    0 | Max:   60 | Tuned: ___ |
+[x] PassedMG_R1         | Initial:    5 | Min:    0 | Max:   20 | Tuned:   5 |
+[x] PassedMG_R2         | Initial:   10 | Min:    0 | Max:   30 | Tuned:  10 |
+[x] PassedMG_R3         | Initial:   20 | Min:    0 | Max:   50 | Tuned:  20 |
+[x] PassedMG_R4         | Initial:   30 | Min:    0 | Max:   80 | Tuned:  30 |
+[x] PassedMG_R5         | Initial:   50 | Min:    0 | Max:  120 | Tuned:  50 |
+[x] PassedMG_R6         | Initial:   70 | Min:    0 | Max:  150 | Tuned:  70 |
+[x] PassedEG_R1         | Initial:   10 | Min:    0 | Max:   30 | Tuned:  10 |
+[x] PassedEG_R2         | Initial:   20 | Min:    0 | Max:   50 | Tuned:  20 |
+[x] PassedEG_R3         | Initial:   40 | Min:    0 | Max:   80 | Tuned:  40 |
+[x] PassedEG_R4         | Initial:   60 | Min:    0 | Max:  130 | Tuned:  60 |
+[x] PassedEG_R5         | Initial:   90 | Min:    0 | Max:  180 | Tuned:  90 |
+[x] PassedEG_R6         | Initial:  120 | Min:    0 | Max:  220 | Tuned: 120 |
+[x] Candidate_Pawn_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned:   8 |
+[x] Candidate_Pawn_EG   | Initial:   12 | Min:    0 | Max:   40 | Tuned:  12 |
+[x] Connected_Passed_MG | Initial:   10 | Min:    0 | Max:   30 | Tuned:  10 |
+[x] Connected_Passed_EG | Initial:   18 | Min:    0 | Max:   50 | Tuned:  18 |
+[x] Outside_Passed_MG   | Initial:    8 | Min:    0 | Max:   30 | Tuned:   8 |
+[x] Outside_Passed_EG   | Initial:   20 | Min:    0 | Max:   60 | Tuned:  20 |
 
 ================================================================
 BATCH 6 – KING SAFETY

@@ -222,16 +222,16 @@ inline int TEMPO_BONUS       = 24; //
 inline int BISHOP_PAIR_BONUS = 21; //
 
 // Passed pawns (indexed by relative rank 0-7)
-inline int PASSED_PAWN_BONUS_MG[8] = { 0,  5, 10, 20,  30,  50,  70, 0 };
-inline int PASSED_PAWN_BONUS_EG[8] = { 0, 10, 20, 40,  60,  90, 120, 0 };
+inline int PASSED_PAWN_BONUS_MG[8] = { 0,  5, 10, 20,  30,  50,  70, 0 }; //
+inline int PASSED_PAWN_BONUS_EG[8] = { 0, 10, 20, 40,  60,  90, 120, 0 }; //
 
 // Candidate / connected / outside passed
-inline int CANDIDATE_PAWN_BONUS_MG   =  8;
-inline int CANDIDATE_PAWN_BONUS_EG   = 12;
-inline int CONNECTED_PASSED_BONUS_MG = 10;
-inline int CONNECTED_PASSED_BONUS_EG = 18;
-inline int OUTSIDE_PASSED_BONUS_MG   =  8;
-inline int OUTSIDE_PASSED_BONUS_EG   = 20;
+inline int CANDIDATE_PAWN_BONUS_MG   =  8; //
+inline int CANDIDATE_PAWN_BONUS_EG   = 12; //
+inline int CONNECTED_PASSED_BONUS_MG = 10; //
+inline int CONNECTED_PASSED_BONUS_EG = 18; //
+inline int OUTSIDE_PASSED_BONUS_MG   =  8; //
+inline int OUTSIDE_PASSED_BONUS_EG   = 20; //
 
 // Pawn structure penalties
 inline int ISOLATED_PAWN_PENALTY_MG = -2; //
