@@ -1,3 +1,32 @@
+python3.10 lakas.py \
+  --distributed-role master \
+  --budget 150 \
+  --num_workers 8 \
+  --concurrency 23 \
+  --output-data-file "batch2.dat" \
+  --input-data-file  "batch2.dat" \
+  --optimizer-log-file "batch2.log" \
+--input-param "{ \
+'History_Bonus_Mult':  {'init':  488,  'lower':  280,  'upper':  720}, \
+'History_Bonus_Sub':   {'init':  170,  'lower':   60,  'upper':  340}, \
+'History_Bonus_Limit': {'init': 2842,  'lower': 1500,  'upper': 4500}, \
+'Main_History_Weight': {'init':   78,  'lower':   25,  'upper':  160}, \
+'CMH_Weight':          {'init':   61,  'lower':   15,  'upper':  160}, \
+'FMH_Weight':          {'init':   33,  'lower':    0,  'upper':  130} \
+}"
+
+python3.10 lakas.py \
+  --distributed-role worker \
+  --concurrency 23 \
+  --num_workers 1 \
+  --input-param={}
+
+pass1 v untuned
+W: 288-37-75
+B: 200-102-98
+OVRL: 488-139-173
+~2750 elo at 30+0.3
+
 ================================================================
   SHAYBOT  –  SPSA TUNING TRACKER  (Lakas)  PASS 2 (CORRECTED)
 ================================================================
@@ -47,21 +76,22 @@ FP_Mult kept wider; both showed large swings between passes,
 suggesting the optimizer has not fully settled. SE_Reduction_Denom
 upper extended to 6: pass 2 (noisy) suggested 5 at boundary.
 
-[ ] ASP_Delta           | Initial:   32 | Min:   18 | Max:   55 | Tuned:    |
-[ ] LMR_Base            | Initial: 1.24 | Min: 0.85 | Max: 1.65 | Tuned:    | type string; c=0.05
-[ ] LMR_Scale           | Initial: 1.80 | Min: 1.30 | Max: 2.50 | Tuned:    | type string; c=0.05
-[ ] RFP_Margin          | Initial:   82 | Min:   40 | Max:  160 | Tuned:    |
-[ ] FP_Base             | Initial:  197 | Min:  110 | Max:  330 | Tuned:    |
-[ ] FP_Mult             | Initial:  657 | Min:  400 | Max:  950 | Tuned:    | was near boundary in pass 1; extended
-[ ] LMP_Base            | Initial:    3 | Min:    2 | Max:    7 | Tuned:    |
-[-] LMP_Mult            | Initial:    1 | Min:  --- | Max:  --- | Tuned:  1 | converged to floor in both passes; skip
-[ ] SEE_Pruning_Margin  | Initial: -277 | Min: -420 | Max: -120 | Tuned:    | large swing between passes; wide range kept
-[ ] SE_Min_Depth        | Initial:    9 | Min:    5 | Max:   16 | Tuned:    |
-[ ] SE_Depth_Margin     | Initial:    2 | Min:    1 | Max:    5 | Tuned:    |
-[ ] SE_Margin           | Initial:   54 | Min:   25 | Max:   95 | Tuned:    |
-[ ] SE_Reduction_Denom  | Initial:    3 | Min:    1 | Max:    6 | Tuned:    | upper extended; noisy pass 2 hit boundary at 5
+[x] ASP_Delta           | Initial:   32 | Min:   18 | Max:   55 | Tuned:   32 |
+[x] LMR_Base            | Initial: 1.24 | Min: 0.85 | Max: 1.65 | Tuned: 1.33 | type string; c=0.05
+[x] LMR_Scale           | Initial: 1.80 | Min: 1.30 | Max: 2.50 | Tuned: 1.77 | type string; c=0.05
+[x] RFP_Margin          | Initial:   82 | Min:   40 | Max:  160 | Tuned:   79 |
+[x] FP_Base             | Initial:  197 | Min:  110 | Max:  330 | Tuned:  192 |
+[x] FP_Mult             | Initial:  657 | Min:  400 | Max:  950 | Tuned:  577 | was near boundary in pass 1; extended
+[x] LMP_Base            | Initial:    3 | Min:    2 | Max:    7 | Tuned:    3 |
+[-] LMP_Mult            | Initial:    1 | Min:  --- | Max:  --- | Tuned:    1 | converged to floor in both passes; skip
+[x] SEE_Pruning_Margin  | Initial: -277 | Min: -420 | Max: -120 | Tuned: -273 | large swing between passes; wide range kept
+[x] SE_Min_Depth        | Initial:    9 | Min:    5 | Max:   16 | Tuned:    9 |
+[x] SE_Depth_Margin     | Initial:    2 | Min:    1 | Max:    5 | Tuned:    2 |
+[x] SE_Margin           | Initial:   54 | Min:   25 | Max:   95 | Tuned:   61 |
+[x] SE_Reduction_Denom  | Initial:    3 | Min:    1 | Max:    6 | Tuned:    3 | upper extended; noisy pass 2 hit boundary at 5
 
 Budget: 250
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(ASP_Delta=Scalar{Cl(18,55,b),Int}[sigma=Scalar{exp=2.03}],FP_Base=Scalar{Cl(110,330,b),Int}[sigma=Scalar{exp=2.03}],FP_Mult=Scalar{Cl(400,950,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(2,7,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(0.85,1.65,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.3,2.5,b)}[sigma=Scalar{exp=2.03}],RFP_Margin=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],SEE_Pruning_Margin=Scalar{Cl(-420,-120,b),Int}[sigma=Scalar{exp=2.03}],SE_Depth_Margin=Scalar{Cl(1,5,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(25,95,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(5,16,b),Int}[sigma=Scalar{exp=2.03}],SE_Reduction_Denom=Scalar{Cl(1,6,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-04-30 22:17:37", "#num-ask": 232, "#num-tell": 225, "#num-tell-not-asked": 1, "#uid": "c41db4dbbb6f44158bb65aa8fb5ae80c", "#lineage": "1a08240a8f804e3bbdf06b59d75a3d1c", "#generation": 13, "#parents_uids": ["1f27a6003535435187a6913cdd29ac8e"], "#loss": 0.42000000000000004, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "ASP_Delta": 32, "ASP_Delta#sigma": 6.166666666666667, "ASP_Delta#sigma#sigma": 1.0, "FP_Base": 192, "FP_Base#sigma": 36.66666666666668, "FP_Base#sigma#sigma": 1.0, "FP_Mult": 577, "FP_Mult#sigma": 91.6666666666667, "FP_Mult#sigma#sigma": 1.0, "LMP_Base": 3, "LMP_Base#sigma": 0.8333333333333334, "LMP_Base#sigma#sigma": 1.0, "LMR_Base": 1.3312118345122825, "LMR_Base#sigma": 0.1333333333333333, "LMR_Base#sigma#sigma": 1.0, "LMR_Scale": 1.7657610535236674, "LMR_Scale#sigma": 0.19999999999999996, "LMR_Scale#sigma#sigma": 1.0, "RFP_Margin": 79, "RFP_Margin#sigma": 19.999999999999996, "RFP_Margin#sigma#sigma": 1.0, "SEE_Pruning_Margin": -273, "SEE_Pruning_Margin#sigma": 50.000000000000014, "SEE_Pruning_Margin#sigma#sigma": 1.0, "SE_Depth_Margin": 2, "SE_Depth_Margin#sigma": 0.6666666666666666, "SE_Depth_Margin#sigma#sigma": 1.0, "SE_Margin": 61, "SE_Margin#sigma": 11.666666666666668, "SE_Margin#sigma#sigma": 1.0, "SE_Min_Depth": 9, "SE_Min_Depth#sigma": 1.8333333333333333, "SE_Min_Depth#sigma#sigma": 1.0, "SE_Reduction_Denom": 3, "SE_Reduction_Denom#sigma": 0.8333333333333334, "SE_Reduction_Denom#sigma#sigma": 1.0}
 
 ================================================================
 BATCH 2 – HISTORY / MOVE ORDERING

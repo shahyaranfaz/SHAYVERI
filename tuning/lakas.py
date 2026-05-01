@@ -482,8 +482,6 @@ def master_run(args, p: DistPaths):
                                                upper=v['upper'])})
 
         instrum = ng.p.Instrumentation(**arg)
-        if not args.deterministic_function:
-            instrum.descriptors.deterministic_function = False
 
         # Load optimizer if requested
         input_data_file = args.input_data_file
