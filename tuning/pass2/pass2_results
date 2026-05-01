@@ -1,18 +1,24 @@
 python3.10 lakas.py \
   --distributed-role master \
-  --budget 150 \
+  --budget 250 \
   --num_workers 8 \
   --concurrency 23 \
-  --output-data-file "batch2.dat" \
-  --input-data-file  "batch2.dat" \
-  --optimizer-log-file "batch2.log" \
+  --output-data-file "batch3.dat" \
+  --input-data-file  "batch3.dat" \
+  --optimizer-log-file "batch3.log" \
 --input-param "{ \
-'History_Bonus_Mult':  {'init':  488,  'lower':  280,  'upper':  720}, \
-'History_Bonus_Sub':   {'init':  170,  'lower':   60,  'upper':  340}, \
-'History_Bonus_Limit': {'init': 2842,  'lower': 1500,  'upper': 4500}, \
-'Main_History_Weight': {'init':   78,  'lower':   25,  'upper':  160}, \
-'CMH_Weight':          {'init':   61,  'lower':   15,  'upper':  160}, \
-'FMH_Weight':          {'init':   33,  'lower':    0,  'upper':  130} \
+'Tempo_Bonus':        {'init':  24, 'lower':   4, 'upper':  48}, \
+'Bishop_Pair_Bonus':  {'init':  21, 'lower':   8, 'upper':  55}, \
+'Development_Bonus':  {'init':  12, 'lower':   0, 'upper':  28}, \
+'Castled_Bonus':      {'init':   8, 'lower':   0, 'upper':  38}, \
+'Mobility_Knight_MG':  {'init':   6, 'lower':   0, 'upper':  16}, \
+'Mobility_Bishop_MG':  {'init':  11, 'lower':   2, 'upper':  22}, \
+'Mobility_Rook_MG':    {'init':   5, 'lower':   0, 'upper':  14}, \
+'Mobility_Queen_MG':   {'init':   5, 'lower':   0, 'upper':  12}, \
+'Mobility_Knight_EG':  {'init':   5, 'lower':   0, 'upper':  16}, \
+'Mobility_Bishop_EG':  {'init':   5, 'lower':   0, 'upper':  16}, \
+'Mobility_Rook_EG':    {'init':   2, 'lower':   0, 'upper':  12}, \
+'Mobility_Queen_EG':   {'init':   1, 'lower':   0, 'upper':   8} \
 }"
 
 python3.10 lakas.py \
@@ -104,14 +110,15 @@ pass 1. FMH_Weight lower kept at 0; this consistently trends low
 and may legitimately belong near zero. Main_History_Weight range
 widened; value of 78 may be inflated by the noisy FMH competition.
 
-[ ] History_Bonus_Mult  | Initial:  488 | Min:  280 | Max:  720 | Tuned:    |
-[ ] History_Bonus_Sub   | Initial:  170 | Min:   60 | Max:  340 | Tuned:    |
-[ ] History_Bonus_Limit | Initial: 2842 | Min: 1500 | Max: 4500 | Tuned:    | upper extended from 3000
-[ ] Main_History_Weight | Initial:   78 | Min:   25 | Max:  160 | Tuned:    |
-[ ] CMH_Weight          | Initial:   61 | Min:   15 | Max:  160 | Tuned:    |
-[ ] FMH_Weight          | Initial:   33 | Min:    0 | Max:  130 | Tuned:    |
+[x] History_Bonus_Mult  | Initial:  488 | Min:  280 | Max:  720 | Tuned:  468 |
+[x] History_Bonus_Sub   | Initial:  170 | Min:   60 | Max:  340 | Tuned:  165 |
+[x] History_Bonus_Limit | Initial: 2842 | Min: 1500 | Max: 4500 | Tuned: 3006 | upper extended from 3000
+[x] Main_History_Weight | Initial:   78 | Min:   25 | Max:  160 | Tuned:   71 |
+[x] CMH_Weight          | Initial:   61 | Min:   15 | Max:  160 | Tuned:   51 |
+[x] FMH_Weight          | Initial:   33 | Min:    0 | Max:  130 | Tuned:   43 |
 
 Budget: 150
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-01 00:21:53", "#num-ask": 138, "#num-tell": 131, "#num-tell-not-asked": 1, "#uid": "3b0202df427f492a9787396d74fd88c0", "#lineage": "09d293a479c2448ea3afe823bc40e32b", "#generation": 8, "#parents_uids": ["5db8ad57954e45648e5eff1073d38c08"], "#loss": 0.4325, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "CMH_Weight": 51, "CMH_Weight#sigma": 24.166666666666664, "CMH_Weight#sigma#sigma": 1.0, "FMH_Weight": 43, "FMH_Weight#sigma": 21.666666666666675, "FMH_Weight#sigma#sigma": 1.0, "History_Bonus_Limit": 3006, "History_Bonus_Limit#sigma": 500.00000000000006, "History_Bonus_Limit#sigma#sigma": 1.0, "History_Bonus_Mult": 468, "History_Bonus_Mult#sigma": 73.33333333333336, "History_Bonus_Mult#sigma#sigma": 1.0, "History_Bonus_Sub": 165, "History_Bonus_Sub#sigma": 46.66666666666668, "History_Bonus_Sub#sigma#sigma": 1.0, "Main_History_Weight": 71, "Main_History_Weight#sigma": 22.499999999999996, "Main_History_Weight#sigma#sigma": 1.0}
 
 ================================================================
 BATCH 3 – CORE EVAL  (misc + mobility)

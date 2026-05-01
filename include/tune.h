@@ -38,14 +38,14 @@ inline int se_reduction_denom =  3; //
 
 // History gravity / bonus
 static constexpr int history_max = 16384; //
-inline int history_bonus_mult    =   488; //
-inline int history_bonus_sub     =   170; //
-inline int history_bonus_limit   =  2842; //
+inline int history_bonus_mult    =   468; //
+inline int history_bonus_sub     =   165; //
+inline int history_bonus_limit   =  3006; //
 
 // History blending weights (percent, divided by 100 before accumulation)
-inline int main_history_weight = 78; //
-inline int cmh_weight          = 61; //
-inline int fmh_weight          = 33; //
+inline int main_history_weight = 71; //
+inline int cmh_weight          = 51; //
+inline int fmh_weight          = 43; //
 
 // Pruning margins
 inline int rfp_margin_mult    =   79; //
@@ -365,12 +365,12 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     1,     6,   "3"}},
 
     // ── History ──────────────────────────────────────────────────
-    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "488"}},
-    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "170"}},
-    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "2842"}},
-    {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "78"}},
-    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "61"}},
-    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "33"}},
+    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "468"}},
+    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "165"}},
+    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "3006"}},
+    {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "71"}},
+    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "51"}},
+    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "43"}},
 
     // ── Eval – misc ───────────────────────────────────────────────
     {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,     4,    48,   "24"}},
