@@ -1,24 +1,28 @@
 python3.10 lakas.py \
   --distributed-role master \
-  --budget 250 \
+  --budget 400 \
   --num_workers 8 \
   --concurrency 23 \
-  --output-data-file "batch3.dat" \
-  --input-data-file  "batch3.dat" \
-  --optimizer-log-file "batch3.log" \
+  --output-data-file "batch4.dat" \
+  --input-data-file  "batch4.dat" \
+  --optimizer-log-file "batch4.log" \
 --input-param "{ \
-'Tempo_Bonus':        {'init':  24, 'lower':   4, 'upper':  48}, \
-'Bishop_Pair_Bonus':  {'init':  21, 'lower':   8, 'upper':  55}, \
-'Development_Bonus':  {'init':  12, 'lower':   0, 'upper':  28}, \
-'Castled_Bonus':      {'init':   8, 'lower':   0, 'upper':  38}, \
-'Mobility_Knight_MG':  {'init':   6, 'lower':   0, 'upper':  16}, \
-'Mobility_Bishop_MG':  {'init':  11, 'lower':   2, 'upper':  22}, \
-'Mobility_Rook_MG':    {'init':   5, 'lower':   0, 'upper':  14}, \
-'Mobility_Queen_MG':   {'init':   5, 'lower':   0, 'upper':  12}, \
-'Mobility_Knight_EG':  {'init':   5, 'lower':   0, 'upper':  16}, \
-'Mobility_Bishop_EG':  {'init':   5, 'lower':   0, 'upper':  16}, \
-'Mobility_Rook_EG':    {'init':   2, 'lower':   0, 'upper':  12}, \
-'Mobility_Queen_EG':   {'init':   1, 'lower':   0, 'upper':   8} \
+'King_Shield_Penalty':    {'init':  -27, 'lower':  -60, 'upper':   -5}, \
+'King_Open_File_Penalty': {'init':  -26, 'lower':  -55, 'upper':   -5}, \
+'King_SemiOpen_Penalty':  {'init':   -4, 'lower':  -25, 'upper':    0}, \
+'King_Escape_Bonus':      {'init':    4, 'lower':    0, 'upper':   20}, \
+'King_Danger_Divisor':    {'init':    8, 'lower':    2, 'upper':   22}, \
+'King_Danger_Max':        {'init':  634, 'lower':  250, 'upper': 1100}, \
+'King_Attacker_Knight':   {'init':    2, 'lower':    0, 'upper':   12}, \
+'King_Attacker_Bishop':   {'init':    4, 'lower':    0, 'upper':   14}, \
+'King_Attacker_Rook':     {'init':    3, 'lower':    0, 'upper':   14}, \
+'King_Attacker_Queen':    {'init':   12, 'lower':    4, 'upper':   28}, \
+'KingAtk_2':              {'init':    8, 'lower':    0, 'upper':   22}, \
+'KingAtk_3':              {'init':   24, 'lower':    4, 'upper':   55}, \
+'KingAtk_4':              {'init':   36, 'lower':    8, 'upper':   80}, \
+'KingAtk_5':              {'init':   44, 'lower':   12, 'upper':   95}, \
+'KingAtk_6':              {'init':   30, 'lower':    0, 'upper':   90}, \
+'KingAtk_7':              {'init':   18, 'lower':    0, 'upper':   90} \
 }"
 
 python3.10 lakas.py \
@@ -51,20 +55,6 @@ Initial values are pass 1 tuned values, as verified in tune.h.
 ================================================================
 PASS 2 NOTES
 ================================================================
-
-PARALLELIZATION REQUIREMENT FOR THIS PASS:
-  All batches must run on a single machine OR on multiple machines
-  sharing a single --input-data-file / --output-data-file over a
-  network mount. Independent .dat files per machine are forbidden.
-  If in doubt, run single-machine.
-
-BATCH ORDER AND RATIONALE:
-  1 → 2 → 3 → 4 → 6 → 7 → 8a → 8b
-  Batch 5 (passed pawns) is removed from SPSA and moved to Texel.
-  Search (1, 2) is tuned first because noisy search parameters
-  corrupt the eval gradient for all subsequent batches. Batch 8
-  is split: 8a (coordination/file bonuses, higher signal) runs
-  before 8b (outposts, lowest signal in the current book).
 
 INITIAL CONFIDENCE:
   HIGH  – Batches 1, 2  (well-tuned in pass 1; tighter ranges)
@@ -174,24 +164,24 @@ Ranges are deliberately wide because for penalty parameters near
 0, the optimizer starting from a wrongly-pushed value needs room
 to recover.
 
-[ ] Isolated_MG         | Initial:   -2 | Min:  -35 | Max:    0 | Tuned:    | likely underpenalized; wide range
-[ ] Isolated_EG         | Initial:   -2 | Min:  -28 | Max:    0 | Tuned:    | same concern
-[ ] Doubled_MG          | Initial:  -10 | Min:  -45 | Max:    0 | Tuned:    | pass 1 and pass 2 disagree; wide
-[ ] Doubled_EG          | Initial:   -6 | Min:  -30 | Max:    0 | Tuned:    |
-[ ] Backward_MG         | Initial:  -13 | Min:  -40 | Max:    0 | Tuned:    |
-[ ] Backward_EG         | Initial:   -2 | Min:  -25 | Max:    0 | Tuned:    |
-[ ] Supported_Pawn_MG   | Initial:   15 | Min:    3 | Max:   38 | Tuned:    |
-[ ] Weak_Pawn_MG        | Initial:  -18 | Min:  -50 | Max:   -3 | Tuned:    |
-[ ] Pawn_Island_MG      | Initial:  -28 | Min:  -60 | Max:   -5 | Tuned:    | both passes agree on negative direction
-[ ] Pawn_Island_EG      | Initial:   -4 | Min:  -25 | Max:    0 | Tuned:    |
-[ ] Pawn_Center_MG      | Initial:    8 | Min:    0 | Max:   24 | Tuned:    |
-[-] Pawn_Center_EG      | Initial:    0 | Min:  --- | Max:  --- | Tuned:  0 | converged to 0 in both passes; skip
-[-] Pawn_ExtCenter_MG   | Initial:    0 | Min:  --- | Max:  --- | Tuned:  0 | converged to 0 in both passes; skip
-[ ] Pawn_ExtCenter_EG   | Initial:    3 | Min:    0 | Max:   14 | Tuned:    |
-[ ] Pawn_Storm_Base     | Initial:    2 | Min:    0 | Max:   16 | Tuned:    |
-[ ] Pawn_Storm_Rank_Mult| Initial:    1 | Min:    0 | Max:    9 | Tuned:    |
+[x] Isolated_MG         | Initial:   -2 | Min:  -35 | Max:    0 | Tuned:  -1 | likely underpenalized; wide range
+[x] Isolated_EG         | Initial:   -2 | Min:  -28 | Max:    0 | Tuned:  -3 | same concern
+[x] Doubled_MG          | Initial:  -10 | Min:  -45 | Max:    0 | Tuned: -12 | pass 1 and pass 2 disagree; wide
+[x] Doubled_EG          | Initial:   -6 | Min:  -30 | Max:    0 | Tuned:  -9 |
+[x] Backward_MG         | Initial:  -13 | Min:  -40 | Max:    0 | Tuned: -13 |
+[x] Backward_EG         | Initial:   -2 | Min:  -25 | Max:    0 | Tuned:   0 |
+[x] Supported_Pawn_MG   | Initial:   15 | Min:    3 | Max:   38 | Tuned:  14 |
+[x] Weak_Pawn_MG        | Initial:  -18 | Min:  -50 | Max:   -3 | Tuned: -18 |
+[x] Pawn_Island_MG      | Initial:  -28 | Min:  -60 | Max:   -5 | Tuned: -32 | both passes agree on negative direction
+[x] Pawn_Island_EG      | Initial:   -4 | Min:  -25 | Max:    0 | Tuned:  -5 |
+[x] Pawn_Center_MG      | Initial:    8 | Min:    0 | Max:   24 | Tuned:   7 |
+[-] Pawn_Center_EG      | Initial:    0 | Min:  --- | Max:  --- | Tuned:   0 | converged to 0 in both passes; skip
+[-] Pawn_ExtCenter_MG   | Initial:    0 | Min:  --- | Max:  --- | Tuned:   0 | converged to 0 in both passes; skip
+[x] Pawn_ExtCenter_EG   | Initial:    3 | Min:    0 | Max:   14 | Tuned:   3 |
+[x] Pawn_Storm_Base     | Initial:    2 | Min:    0 | Max:   16 | Tuned:   2 |
+[x] Pawn_Storm_Rank_Mult| Initial:    1 | Min:    0 | Max:    9 | Tuned:   1 |
 
-Budget: 280
+Budget: 350
 
 ================================================================
 BATCH 5 – PASSED PAWNS                          [TEXEL – NO SPSA]
@@ -202,21 +192,12 @@ Reason: SPSA failed twice at progressively higher budgets (230,
 then 350), with all 18 params returning their initial values both
 times. This is not a budget problem — it is a signal problem.
 
-The opening book (8mvs_+90_+99.epd, 16 plies) generates sharp
-tactical positions. Passed pawn bonuses only matter in positions
-that already contain passed pawns in a roughly balanced context.
-The tactical book almost never produces such games, so the
-win/loss/draw signal carries zero gradient for these parameters.
-Doubling the budget again would not fix this.
-
-Texel tuning directly minimizes sigmoid loss against a static
-evaluation on a large position set. Any dataset containing diverse
-quiet middlegame and endgame positions will have plentiful passed
-pawn examples, giving the gradient descent clean signal.
-
-Params to Texel: PassedMG_R1–R6, PassedEG_R1–R6,
-  Candidate_Pawn_MG/EG, Connected_Passed_MG/EG,
-  Outside_Passed_MG/EG.
+Params to Texel:
+  - PassedMG_R1–R6,
+  - PassedEG_R1–R6,
+  - Candidate_Pawn_MG/EG,
+  - Connected_Passed_MG/EG,
+  - Outside_Passed_MG/EG.
 
 Dataset requirement: quiet positions (no pieces en prise,
   no checks), drawn from self-play or a large PGN corpus.
@@ -376,27 +357,11 @@ Budget: 200
 ================================================================
 BUDGET SUMMARY
 ================================================================
-Batch 1  (12 params):  250  →  50,000 games
-Batch 2  ( 6 params):  150  →  30,000 games
-Batch 3  (12 params):  250  →  50,000 games
-Batch 4  (14 params):  280  →  56,000 games
-Batch 5  (18 params):  TEXEL
 Batch 6  (16 params):  320  →  64,000 games
 Batch 7  (20 params):  400  →  80,000 games
 Batch 8a (14 params):  280  →  56,000 games
 Batch 8b ( 8 params):  200  →  40,000 games
                                ─────────────
-TOTAL SPSA games:             426,000
-(games_per_budget=200, single machine, TC 5+0.05, concurrency 23)
-
-At roughly 2,500 games/hour on the 13700KS at 23 concurrency,
-this is approximately 170 hours of SPSA compute, not including
-Texel tuning for batch 5.
-
-To reduce wall-clock time, batches can be run at the recommended
-budget and then re-queued [!] for additional budget if sigma is
-still high in the final .dat state. Do not reduce budgets below
-10x the parameter count for any single batch.
 
 ================================================================
 VERIFICATION GATE
