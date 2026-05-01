@@ -218,8 +218,8 @@ inline int PST_KING_EG[64] = {
 // ================================================================
 
 // Misc
-inline int TEMPO_BONUS       = 24; //
-inline int BISHOP_PAIR_BONUS = 21; //
+inline int TEMPO_BONUS       = 22; //
+inline int BISHOP_PAIR_BONUS = 22; //
 
 // Passed pawns (indexed by relative rank 0-7)
 inline int PASSED_PAWN_BONUS_MG[8] = { 0,  5, 10, 20,  30,  50,  70, 0 }; //
@@ -267,11 +267,11 @@ inline int KING_DANGER_MAX             = 634; //
 
 // Mobility
 inline int MOBILITY_KNIGHT_MG =  6; //
-inline int MOBILITY_BISHOP_MG = 11; //
+inline int MOBILITY_BISHOP_MG = 10; //
 inline int MOBILITY_ROOK_MG   =  5; //
-inline int MOBILITY_QUEEN_MG  =  5; //
+inline int MOBILITY_QUEEN_MG  =  4; //
 inline int MOBILITY_KNIGHT_EG =  5; //
-inline int MOBILITY_BISHOP_EG =  5; //
+inline int MOBILITY_BISHOP_EG =  4; //
 inline int MOBILITY_ROOK_EG   =  2; //
 inline int MOBILITY_QUEEN_EG  =  1; //
 
@@ -331,7 +331,7 @@ inline int QUEEN_OUTPOST_EG  =  7; //
 
 // Development / initiative
 inline int DEVELOPMENT_BONUS = 12; //
-inline int CASTLED_BONUS     =  8; //
+inline int CASTLED_BONUS     =  5; //
 
 // ================================================================
 // Tuning infrastructure
@@ -373,18 +373,18 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "43"}},
 
     // ── Eval – misc ───────────────────────────────────────────────
-    {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,     4,    48,   "24"}},
-    {"Bishop_Pair_Bonus",   {&BISHOP_PAIR_BONUS,      TuningOption::INT,     8,    55,   "21"}},
+    {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,     4,    48,   "22"}},
+    {"Bishop_Pair_Bonus",   {&BISHOP_PAIR_BONUS,      TuningOption::INT,     8,    55,   "22"}},
     {"Development_Bonus",   {&DEVELOPMENT_BONUS,      TuningOption::INT,     0,    28,   "12"}},
-    {"Castled_Bonus",       {&CASTLED_BONUS,          TuningOption::INT,     0,    38,    "8"}},
+    {"Castled_Bonus",       {&CASTLED_BONUS,          TuningOption::INT,     0,    38,    "5"}},
 
     // ── Mobility ─────────────────────────────────────────────────
     {"Mobility_Knight_MG",  {&MOBILITY_KNIGHT_MG,     TuningOption::INT,     0,    16,    "6"}},
-    {"Mobility_Bishop_MG",  {&MOBILITY_BISHOP_MG,     TuningOption::INT,     2,    22,   "11"}},
+    {"Mobility_Bishop_MG",  {&MOBILITY_BISHOP_MG,     TuningOption::INT,     2,    22,   "10"}},
     {"Mobility_Rook_MG",    {&MOBILITY_ROOK_MG,       TuningOption::INT,     0,    14,    "5"}},
-    {"Mobility_Queen_MG",   {&MOBILITY_QUEEN_MG,      TuningOption::INT,     0,    12,    "5"}},
+    {"Mobility_Queen_MG",   {&MOBILITY_QUEEN_MG,      TuningOption::INT,     0,    12,    "4"}},
     {"Mobility_Knight_EG",  {&MOBILITY_KNIGHT_EG,     TuningOption::INT,     0,    16,    "5"}},
-    {"Mobility_Bishop_EG",  {&MOBILITY_BISHOP_EG,     TuningOption::INT,     0,    16,    "5"}},
+    {"Mobility_Bishop_EG",  {&MOBILITY_BISHOP_EG,     TuningOption::INT,     0,    16,    "4"}},
     {"Mobility_Rook_EG",    {&MOBILITY_ROOK_EG,       TuningOption::INT,     0,    12,    "2"}},
     {"Mobility_Queen_EG",   {&MOBILITY_QUEEN_EG,      TuningOption::INT,     0,     8,    "1"}},
 

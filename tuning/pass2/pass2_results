@@ -131,20 +131,21 @@ is low for a typical well-tuned engine (25–35 is common); the
 optimizer may not have found the correct region. Mobility values
 are consistent with expectations but unverified. Wide ranges used.
 
-[ ] Tempo_Bonus         | Initial:  24 | Min:    4 | Max:   48 | Tuned:    |
-[ ] Bishop_Pair_Bonus   | Initial:  21 | Min:    8 | Max:   55 | Tuned:    | may be undertuned; typical ~25-35
-[ ] Development_Bonus   | Initial:  12 | Min:    0 | Max:   28 | Tuned:    |
-[ ] Castled_Bonus       | Initial:   8 | Min:    0 | Max:   38 | Tuned:    |
-[ ] Mobility_Knight_MG  | Initial:   6 | Min:    0 | Max:   16 | Tuned:    |
-[ ] Mobility_Bishop_MG  | Initial:  11 | Min:    2 | Max:   22 | Tuned:    |
-[ ] Mobility_Rook_MG    | Initial:   5 | Min:    0 | Max:   14 | Tuned:    |
-[ ] Mobility_Queen_MG   | Initial:   5 | Min:    0 | Max:   12 | Tuned:    |
-[ ] Mobility_Knight_EG  | Initial:   5 | Min:    0 | Max:   16 | Tuned:    |
-[ ] Mobility_Bishop_EG  | Initial:   5 | Min:    0 | Max:   16 | Tuned:    |
-[ ] Mobility_Rook_EG    | Initial:   2 | Min:    0 | Max:   12 | Tuned:    |
-[ ] Mobility_Queen_EG   | Initial:   1 | Min:    0 | Max:    8 | Tuned:    |
+[x] Tempo_Bonus         | Initial:  24 | Min:    4 | Max:   48 | Tuned: 22 |
+[x] Bishop_Pair_Bonus   | Initial:  21 | Min:    8 | Max:   55 | Tuned: 22 | may be undertuned; typical ~25-35
+[x] Development_Bonus   | Initial:  12 | Min:    0 | Max:   28 | Tuned: 12 |
+[x] Castled_Bonus       | Initial:   8 | Min:    0 | Max:   38 | Tuned:  5 |
+[x] Mobility_Knight_MG  | Initial:   6 | Min:    0 | Max:   16 | Tuned:  6 |
+[x] Mobility_Bishop_MG  | Initial:  11 | Min:    2 | Max:   22 | Tuned: 10 |
+[x] Mobility_Rook_MG    | Initial:   5 | Min:    0 | Max:   14 | Tuned:  5 |
+[x] Mobility_Queen_MG   | Initial:   5 | Min:    0 | Max:   12 | Tuned:  4 |
+[x] Mobility_Knight_EG  | Initial:   5 | Min:    0 | Max:   16 | Tuned:  5 |
+[x] Mobility_Bishop_EG  | Initial:   5 | Min:    0 | Max:   16 | Tuned:  4 |
+[x] Mobility_Rook_EG    | Initial:   2 | Min:    0 | Max:   12 | Tuned:  2 |
+[x] Mobility_Queen_EG   | Initial:   1 | Min:    0 | Max:    8 | Tuned:  1 |
 
 Budget: 250
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(Bishop_Pair_Bonus=Scalar{Cl(8,55,b),Int}[sigma=Scalar{exp=2.03}],Castled_Bonus=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Development_Bonus=Scalar{Cl(0,28,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_MG=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_MG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_EG=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_EG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_MG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Tempo_Bonus=Scalar{Cl(4,48,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-01 01:31:06", "#num-ask": 194, "#num-tell": 187, "#num-tell-not-asked": 1, "#uid": "0be3db0c187145ef85270703888a0d2c", "#lineage": "64b1f12874ff4bd096213bc143fa94c9", "#generation": 13, "#parents_uids": ["d3d7a3b7742a4d3a8e118fc39286b556"], "#loss": 0.43999999999999995, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "Bishop_Pair_Bonus": 22, "Bishop_Pair_Bonus#sigma": 7.833333333333332, "Bishop_Pair_Bonus#sigma#sigma": 1.0, "Castled_Bonus": 5, "Castled_Bonus#sigma": 6.333333333333334, "Castled_Bonus#sigma#sigma": 1.0, "Development_Bonus": 12, "Development_Bonus#sigma": 4.666666666666668, "Development_Bonus#sigma#sigma": 1.0, "Mobility_Bishop_EG": 4, "Mobility_Bishop_EG#sigma": 2.6666666666666665, "Mobility_Bishop_EG#sigma#sigma": 1.0, "Mobility_Bishop_MG": 10, "Mobility_Bishop_MG#sigma": 3.333333333333334, "Mobility_Bishop_MG#sigma#sigma": 1.0, "Mobility_Knight_EG": 5, "Mobility_Knight_EG#sigma": 2.6666666666666665, "Mobility_Knight_EG#sigma#sigma": 1.0, "Mobility_Knight_MG": 6, "Mobility_Knight_MG#sigma": 2.6666666666666665, "Mobility_Knight_MG#sigma#sigma": 1.0, "Mobility_Queen_EG": 1, "Mobility_Queen_EG#sigma": 1.3333333333333333, "Mobility_Queen_EG#sigma#sigma": 1.0, "Mobility_Queen_MG": 4, "Mobility_Queen_MG#sigma": 2.0, "Mobility_Queen_MG#sigma#sigma": 1.0, "Mobility_Rook_EG": 2, "Mobility_Rook_EG#sigma": 2.0, "Mobility_Rook_EG#sigma#sigma": 1.0, "Mobility_Rook_MG": 5, "Mobility_Rook_MG#sigma": 2.3333333333333335, "Mobility_Rook_MG#sigma#sigma": 1.0, "Tempo_Bonus": 22, "Tempo_Bonus#sigma": 7.333333333333333, "Tempo_Bonus#sigma#sigma": 1.0}
 
 ================================================================
 BATCH 4 – PAWN STRUCTURE
