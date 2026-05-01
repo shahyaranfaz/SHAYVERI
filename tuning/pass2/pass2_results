@@ -1,0 +1,372 @@
+================================================================
+  SHAYBOT  –  SPSA TUNING TRACKER  (Lakas)  PASS 2 (CORRECTED)
+================================================================
+Format per row:
+  [STATUS] Name | Initial | Min | Max | Tuned | Notes
+
+STATUS codes:
+  [ ] not started
+  [~] in progress
+  [x] converged / done
+  [!] re-run queued (value still drifting)
+  [-] skipped / not tuning this pass
+
+Initial values are pass 1 tuned values, as verified in tune.h.
+
+================================================================
+PASS 2 NOTES
+================================================================
+
+PARALLELIZATION REQUIREMENT FOR THIS PASS:
+  All batches must run on a single machine OR on multiple machines
+  sharing a single --input-data-file / --output-data-file over a
+  network mount. Independent .dat files per machine are forbidden.
+  If in doubt, run single-machine.
+
+BATCH ORDER AND RATIONALE:
+  1 → 2 → 3 → 4 → 6 → 7 → 8a → 8b
+  Batch 5 (passed pawns) is removed from SPSA and moved to Texel.
+  Search (1, 2) is tuned first because noisy search parameters
+  corrupt the eval gradient for all subsequent batches. Batch 8
+  is split: 8a (coordination/file bonuses, higher signal) runs
+  before 8b (outposts, lowest signal in the current book).
+
+INITIAL CONFIDENCE:
+  HIGH  – Batches 1, 2  (well-tuned in pass 1; tighter ranges)
+  LOW   – Batches 3–8   (noisy pass 1; wider ranges; treat as
+          warm-start hints, not ground truth)
+
+================================================================
+BATCH 1 – CORE SEARCH
+================================================================
+12 parameters  (LMP_Mult converged to floor in both passes; skip)
+
+INITIAL CONFIDENCE: HIGH – tuned correctly in pass 1.
+Ranges tightened around pass 1 values. SEE_Pruning_Margin and
+FP_Mult kept wider; both showed large swings between passes,
+suggesting the optimizer has not fully settled. SE_Reduction_Denom
+upper extended to 6: pass 2 (noisy) suggested 5 at boundary.
+
+[ ] ASP_Delta           | Initial:   32 | Min:   18 | Max:   55 | Tuned:    |
+[ ] LMR_Base            | Initial: 1.24 | Min: 0.85 | Max: 1.65 | Tuned:    | type string; c=0.05
+[ ] LMR_Scale           | Initial: 1.80 | Min: 1.30 | Max: 2.50 | Tuned:    | type string; c=0.05
+[ ] RFP_Margin          | Initial:   82 | Min:   40 | Max:  160 | Tuned:    |
+[ ] FP_Base             | Initial:  197 | Min:  110 | Max:  330 | Tuned:    |
+[ ] FP_Mult             | Initial:  657 | Min:  400 | Max:  950 | Tuned:    | was near boundary in pass 1; extended
+[ ] LMP_Base            | Initial:    3 | Min:    2 | Max:    7 | Tuned:    |
+[-] LMP_Mult            | Initial:    1 | Min:  --- | Max:  --- | Tuned:  1 | converged to floor in both passes; skip
+[ ] SEE_Pruning_Margin  | Initial: -277 | Min: -420 | Max: -120 | Tuned:    | large swing between passes; wide range kept
+[ ] SE_Min_Depth        | Initial:    9 | Min:    5 | Max:   16 | Tuned:    |
+[ ] SE_Depth_Margin     | Initial:    2 | Min:    1 | Max:    5 | Tuned:    |
+[ ] SE_Margin           | Initial:   54 | Min:   25 | Max:   95 | Tuned:    |
+[ ] SE_Reduction_Denom  | Initial:    3 | Min:    1 | Max:    6 | Tuned:    | upper extended; noisy pass 2 hit boundary at 5
+
+Budget: 250
+
+================================================================
+BATCH 2 – HISTORY / MOVE ORDERING
+================================================================
+6 parameters
+
+INITIAL CONFIDENCE: HIGH – tuned correctly in pass 1.
+History_Bonus_Limit upper extended; was near boundary (3000) in
+pass 1. FMH_Weight lower kept at 0; this consistently trends low
+and may legitimately belong near zero. Main_History_Weight range
+widened; value of 78 may be inflated by the noisy FMH competition.
+
+[ ] History_Bonus_Mult  | Initial:  488 | Min:  280 | Max:  720 | Tuned:    |
+[ ] History_Bonus_Sub   | Initial:  170 | Min:   60 | Max:  340 | Tuned:    |
+[ ] History_Bonus_Limit | Initial: 2842 | Min: 1500 | Max: 4500 | Tuned:    | upper extended from 3000
+[ ] Main_History_Weight | Initial:   78 | Min:   25 | Max:  160 | Tuned:    |
+[ ] CMH_Weight          | Initial:   61 | Min:   15 | Max:  160 | Tuned:    |
+[ ] FMH_Weight          | Initial:   33 | Min:    0 | Max:  130 | Tuned:    |
+
+Budget: 150
+
+================================================================
+BATCH 3 – CORE EVAL  (misc + mobility)
+================================================================
+12 parameters
+
+INITIAL CONFIDENCE: LOW – pass 1 incorrectly parallelized across
+6 PCs. Values are plausible but untrusted. Bishop_Pair_Bonus at 21
+is low for a typical well-tuned engine (25–35 is common); the
+optimizer may not have found the correct region. Mobility values
+are consistent with expectations but unverified. Wide ranges used.
+
+[ ] Tempo_Bonus         | Initial:  24 | Min:    4 | Max:   48 | Tuned:    |
+[ ] Bishop_Pair_Bonus   | Initial:  21 | Min:    8 | Max:   55 | Tuned:    | may be undertuned; typical ~25-35
+[ ] Development_Bonus   | Initial:  12 | Min:    0 | Max:   28 | Tuned:    |
+[ ] Castled_Bonus       | Initial:   8 | Min:    0 | Max:   38 | Tuned:    |
+[ ] Mobility_Knight_MG  | Initial:   6 | Min:    0 | Max:   16 | Tuned:    |
+[ ] Mobility_Bishop_MG  | Initial:  11 | Min:    2 | Max:   22 | Tuned:    |
+[ ] Mobility_Rook_MG    | Initial:   5 | Min:    0 | Max:   14 | Tuned:    |
+[ ] Mobility_Queen_MG   | Initial:   5 | Min:    0 | Max:   12 | Tuned:    |
+[ ] Mobility_Knight_EG  | Initial:   5 | Min:    0 | Max:   16 | Tuned:    |
+[ ] Mobility_Bishop_EG  | Initial:   5 | Min:    0 | Max:   16 | Tuned:    |
+[ ] Mobility_Rook_EG    | Initial:   2 | Min:    0 | Max:   12 | Tuned:    |
+[ ] Mobility_Queen_EG   | Initial:   1 | Min:    0 | Max:    8 | Tuned:    |
+
+Budget: 250
+
+================================================================
+BATCH 4 – PAWN STRUCTURE
+================================================================
+14 parameters  (Pawn_Center_EG, Pawn_ExtCenter_MG skipped –
+                converged to 0 in both passes)
+
+INITIAL CONFIDENCE: LOW – pass 1 incorrectly parallelized across
+2 PCs. Several values are highly suspicious:
+
+  Isolated_MG:  started -12, drifted to -2 in pass 1 (toward
+                zero — wrong direction). Then -2 → -17 in pass 2.
+                Two noisy runs pointing opposite ways; no trust.
+                Floor of -35 set to allow true value to emerge.
+
+  Isolated_EG:  same pattern. True value likely more negative.
+
+  Doubled_MG:   -14 → -10 in pass 1, then -10 → 0 in pass 2.
+                Complete disagreement. Range kept fully open.
+
+  Pawn_Island_MG: both passes agree on pushing negative (-10 →
+                -28 → -34). More trustworthy than isolated/doubled;
+                lower end still extended for safety.
+
+Ranges are deliberately wide because for penalty parameters near
+0, the optimizer starting from a wrongly-pushed value needs room
+to recover.
+
+[ ] Isolated_MG         | Initial:   -2 | Min:  -35 | Max:    0 | Tuned:    | likely underpenalized; wide range
+[ ] Isolated_EG         | Initial:   -2 | Min:  -28 | Max:    0 | Tuned:    | same concern
+[ ] Doubled_MG          | Initial:  -10 | Min:  -45 | Max:    0 | Tuned:    | pass 1 and pass 2 disagree; wide
+[ ] Doubled_EG          | Initial:   -6 | Min:  -30 | Max:    0 | Tuned:    |
+[ ] Backward_MG         | Initial:  -13 | Min:  -40 | Max:    0 | Tuned:    |
+[ ] Backward_EG         | Initial:   -2 | Min:  -25 | Max:    0 | Tuned:    |
+[ ] Supported_Pawn_MG   | Initial:   15 | Min:    3 | Max:   38 | Tuned:    |
+[ ] Weak_Pawn_MG        | Initial:  -18 | Min:  -50 | Max:   -3 | Tuned:    |
+[ ] Pawn_Island_MG      | Initial:  -28 | Min:  -60 | Max:   -5 | Tuned:    | both passes agree on negative direction
+[ ] Pawn_Island_EG      | Initial:   -4 | Min:  -25 | Max:    0 | Tuned:    |
+[ ] Pawn_Center_MG      | Initial:    8 | Min:    0 | Max:   24 | Tuned:    |
+[-] Pawn_Center_EG      | Initial:    0 | Min:  --- | Max:  --- | Tuned:  0 | converged to 0 in both passes; skip
+[-] Pawn_ExtCenter_MG   | Initial:    0 | Min:  --- | Max:  --- | Tuned:  0 | converged to 0 in both passes; skip
+[ ] Pawn_ExtCenter_EG   | Initial:    3 | Min:    0 | Max:   14 | Tuned:    |
+[ ] Pawn_Storm_Base     | Initial:    2 | Min:    0 | Max:   16 | Tuned:    |
+[ ] Pawn_Storm_Rank_Mult| Initial:    1 | Min:    0 | Max:    9 | Tuned:    |
+
+Budget: 280
+
+================================================================
+BATCH 5 – PASSED PAWNS                          [TEXEL – NO SPSA]
+================================================================
+18 parameters moved to Texel tuning.
+
+Reason: SPSA failed twice at progressively higher budgets (230,
+then 350), with all 18 params returning their initial values both
+times. This is not a budget problem — it is a signal problem.
+
+The opening book (8mvs_+90_+99.epd, 16 plies) generates sharp
+tactical positions. Passed pawn bonuses only matter in positions
+that already contain passed pawns in a roughly balanced context.
+The tactical book almost never produces such games, so the
+win/loss/draw signal carries zero gradient for these parameters.
+Doubling the budget again would not fix this.
+
+Texel tuning directly minimizes sigmoid loss against a static
+evaluation on a large position set. Any dataset containing diverse
+quiet middlegame and endgame positions will have plentiful passed
+pawn examples, giving the gradient descent clean signal.
+
+Params to Texel: PassedMG_R1–R6, PassedEG_R1–R6,
+  Candidate_Pawn_MG/EG, Connected_Passed_MG/EG,
+  Outside_Passed_MG/EG.
+
+Dataset requirement: quiet positions (no pieces en prise,
+  no checks), drawn from self-play or a large PGN corpus.
+  Minimum ~5M positions recommended.
+
+================================================================
+BATCH 6 – KING SAFETY
+================================================================
+16 parameters
+
+INITIAL CONFIDENCE: LOW – pass 1 incorrectly parallelized across
+6 PCs. KingAtk_5/6/7 had very high sigma (13–22) in pass 1's
+final state, indicating they never settled. The KingAtk curve
+(8, 24, 36, 44, 30, 18) drops off at high attacker counts in a
+way that may be artifactual noise rather than a genuine shape.
+King_Shield_Penalty at -27 is plausible but could be stronger.
+King_Danger_Max upper extended; 634 is modest and may be a floor.
+Ranges are wide throughout to allow the curve shape to resolve.
+
+[ ] King_Shield_Penalty    | Initial:  -27 | Min:  -60 | Max:   -5 | Tuned:    |
+[ ] King_Open_File_Penalty | Initial:  -26 | Min:  -55 | Max:   -5 | Tuned:    |
+[ ] King_SemiOpen_Penalty  | Initial:   -4 | Min:  -25 | Max:    0 | Tuned:    |
+[ ] King_Escape_Bonus      | Initial:    4 | Min:    0 | Max:   20 | Tuned:    |
+[ ] King_Danger_Divisor    | Initial:    8 | Min:    2 | Max:   22 | Tuned:    |
+[ ] King_Danger_Max        | Initial:  634 | Min:  250 | Max: 1100 | Tuned:    | upper extended; may be too low
+[ ] King_Attacker_Knight   | Initial:    2 | Min:    0 | Max:   12 | Tuned:    |
+[ ] King_Attacker_Bishop   | Initial:    4 | Min:    0 | Max:   14 | Tuned:    |
+[ ] King_Attacker_Rook     | Initial:    3 | Min:    0 | Max:   14 | Tuned:    |
+[ ] King_Attacker_Queen    | Initial:   12 | Min:    4 | Max:   28 | Tuned:    |
+[ ] KingAtk_2              | Initial:    8 | Min:    0 | Max:   22 | Tuned:    |
+[ ] KingAtk_3              | Initial:   24 | Min:    4 | Max:   55 | Tuned:    |
+[ ] KingAtk_4              | Initial:   36 | Min:    8 | Max:   80 | Tuned:    |
+[ ] KingAtk_5              | Initial:   44 | Min:   12 | Max:   95 | Tuned:    | high sigma in pass 1; untrusted
+[ ] KingAtk_6              | Initial:   30 | Min:    0 | Max:   90 | Tuned:    | high sigma in pass 1; untrusted
+[ ] KingAtk_7              | Initial:   18 | Min:    0 | Max:   90 | Tuned:    | sigma=22 in pass 1; near-random
+
+Budget: 320
+
+================================================================
+BATCH 7 – THREATS, HANGING
+================================================================
+20 parameters  (Overloaded_Defender_Bonus, Hanging_Penalty_EG
+                skipped – converged to 0 in both passes)
+
+INITIAL CONFIDENCE: LOW – pass 1 incorrectly parallelized across
+6 PCs. Several values are suspicious:
+
+  Threat_Pawn_Bishop_EG=90: was at the pass 1 upper boundary
+    (90); the optimizer never had room to go higher. Upper
+    extended to 155 here.
+
+  Threat_Pawn_Rook_EG=41: low relative to the MG value (109)
+    and relative to other rook threat bonuses. Likely noise.
+    Wide range used.
+
+  Threat_Minor_Rook_EG=11 vs Threat_Minor_Queen_EG=51: the
+    large asymmetry between these two is suspicious given that
+    a minor threatening a queen should be valued similarly to
+    or less than a minor threatening a rook in many contexts.
+    Allow the optimizer to resolve this.
+
+[ ] Undefended_Attack_Bonus   | Initial:  19 | Min:   4 | Max:   42 | Tuned:    |
+[ ] Pin_Bonus                 | Initial:  35 | Min:  10 | Max:   65 | Tuned:    |
+[-] Overloaded_Defender_Bonus | Initial:   0 | Min: --- | Max:  --- | Tuned:    | converged to 0 in both passes; skip
+[ ] Unrec_Pressure_Bonus      | Initial:   5 | Min:   0 | Max:   18 | Tuned:    |
+[ ] Undefended_Value_Div      | Initial:  65 | Min:  15 | Max:  130 | Tuned:    |
+
+-- Threats (pawn) --
+[ ] Threat_Pawn_Knight_MG  | Initial:  44 | Min:  12 | Max:  100 | Tuned:    |
+[ ] Threat_Pawn_Bishop_MG  | Initial:  87 | Min:  35 | Max:  145 | Tuned:    |
+[ ] Threat_Pawn_Rook_MG    | Initial: 109 | Min:  55 | Max:  160 | Tuned:    |
+[ ] Threat_Pawn_Queen_MG   | Initial:  92 | Min:  40 | Max:  160 | Tuned:    |
+[ ] Threat_Pawn_Knight_EG  | Initial:  78 | Min:  30 | Max:  140 | Tuned:    |
+[ ] Threat_Pawn_Bishop_EG  | Initial:  90 | Min:  40 | Max:  155 | Tuned:    | was at boundary; upper extended
+[ ] Threat_Pawn_Rook_EG    | Initial:  41 | Min:   8 | Max:  100 | Tuned:    | suspicious low value; wide range
+[ ] Threat_Pawn_Queen_EG   | Initial:  70 | Min:  25 | Max:  140 | Tuned:    |
+
+-- Threats (minor) --
+[ ] Threat_Minor_Rook_MG   | Initial:  24 | Min:   0 | Max:   70 | Tuned:    |
+[ ] Threat_Minor_Queen_MG  | Initial:  12 | Min:   0 | Max:   65 | Tuned:    |
+[ ] Threat_Minor_Rook_EG   | Initial:  11 | Min:   0 | Max:   60 | Tuned:    | suspicious asymmetry vs Queen_EG
+[ ] Threat_Minor_Queen_EG  | Initial:  51 | Min:  12 | Max:  110 | Tuned:    | suspicious asymmetry vs Rook_EG
+
+-- Threats (rook) --
+[ ] Threat_Rook_MG         | Initial:  60 | Min:  15 | Max:  120 | Tuned:    |
+[ ] Threat_Rook_EG         | Initial:  47 | Min:   8 | Max:  100 | Tuned:    |
+
+-- Hanging --
+[ ] Hanging_Penalty_MG     | Initial:  58 | Min:  15 | Max:  110 | Tuned:    |
+[-] Hanging_Penalty_EG     | Initial:   0 | Min: --- | Max:  --- | Tuned:  0 | converged to 0 in both passes; skip
+[ ] Hanging_Value_Div      | Initial:  27 | Min:   4 | Max:   90 | Tuned:    |
+
+Budget: 400
+
+================================================================
+BATCH 8a – COORDINATION, FILE BONUSES, TERRITORY
+================================================================
+14 parameters  (split from original batch 8)
+
+INITIAL CONFIDENCE: LOW – pass 1 incorrectly parallelized across
+6 PCs. Pass 2 (also incorrect) showed extreme boundary saturation
+on the original batch 8 (half the params at 0 or max), confirming
+the values are noise. Starting from pass 1 initials.
+
+File multipliers (Open_File_Mult, Semi_Open_File_Mult) tend to
+have reasonable signal even in tactical games since open files
+appear frequently. Treat these with slightly more confidence.
+Coordination bonuses (Battery, Support_Chain, etc.) have lower
+signal but are at least plausible from pass 1.
+
+[ ] Center_Bonus          | Initial:   8 | Min:   0 | Max:   24 | Tuned:    |
+[ ] Ext_Center_Bonus      | Initial:   6 | Min:   0 | Max:   18 | Tuned:    |
+[ ] Enemy_Half_Bonus      | Initial:   6 | Min:   0 | Max:   18 | Tuned:    |
+[ ] Seventh_Rank_MG       | Initial:  13 | Min:   3 | Max:   38 | Tuned:    |
+[ ] Seventh_Rank_EG       | Initial:  29 | Min:   6 | Max:   65 | Tuned:    |
+[ ] Defended_Piece_Bonus  | Initial:   3 | Min:   0 | Max:   18 | Tuned:    |
+[ ] Shared_Target_Bonus   | Initial:  11 | Min:   0 | Max:   32 | Tuned:    |
+[ ] Battery_Rook_Queen    | Initial:  11 | Min:   0 | Max:   40 | Tuned:    |
+[ ] Battery_Bishop_Queen  | Initial:   8 | Min:   0 | Max:   30 | Tuned:    |
+[ ] Support_Chain_Bonus   | Initial:   7 | Min:   0 | Max:   24 | Tuned:    |
+[ ] Open_File_Mult        | Initial: 129 | Min: 100 | Max:  165 | Tuned:    | reasonable signal; moderate range
+[ ] Semi_Open_File_Mult   | Initial: 113 | Min: 100 | Max:  140 | Tuned:    | reasonable signal; moderate range
+[ ] Bishop_Openness_Max   | Initial:  42 | Min:   5 | Max:   80 | Tuned:    |
+[ ] Bishop_Openness_SqWt  | Initial:   2 | Min:   0 | Max:    8 | Tuned:    |
+
+Budget: 280
+
+================================================================
+BATCH 8b – OUTPOSTS
+================================================================
+8 parameters  (split from original batch 8)
+
+INITIAL CONFIDENCE: LOW – pass 1 noisy. Lowest-priority batch.
+Outpost positions are rare events in tactical opening-book games;
+the signal-to-noise ratio here is the worst of any SPSA batch.
+Values from pass 1 are plausible but entirely unverified.
+
+Note: if a closed/semi-closed opening book is available (e.g.
+king's Indian, nimzo positions), running this batch against that
+book would significantly improve signal quality. Consider this
+before running with the current tactical book.
+
+If a pass 3 is planned, this batch is the best candidate to
+defer or replace with Texel tuning.
+
+[ ] Knight_Outpost_MG  | Initial:  14 | Min:   0 | Max:  45 | Tuned:    |
+[ ] Knight_Outpost_EG  | Initial:   5 | Min:   0 | Max:  35 | Tuned:    |
+[ ] Bishop_Outpost_MG  | Initial:  11 | Min:   0 | Max:  38 | Tuned:    |
+[ ] Bishop_Outpost_EG  | Initial:  12 | Min:   0 | Max:  32 | Tuned:    |
+[ ] Rook_Outpost_MG    | Initial:  24 | Min:   0 | Max:  55 | Tuned:    |
+[ ] Rook_Outpost_EG    | Initial:  12 | Min:   0 | Max:  38 | Tuned:    |
+[ ] Queen_Outpost_MG   | Initial:   7 | Min:   0 | Max:  30 | Tuned:    |
+[ ] Queen_Outpost_EG   | Initial:   7 | Min:   0 | Max:  25 | Tuned:    |
+
+Budget: 200
+
+================================================================
+BUDGET SUMMARY
+================================================================
+Batch 1  (12 params):  250  →  50,000 games
+Batch 2  ( 6 params):  150  →  30,000 games
+Batch 3  (12 params):  250  →  50,000 games
+Batch 4  (14 params):  280  →  56,000 games
+Batch 5  (18 params):  TEXEL
+Batch 6  (16 params):  320  →  64,000 games
+Batch 7  (20 params):  400  →  80,000 games
+Batch 8a (14 params):  280  →  56,000 games
+Batch 8b ( 8 params):  200  →  40,000 games
+                               ─────────────
+TOTAL SPSA games:             426,000
+(games_per_budget=200, single machine, TC 5+0.05, concurrency 23)
+
+At roughly 2,500 games/hour on the 13700KS at 23 concurrency,
+this is approximately 170 hours of SPSA compute, not including
+Texel tuning for batch 5.
+
+To reduce wall-clock time, batches can be run at the recommended
+budget and then re-queued [!] for additional budget if sigma is
+still high in the final .dat state. Do not reduce budgets below
+10x the parameter count for any single batch.
+
+================================================================
+VERIFICATION GATE
+================================================================
+After each batch completes, before starting the next:
+  1. Confirm final .dat sigma is converging (meta-sigma declining
+     across generations; no params stuck at boundary)
+  2. Run 200-game self-test: new_binary vs pass_1_binary
+     Expect at least parity; any regression > 10 elo flags the
+     batch for re-examination before proceeding.
+  3. Log the final JSON state in this file under the batch.
