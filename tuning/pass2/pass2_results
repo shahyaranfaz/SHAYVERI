@@ -1,28 +1,32 @@
 python3.10 lakas.py \
   --distributed-role master \
-  --budget 400 \
+  --budget 500 \
   --num_workers 8 \
   --concurrency 23 \
-  --output-data-file "batch4.dat" \
-  --input-data-file  "batch4.dat" \
-  --optimizer-log-file "batch4.log" \
+  --output-data-file "batch7.dat" \
+  --input-data-file  "batch7.dat" \
+  --optimizer-log-file "batch7.log" \
 --input-param "{ \
-'King_Shield_Penalty':    {'init':  -27, 'lower':  -60, 'upper':   -5}, \
-'King_Open_File_Penalty': {'init':  -26, 'lower':  -55, 'upper':   -5}, \
-'King_SemiOpen_Penalty':  {'init':   -4, 'lower':  -25, 'upper':    0}, \
-'King_Escape_Bonus':      {'init':    4, 'lower':    0, 'upper':   20}, \
-'King_Danger_Divisor':    {'init':    8, 'lower':    2, 'upper':   22}, \
-'King_Danger_Max':        {'init':  634, 'lower':  250, 'upper': 1100}, \
-'King_Attacker_Knight':   {'init':    2, 'lower':    0, 'upper':   12}, \
-'King_Attacker_Bishop':   {'init':    4, 'lower':    0, 'upper':   14}, \
-'King_Attacker_Rook':     {'init':    3, 'lower':    0, 'upper':   14}, \
-'King_Attacker_Queen':    {'init':   12, 'lower':    4, 'upper':   28}, \
-'KingAtk_2':              {'init':    8, 'lower':    0, 'upper':   22}, \
-'KingAtk_3':              {'init':   24, 'lower':    4, 'upper':   55}, \
-'KingAtk_4':              {'init':   36, 'lower':    8, 'upper':   80}, \
-'KingAtk_5':              {'init':   44, 'lower':   12, 'upper':   95}, \
-'KingAtk_6':              {'init':   30, 'lower':    0, 'upper':   90}, \
-'KingAtk_7':              {'init':   18, 'lower':    0, 'upper':   90} \
+'Undefended_Attack_Bonus': {'init':   19, 'lower':    4, 'upper':   42}, \
+'Pin_Bonus':               {'init':   35, 'lower':   10, 'upper':   65}, \
+'Unrec_Pressure_Bonus':    {'init':    5, 'lower':    0, 'upper':   18}, \
+'Undefended_Value_Div':    {'init':   65, 'lower':   15, 'upper':  130}, \
+'Threat_Pawn_Knight_MG':   {'init':   44, 'lower':   12, 'upper':  100}, \
+'Threat_Pawn_Bishop_MG':   {'init':   87, 'lower':   35, 'upper':  145}, \
+'Threat_Pawn_Rook_MG':     {'init':  109, 'lower':   55, 'upper':  160}, \
+'Threat_Pawn_Queen_MG':    {'init':   92, 'lower':   40, 'upper':  160}, \
+'Threat_Pawn_Knight_EG':   {'init':   78, 'lower':   30, 'upper':  140}, \
+'Threat_Pawn_Bishop_EG':   {'init':   90, 'lower':   40, 'upper':  155}, \
+'Threat_Pawn_Rook_EG':     {'init':   41, 'lower':    8, 'upper':  100}, \
+'Threat_Pawn_Queen_EG':    {'init':   70, 'lower':   25, 'upper':  140}, \
+'Threat_Minor_Rook_MG':    {'init':   24, 'lower':    0, 'upper':   70}, \
+'Threat_Minor_Queen_MG':   {'init':   12, 'lower':    0, 'upper':   65}, \
+'Threat_Minor_Rook_EG':    {'init':   11, 'lower':    0, 'upper':   60}, \
+'Threat_Minor_Queen_EG':   {'init':   51, 'lower':   12, 'upper':  110}, \
+'Threat_Rook_MG':          {'init':   60, 'lower':   15, 'upper':  120}, \
+'Threat_Rook_EG':          {'init':   47, 'lower':    8, 'upper':  100}, \
+'Hanging_Penalty_MG':      {'init':   58, 'lower':   15, 'upper':  110}, \
+'Hanging_Value_Div':       {'init':   27, 'lower':    4, 'upper':   90} \
 }"
 
 python3.10 lakas.py \
@@ -217,24 +221,25 @@ King_Shield_Penalty at -27 is plausible but could be stronger.
 King_Danger_Max upper extended; 634 is modest and may be a floor.
 Ranges are wide throughout to allow the curve shape to resolve.
 
-[ ] King_Shield_Penalty    | Initial:  -27 | Min:  -60 | Max:   -5 | Tuned:    |
-[ ] King_Open_File_Penalty | Initial:  -26 | Min:  -55 | Max:   -5 | Tuned:    |
-[ ] King_SemiOpen_Penalty  | Initial:   -4 | Min:  -25 | Max:    0 | Tuned:    |
-[ ] King_Escape_Bonus      | Initial:    4 | Min:    0 | Max:   20 | Tuned:    |
-[ ] King_Danger_Divisor    | Initial:    8 | Min:    2 | Max:   22 | Tuned:    |
-[ ] King_Danger_Max        | Initial:  634 | Min:  250 | Max: 1100 | Tuned:    | upper extended; may be too low
-[ ] King_Attacker_Knight   | Initial:    2 | Min:    0 | Max:   12 | Tuned:    |
-[ ] King_Attacker_Bishop   | Initial:    4 | Min:    0 | Max:   14 | Tuned:    |
-[ ] King_Attacker_Rook     | Initial:    3 | Min:    0 | Max:   14 | Tuned:    |
-[ ] King_Attacker_Queen    | Initial:   12 | Min:    4 | Max:   28 | Tuned:    |
-[ ] KingAtk_2              | Initial:    8 | Min:    0 | Max:   22 | Tuned:    |
-[ ] KingAtk_3              | Initial:   24 | Min:    4 | Max:   55 | Tuned:    |
-[ ] KingAtk_4              | Initial:   36 | Min:    8 | Max:   80 | Tuned:    |
-[ ] KingAtk_5              | Initial:   44 | Min:   12 | Max:   95 | Tuned:    | high sigma in pass 1; untrusted
-[ ] KingAtk_6              | Initial:   30 | Min:    0 | Max:   90 | Tuned:    | high sigma in pass 1; untrusted
-[ ] KingAtk_7              | Initial:   18 | Min:    0 | Max:   90 | Tuned:    | sigma=22 in pass 1; near-random
+[x] King_Shield_Penalty    | Initial:  -27 | Min:  -60 | Max:   -5 | Tuned:  -27 |
+[x] King_Open_File_Penalty | Initial:  -26 | Min:  -55 | Max:   -5 | Tuned:  -29 |
+[x] King_SemiOpen_Penalty  | Initial:   -4 | Min:  -25 | Max:    0 | Tuned:   -6 |
+[x] King_Escape_Bonus      | Initial:    4 | Min:    0 | Max:   20 | Tuned:    4 |
+[x] King_Danger_Divisor    | Initial:    8 | Min:    2 | Max:   22 | Tuned:   10 |
+[x] King_Danger_Max        | Initial:  634 | Min:  250 | Max: 1100 | Tuned:  641 | upper extended; may be too low
+[x] King_Attacker_Knight   | Initial:    2 | Min:    0 | Max:   12 | Tuned:    2 |
+[x] King_Attacker_Bishop   | Initial:    4 | Min:    0 | Max:   14 | Tuned:    3 |
+[x] King_Attacker_Rook     | Initial:    3 | Min:    0 | Max:   14 | Tuned:    4 |
+[x] King_Attacker_Queen    | Initial:   12 | Min:    4 | Max:   28 | Tuned:   11 |
+[x] KingAtk_2              | Initial:    8 | Min:    0 | Max:   22 | Tuned:    7 |
+[x] KingAtk_3              | Initial:   24 | Min:    4 | Max:   55 | Tuned:   25 |
+[x] KingAtk_4              | Initial:   36 | Min:    8 | Max:   80 | Tuned:   33 |
+[x] KingAtk_5              | Initial:   44 | Min:   12 | Max:   95 | Tuned:   44 | high sigma in pass 1; untrusted
+[x] KingAtk_6              | Initial:   30 | Min:    0 | Max:   90 | Tuned:   27 | high sigma in pass 1; untrusted
+[x] KingAtk_7              | Initial:   18 | Min:    0 | Max:   90 | Tuned:   16 | sigma=22 in pass 1; near-random
 
-Budget: 320
+Budget: 400
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(KingAtk_2=Scalar{Cl(0,22,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_3=Scalar{Cl(4,55,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_4=Scalar{Cl(8,80,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_5=Scalar{Cl(12,95,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_6=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_7=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Bishop=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Knight=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Queen=Scalar{Cl(4,28,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Rook=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Divisor=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Max=Scalar{Cl(250,1100,b),Int}[sigma=Scalar{exp=2.03}],King_Escape_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],King_Open_File_Penalty=Scalar{Cl(-55,-5,b),Int}[sigma=Scalar{exp=2.03}],King_SemiOpen_Penalty=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],King_Shield_Penalty=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-01 11:57:10", "#num-ask": 165, "#num-tell": 158, "#num-tell-not-asked": 1, "#uid": "15c69df5bc504b0a9194e7cc0a02d09b", "#lineage": "7902822b5b9a4e00b62a89f4df5e7b24", "#generation": 9, "#parents_uids": ["57256974d9334bef81e262b5adc882c7"], "#loss": 0.4075, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "KingAtk_2": 7, "KingAtk_2#sigma": 3.666666666666667, "KingAtk_2#sigma#sigma": 1.0, "KingAtk_3": 25, "KingAtk_3#sigma": 8.5, "KingAtk_3#sigma#sigma": 1.0, "KingAtk_4": 33, "KingAtk_4#sigma": 12.000000000000002, "KingAtk_4#sigma#sigma": 1.0, "KingAtk_5": 44, "KingAtk_5#sigma": 13.833333333333332, "KingAtk_5#sigma#sigma": 1.0, "KingAtk_6": 27, "KingAtk_6#sigma": 15.000000000000002, "KingAtk_6#sigma#sigma": 1.0, "KingAtk_7": 16, "KingAtk_7#sigma": 15.000000000000002, "KingAtk_7#sigma#sigma": 1.0, "King_Attacker_Bishop": 3, "King_Attacker_Bishop#sigma": 2.3333333333333335, "King_Attacker_Bishop#sigma#sigma": 1.0, "King_Attacker_Knight": 2, "King_Attacker_Knight#sigma": 2.0, "King_Attacker_Knight#sigma#sigma": 1.0, "King_Attacker_Queen": 11, "King_Attacker_Queen#sigma": 4.0, "King_Attacker_Queen#sigma#sigma": 1.0, "King_Attacker_Rook": 4, "King_Attacker_Rook#sigma": 2.3333333333333335, "King_Attacker_Rook#sigma#sigma": 1.0, "King_Danger_Divisor": 10, "King_Danger_Divisor#sigma": 3.333333333333334, "King_Danger_Divisor#sigma#sigma": 1.0, "King_Danger_Max": 641, "King_Danger_Max#sigma": 141.66666666666674, "King_Danger_Max#sigma#sigma": 1.0, "King_Escape_Bonus": 4, "King_Escape_Bonus#sigma": 3.333333333333334, "King_Escape_Bonus#sigma#sigma": 1.0, "King_Open_File_Penalty": -29, "King_Open_File_Penalty#sigma": 8.333333333333334, "King_Open_File_Penalty#sigma#sigma": 1.0, "King_SemiOpen_Penalty": -6, "King_SemiOpen_Penalty#sigma": 4.166666666666667, "King_SemiOpen_Penalty#sigma#sigma": 1.0, "King_Shield_Penalty": -27, "King_Shield_Penalty#sigma": 9.166666666666666, "King_Shield_Penalty#sigma#sigma": 1.0}
 
 ================================================================
 BATCH 7 – THREATS, HANGING
@@ -290,7 +295,7 @@ INITIAL CONFIDENCE: LOW – pass 1 incorrectly parallelized across
 [-] Hanging_Penalty_EG     | Initial:   0 | Min: --- | Max:  --- | Tuned:  0 | converged to 0 in both passes; skip
 [ ] Hanging_Value_Div      | Initial:  27 | Min:   4 | Max:   90 | Tuned:    |
 
-Budget: 400
+Budget: 500
 
 ================================================================
 BATCH 8a – COORDINATION, FILE BONUSES, TERRITORY
@@ -323,7 +328,7 @@ signal but are at least plausible from pass 1.
 [ ] Bishop_Openness_Max   | Initial:  42 | Min:   5 | Max:   80 | Tuned:    |
 [ ] Bishop_Openness_SqWt  | Initial:   2 | Min:   0 | Max:    8 | Tuned:    |
 
-Budget: 280
+Budget: 350
 
 ================================================================
 BATCH 8b – OUTPOSTS
@@ -353,15 +358,6 @@ defer or replace with Texel tuning.
 [ ] Queen_Outpost_EG   | Initial:   7 | Min:   0 | Max:  25 | Tuned:    |
 
 Budget: 200
-
-================================================================
-BUDGET SUMMARY
-================================================================
-Batch 6  (16 params):  320  →  64,000 games
-Batch 7  (20 params):  400  →  80,000 games
-Batch 8a (14 params):  280  →  56,000 games
-Batch 8b ( 8 params):  200  →  40,000 games
-                               ─────────────
 
 ================================================================
 VERIFICATION GATE
