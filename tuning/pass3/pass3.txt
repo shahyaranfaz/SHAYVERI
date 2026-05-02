@@ -1,0 +1,401 @@
+================================================================
+  SHAYBOT  –  SPSA TUNING TRACKER  (Lakas / ParametrizedCMA)
+                         PASS 3
+================================================================
+Format per row:
+  [STATUS] Name | Initial | Min | Max | Tuned | Notes
+
+STATUS codes:
+  [ ] not started
+  [~] in progress
+  [x] converged / done
+  [!] re-run queued (value still drifting)
+  [-] skipped / not tuning this pass
+
+All initials are pass 2 (corrected) best-loss JSON values.
+All runs: ParametrizedCMA, correctly parallelized.
+EPD: ogpt_chess_startpos.epd
+
+================================================================
+EXAMPLE COMMANDS
+================================================================
+
+-- Batch 1 (master) --
+python3.10 lakas.py \
+  --distributed-role master \
+  --budget 150 \
+  --num_workers 8 \
+  --concurrency 23 \
+  --output-data-file "batch1.dat" \
+  --input-data-file  "batch1.dat" \
+  --optimizer-log-file "batch1.log" \
+--input-param "{ \
+'FP_Mult':            {'init':  577, 'lower':  450, 'upper':  720}, \
+'LMR_Base':           {'init': 1.33, 'lower': 1.10, 'upper': 1.55}, \
+'LMR_Scale':          {'init': 1.77, 'lower': 1.45, 'upper': 2.10}, \
+'SE_Margin':          {'init':   61, 'lower':   42, 'upper':   82} \
+}"
+
+-- Batch 2 (master) --
+python3.10 lakas.py \
+  --distributed-role master \
+  --budget 300 \
+  --num_workers 8 \
+  --concurrency 23 \
+  --output-data-file "batch2.dat" \
+  --input-data-file  "batch2.dat" \
+  --optimizer-log-file "batch2.log" \
+--input-param "{ \
+'CMH_Weight':          {'init':   51, 'lower':   18, 'upper':  130}, \
+'FMH_Weight':          {'init':   43, 'lower':   10, 'upper':  120}, \
+'History_Bonus_Limit': {'init': 3006, 'lower': 2000, 'upper': 4500}, \
+'History_Bonus_Mult':  {'init':  468, 'lower':  350, 'upper':  600}, \
+'History_Bonus_Sub':   {'init':  165, 'lower':  100, 'upper':  250}, \
+'Main_History_Weight': {'init':   71, 'lower':   35, 'upper':  120} \
+}"
+
+-- Batch 8a (master) --
+python3.10 lakas.py \
+  --distributed-role master \
+  --budget 400 \
+  --num_workers 8 \
+  --concurrency 23 \
+  --output-data-file "batch8a.dat" \
+  --input-data-file  "batch8a.dat" \
+  --optimizer-log-file "batch8a.log" \
+--input-param "{ \
+'Battery_Bishop_Queen': {'init':  11, 'lower':   0, 'upper':  25}, \
+'Battery_Rook_Queen':   {'init':  12, 'lower':   0, 'upper':  32}, \
+'Bishop_Openness_Max':  {'init':  42, 'lower':  15, 'upper':  68}, \
+'Bishop_Openness_SqWt': {'init':   2, 'lower':   0, 'upper':   6}, \
+'Center_Bonus':         {'init':   9, 'lower':   0, 'upper':  20}, \
+'Defended_Piece_Bonus': {'init':   4, 'lower':   0, 'upper':  14}, \
+'Enemy_Half_Bonus':     {'init':   4, 'lower':   0, 'upper':  14}, \
+'Ext_Center_Bonus':     {'init':   5, 'lower':   0, 'upper':  15}, \
+'Open_File_Mult':       {'init': 123, 'lower': 108, 'upper': 148}, \
+'Semi_Open_File_Mult':  {'init': 119, 'lower': 106, 'upper': 138}, \
+'Seventh_Rank_EG':      {'init':  24, 'lower':   8, 'upper':  48}, \
+'Seventh_Rank_MG':      {'init':  16, 'lower':   4, 'upper':  32}, \
+'Shared_Target_Bonus':  {'init':  10, 'lower':   0, 'upper':  25}, \
+'Support_Chain_Bonus':  {'init':   7, 'lower':   0, 'upper':  20} \
+}"
+
+-- Batch 8b (master) --
+python3.10 lakas.py \
+  --distributed-role master \
+  --budget 400 \
+  --num_workers 8 \
+  --concurrency 23 \
+  --output-data-file "batch8b.dat" \
+  --input-data-file  "batch8b.dat" \
+  --optimizer-log-file "batch8b.log" \
+--input-param "{ \
+'Bishop_Outpost_EG':  {'init':  20, 'lower':   0, 'upper':  35}, \
+'Bishop_Outpost_MG':  {'init':   5, 'lower':   0, 'upper':  32}, \
+'Knight_Outpost_EG':  {'init':   7, 'lower':   0, 'upper':  30}, \
+'Knight_Outpost_MG':  {'init':  14, 'lower':   0, 'upper':  40}, \
+'Queen_Outpost_EG':   {'init':   5, 'lower':   0, 'upper':  22}, \
+'Queen_Outpost_MG':   {'init':   4, 'lower':   0, 'upper':  25}, \
+'Rook_Outpost_EG':    {'init':  14, 'lower':   0, 'upper':  32}, \
+'Rook_Outpost_MG':    {'init':  28, 'lower':   5, 'upper':  50} \
+}"
+
+-- worker (all batches) --
+python3.10 lakas.py \
+  --distributed-role worker \
+  --concurrency 23 \
+  --num_workers 1 \
+  --input-param={}
+
+================================================================
+PASS 3 BATCH SELECTION RATIONALE
+================================================================
+
+Convergence state from pass 2 dat files (sigma = final CMA sigma,
+lower = better):
+
+  Batch 7  – sigma=0.037  (sigma0=0.15), 41 iters  → SKIP
+  Batch 6  – sigma=0.082  (sigma0=0.30), 33 iters  → SKIP
+  Batch 4  – sigma=0.084  (sigma0=0.30), 31 iters  → SKIP
+  Batch 3  – sigma=0.151  (sigma0=0.30), 22 iters  → SKIP
+  Batch 1  – sigma=0.143  (sigma0=0.30), 22 iters  → PARTIAL (4 params)
+  Batch 8a – sigma=0.119  (sigma0=0.30), 31 iters  → RE-RUN (all 14)
+  Batch 2  – sigma=0.253  (sigma0=0.30), 16 iters  → RE-RUN (all 6)
+  Batch 8b – sigma=0.240  (sigma0=0.30), 20 iters  → RE-RUN (all 8)
+
+Batches 3, 4, 6, 7: sigma sufficiently reduced; values stable and
+internally consistent. Notable for batch 4: Isolated_MG=-1 and
+Backward_EG=0 appear near-zero but are genuine for tactical
+ogpt_startpos games (weak pawn structures are rare in sharp opening
+play). Re-tuning these requires a quiet/endgame EPD.
+
+Batch 1 partial: ASP_Delta (32), RFP_Margin (79), FP_Base (192),
+LMP_Base (3), SE_Min_Depth (9), SE_Depth_Margin (2),
+SE_Reduction_Denom (3) all rock-stable across both passes; skipped.
+SEE_Pruning_Margin also stable (-277 in pass 1, -273 in pass 2,
+pass2_fail noise value discarded); skipped. Re-running only the
+four highest-leverage or still-drifting params.
+
+Batch 2: budget of 150 was grossly inadequate (popsize=9 → only
+16 generations). Sigma barely moved (0.300 → 0.253); condition
+number=14.7 confirms the CMA spent most of its budget learning
+the covariance shape rather than refining values.
+
+Batch 8b: sigma moved only from 0.300 to 0.240 in 20 iters.
+The D vector shows extreme anisotropy (D_max/D_min = 2.06/0.77).
+xbest and xfavorite diverge substantially (Bishop_Outpost_MG:
+5 vs 12; Rook_Outpost_MG: 28 vs 25). Initials follow pass 3
+convention (xbest = best-loss JSON), but ranges are kept wide
+to allow recovery if xbest was a noise event.
+
+PERMANENT SKIPS (all passes):
+  LMP_Mult, Backward_EG, Pawn_Center_EG, Pawn_ExtCenter_MG,
+  Overloaded_Defender_Bonus, Hanging_Penalty_EG, Batch 5.
+
+================================================================
+BATCH 1 – CORE SEARCH (4 params, partial re-run)
+================================================================
+
+Pass 2 final sigma=0.143 (22 iters, popsize=11). Highest normalized
+stds from dat: SE_Reduction_Denom (0.194, skipped – integer cliff,
+stable at 3), LMR_Base (0.179), FP_Mult (0.170), LMR_Scale (0.156),
+SE_Margin (0.150). LMR params are the highest-leverage search
+controls; warrant one final tightening pass. FP_Mult trajectory
+657 (pass 1) → 577 (pass 2) shows meaningful drift with sigma=91.7
+remaining. SE_Margin drifted 54 → 61. SEE_Pruning_Margin skipped:
+stable at -277/-273 across both correct passes (std=0.132, lowest
+of all candidates).
+
+[ ] LMR_Base            | Initial: 1.33 | Min: 1.10 | Max: 1.55 | Tuned: --- | highest leverage; std=0.179 remaining
+[ ] LMR_Scale           | Initial: 1.77 | Min: 1.45 | Max: 2.10 | Tuned: --- | highest leverage; std=0.156 remaining
+[ ] FP_Mult             | Initial:  577 | Min:  450 | Max:  720 | Tuned: --- | 657→577 trajectory; sigma=91.7 remaining
+[ ] SE_Margin           | Initial:   61 | Min:   42 | Max:   82 | Tuned: --- | 54→61; std=0.150; tightened from [25,95]
+
+[-] ASP_Delta           | Initial:   32 | Tuned:   32 | stable both passes; skip
+[-] RFP_Margin          | Initial:   79 | Tuned:   79 | stable; skip
+[-] FP_Base             | Initial:  192 | Tuned:  192 | stable; skip
+[-] LMP_Base            | Initial:    3 | Tuned:    3 | stable; skip
+[-] LMP_Mult            | Initial:    1 | Tuned:    1 | permanent skip (floor)
+[-] SEE_Pruning_Margin  | Initial: -273 | Tuned: -273 | -277/-273 consistent; skip
+[-] SE_Min_Depth        | Initial:    9 | Tuned:    9 | stable; skip
+[-] SE_Depth_Margin     | Initial:    2 | Tuned:    2 | stable; skip
+[-] SE_Reduction_Denom  | Initial:    3 | Tuned:    3 | highest std (0.194) but integer-stable; skip
+
+Budget: 150
+Best:
+
+================================================================
+BATCH 2 – HISTORY / MOVE ORDERING (full re-run)
+================================================================
+
+Pass 2 CMA: sigma=0.253 after 16 iters (budget 150, popsize=9 →
+barely 16 gens). Condition number=14.7 — severe anisotropy; the
+optimizer spent most of its budget adapting the covariance matrix
+rather than converging. All 6 params remain near their initial
+sigma. Budget tripled to 300 (≈33 gens at popsize=9) to give the
+CMA room to actually compress. Ranges: History_Bonus_Mult and
+History_Bonus_Sub are consistent across correct passes and deserve
+tighter bounds; others stay wider given the low confidence.
+History_Bonus_Limit trends upward (2842 → 3006); upper kept at
+4500. FMH_Weight drifted 33→43 (uncertain direction); range wide.
+
+[ ] History_Bonus_Mult  | Initial:  468 | Min:  350 | Max:  600 | Tuned: --- | consistent 488/468; tighter range
+[ ] History_Bonus_Sub   | Initial:  165 | Min:  100 | Max:  250 | Tuned: --- | consistent 170/165; tighter range
+[ ] History_Bonus_Limit | Initial: 3006 | Min: 2000 | Max: 4500 | Tuned: --- | trending up 2842→3006; upper kept
+[ ] Main_History_Weight | Initial:   71 | Min:   35 | Max:  120 | Tuned: --- | 78→71; sigma=22.5 remaining
+[ ] CMH_Weight          | Initial:   51 | Min:   18 | Max:  130 | Tuned: --- | sigma=24.2; direction unclear
+[ ] FMH_Weight          | Initial:   43 | Min:   10 | Max:  120 | Tuned: --- | 33→43; direction uncertain; wide
+
+Budget: 300
+Best:
+
+================================================================
+BATCH 3 – CORE EVAL                          [SKIPPED – CONVERGED]
+================================================================
+
+Pass 2: sigma=0.151, 22 iters. Values stable and plausible.
+Bishop_Pair_Bonus=22 is below the typical engine range (25-35)
+but the CMA settled here consistently; likely genuine for this
+dataset's tactical character. Mobility params are small and
+internally consistent.
+
+[-] Tempo_Bonus         | Tuned:  22 |
+[-] Bishop_Pair_Bonus   | Tuned:  22 | low for typical engine; accepted for dataset
+[-] Development_Bonus   | Tuned:  12 |
+[-] Castled_Bonus       | Tuned:   5 |
+[-] Mobility_Knight_MG  | Tuned:   6 |
+[-] Mobility_Bishop_MG  | Tuned:  10 |
+[-] Mobility_Rook_MG    | Tuned:   5 |
+[-] Mobility_Queen_MG   | Tuned:   4 |
+[-] Mobility_Knight_EG  | Tuned:   5 |
+[-] Mobility_Bishop_EG  | Tuned:   4 |
+[-] Mobility_Rook_EG    | Tuned:   2 |
+[-] Mobility_Queen_EG   | Tuned:   1 |
+
+================================================================
+BATCH 4 – PAWN STRUCTURE                     [SKIPPED – CONVERGED]
+================================================================
+
+Pass 2: sigma=0.084, 31 iters — best-converged batch outside
+batch 7 (341 evals at popsize=11). Well settled. Isolated_MG=-1
+and Backward_EG=0 appear near-zero but are genuine for tactical
+ogpt_startpos games: isolated and backward pawn structures appear
+rarely in sharp opening play, giving the optimizer near-zero
+signal. For more accurate values for these specific params,
+re-run on a quiet/endgame EPD.
+
+[-] Isolated_MG          | Tuned:   -1 | near-zero; genuine for dataset
+[-] Isolated_EG          | Tuned:   -3 |
+[-] Doubled_MG           | Tuned:  -12 |
+[-] Doubled_EG           | Tuned:   -9 |
+[-] Backward_MG          | Tuned:  -13 |
+[-] Backward_EG          | Tuned:    0 | boundary; permanent skip
+[-] Supported_Pawn_MG    | Tuned:   14 |
+[-] Weak_Pawn_MG         | Tuned:  -18 |
+[-] Pawn_Island_MG       | Tuned:  -32 |
+[-] Pawn_Island_EG       | Tuned:   -5 |
+[-] Pawn_Center_MG       | Tuned:    7 |
+[-] Pawn_ExtCenter_EG    | Tuned:    3 |
+[-] Pawn_Storm_Base      | Tuned:    2 |
+[-] Pawn_Storm_Rank_Mult | Tuned:    1 |
+
+================================================================
+BATCH 5 – PASSED PAWNS                       [TEXEL – NO SPSA]
+================================================================
+No change. Requires quiet-position dataset minimum ~5M positions.
+
+================================================================
+BATCH 6 – KING SAFETY                        [SKIPPED – CONVERGED]
+================================================================
+
+Pass 2: sigma=0.082, 33 iters, condition_number=5.3. Well settled.
+KingAtk curve (7, 25, 33, 44, 27, 16) shows a credible peak-then-
+drop shape consistent with king attack theory. King_Danger_Max=641
+stable. Stds 0.075-0.102 in normalized space across all 16 params.
+
+[-] King_Shield_Penalty    | Tuned:  -27 |
+[-] King_Open_File_Penalty | Tuned:  -29 |
+[-] King_SemiOpen_Penalty  | Tuned:   -6 |
+[-] King_Escape_Bonus      | Tuned:    4 |
+[-] King_Danger_Divisor    | Tuned:   10 |
+[-] King_Danger_Max        | Tuned:  641 |
+[-] King_Attacker_Knight   | Tuned:    2 |
+[-] King_Attacker_Bishop   | Tuned:    3 |
+[-] King_Attacker_Rook     | Tuned:    4 |
+[-] King_Attacker_Queen    | Tuned:   11 |
+[-] KingAtk_2              | Tuned:    7 |
+[-] KingAtk_3              | Tuned:   25 |
+[-] KingAtk_4              | Tuned:   33 |
+[-] KingAtk_5              | Tuned:   44 |
+[-] KingAtk_6              | Tuned:   27 |
+[-] KingAtk_7              | Tuned:   16 |
+
+================================================================
+BATCH 7 – THREATS, HANGING                   [SKIPPED – CONVERGED]
+================================================================
+
+Pass 2: sigma=0.037 (sigma0=0.15), 41 iters — most converged
+batch. stds all 0.037-0.047 in normalized space. Threat_Minor_
+Rook_EG=10 vs Threat_Minor_Queen_EG=54 asymmetry remains; the
+optimizer ran with full range and budget (500 evals) to resolve
+it and settled here. Accept as dataset-specific result.
+Values are from the best-loss JSON (not xfavorite/recommendation);
+these differ by up to 10 points on some params — an artefact of
+the noise-dominated loss landscape with such small sigma.
+
+[-] Undefended_Attack_Bonus   | Tuned:  18 |
+[-] Pin_Bonus                 | Tuned:  36 |
+[-] Unrec_Pressure_Bonus      | Tuned:   5 |
+[-] Undefended_Value_Div      | Tuned:  66 |
+[-] Threat_Pawn_Knight_MG     | Tuned:  42 |
+[-] Threat_Pawn_Bishop_MG     | Tuned:  89 |
+[-] Threat_Pawn_Rook_MG       | Tuned: 113 |
+[-] Threat_Pawn_Queen_MG      | Tuned:  89 |
+[-] Threat_Pawn_Knight_EG     | Tuned:  77 |
+[-] Threat_Pawn_Bishop_EG     | Tuned:  94 |
+[-] Threat_Pawn_Rook_EG       | Tuned:  39 |
+[-] Threat_Pawn_Queen_EG      | Tuned:  71 |
+[-] Threat_Minor_Rook_MG      | Tuned:  26 |
+[-] Threat_Minor_Queen_MG     | Tuned:  11 |
+[-] Threat_Minor_Rook_EG      | Tuned:  10 | asymmetry vs Queen_EG accepted; optimizer settled
+[-] Threat_Minor_Queen_EG     | Tuned:  54 |
+[-] Threat_Rook_MG            | Tuned:  58 |
+[-] Threat_Rook_EG            | Tuned:  48 |
+[-] Hanging_Penalty_MG        | Tuned:  54 |
+[-] Hanging_Value_Div         | Tuned:  21 |
+
+================================================================
+BATCH 8a – COORDINATION, FILE BONUSES, TERRITORY
+================================================================
+14 parameters
+
+Pass 2: sigma=0.119, 31 iters, condition_number=4.3. Moderate
+convergence — sigma dropped to 40% of initial, not ideal.
+Highest normalized stds from dat: Battery_Bishop_Queen (0.175,
+highest), Semi_Open_File_Mult (0.147), Ext_Center_Bonus (0.143),
+Enemy_Half_Bonus (0.139), FMH/Defended (0.131). Full re-run
+with budget increased from 350 → 400 (~36 gens at popsize=11).
+Ranges tightened 15-25% from pass 2; Bishop_Openness_Max stable
+at 42 both passes so trimmed further.
+
+[ ] Center_Bonus          | Initial:   9 | Min:   0 | Max:  20 | Tuned: --- |
+[ ] Ext_Center_Bonus      | Initial:   5 | Min:   0 | Max:  15 | Tuned: --- | std=0.143 in pass 2
+[ ] Enemy_Half_Bonus      | Initial:   4 | Min:   0 | Max:  14 | Tuned: --- | std=0.139 in pass 2
+[ ] Seventh_Rank_MG       | Initial:  16 | Min:   4 | Max:  32 | Tuned: --- |
+[ ] Seventh_Rank_EG       | Initial:  24 | Min:   8 | Max:  48 | Tuned: --- |
+[ ] Defended_Piece_Bonus  | Initial:   4 | Min:   0 | Max:  14 | Tuned: --- |
+[ ] Shared_Target_Bonus   | Initial:  10 | Min:   0 | Max:  25 | Tuned: --- |
+[ ] Battery_Rook_Queen    | Initial:  12 | Min:   0 | Max:  32 | Tuned: --- |
+[ ] Battery_Bishop_Queen  | Initial:  11 | Min:   0 | Max:  25 | Tuned: --- | highest std (0.175) in pass 2
+[ ] Support_Chain_Bonus   | Initial:   7 | Min:   0 | Max:  20 | Tuned: --- |
+[ ] Open_File_Mult        | Initial: 123 | Min: 108 | Max: 148 | Tuned: --- | 129→123 converging; tightened
+[ ] Semi_Open_File_Mult   | Initial: 119 | Min: 106 | Max: 138 | Tuned: --- | 113→119; std=0.147
+[ ] Bishop_Openness_Max   | Initial:  42 | Min:  15 | Max:  68 | Tuned: --- | stable at 42 both passes; tightened
+[ ] Bishop_Openness_SqWt  | Initial:   2 | Min:   0 | Max:   6 | Tuned: --- | stable at 2 both passes
+
+Budget: 400
+Best:
+
+================================================================
+BATCH 8b – OUTPOSTS
+================================================================
+8 parameters
+
+Pass 2: sigma=0.240 (from 0.3 initial), only 20 iters — essentially
+unconverged. D vector highly stretched (D_max=2.06, D_min=0.77,
+ratio=2.68). xbest and xfavorite (dat recommendation) diverge
+substantially: Bishop_Outpost_MG 5 (xbest) vs 12 (xfavorite);
+Rook_Outpost_MG 28 vs 25; Bishop_Outpost_EG 20 vs 16. Initials
+are xbest per pass 3 convention, but ranges are kept wide to allow
+the mean to stabilize if xbest was a noise event. Budget doubled
+to 400 (≈40 gens at popsize=10). Inherent signal-to-noise is
+the lowest of any batch; accept that final values will carry
+more uncertainty than other batches.
+
+[ ] Knight_Outpost_MG  | Initial:  14 | Min:   0 | Max:  40 | Tuned: --- |
+[ ] Knight_Outpost_EG  | Initial:   7 | Min:   0 | Max:  30 | Tuned: --- |
+[ ] Bishop_Outpost_MG  | Initial:   5 | Min:   0 | Max:  32 | Tuned: --- | xfavorite=12; wide range to resolve
+[ ] Bishop_Outpost_EG  | Initial:  20 | Min:   0 | Max:  35 | Tuned: --- | xfavorite=16; extended upper slightly
+[ ] Rook_Outpost_MG    | Initial:  28 | Min:   5 | Max:  50 | Tuned: --- | xfavorite=25
+[ ] Rook_Outpost_EG    | Initial:  14 | Min:   0 | Max:  32 | Tuned: --- | xfavorite=13
+[ ] Queen_Outpost_MG   | Initial:   4 | Min:   0 | Max:  25 | Tuned: --- | xfavorite=6
+[ ] Queen_Outpost_EG   | Initial:   5 | Min:   0 | Max:  22 | Tuned: --- | xfavorite=6
+
+Budget: 400
+Best:
+
+================================================================
+VERIFICATION GATE
+================================================================
+After each batch completes, before committing values:
+  1. Check dat: final sigma should be noticeably lower than pass 2
+     final sigma. Batch 2 target < 0.15; Batch 8b target < 0.15.
+     If not reached, re-queue with same ranges.
+  2. Check no params at hard boundary. If any param is at min or
+     max, expand that bound by 30% and requeue that batch.
+  3. Compare xbest vs xfavorite from dat. If they differ by more
+     than 20% of range on any param, note as low-confidence.
+  4. Run 200-game self-test: pass 3 binary vs pass 2 binary.
+     Expect parity or better. Regression > 10 elo flags the
+     batch for re-examination.
+  5. Log final JSON state below each batch Best: line above.

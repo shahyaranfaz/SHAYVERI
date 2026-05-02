@@ -1,28 +1,3 @@
-python3.10 lakas.py \
-  --distributed-role master \
-  --budget 200 \
-  --num_workers 8 \
-  --concurrency 23 \
-  --output-data-file "batch8b.dat" \
-  --input-data-file  "batch8b.dat" \
-  --optimizer-log-file "batch8b.log" \
---input-param "{ \
-'Knight_Outpost_MG':  {'init':  14, 'lower':   0, 'upper':  45}, \
-'Knight_Outpost_EG':  {'init':   5, 'lower':   0, 'upper':  35}, \
-'Bishop_Outpost_MG':  {'init':  11, 'lower':   0, 'upper':  38}, \
-'Bishop_Outpost_EG':  {'init':  12, 'lower':   0, 'upper':  32}, \
-'Rook_Outpost_MG':    {'init':  24, 'lower':   0, 'upper':  55}, \
-'Rook_Outpost_EG':    {'init':  12, 'lower':   0, 'upper':  38}, \
-'Queen_Outpost_MG':   {'init':   7, 'lower':   0, 'upper':  30}, \
-'Queen_Outpost_EG':   {'init':   7, 'lower':   0, 'upper':  25} \
-}"
-
-python3.10 lakas.py \
-  --distributed-role worker \
-  --concurrency 23 \
-  --num_workers 1 \
-  --input-param={}
-
 pass1 v untuned
 W: 288-37-75
 B: 200-102-98
