@@ -321,13 +321,13 @@ inline int HANGING_VALUE_DIVISOR   = 21; //
 
 // Outposts
 inline int KNIGHT_OUTPOST_MG = 14; //
-inline int KNIGHT_OUTPOST_EG =  5; //
-inline int BISHOP_OUTPOST_MG = 11; //
-inline int BISHOP_OUTPOST_EG = 12; //
-inline int ROOK_OUTPOST_MG   = 24; //
-inline int ROOK_OUTPOST_EG   = 12; //
-inline int QUEEN_OUTPOST_MG  =  7; //
-inline int QUEEN_OUTPOST_EG  =  7; //
+inline int KNIGHT_OUTPOST_EG =  7; //
+inline int BISHOP_OUTPOST_MG =  5; //
+inline int BISHOP_OUTPOST_EG = 20; //
+inline int ROOK_OUTPOST_MG   = 28; //
+inline int ROOK_OUTPOST_EG   = 14; //
+inline int QUEEN_OUTPOST_MG  =  4; //
+inline int QUEEN_OUTPOST_EG  =  5; //
 
 // Development / initiative
 inline int DEVELOPMENT_BONUS = 12; //
@@ -493,13 +493,13 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
     // ── Outposts ──────────────────────────────────────────────────
     {"Knight_Outpost_MG",  {&KNIGHT_OUTPOST_MG, TuningOption::INT,   0,   45,  "14"}},
-    {"Knight_Outpost_EG",  {&KNIGHT_OUTPOST_EG, TuningOption::INT,   0,   35,   "5"}},
-    {"Bishop_Outpost_MG",  {&BISHOP_OUTPOST_MG, TuningOption::INT,   0,   38,  "11"}},
-    {"Bishop_Outpost_EG",  {&BISHOP_OUTPOST_EG, TuningOption::INT,   0,   32,  "12"}},
-    {"Rook_Outpost_MG",    {&ROOK_OUTPOST_MG,   TuningOption::INT,   0,   55,  "24"}},
-    {"Rook_Outpost_EG",    {&ROOK_OUTPOST_EG,   TuningOption::INT,   0,   38,  "12"}},
-    {"Queen_Outpost_MG",   {&QUEEN_OUTPOST_MG,  TuningOption::INT,   0,   30,   "7"}},
-    {"Queen_Outpost_EG",   {&QUEEN_OUTPOST_EG,  TuningOption::INT,   0,   25,   "7"}},
+    {"Knight_Outpost_EG",  {&KNIGHT_OUTPOST_EG, TuningOption::INT,   0,   35,   "7"}},
+    {"Bishop_Outpost_MG",  {&BISHOP_OUTPOST_MG, TuningOption::INT,   0,   38,  "5"}},
+    {"Bishop_Outpost_EG",  {&BISHOP_OUTPOST_EG, TuningOption::INT,   0,   32,  "20"}},
+    {"Rook_Outpost_MG",    {&ROOK_OUTPOST_MG,   TuningOption::INT,   0,   55,  "28"}},
+    {"Rook_Outpost_EG",    {&ROOK_OUTPOST_EG,   TuningOption::INT,   0,   38,  "14"}},
+    {"Queen_Outpost_MG",   {&QUEEN_OUTPOST_MG,  TuningOption::INT,   0,   30,   "4"}},
+    {"Queen_Outpost_EG",   {&QUEEN_OUTPOST_EG,  TuningOption::INT,   0,   25,   "5"}},
 
     // ── File / diagonal openness ──────────────────────────────────
     {"Open_File_Mult",         {&OPEN_FILE_MULTIPLIER,          TuningOption::INT, 100,  165, "123"}},

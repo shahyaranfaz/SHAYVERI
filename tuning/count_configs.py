@@ -2,9 +2,12 @@ import re
 from pathlib import Path
 
 ROOT = Path("tuning")
+pattern = re.compile(
+    r'"#meta-sigma":\s*[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?,\s*(.+)'
+    r'|'
+    r'"#optimizer#algorithm":\s*"[^"]+",\s*(.+)'
+)
 
-# match: "#meta-sigma": <number>,
-pattern = re.compile(r'"#meta-sigma":\s*[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?,\s*(.*)')
 
 def process_batch(batch_path: Path):
     unique_suffixes = set()
@@ -25,8 +28,9 @@ def process_batch(batch_path: Path):
                 if not m:
                     continue
 
-                suffix = m.group(1).rstrip("\n")
-                unique_suffixes.add(suffix)
+                suffix = m.group(1) or m.group(2)
+                if suffix:
+                    unique_suffixes.add(suffix.rstrip("\n"))
 
     return len(unique_suffixes)
 
@@ -41,7 +45,8 @@ def main():
                 continue
 
             count = process_batch(batch_dir)
-            print(f"{batch_dir}: {count} unique suffixes (post #meta-sigma)")
+
+            print(f"{batch_dir}: {count} unique suffixes")
 
 
 if __name__ == "__main__":

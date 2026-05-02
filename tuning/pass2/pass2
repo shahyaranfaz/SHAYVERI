@@ -331,16 +331,17 @@ Outpost positions are rare events in tactical opening-book games;
 the signal-to-noise ratio here is the worst of any SPSA batch.
 Values from pass 1 are plausible but entirely unverified.
 
-[ ] Knight_Outpost_MG  | Initial:  14 | Min:   0 | Max:  45 | Tuned:    |
-[ ] Knight_Outpost_EG  | Initial:   5 | Min:   0 | Max:  35 | Tuned:    |
-[ ] Bishop_Outpost_MG  | Initial:  11 | Min:   0 | Max:  38 | Tuned:    |
-[ ] Bishop_Outpost_EG  | Initial:  12 | Min:   0 | Max:  32 | Tuned:    |
-[ ] Rook_Outpost_MG    | Initial:  24 | Min:   0 | Max:  55 | Tuned:    |
-[ ] Rook_Outpost_EG    | Initial:  12 | Min:   0 | Max:  38 | Tuned:    |
-[ ] Queen_Outpost_MG   | Initial:   7 | Min:   0 | Max:  30 | Tuned:    |
-[ ] Queen_Outpost_EG   | Initial:   7 | Min:   0 | Max:  25 | Tuned:    |
+[x] Knight_Outpost_MG  | Initial:  14 | Min:   0 | Max:  45 | Tuned: 14 |
+[x] Knight_Outpost_EG  | Initial:   5 | Min:   0 | Max:  35 | Tuned:  7 |
+[x] Bishop_Outpost_MG  | Initial:  11 | Min:   0 | Max:  38 | Tuned:  5 |
+[x] Bishop_Outpost_EG  | Initial:  12 | Min:   0 | Max:  32 | Tuned: 20 |
+[x] Rook_Outpost_MG    | Initial:  24 | Min:   0 | Max:  55 | Tuned: 28 |
+[x] Rook_Outpost_EG    | Initial:  12 | Min:   0 | Max:  38 | Tuned: 14 |
+[x] Queen_Outpost_MG   | Initial:   7 | Min:   0 | Max:  30 | Tuned:  4 |
+[x] Queen_Outpost_EG   | Initial:   7 | Min:   0 | Max:  25 | Tuned:  5 |
 
 Budget: 200
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(Bishop_Outpost_EG=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_MG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_EG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_MG=Scalar{Cl(0,45,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_EG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_EG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_MG=Scalar{Cl(0,55,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-01 23:05:16", "#num-ask": 186, "#num-tell": 179, "#num-tell-not-asked": 1, "#uid": "f866b563753c40039a3e7b5dc08eb150", "#lineage": "a6d0b8b56433481d8151344adae506ee", "#generation": 11, "#parents_uids": ["5fcec9c4e80348e78f9dce75f394c5db"], "#loss": 0.4425, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "Bishop_Outpost_EG": 20, "Bishop_Outpost_EG#sigma": 5.333333333333335, "Bishop_Outpost_EG#sigma#sigma": 1.0, "Bishop_Outpost_MG": 5, "Bishop_Outpost_MG#sigma": 6.333333333333334, "Bishop_Outpost_MG#sigma#sigma": 1.0, "Knight_Outpost_EG": 7, "Knight_Outpost_EG#sigma": 5.833333333333334, "Knight_Outpost_EG#sigma#sigma": 1.0, "Knight_Outpost_MG": 14, "Knight_Outpost_MG#sigma": 7.500000000000001, "Knight_Outpost_MG#sigma#sigma": 1.0, "Queen_Outpost_EG": 5, "Queen_Outpost_EG#sigma": 4.166666666666667, "Queen_Outpost_EG#sigma#sigma": 1.0, "Queen_Outpost_MG": 4, "Queen_Outpost_MG#sigma": 4.999999999999999, "Queen_Outpost_MG#sigma#sigma": 1.0, "Rook_Outpost_EG": 14, "Rook_Outpost_EG#sigma": 6.333333333333334, "Rook_Outpost_EG#sigma#sigma": 1.0, "Rook_Outpost_MG": 28, "Rook_Outpost_MG#sigma": 9.166666666666666, "Rook_Outpost_MG#sigma#sigma": 1.0}
 
 ================================================================
 VERIFICATION GATE
