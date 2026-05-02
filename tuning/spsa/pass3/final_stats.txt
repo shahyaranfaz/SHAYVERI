@@ -1,0 +1,88 @@
+
+================================================================================
+DIR: tuning\spsa\pass3\batch1
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass3\batch1\batch1.dat
+################################################################################
+
+--- run ---
+iterations: 25
+evaluations: 200
+popsize: 8
+
+--- fitness ---
+best f: 0.4275
+evals @ best: 146
+
+--- step size ---
+sigma: 0.24166698990000643
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.42651763 0.69556937 0.92187394 2.72365797]
+condition number: 6.385803974076743
+
+--- search state ---
+mean: [ 0.23466976  0.68285371 -0.31750329 -1.17648447]
+stds: [0.16227331 0.31724888 0.27410864 0.57469267]
+||pc||: 3.1560385606800097
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+FP_Mult: 575
+LMR_Base: 1.3932719870356673
+LMR_Scale: 1.7239828088252345
+SE_Margin: 56
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.4275, count: 1, parameter: Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(450,720,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(1.1,1.55,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.45,2.1,b)}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(42,82,b),Int}[sigma=Scalar{exp=2.03}])):((), {'FP_Mult': 575, 'LMR_Base': 1.3932719870356673, 'LMR_Scale': 1.7239828088252347, 'SE_Margin': 56})>, 'pessimistic': MultiValue<mean: 0.4275, count: 1, parameter: Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(450,720,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(1.1,1.55,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.45,2.1,b)}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(42,82,b),Int}[sigma=Scalar{exp=2.03}])):((), {'FP_Mult': 575, 'LMR_Base': 1.3932719870356673, 'LMR_Scale': 1.7239828088252347, 'SE_Margin': 56})>, 'average': MultiValue<mean: 0.4275, count: 1, parameter: Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(450,720,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(1.1,1.55,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.45,2.1,b)}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(42,82,b),Int}[sigma=Scalar{exp=2.03}])):((), {'FP_Mult': 575, 'LMR_Base': 1.3932719870356673, 'LMR_Scale': 1.7239828088252347, 'SE_Margin': 56})>, 'minimum': MultiValue<mean: 0.4275, count: 1, parameter: Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(450,720,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(1.1,1.55,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.45,2.1,b)}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(42,82,b),Int}[sigma=Scalar{exp=2.03}])):((), {'FP_Mult': 575, 'LMR_Base': 1.3932719870356673, 'LMR_Scale': 1.7239828088252347, 'SE_Margin': 56})>}
+
+================================================================================
+DIR: tuning\spsa\pass3\batch2
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass3\batch2\batch2.dat
+################################################################################
+
+--- run ---
+iterations: 33
+evaluations: 297
+popsize: 9
+
+--- fitness ---
+best f: 0.43000000000000005
+evals @ best: 275
+
+--- step size ---
+sigma: 0.28523902523866
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.46436483 0.59263153 0.92661712 1.00326421 1.88429012 2.92302506]
+condition number: 6.294673657736188
+
+--- search state ---
+mean: [ 0.02907558 -0.19988939  0.05980097  0.07176947 -1.44344662  0.47790427]
+stds: [0.59207636 0.27389224 0.37135798 0.33309762 0.53735789 0.52693915]
+||pc||: 5.101740286309442
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+CMH_Weight: 69
+FMH_Weight: 24
+History_Bonus_Limit: 2803
+History_Bonus_Mult: 509
+History_Bonus_Sub: 155
+Main_History_Weight: 80
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.43000000000000005, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 69, 'FMH_Weight': 24, 'History_Bonus_Limit': 2803, 'History_Bonus_Mult': 509, 'History_Bonus_Sub': 155, 'Main_History_Weight': 80})>, 'pessimistic': MultiValue<mean: 0.43000000000000005, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 69, 'FMH_Weight': 24, 'History_Bonus_Limit': 2803, 'History_Bonus_Mult': 509, 'History_Bonus_Sub': 155, 'Main_History_Weight': 80})>, 'average': MultiValue<mean: 0.43000000000000005, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 69, 'FMH_Weight': 24, 'History_Bonus_Limit': 2803, 'History_Bonus_Mult': 509, 'History_Bonus_Sub': 155, 'Main_History_Weight': 80})>, 'minimum': MultiValue<mean: 0.43000000000000005, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 69, 'FMH_Weight': 24, 'History_Bonus_Limit': 2803, 'History_Bonus_Mult': 509, 'History_Bonus_Sub': 155, 'Main_History_Weight': 80})>}

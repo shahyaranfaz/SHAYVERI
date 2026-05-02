@@ -1,0 +1,450 @@
+
+================================================================================
+DIR: tuning\spsa\pass2\batch1
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch1\batch1.dat
+################################################################################
+
+--- run ---
+iterations: 22
+evaluations: 242
+popsize: 11
+
+--- fitness ---
+best f: 0.42000000000000004
+evals @ best: 226
+
+--- step size ---
+sigma: 0.14300087731552
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.78808577 0.82625321 0.87802186 0.90075913 0.96380763 0.97700883
+ 1.02455515 1.07756341 1.15051751 1.25677912 1.41729634 1.54474461]
+condition number: 1.9601224426265385
+
+--- search state ---
+mean: [-0.21046665  0.02805232 -0.11193995  0.10960794 -0.00303842 -0.10648879
+  0.11786364 -0.15000573  0.13148141  0.53362874 -0.02788196 -0.26006478]
+stds: [0.14431123 0.1440402  0.16961497 0.15463504 0.17855178 0.15595551
+ 0.14666531 0.13242319 0.15535233 0.15021629 0.13425847 0.1943111 ]
+||pc||: 2.5006942614882997
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+ASP_Delta: 32
+FP_Base: 192
+FP_Mult: 577
+LMP_Base: 3
+LMR_Base: 1.3312118345122825
+LMR_Scale: 1.7657610535236674
+RFP_Margin: 79
+SEE_Pruning_Margin: -273
+SE_Depth_Margin: 2
+SE_Margin: 61
+SE_Min_Depth: 9
+SE_Reduction_Denom: 3
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.42000000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(ASP_Delta=Scalar{Cl(18,55,b),Int}[sigma=Scalar{exp=2.03}],FP_Base=Scalar{Cl(110,330,b),Int}[sigma=Scalar{exp=2.03}],FP_Mult=Scalar{Cl(400,950,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(2,7,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(0.85,1.65,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.3,2.5,b)}[sigma=Scalar{exp=2.03}],RFP_Margin=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],SEE_Pruning_Margin=Scalar{Cl(-420,-120,b),Int}[sigma=Scalar{exp=2.03}],SE_Depth_Margin=Scalar{Cl(1,5,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(25,95,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(5,16,b),Int}[sigma=Scalar{exp=2.03}],SE_Reduction_Denom=Scalar{Cl(1,6,b),Int}[sigma=Scalar{exp=2.03}])):((), {'ASP_Delta': 32, 'FP_Base': 192, 'FP_Mult': 577, 'LMP_Base': 3, 'LMR_Base': 1.3312118345122825, 'LMR_Scale': 1.7657610535236674, 'RFP_Margin': 79, 'SEE_Pruning_Margin': -273, 'SE_Depth_Margin': 2, 'SE_Margin': 61, 'SE_Min_Depth': 9, 'SE_Reduction_Denom': 3})>, 'pessimistic': MultiValue<mean: 0.42000000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(ASP_Delta=Scalar{Cl(18,55,b),Int}[sigma=Scalar{exp=2.03}],FP_Base=Scalar{Cl(110,330,b),Int}[sigma=Scalar{exp=2.03}],FP_Mult=Scalar{Cl(400,950,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(2,7,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(0.85,1.65,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.3,2.5,b)}[sigma=Scalar{exp=2.03}],RFP_Margin=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],SEE_Pruning_Margin=Scalar{Cl(-420,-120,b),Int}[sigma=Scalar{exp=2.03}],SE_Depth_Margin=Scalar{Cl(1,5,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(25,95,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(5,16,b),Int}[sigma=Scalar{exp=2.03}],SE_Reduction_Denom=Scalar{Cl(1,6,b),Int}[sigma=Scalar{exp=2.03}])):((), {'ASP_Delta': 32, 'FP_Base': 192, 'FP_Mult': 577, 'LMP_Base': 3, 'LMR_Base': 1.3312118345122825, 'LMR_Scale': 1.7657610535236674, 'RFP_Margin': 79, 'SEE_Pruning_Margin': -273, 'SE_Depth_Margin': 2, 'SE_Margin': 61, 'SE_Min_Depth': 9, 'SE_Reduction_Denom': 3})>, 'average': MultiValue<mean: 0.42000000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(ASP_Delta=Scalar{Cl(18,55,b),Int}[sigma=Scalar{exp=2.03}],FP_Base=Scalar{Cl(110,330,b),Int}[sigma=Scalar{exp=2.03}],FP_Mult=Scalar{Cl(400,950,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(2,7,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(0.85,1.65,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.3,2.5,b)}[sigma=Scalar{exp=2.03}],RFP_Margin=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],SEE_Pruning_Margin=Scalar{Cl(-420,-120,b),Int}[sigma=Scalar{exp=2.03}],SE_Depth_Margin=Scalar{Cl(1,5,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(25,95,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(5,16,b),Int}[sigma=Scalar{exp=2.03}],SE_Reduction_Denom=Scalar{Cl(1,6,b),Int}[sigma=Scalar{exp=2.03}])):((), {'ASP_Delta': 32, 'FP_Base': 192, 'FP_Mult': 577, 'LMP_Base': 3, 'LMR_Base': 1.3312118345122825, 'LMR_Scale': 1.7657610535236674, 'RFP_Margin': 79, 'SEE_Pruning_Margin': -273, 'SE_Depth_Margin': 2, 'SE_Margin': 61, 'SE_Min_Depth': 9, 'SE_Reduction_Denom': 3})>, 'minimum': MultiValue<mean: 0.42000000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(ASP_Delta=Scalar{Cl(18,55,b),Int}[sigma=Scalar{exp=2.03}],FP_Base=Scalar{Cl(110,330,b),Int}[sigma=Scalar{exp=2.03}],FP_Mult=Scalar{Cl(400,950,b),Int}[sigma=Scalar{exp=2.03}],LMP_Base=Scalar{Cl(2,7,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(0.85,1.65,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.3,2.5,b)}[sigma=Scalar{exp=2.03}],RFP_Margin=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],SEE_Pruning_Margin=Scalar{Cl(-420,-120,b),Int}[sigma=Scalar{exp=2.03}],SE_Depth_Margin=Scalar{Cl(1,5,b),Int}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(25,95,b),Int}[sigma=Scalar{exp=2.03}],SE_Min_Depth=Scalar{Cl(5,16,b),Int}[sigma=Scalar{exp=2.03}],SE_Reduction_Denom=Scalar{Cl(1,6,b),Int}[sigma=Scalar{exp=2.03}])):((), {'ASP_Delta': 32, 'FP_Base': 192, 'FP_Mult': 577, 'LMP_Base': 3, 'LMR_Base': 1.3312118345122825, 'LMR_Scale': 1.7657610535236674, 'RFP_Margin': 79, 'SEE_Pruning_Margin': -273, 'SE_Depth_Margin': 2, 'SE_Margin': 61, 'SE_Min_Depth': 9, 'SE_Reduction_Denom': 3})>}
+
+================================================================================
+DIR: tuning\spsa\pass2\batch2
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch2\batch2.dat
+################################################################################
+
+--- run ---
+iterations: 16
+evaluations: 144
+popsize: 9
+
+--- fitness ---
+best f: 0.4325
+evals @ best: 132
+
+--- step size ---
+sigma: 0.25273262810431857
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.57264402 0.77701461 0.85792186 1.03661087 1.30758907 2.19761344]
+condition number: 3.8376606555420896
+
+--- search state ---
+mean: [ 0.41447702 -0.23363507  0.40490456  0.23932528 -0.23335351  0.28326151]
+stds: [0.40650649 0.24988217 0.32538195 0.27356405 0.34189819 0.25991261]
+||pc||: 4.0482758389597375
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+CMH_Weight: 51
+FMH_Weight: 43
+History_Bonus_Limit: 3006
+History_Bonus_Mult: 468
+History_Bonus_Sub: 165
+Main_History_Weight: 71
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.4325, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 51, 'FMH_Weight': 43, 'History_Bonus_Limit': 3006, 'History_Bonus_Mult': 468, 'History_Bonus_Sub': 165, 'Main_History_Weight': 71})>, 'pessimistic': MultiValue<mean: 0.4325, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 51, 'FMH_Weight': 43, 'History_Bonus_Limit': 3006, 'History_Bonus_Mult': 468, 'History_Bonus_Sub': 165, 'Main_History_Weight': 71})>, 'average': MultiValue<mean: 0.4325, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 51, 'FMH_Weight': 43, 'History_Bonus_Limit': 3006, 'History_Bonus_Mult': 468, 'History_Bonus_Sub': 165, 'Main_History_Weight': 71})>, 'minimum': MultiValue<mean: 0.4325, count: 1, parameter: Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}])):((), {'CMH_Weight': 51, 'FMH_Weight': 43, 'History_Bonus_Limit': 3006, 'History_Bonus_Mult': 468, 'History_Bonus_Sub': 165, 'Main_History_Weight': 71})>}
+
+================================================================================
+DIR: tuning\spsa\pass2\batch3
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch3\batch3.dat
+################################################################################
+
+--- run ---
+iterations: 22
+evaluations: 242
+popsize: 11
+
+--- fitness ---
+best f: 0.43999999999999995
+evals @ best: 122
+
+--- step size ---
+sigma: 0.15133018494132797
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.79899575 0.83618595 0.85611056 0.87900368 0.94548903 0.98829415
+ 1.01812073 1.05207701 1.1779654  1.20268138 1.39368722 1.62610716]
+condition number: 2.035188750445968
+
+--- search state ---
+mean: [ 0.30033371 -0.25762949 -0.12278885 -0.36856397 -0.44719147 -0.38536894
+  0.01410169 -0.23838859 -0.11056778 -0.16224859  0.06905268 -0.30899176]
+stds: [0.15510411 0.16755836 0.16101671 0.15763574 0.16448814 0.1968867
+ 0.1435061  0.16586985 0.1757315  0.13899588 0.17374665 0.17248409]
+||pc||: 3.2762682219643815
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+Bishop_Pair_Bonus: 22
+Castled_Bonus: 6
+Development_Bonus: 10
+Mobility_Bishop_EG: 4
+Mobility_Bishop_MG: 11
+Mobility_Knight_EG: 4
+Mobility_Knight_MG: 6
+Mobility_Queen_EG: 1
+Mobility_Queen_MG: 5
+Mobility_Rook_EG: 2
+Mobility_Rook_MG: 5
+Tempo_Bonus: 21
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.43999999999999995, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Pair_Bonus=Scalar{Cl(8,55,b),Int}[sigma=Scalar{exp=2.03}],Castled_Bonus=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Development_Bonus=Scalar{Cl(0,28,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_MG=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_MG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_EG=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_EG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_MG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Tempo_Bonus=Scalar{Cl(4,48,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Pair_Bonus': 22, 'Castled_Bonus': 5, 'Development_Bonus': 12, 'Mobility_Bishop_EG': 4, 'Mobility_Bishop_MG': 10, 'Mobility_Knight_EG': 5, 'Mobility_Knight_MG': 6, 'Mobility_Queen_EG': 1, 'Mobility_Queen_MG': 4, 'Mobility_Rook_EG': 2, 'Mobility_Rook_MG': 5, 'Tempo_Bonus': 22})>, 'pessimistic': MultiValue<mean: 0.43999999999999995, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Pair_Bonus=Scalar{Cl(8,55,b),Int}[sigma=Scalar{exp=2.03}],Castled_Bonus=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Development_Bonus=Scalar{Cl(0,28,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_MG=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_MG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_EG=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_EG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_MG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Tempo_Bonus=Scalar{Cl(4,48,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Pair_Bonus': 22, 'Castled_Bonus': 5, 'Development_Bonus': 12, 'Mobility_Bishop_EG': 4, 'Mobility_Bishop_MG': 10, 'Mobility_Knight_EG': 5, 'Mobility_Knight_MG': 6, 'Mobility_Queen_EG': 1, 'Mobility_Queen_MG': 4, 'Mobility_Rook_EG': 2, 'Mobility_Rook_MG': 5, 'Tempo_Bonus': 22})>, 'average': MultiValue<mean: 0.43999999999999995, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Pair_Bonus=Scalar{Cl(8,55,b),Int}[sigma=Scalar{exp=2.03}],Castled_Bonus=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Development_Bonus=Scalar{Cl(0,28,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_MG=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_MG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_EG=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_EG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_MG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Tempo_Bonus=Scalar{Cl(4,48,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Pair_Bonus': 22, 'Castled_Bonus': 5, 'Development_Bonus': 12, 'Mobility_Bishop_EG': 4, 'Mobility_Bishop_MG': 10, 'Mobility_Knight_EG': 5, 'Mobility_Knight_MG': 6, 'Mobility_Queen_EG': 1, 'Mobility_Queen_MG': 4, 'Mobility_Rook_EG': 2, 'Mobility_Rook_MG': 5, 'Tempo_Bonus': 22})>, 'minimum': MultiValue<mean: 0.43999999999999995, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Pair_Bonus=Scalar{Cl(8,55,b),Int}[sigma=Scalar{exp=2.03}],Castled_Bonus=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Development_Bonus=Scalar{Cl(0,28,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Bishop_MG=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_EG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Knight_MG=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_EG=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Queen_MG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_EG=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],Mobility_Rook_MG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Tempo_Bonus=Scalar{Cl(4,48,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Pair_Bonus': 22, 'Castled_Bonus': 5, 'Development_Bonus': 12, 'Mobility_Bishop_EG': 4, 'Mobility_Bishop_MG': 10, 'Mobility_Knight_EG': 5, 'Mobility_Knight_MG': 6, 'Mobility_Queen_EG': 1, 'Mobility_Queen_MG': 4, 'Mobility_Rook_EG': 2, 'Mobility_Rook_MG': 5, 'Tempo_Bonus': 22})>}
+
+================================================================================
+DIR: tuning\spsa\pass2\batch4
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch4\batch4.dat
+################################################################################
+
+--- run ---
+iterations: 31
+evaluations: 341
+popsize: 11
+
+--- fitness ---
+best f: 0.4125
+evals @ best: 66
+
+--- step size ---
+sigma: 0.08391693371876156
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.75731176 0.83705249 0.84436881 0.91841394 0.93420967 0.97627565
+ 0.98042967 1.00855983 1.06372497 1.10313153 1.13280976 1.22095771
+ 1.31970796 1.84348191]
+condition number: 2.4342443990407547
+
+--- search state ---
+mean: [-0.23566213  0.23918375 -0.31635501  0.00576157 -0.51558151 -0.26320672
+ -0.15951806 -0.00257198  0.16298426 -0.28248262  0.10910917  0.258086
+ -0.30409302 -0.02959422]
+stds: [0.10555916 0.09336909 0.08707368 0.10244205 0.08540202 0.0836687
+ 0.07580698 0.09751275 0.09287431 0.08709309 0.09955151 0.09438028
+ 0.08768235 0.09374924]
+||pc||: 2.6956493489368887
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+Backward_EG: 0
+Backward_MG: -13
+Doubled_EG: -9
+Doubled_MG: -12
+Isolated_EG: -3
+Isolated_MG: -1
+Pawn_Center_MG: 7
+Pawn_ExtCenter_EG: 3
+Pawn_Island_EG: -5
+Pawn_Island_MG: -32
+Pawn_Storm_Base: 2
+Pawn_Storm_Rank_Mult: 1
+Supported_Pawn_MG: 14
+Weak_Pawn_MG: -18
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.4125, count: 1, parameter: Instrumentation(Tuple(),Dict(Backward_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Backward_MG=Scalar{Cl(-40,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_EG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_MG=Scalar{Cl(-45,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_EG=Scalar{Cl(-28,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_MG=Scalar{Cl(-35,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Center_MG=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Pawn_ExtCenter_EG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_MG=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Base=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Rank_Mult=Scalar{Cl(0,9,b),Int}[sigma=Scalar{exp=2.03}],Supported_Pawn_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Weak_Pawn_MG=Scalar{Cl(-50,-3,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Backward_EG': 0, 'Backward_MG': -13, 'Doubled_EG': -9, 'Doubled_MG': -12, 'Isolated_EG': -3, 'Isolated_MG': -1, 'Pawn_Center_MG': 7, 'Pawn_ExtCenter_EG': 3, 'Pawn_Island_EG': -5, 'Pawn_Island_MG': -32, 'Pawn_Storm_Base': 2, 'Pawn_Storm_Rank_Mult': 1, 'Supported_Pawn_MG': 14, 'Weak_Pawn_MG': -18})>, 'pessimistic': MultiValue<mean: 0.4125, count: 1, parameter: Instrumentation(Tuple(),Dict(Backward_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Backward_MG=Scalar{Cl(-40,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_EG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_MG=Scalar{Cl(-45,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_EG=Scalar{Cl(-28,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_MG=Scalar{Cl(-35,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Center_MG=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Pawn_ExtCenter_EG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_MG=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Base=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Rank_Mult=Scalar{Cl(0,9,b),Int}[sigma=Scalar{exp=2.03}],Supported_Pawn_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Weak_Pawn_MG=Scalar{Cl(-50,-3,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Backward_EG': 0, 'Backward_MG': -13, 'Doubled_EG': -9, 'Doubled_MG': -12, 'Isolated_EG': -3, 'Isolated_MG': -1, 'Pawn_Center_MG': 7, 'Pawn_ExtCenter_EG': 3, 'Pawn_Island_EG': -5, 'Pawn_Island_MG': -32, 'Pawn_Storm_Base': 2, 'Pawn_Storm_Rank_Mult': 1, 'Supported_Pawn_MG': 14, 'Weak_Pawn_MG': -18})>, 'average': MultiValue<mean: 0.4125, count: 1, parameter: Instrumentation(Tuple(),Dict(Backward_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Backward_MG=Scalar{Cl(-40,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_EG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_MG=Scalar{Cl(-45,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_EG=Scalar{Cl(-28,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_MG=Scalar{Cl(-35,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Center_MG=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Pawn_ExtCenter_EG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_MG=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Base=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Rank_Mult=Scalar{Cl(0,9,b),Int}[sigma=Scalar{exp=2.03}],Supported_Pawn_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Weak_Pawn_MG=Scalar{Cl(-50,-3,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Backward_EG': 0, 'Backward_MG': -13, 'Doubled_EG': -9, 'Doubled_MG': -12, 'Isolated_EG': -3, 'Isolated_MG': -1, 'Pawn_Center_MG': 7, 'Pawn_ExtCenter_EG': 3, 'Pawn_Island_EG': -5, 'Pawn_Island_MG': -32, 'Pawn_Storm_Base': 2, 'Pawn_Storm_Rank_Mult': 1, 'Supported_Pawn_MG': 14, 'Weak_Pawn_MG': -18})>, 'minimum': MultiValue<mean: 0.4125, count: 1, parameter: Instrumentation(Tuple(),Dict(Backward_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Backward_MG=Scalar{Cl(-40,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_EG=Scalar{Cl(-30,0,b),Int}[sigma=Scalar{exp=2.03}],Doubled_MG=Scalar{Cl(-45,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_EG=Scalar{Cl(-28,0,b),Int}[sigma=Scalar{exp=2.03}],Isolated_MG=Scalar{Cl(-35,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Center_MG=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Pawn_ExtCenter_EG=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_EG=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Island_MG=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Base=Scalar{Cl(0,16,b),Int}[sigma=Scalar{exp=2.03}],Pawn_Storm_Rank_Mult=Scalar{Cl(0,9,b),Int}[sigma=Scalar{exp=2.03}],Supported_Pawn_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Weak_Pawn_MG=Scalar{Cl(-50,-3,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Backward_EG': 0, 'Backward_MG': -13, 'Doubled_EG': -9, 'Doubled_MG': -12, 'Isolated_EG': -3, 'Isolated_MG': -1, 'Pawn_Center_MG': 7, 'Pawn_ExtCenter_EG': 3, 'Pawn_Island_EG': -5, 'Pawn_Island_MG': -32, 'Pawn_Storm_Base': 2, 'Pawn_Storm_Rank_Mult': 1, 'Supported_Pawn_MG': 14, 'Weak_Pawn_MG': -18})>}
+
+================================================================================
+DIR: tuning\spsa\pass2\batch6
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch6\batch6.dat
+################################################################################
+
+--- run ---
+iterations: 33
+evaluations: 396
+popsize: 12
+
+--- fitness ---
+best f: 0.4075
+evals @ best: 159
+
+--- step size ---
+sigma: 0.08163091839105574
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.79630567 0.82046351 0.87385369 0.88772769 0.90904861 0.93678796
+ 0.95786671 0.98568601 1.02857899 1.06055478 1.0937332  1.14086015
+ 1.15611083 1.2052053  1.26773926 1.83351169]
+condition number: 2.302522461324663
+
+--- search state ---
+mean: [-0.15974157 -0.35704127 -0.34868301  0.16895091  0.39121853 -0.14924364
+ -0.06503406  0.0172089  -0.44796951  0.35439946 -0.01004179 -0.1723659
+  0.03997155 -0.05045986 -0.22753283  0.12940733]
+stds: [0.09168869 0.09779445 0.07736935 0.08918103 0.08966643 0.0753638
+ 0.10204429 0.08292206 0.0932465  0.08243261 0.08454092 0.08450809
+ 0.09272526 0.10075986 0.08451539 0.08863662]
+||pc||: 3.8227526576911655
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+KingAtk_2: 7
+KingAtk_3: 25
+KingAtk_4: 33
+KingAtk_5: 44
+KingAtk_6: 27
+KingAtk_7: 16
+King_Attacker_Bishop: 3
+King_Attacker_Knight: 2
+King_Attacker_Queen: 11
+King_Attacker_Rook: 4
+King_Danger_Divisor: 10
+King_Danger_Max: 641
+King_Escape_Bonus: 4
+King_Open_File_Penalty: -29
+King_SemiOpen_Penalty: -6
+King_Shield_Penalty: -27
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(KingAtk_2=Scalar{Cl(0,22,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_3=Scalar{Cl(4,55,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_4=Scalar{Cl(8,80,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_5=Scalar{Cl(12,95,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_6=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_7=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Bishop=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Knight=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Queen=Scalar{Cl(4,28,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Rook=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Divisor=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Max=Scalar{Cl(250,1100,b),Int}[sigma=Scalar{exp=2.03}],King_Escape_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],King_Open_File_Penalty=Scalar{Cl(-55,-5,b),Int}[sigma=Scalar{exp=2.03}],King_SemiOpen_Penalty=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],King_Shield_Penalty=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}])):((), {'KingAtk_2': 7, 'KingAtk_3': 25, 'KingAtk_4': 33, 'KingAtk_5': 44, 'KingAtk_6': 27, 'KingAtk_7': 16, 'King_Attacker_Bishop': 3, 'King_Attacker_Knight': 2, 'King_Attacker_Queen': 11, 'King_Attacker_Rook': 4, 'King_Danger_Divisor': 10, 'King_Danger_Max': 641, 'King_Escape_Bonus': 4, 'King_Open_File_Penalty': -29, 'King_SemiOpen_Penalty': -6, 'King_Shield_Penalty': -27})>, 'pessimistic': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(KingAtk_2=Scalar{Cl(0,22,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_3=Scalar{Cl(4,55,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_4=Scalar{Cl(8,80,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_5=Scalar{Cl(12,95,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_6=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_7=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Bishop=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Knight=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Queen=Scalar{Cl(4,28,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Rook=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Divisor=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Max=Scalar{Cl(250,1100,b),Int}[sigma=Scalar{exp=2.03}],King_Escape_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],King_Open_File_Penalty=Scalar{Cl(-55,-5,b),Int}[sigma=Scalar{exp=2.03}],King_SemiOpen_Penalty=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],King_Shield_Penalty=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}])):((), {'KingAtk_2': 7, 'KingAtk_3': 25, 'KingAtk_4': 33, 'KingAtk_5': 44, 'KingAtk_6': 27, 'KingAtk_7': 16, 'King_Attacker_Bishop': 3, 'King_Attacker_Knight': 2, 'King_Attacker_Queen': 11, 'King_Attacker_Rook': 4, 'King_Danger_Divisor': 10, 'King_Danger_Max': 641, 'King_Escape_Bonus': 4, 'King_Open_File_Penalty': -29, 'King_SemiOpen_Penalty': -6, 'King_Shield_Penalty': -27})>, 'average': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(KingAtk_2=Scalar{Cl(0,22,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_3=Scalar{Cl(4,55,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_4=Scalar{Cl(8,80,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_5=Scalar{Cl(12,95,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_6=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_7=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Bishop=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Knight=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Queen=Scalar{Cl(4,28,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Rook=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Divisor=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Max=Scalar{Cl(250,1100,b),Int}[sigma=Scalar{exp=2.03}],King_Escape_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],King_Open_File_Penalty=Scalar{Cl(-55,-5,b),Int}[sigma=Scalar{exp=2.03}],King_SemiOpen_Penalty=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],King_Shield_Penalty=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}])):((), {'KingAtk_2': 7, 'KingAtk_3': 25, 'KingAtk_4': 33, 'KingAtk_5': 44, 'KingAtk_6': 27, 'KingAtk_7': 16, 'King_Attacker_Bishop': 3, 'King_Attacker_Knight': 2, 'King_Attacker_Queen': 11, 'King_Attacker_Rook': 4, 'King_Danger_Divisor': 10, 'King_Danger_Max': 641, 'King_Escape_Bonus': 4, 'King_Open_File_Penalty': -29, 'King_SemiOpen_Penalty': -6, 'King_Shield_Penalty': -27})>, 'minimum': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(KingAtk_2=Scalar{Cl(0,22,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_3=Scalar{Cl(4,55,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_4=Scalar{Cl(8,80,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_5=Scalar{Cl(12,95,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_6=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],KingAtk_7=Scalar{Cl(0,90,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Bishop=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Knight=Scalar{Cl(0,12,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Queen=Scalar{Cl(4,28,b),Int}[sigma=Scalar{exp=2.03}],King_Attacker_Rook=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Divisor=Scalar{Cl(2,22,b),Int}[sigma=Scalar{exp=2.03}],King_Danger_Max=Scalar{Cl(250,1100,b),Int}[sigma=Scalar{exp=2.03}],King_Escape_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],King_Open_File_Penalty=Scalar{Cl(-55,-5,b),Int}[sigma=Scalar{exp=2.03}],King_SemiOpen_Penalty=Scalar{Cl(-25,0,b),Int}[sigma=Scalar{exp=2.03}],King_Shield_Penalty=Scalar{Cl(-60,-5,b),Int}[sigma=Scalar{exp=2.03}])):((), {'KingAtk_2': 7, 'KingAtk_3': 25, 'KingAtk_4': 33, 'KingAtk_5': 44, 'KingAtk_6': 27, 'KingAtk_7': 16, 'King_Attacker_Bishop': 3, 'King_Attacker_Knight': 2, 'King_Attacker_Queen': 11, 'King_Attacker_Rook': 4, 'King_Danger_Divisor': 10, 'King_Danger_Max': 641, 'King_Escape_Bonus': 4, 'King_Open_File_Penalty': -29, 'King_SemiOpen_Penalty': -6, 'King_Shield_Penalty': -27})>}
+
+================================================================================
+DIR: tuning\spsa\pass2\batch7
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch7\batch7.dat
+################################################################################
+
+--- run ---
+iterations: 41
+evaluations: 492
+popsize: 12
+
+--- fitness ---
+best f: 0.4075
+evals @ best: 73
+
+--- step size ---
+sigma: 0.03667339802088722
+sigma0: 0.15
+
+--- covariance spectrum ---
+D: [0.85014219 0.88069219 0.90150733 0.9115298  0.93503832 0.94623131
+ 0.97512872 1.00554006 1.015366   1.02308085 1.04782414 1.07083936
+ 1.0781984  1.10741168 1.13694041 1.18182698 1.26272224 1.34211389
+ 1.45360572 1.5294651 ]
+condition number: 1.7990697404277738
+
+--- search state ---
+mean: [-0.36278973 -0.34405707  0.1688791   0.08177252 -0.0355717  -0.21902512
+  0.15672081  0.20745239  0.12330506 -0.01251984 -0.07686338  0.03585568
+ -0.17693135 -0.03821814  0.11489551  0.06405536 -0.12779749 -0.20954735
+  0.09520972  0.01817122]
+stds: [0.03739283 0.04097823 0.03868788 0.03830419 0.04266665 0.04243645
+ 0.03999277 0.04225351 0.04213644 0.04680623 0.03922984 0.04090538
+ 0.04244641 0.03851429 0.03750785 0.03806244 0.04001249 0.03889513
+ 0.03849023 0.03848034]
+||pc||: 3.085533223327493
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+Hanging_Penalty_MG: 58
+Hanging_Value_Div: 29
+Pin_Bonus: 33
+Threat_Minor_Queen_EG: 51
+Threat_Minor_Queen_MG: 10
+Threat_Minor_Rook_EG: 10
+Threat_Minor_Rook_MG: 28
+Threat_Pawn_Bishop_EG: 89
+Threat_Pawn_Bishop_MG: 89
+Threat_Pawn_Knight_EG: 80
+Threat_Pawn_Knight_MG: 46
+Threat_Pawn_Queen_EG: 69
+Threat_Pawn_Queen_MG: 93
+Threat_Pawn_Rook_EG: 40
+Threat_Pawn_Rook_MG: 109
+Threat_Rook_EG: 49
+Threat_Rook_MG: 62
+Undefended_Attack_Bonus: 19
+Undefended_Value_Div: 71
+Unrec_Pressure_Bonus: 4
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(Hanging_Penalty_MG=Scalar{Cl(15,110,b),Int}[sigma=Scalar{exp=2.03}],Hanging_Value_Div=Scalar{Cl(4,90,b),Int}[sigma=Scalar{exp=2.03}],Pin_Bonus=Scalar{Cl(10,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_EG=Scalar{Cl(12,110,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_MG=Scalar{Cl(0,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_EG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_MG=Scalar{Cl(0,70,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_EG=Scalar{Cl(40,155,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_MG=Scalar{Cl(35,145,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_EG=Scalar{Cl(30,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_MG=Scalar{Cl(12,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_EG=Scalar{Cl(25,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_MG=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_MG=Scalar{Cl(55,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_MG=Scalar{Cl(15,120,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Attack_Bonus=Scalar{Cl(4,42,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Value_Div=Scalar{Cl(15,130,b),Int}[sigma=Scalar{exp=2.03}],Unrec_Pressure_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Hanging_Penalty_MG': 58, 'Hanging_Value_Div': 29, 'Pin_Bonus': 33, 'Threat_Minor_Queen_EG': 51, 'Threat_Minor_Queen_MG': 10, 'Threat_Minor_Rook_EG': 10, 'Threat_Minor_Rook_MG': 28, 'Threat_Pawn_Bishop_EG': 89, 'Threat_Pawn_Bishop_MG': 89, 'Threat_Pawn_Knight_EG': 80, 'Threat_Pawn_Knight_MG': 46, 'Threat_Pawn_Queen_EG': 69, 'Threat_Pawn_Queen_MG': 93, 'Threat_Pawn_Rook_EG': 40, 'Threat_Pawn_Rook_MG': 109, 'Threat_Rook_EG': 49, 'Threat_Rook_MG': 62, 'Undefended_Attack_Bonus': 19, 'Undefended_Value_Div': 71, 'Unrec_Pressure_Bonus': 4})>, 'pessimistic': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(Hanging_Penalty_MG=Scalar{Cl(15,110,b),Int}[sigma=Scalar{exp=2.03}],Hanging_Value_Div=Scalar{Cl(4,90,b),Int}[sigma=Scalar{exp=2.03}],Pin_Bonus=Scalar{Cl(10,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_EG=Scalar{Cl(12,110,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_MG=Scalar{Cl(0,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_EG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_MG=Scalar{Cl(0,70,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_EG=Scalar{Cl(40,155,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_MG=Scalar{Cl(35,145,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_EG=Scalar{Cl(30,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_MG=Scalar{Cl(12,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_EG=Scalar{Cl(25,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_MG=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_MG=Scalar{Cl(55,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_MG=Scalar{Cl(15,120,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Attack_Bonus=Scalar{Cl(4,42,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Value_Div=Scalar{Cl(15,130,b),Int}[sigma=Scalar{exp=2.03}],Unrec_Pressure_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Hanging_Penalty_MG': 58, 'Hanging_Value_Div': 29, 'Pin_Bonus': 33, 'Threat_Minor_Queen_EG': 51, 'Threat_Minor_Queen_MG': 10, 'Threat_Minor_Rook_EG': 10, 'Threat_Minor_Rook_MG': 28, 'Threat_Pawn_Bishop_EG': 89, 'Threat_Pawn_Bishop_MG': 89, 'Threat_Pawn_Knight_EG': 80, 'Threat_Pawn_Knight_MG': 46, 'Threat_Pawn_Queen_EG': 69, 'Threat_Pawn_Queen_MG': 93, 'Threat_Pawn_Rook_EG': 40, 'Threat_Pawn_Rook_MG': 109, 'Threat_Rook_EG': 49, 'Threat_Rook_MG': 62, 'Undefended_Attack_Bonus': 19, 'Undefended_Value_Div': 71, 'Unrec_Pressure_Bonus': 4})>, 'average': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(Hanging_Penalty_MG=Scalar{Cl(15,110,b),Int}[sigma=Scalar{exp=2.03}],Hanging_Value_Div=Scalar{Cl(4,90,b),Int}[sigma=Scalar{exp=2.03}],Pin_Bonus=Scalar{Cl(10,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_EG=Scalar{Cl(12,110,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_MG=Scalar{Cl(0,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_EG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_MG=Scalar{Cl(0,70,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_EG=Scalar{Cl(40,155,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_MG=Scalar{Cl(35,145,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_EG=Scalar{Cl(30,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_MG=Scalar{Cl(12,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_EG=Scalar{Cl(25,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_MG=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_MG=Scalar{Cl(55,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_MG=Scalar{Cl(15,120,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Attack_Bonus=Scalar{Cl(4,42,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Value_Div=Scalar{Cl(15,130,b),Int}[sigma=Scalar{exp=2.03}],Unrec_Pressure_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Hanging_Penalty_MG': 58, 'Hanging_Value_Div': 29, 'Pin_Bonus': 33, 'Threat_Minor_Queen_EG': 51, 'Threat_Minor_Queen_MG': 10, 'Threat_Minor_Rook_EG': 10, 'Threat_Minor_Rook_MG': 28, 'Threat_Pawn_Bishop_EG': 89, 'Threat_Pawn_Bishop_MG': 89, 'Threat_Pawn_Knight_EG': 80, 'Threat_Pawn_Knight_MG': 46, 'Threat_Pawn_Queen_EG': 69, 'Threat_Pawn_Queen_MG': 93, 'Threat_Pawn_Rook_EG': 40, 'Threat_Pawn_Rook_MG': 109, 'Threat_Rook_EG': 49, 'Threat_Rook_MG': 62, 'Undefended_Attack_Bonus': 19, 'Undefended_Value_Div': 71, 'Unrec_Pressure_Bonus': 4})>, 'minimum': MultiValue<mean: 0.4075, count: 1, parameter: Instrumentation(Tuple(),Dict(Hanging_Penalty_MG=Scalar{Cl(15,110,b),Int}[sigma=Scalar{exp=2.03}],Hanging_Value_Div=Scalar{Cl(4,90,b),Int}[sigma=Scalar{exp=2.03}],Pin_Bonus=Scalar{Cl(10,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_EG=Scalar{Cl(12,110,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_MG=Scalar{Cl(0,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_EG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_MG=Scalar{Cl(0,70,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_EG=Scalar{Cl(40,155,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_MG=Scalar{Cl(35,145,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_EG=Scalar{Cl(30,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_MG=Scalar{Cl(12,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_EG=Scalar{Cl(25,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_MG=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_MG=Scalar{Cl(55,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_MG=Scalar{Cl(15,120,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Attack_Bonus=Scalar{Cl(4,42,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Value_Div=Scalar{Cl(15,130,b),Int}[sigma=Scalar{exp=2.03}],Unrec_Pressure_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Hanging_Penalty_MG': 58, 'Hanging_Value_Div': 29, 'Pin_Bonus': 33, 'Threat_Minor_Queen_EG': 51, 'Threat_Minor_Queen_MG': 10, 'Threat_Minor_Rook_EG': 10, 'Threat_Minor_Rook_MG': 28, 'Threat_Pawn_Bishop_EG': 89, 'Threat_Pawn_Bishop_MG': 89, 'Threat_Pawn_Knight_EG': 80, 'Threat_Pawn_Knight_MG': 46, 'Threat_Pawn_Queen_EG': 69, 'Threat_Pawn_Queen_MG': 93, 'Threat_Pawn_Rook_EG': 40, 'Threat_Pawn_Rook_MG': 109, 'Threat_Rook_EG': 49, 'Threat_Rook_MG': 62, 'Undefended_Attack_Bonus': 19, 'Undefended_Value_Div': 71, 'Unrec_Pressure_Bonus': 4})>}
+
+================================================================================
+DIR: tuning\spsa\pass2\batch8a
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch8a\batch8a.dat
+################################################################################
+
+--- run ---
+iterations: 31
+evaluations: 341
+popsize: 11
+
+--- fitness ---
+best f: 0.42500000000000004
+evals @ best: 233
+
+--- step size ---
+sigma: 0.11896357416013145
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.83566108 0.85444547 0.86955754 0.90959745 0.96204666 0.99697058
+ 1.00427171 1.03168418 1.09065997 1.17193368 1.20196923 1.2846396
+ 1.37892897 1.73270344]
+condition number: 2.0734523660304083
+
+--- search state ---
+mean: [ 0.3201528   0.01332454  0.03915921  0.35520708  0.50482696  0.23404417
+ -0.28049065 -0.28266119 -0.38305596  0.50730874 -0.41647368  0.62011038
+ -0.29414984 -0.11218547]
+stds: [0.17508001 0.1313783  0.12077393 0.11489081 0.12922509 0.13125022
+ 0.13947535 0.14305966 0.11557502 0.14688819 0.12976825 0.14219642
+ 0.12053103 0.11195738]
+||pc||: 2.9663284640820518
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+Battery_Bishop_Queen: 11
+Battery_Rook_Queen: 12
+Bishop_Openness_Max: 42
+Bishop_Openness_SqWt: 2
+Center_Bonus: 9
+Defended_Piece_Bonus: 4
+Enemy_Half_Bonus: 4
+Ext_Center_Bonus: 5
+Open_File_Mult: 123
+Semi_Open_File_Mult: 119
+Seventh_Rank_EG: 24
+Seventh_Rank_MG: 16
+Shared_Target_Bonus: 10
+Support_Chain_Bonus: 7
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.42500000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(Battery_Bishop_Queen=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Battery_Rook_Queen=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_Max=Scalar{Cl(5,80,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_SqWt=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Center_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Defended_Piece_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Enemy_Half_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Ext_Center_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Open_File_Mult=Scalar{Cl(100,165,b),Int}[sigma=Scalar{exp=2.03}],Semi_Open_File_Mult=Scalar{Cl(100,140,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_EG=Scalar{Cl(6,65,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Shared_Target_Bonus=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Support_Chain_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Battery_Bishop_Queen': 11, 'Battery_Rook_Queen': 12, 'Bishop_Openness_Max': 42, 'Bishop_Openness_SqWt': 2, 'Center_Bonus': 9, 'Defended_Piece_Bonus': 4, 'Enemy_Half_Bonus': 4, 'Ext_Center_Bonus': 5, 'Open_File_Mult': 123, 'Semi_Open_File_Mult': 119, 'Seventh_Rank_EG': 24, 'Seventh_Rank_MG': 16, 'Shared_Target_Bonus': 10, 'Support_Chain_Bonus': 7})>, 'pessimistic': MultiValue<mean: 0.42500000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(Battery_Bishop_Queen=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Battery_Rook_Queen=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_Max=Scalar{Cl(5,80,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_SqWt=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Center_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Defended_Piece_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Enemy_Half_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Ext_Center_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Open_File_Mult=Scalar{Cl(100,165,b),Int}[sigma=Scalar{exp=2.03}],Semi_Open_File_Mult=Scalar{Cl(100,140,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_EG=Scalar{Cl(6,65,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Shared_Target_Bonus=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Support_Chain_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Battery_Bishop_Queen': 11, 'Battery_Rook_Queen': 12, 'Bishop_Openness_Max': 42, 'Bishop_Openness_SqWt': 2, 'Center_Bonus': 9, 'Defended_Piece_Bonus': 4, 'Enemy_Half_Bonus': 4, 'Ext_Center_Bonus': 5, 'Open_File_Mult': 123, 'Semi_Open_File_Mult': 119, 'Seventh_Rank_EG': 24, 'Seventh_Rank_MG': 16, 'Shared_Target_Bonus': 10, 'Support_Chain_Bonus': 7})>, 'average': MultiValue<mean: 0.42500000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(Battery_Bishop_Queen=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Battery_Rook_Queen=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_Max=Scalar{Cl(5,80,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_SqWt=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Center_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Defended_Piece_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Enemy_Half_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Ext_Center_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Open_File_Mult=Scalar{Cl(100,165,b),Int}[sigma=Scalar{exp=2.03}],Semi_Open_File_Mult=Scalar{Cl(100,140,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_EG=Scalar{Cl(6,65,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Shared_Target_Bonus=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Support_Chain_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Battery_Bishop_Queen': 11, 'Battery_Rook_Queen': 12, 'Bishop_Openness_Max': 42, 'Bishop_Openness_SqWt': 2, 'Center_Bonus': 9, 'Defended_Piece_Bonus': 4, 'Enemy_Half_Bonus': 4, 'Ext_Center_Bonus': 5, 'Open_File_Mult': 123, 'Semi_Open_File_Mult': 119, 'Seventh_Rank_EG': 24, 'Seventh_Rank_MG': 16, 'Shared_Target_Bonus': 10, 'Support_Chain_Bonus': 7})>, 'minimum': MultiValue<mean: 0.42500000000000004, count: 1, parameter: Instrumentation(Tuple(),Dict(Battery_Bishop_Queen=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Battery_Rook_Queen=Scalar{Cl(0,40,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_Max=Scalar{Cl(5,80,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_SqWt=Scalar{Cl(0,8,b),Int}[sigma=Scalar{exp=2.03}],Center_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}],Defended_Piece_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Enemy_Half_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Ext_Center_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}],Open_File_Mult=Scalar{Cl(100,165,b),Int}[sigma=Scalar{exp=2.03}],Semi_Open_File_Mult=Scalar{Cl(100,140,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_EG=Scalar{Cl(6,65,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_MG=Scalar{Cl(3,38,b),Int}[sigma=Scalar{exp=2.03}],Shared_Target_Bonus=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Support_Chain_Bonus=Scalar{Cl(0,24,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Battery_Bishop_Queen': 11, 'Battery_Rook_Queen': 12, 'Bishop_Openness_Max': 42, 'Bishop_Openness_SqWt': 2, 'Center_Bonus': 9, 'Defended_Piece_Bonus': 4, 'Enemy_Half_Bonus': 4, 'Ext_Center_Bonus': 5, 'Open_File_Mult': 123, 'Semi_Open_File_Mult': 119, 'Seventh_Rank_EG': 24, 'Seventh_Rank_MG': 16, 'Shared_Target_Bonus': 10, 'Support_Chain_Bonus': 7})>}
+
+================================================================================
+DIR: tuning\spsa\pass2\batch8b
+================================================================================
+
+################################################################################
+FILE: tuning\spsa\pass2\batch8b\batch8b.dat
+################################################################################
+
+--- run ---
+iterations: 20
+evaluations: 200
+popsize: 10
+
+--- fitness ---
+best f: 0.4425
+evals @ best: 120
+
+--- step size ---
+sigma: 0.24033781347912325
+sigma0: 0.3
+
+--- covariance spectrum ---
+D: [0.7661601  0.78492755 0.86884296 0.91824666 0.96865318 1.1098976
+ 1.40957261 2.06037577]
+condition number: 2.6892235403638702
+
+--- search state ---
+mean: [ 0.84502775 -0.42378089  0.23574928 -0.26731121 -0.16959333 -0.50311216
+ -0.10170041  0.0240268 ]
+stds: [0.37433891 0.38346008 0.26473864 0.20594379 0.26865019 0.24723216
+ 0.19869448 0.26338869]
+||pc||: 2.23962797812792
+
+--- diagnostics ---
+status: still exploring
+conditioning: good
+
+--- recommendation ---
+Bishop_Outpost_EG: 16
+Bishop_Outpost_MG: 12
+Knight_Outpost_EG: 6
+Knight_Outpost_MG: 13
+Queen_Outpost_EG: 6
+Queen_Outpost_MG: 6
+Rook_Outpost_EG: 13
+Rook_Outpost_MG: 25
+
+--- current bests ---
+{'optimistic': MultiValue<mean: 0.4425, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Outpost_EG=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_MG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_EG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_MG=Scalar{Cl(0,45,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_EG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_EG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_MG=Scalar{Cl(0,55,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Outpost_EG': 20, 'Bishop_Outpost_MG': 5, 'Knight_Outpost_EG': 7, 'Knight_Outpost_MG': 14, 'Queen_Outpost_EG': 5, 'Queen_Outpost_MG': 4, 'Rook_Outpost_EG': 14, 'Rook_Outpost_MG': 28})>, 'pessimistic': MultiValue<mean: 0.4425, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Outpost_EG=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_MG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_EG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_MG=Scalar{Cl(0,45,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_EG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_EG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_MG=Scalar{Cl(0,55,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Outpost_EG': 20, 'Bishop_Outpost_MG': 5, 'Knight_Outpost_EG': 7, 'Knight_Outpost_MG': 14, 'Queen_Outpost_EG': 5, 'Queen_Outpost_MG': 4, 'Rook_Outpost_EG': 14, 'Rook_Outpost_MG': 28})>, 'average': MultiValue<mean: 0.4425, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Outpost_EG=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_MG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_EG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_MG=Scalar{Cl(0,45,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_EG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_EG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_MG=Scalar{Cl(0,55,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Outpost_EG': 20, 'Bishop_Outpost_MG': 5, 'Knight_Outpost_EG': 7, 'Knight_Outpost_MG': 14, 'Queen_Outpost_EG': 5, 'Queen_Outpost_MG': 4, 'Rook_Outpost_EG': 14, 'Rook_Outpost_MG': 28})>, 'minimum': MultiValue<mean: 0.4425, count: 1, parameter: Instrumentation(Tuple(),Dict(Bishop_Outpost_EG=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_MG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_EG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_MG=Scalar{Cl(0,45,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_EG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_EG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_MG=Scalar{Cl(0,55,b),Int}[sigma=Scalar{exp=2.03}])):((), {'Bishop_Outpost_EG': 20, 'Bishop_Outpost_MG': 5, 'Knight_Outpost_EG': 7, 'Knight_Outpost_MG': 14, 'Queen_Outpost_EG': 5, 'Queen_Outpost_MG': 4, 'Rook_Outpost_EG': 14, 'Rook_Outpost_MG': 28})>}
