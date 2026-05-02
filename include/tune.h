@@ -299,25 +299,25 @@ inline int SUPPORT_CHAIN_BONUS        =  7; //
 
 // Tactical pressure
 inline int UNDEFENDED_ATTACK_BONUS        = 19; //
-inline int PIN_BONUS                      = 35; //
+inline int PIN_BONUS                      = 33; //
 inline int OVERLOADED_DEFENDER_BONUS      =  0; //
-inline int UNRECIPROCATED_PRESSURE_BONUS  =  5; //
-inline int UNDEFENDED_VALUE_DIVISOR       = 65; //
+inline int UNRECIPROCATED_PRESSURE_BONUS  =  4; //
+inline int UNDEFENDED_VALUE_DIVISOR       = 71; //
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
-inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 44, 87, 109, 92,  0 }; //
-inline int THREAT_BY_PAWN_EG[7]  = { 0,  0, 78, 90,  41, 70,  0 }; //
+inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 46, 89, 109, 93,  0 }; //
+inline int THREAT_BY_PAWN_EG[7]  = { 0,  0, 80, 89,  40, 69,  0 }; //
 // Bonus when a minor attacks an enemy piece of higher value
-inline int THREAT_BY_MINOR_MG[7] = { 0,  0,  0,  0, 24, 12,  0 }; //
-inline int THREAT_BY_MINOR_EG[7] = { 0,  0,  0,  0, 11, 51,  0 }; //
+inline int THREAT_BY_MINOR_MG[7] = { 0,  0,  0,  0, 28, 10,  0 }; //
+inline int THREAT_BY_MINOR_EG[7] = { 0,  0,  0,  0, 10, 51,  0 }; //
 // Bonus when a rook attacks an enemy queen
-inline int THREAT_BY_ROOK_MG = 60; //
-inline int THREAT_BY_ROOK_EG = 47; //
+inline int THREAT_BY_ROOK_MG = 62; //
+inline int THREAT_BY_ROOK_EG = 49; //
 
 // Hanging piece penalties
 inline int HANGING_BASE_PENALTY_MG = 58; //
 inline int HANGING_BASE_PENALTY_EG =  0; //
-inline int HANGING_VALUE_DIVISOR   = 27; //
+inline int HANGING_VALUE_DIVISOR   = 29; //
 
 // Outposts
 inline int KNIGHT_OUTPOST_MG = 14; //
@@ -463,33 +463,33 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
     // ── Tactical pressure ─────────────────────────────────────────
     {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT,   4,   42,  "19"}},
-    {"Pin_Bonus",                 {&PIN_BONUS,                    TuningOption::INT,  10,   65,  "35"}},
+    {"Pin_Bonus",                 {&PIN_BONUS,                    TuningOption::INT,  10,   65,  "33"}},
     {"Overloaded_Defender_Bonus", {&OVERLOADED_DEFENDER_BONUS,    TuningOption::INT,   0,   30,   "0"}}, // Skipped pass 2
-    {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS,TuningOption::INT,   0,   18,   "5"}},
-    {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,     TuningOption::INT,  15,  130,  "65"}},
+    {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS,TuningOption::INT,   0,   18,   "4"}},
+    {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,     TuningOption::INT,  15,  130,  "71"}},
 
     // ── Threats ───────────────────────────────────────────────────
     // Pawn threats vs piece types 2-5 (knight/bishop/rook/queen)
-    {"Threat_Pawn_Knight_MG", {&THREAT_BY_PAWN_MG[2], TuningOption::INT,  12,  100,  "44"}},
-    {"Threat_Pawn_Bishop_MG", {&THREAT_BY_PAWN_MG[3], TuningOption::INT,  35,  145,  "87"}},
+    {"Threat_Pawn_Knight_MG", {&THREAT_BY_PAWN_MG[2], TuningOption::INT,  12,  100,  "46"}},
+    {"Threat_Pawn_Bishop_MG", {&THREAT_BY_PAWN_MG[3], TuningOption::INT,  35,  145,  "89"}},
     {"Threat_Pawn_Rook_MG",   {&THREAT_BY_PAWN_MG[4], TuningOption::INT,  55,  160, "109"}},
-    {"Threat_Pawn_Queen_MG",  {&THREAT_BY_PAWN_MG[5], TuningOption::INT,  40,  160,  "92"}},
-    {"Threat_Pawn_Knight_EG", {&THREAT_BY_PAWN_EG[2], TuningOption::INT,  30,  140,  "78"}},
-    {"Threat_Pawn_Bishop_EG", {&THREAT_BY_PAWN_EG[3], TuningOption::INT,  40,  155,  "90"}},
-    {"Threat_Pawn_Rook_EG",   {&THREAT_BY_PAWN_EG[4], TuningOption::INT,   8,  100,  "41"}},
-    {"Threat_Pawn_Queen_EG",  {&THREAT_BY_PAWN_EG[5], TuningOption::INT,  25,  140,  "70"}},
+    {"Threat_Pawn_Queen_MG",  {&THREAT_BY_PAWN_MG[5], TuningOption::INT,  40,  160,  "93"}},
+    {"Threat_Pawn_Knight_EG", {&THREAT_BY_PAWN_EG[2], TuningOption::INT,  30,  140,  "80"}},
+    {"Threat_Pawn_Bishop_EG", {&THREAT_BY_PAWN_EG[3], TuningOption::INT,  40,  155,  "89"}},
+    {"Threat_Pawn_Rook_EG",   {&THREAT_BY_PAWN_EG[4], TuningOption::INT,   8,  100,  "40"}},
+    {"Threat_Pawn_Queen_EG",  {&THREAT_BY_PAWN_EG[5], TuningOption::INT,  25,  140,  "69"}},
     // Minor threats vs rook/queen
-    {"Threat_Minor_Rook_MG",  {&THREAT_BY_MINOR_MG[4], TuningOption::INT,   0,   70,  "24"}},
-    {"Threat_Minor_Queen_MG", {&THREAT_BY_MINOR_MG[5], TuningOption::INT,   0,   65,  "12"}},
-    {"Threat_Minor_Rook_EG",  {&THREAT_BY_MINOR_EG[4], TuningOption::INT,   0,   60,  "11"}},
+    {"Threat_Minor_Rook_MG",  {&THREAT_BY_MINOR_MG[4], TuningOption::INT,   0,   70,  "28"}},
+    {"Threat_Minor_Queen_MG", {&THREAT_BY_MINOR_MG[5], TuningOption::INT,   0,   65,  "10"}},
+    {"Threat_Minor_Rook_EG",  {&THREAT_BY_MINOR_EG[4], TuningOption::INT,   0,   60,  "10"}},
     {"Threat_Minor_Queen_EG", {&THREAT_BY_MINOR_EG[5], TuningOption::INT,  12,  110,  "51"}},
     // Rook threatens queen
-    {"Threat_Rook_MG",        {&THREAT_BY_ROOK_MG,    TuningOption::INT,  15,  120,  "60"}},
-    {"Threat_Rook_EG",        {&THREAT_BY_ROOK_EG,    TuningOption::INT,   8,  100,  "47"}},
+    {"Threat_Rook_MG",        {&THREAT_BY_ROOK_MG,    TuningOption::INT,  15,  120,  "62"}},
+    {"Threat_Rook_EG",        {&THREAT_BY_ROOK_EG,    TuningOption::INT,   8,  100,  "49"}},
     // Hanging
     {"Hanging_Penalty_MG",    {&HANGING_BASE_PENALTY_MG, TuningOption::INT,  15,  110,  "58"}},
     {"Hanging_Penalty_EG",    {&HANGING_BASE_PENALTY_EG, TuningOption::INT,   0,   40,   "0"}}, // Skipped pass 2
-    {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT,   4,   90,  "27"}},
+    {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT,   4,   90,  "29"}},
 
     // ── Outposts ──────────────────────────────────────────────────
     {"Knight_Outpost_MG",  {&KNIGHT_OUTPOST_MG, TuningOption::INT,   0,   45,  "14"}},
