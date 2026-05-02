@@ -20,26 +20,10 @@ EPD: ogpt_chess_startpos.epd
 EXAMPLE COMMANDS
 ================================================================
 
--- Batch 1 (master) --
-python3.10 lakas.py \
-  --distributed-role master \
-  --budget 150 \
-  --num_workers 8 \
-  --concurrency 23 \
-  --output-data-file "batch1.dat" \
-  --input-data-file  "batch1.dat" \
-  --optimizer-log-file "batch1.log" \
---input-param "{ \
-'FP_Mult':            {'init':  577, 'lower':  450, 'upper':  720}, \
-'LMR_Base':           {'init': 1.33, 'lower': 1.10, 'upper': 1.55}, \
-'LMR_Scale':          {'init': 1.77, 'lower': 1.45, 'upper': 2.10}, \
-'SE_Margin':          {'init':   61, 'lower':   42, 'upper':   82} \
-}"
-
 -- Batch 2 (master) --
 python3.10 lakas.py \
   --distributed-role master \
-  --budget 300 \
+  --budget 150 \
   --num_workers 8 \
   --concurrency 23 \
   --output-data-file "batch2.dat" \
@@ -166,10 +150,10 @@ remaining. SE_Margin drifted 54 → 61. SEE_Pruning_Margin skipped:
 stable at -277/-273 across both correct passes (std=0.132, lowest
 of all candidates).
 
-[ ] LMR_Base            | Initial: 1.33 | Min: 1.10 | Max: 1.55 | Tuned: --- | highest leverage; std=0.179 remaining
-[ ] LMR_Scale           | Initial: 1.77 | Min: 1.45 | Max: 2.10 | Tuned: --- | highest leverage; std=0.156 remaining
-[ ] FP_Mult             | Initial:  577 | Min:  450 | Max:  720 | Tuned: --- | 657→577 trajectory; sigma=91.7 remaining
-[ ] SE_Margin           | Initial:   61 | Min:   42 | Max:   82 | Tuned: --- | 54→61; std=0.150; tightened from [25,95]
+[x] LMR_Base            | Initial: 1.33 | Min: 1.10 | Max: 1.55 | Tuned: 1.39 | highest leverage; std=0.179 remaining
+[x] LMR_Scale           | Initial: 1.77 | Min: 1.45 | Max: 2.10 | Tuned: 1.73 | highest leverage; std=0.156 remaining
+[x] FP_Mult             | Initial:  577 | Min:  450 | Max:  720 | Tuned:  575 | 657→577 trajectory; sigma=91.7 remaining
+[x] SE_Margin           | Initial:   61 | Min:   42 | Max:   82 | Tuned:   56 | 54→61; std=0.150; tightened from [25,95]
 
 [-] ASP_Delta           | Initial:   32 | Tuned:   32 | stable both passes; skip
 [-] RFP_Margin          | Initial:   79 | Tuned:   79 | stable; skip
@@ -181,8 +165,8 @@ of all candidates).
 [-] SE_Depth_Margin     | Initial:    2 | Tuned:    2 | stable; skip
 [-] SE_Reduction_Denom  | Initial:    3 | Tuned:    3 | highest std (0.194) but integer-stable; skip
 
-Budget: 150
-Best:
+Budget: 200
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(450,720,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(1.1,1.55,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.45,2.1,b)}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(42,82,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-02 12:41:27", "#num-ask": 152, "#num-tell": 145, "#num-tell-not-asked": 1, "#uid": "bbfca2b87c2f40d688ab500034437f91", "#lineage": "abca2b65299545ebb9dbf4a139ba7b20", "#generation": 10, "#parents_uids": ["814859a2dc23418896bbdd439a9e9853"], "#loss": 0.4275, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "FP_Mult": 575, "FP_Mult#sigma": 44.99999999999999, "FP_Mult#sigma#sigma": 1.0, "LMR_Base": 1.3932719870356673, "LMR_Base#sigma": 0.075, "LMR_Base#sigma#sigma": 1.0, "LMR_Scale": 1.7239828088252347, "LMR_Scale#sigma": 0.10833333333333334, "LMR_Scale#sigma#sigma": 1.0, "SE_Margin": 56, "SE_Margin#sigma": 6.666666666666668, "SE_Margin#sigma#sigma": 1.0}
 
 ================================================================
 BATCH 2 – HISTORY / MOVE ORDERING (full re-run)
