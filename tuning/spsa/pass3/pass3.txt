@@ -20,24 +20,6 @@ EPD: ogpt_chess_startpos.epd
 EXAMPLE COMMANDS
 ================================================================
 
--- Batch 2 (master) --
-python3.10 lakas.py \
-  --distributed-role master \
-  --budget 150 \
-  --num_workers 8 \
-  --concurrency 23 \
-  --output-data-file "batch2.dat" \
-  --input-data-file  "batch2.dat" \
-  --optimizer-log-file "batch2.log" \
---input-param "{ \
-'CMH_Weight':          {'init':   51, 'lower':   18, 'upper':  130}, \
-'FMH_Weight':          {'init':   43, 'lower':   10, 'upper':  120}, \
-'History_Bonus_Limit': {'init': 3006, 'lower': 2000, 'upper': 4500}, \
-'History_Bonus_Mult':  {'init':  468, 'lower':  350, 'upper':  600}, \
-'History_Bonus_Sub':   {'init':  165, 'lower':  100, 'upper':  250}, \
-'Main_History_Weight': {'init':   71, 'lower':   35, 'upper':  120} \
-}"
-
 -- Batch 8a (master) --
 python3.10 lakas.py \
   --distributed-role master \
@@ -183,15 +165,15 @@ tighter bounds; others stay wider given the low confidence.
 History_Bonus_Limit trends upward (2842 → 3006); upper kept at
 4500. FMH_Weight drifted 33→43 (uncertain direction); range wide.
 
-[ ] History_Bonus_Mult  | Initial:  468 | Min:  350 | Max:  600 | Tuned: --- | consistent 488/468; tighter range
-[ ] History_Bonus_Sub   | Initial:  165 | Min:  100 | Max:  250 | Tuned: --- | consistent 170/165; tighter range
-[ ] History_Bonus_Limit | Initial: 3006 | Min: 2000 | Max: 4500 | Tuned: --- | trending up 2842→3006; upper kept
-[ ] Main_History_Weight | Initial:   71 | Min:   35 | Max:  120 | Tuned: --- | 78→71; sigma=22.5 remaining
-[ ] CMH_Weight          | Initial:   51 | Min:   18 | Max:  130 | Tuned: --- | sigma=24.2; direction unclear
-[ ] FMH_Weight          | Initial:   43 | Min:   10 | Max:  120 | Tuned: --- | 33→43; direction uncertain; wide
+[x] History_Bonus_Mult  | Initial:  468 | Min:  350 | Max:  600 | Tuned:  509 | consistent 488/468; tighter range
+[x] History_Bonus_Sub   | Initial:  165 | Min:  100 | Max:  250 | Tuned:  155 | consistent 170/165; tighter range
+[x] History_Bonus_Limit | Initial: 3006 | Min: 2000 | Max: 4500 | Tuned: 2803 | trending up 2842→3006; upper kept
+[x] Main_History_Weight | Initial:   71 | Min:   35 | Max:  120 | Tuned:   80 | 78→71; sigma=22.5 remaining
+[x] CMH_Weight          | Initial:   51 | Min:   18 | Max:  130 | Tuned:   69 | sigma=24.2; direction unclear
+[x] FMH_Weight          | Initial:   43 | Min:   10 | Max:  120 | Tuned:   24 | 33→43; direction uncertain; wide
 
 Budget: 300
-Best:
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(CMH_Weight=Scalar{Cl(15,160,b),Int}[sigma=Scalar{exp=2.03}],FMH_Weight=Scalar{Cl(0,130,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Limit=Scalar{Cl(1500,4500,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Mult=Scalar{Cl(280,720,b),Int}[sigma=Scalar{exp=2.03}],History_Bonus_Sub=Scalar{Cl(60,340,b),Int}[sigma=Scalar{exp=2.03}],Main_History_Weight=Scalar{Cl(25,160,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-02 14:27:32", "#num-ask": 288, "#num-tell": 274, "#num-tell-not-asked": 1, "#uid": "a979d31f672e42a4931bb8e709024209", "#lineage": "09d293a479c2448ea3afe823bc40e32b", "#generation": 18, "#parents_uids": ["c0ba679604dc4ac3969ebcf0ec926692"], "#loss": 0.43000000000000005, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "CMH_Weight": 69, "CMH_Weight#sigma": 24.166666666666664, "CMH_Weight#sigma#sigma": 1.0, "FMH_Weight": 24, "FMH_Weight#sigma": 21.666666666666675, "FMH_Weight#sigma#sigma": 1.0, "History_Bonus_Limit": 2803, "History_Bonus_Limit#sigma": 500.00000000000006, "History_Bonus_Limit#sigma#sigma": 1.0, "History_Bonus_Mult": 509, "History_Bonus_Mult#sigma": 73.33333333333336, "History_Bonus_Mult#sigma#sigma": 1.0, "History_Bonus_Sub": 155, "History_Bonus_Sub#sigma": 46.66666666666668, "History_Bonus_Sub#sigma#sigma": 1.0, "Main_History_Weight": 80, "Main_History_Weight#sigma": 22.499999999999996, "Main_History_Weight#sigma#sigma": 1.0}
 
 ================================================================
 BATCH 3 – CORE EVAL                          [SKIPPED – CONVERGED]
