@@ -311,17 +311,17 @@ to 400 (≈40 gens at popsize=10). Inherent signal-to-noise is
 the lowest of any batch; accept that final values will carry
 more uncertainty than other batches.
 
-[ ] Knight_Outpost_MG  | Initial:  14 | Min:   0 | Max:  40 | Tuned: --- |
-[ ] Knight_Outpost_EG  | Initial:   7 | Min:   0 | Max:  30 | Tuned: --- |
-[ ] Bishop_Outpost_MG  | Initial:   5 | Min:   0 | Max:  32 | Tuned: --- | xfavorite=12; wide range to resolve
-[ ] Bishop_Outpost_EG  | Initial:  20 | Min:   0 | Max:  35 | Tuned: --- | xfavorite=16; extended upper slightly
-[ ] Rook_Outpost_MG    | Initial:  28 | Min:   5 | Max:  50 | Tuned: --- | xfavorite=25
-[ ] Rook_Outpost_EG    | Initial:  14 | Min:   0 | Max:  32 | Tuned: --- | xfavorite=13
-[ ] Queen_Outpost_MG   | Initial:   4 | Min:   0 | Max:  25 | Tuned: --- | xfavorite=6
-[ ] Queen_Outpost_EG   | Initial:   5 | Min:   0 | Max:  22 | Tuned: --- | xfavorite=6
+[x] Knight_Outpost_MG  | Initial:  14 | Min:   0 | Max:  40 | Tuned: 13 |
+[x] Knight_Outpost_EG  | Initial:   7 | Min:   0 | Max:  30 | Tuned: 10 |
+[x] Bishop_Outpost_MG  | Initial:   5 | Min:   0 | Max:  32 | Tuned:  4 | xfavorite=12; wide range to resolve
+[x] Bishop_Outpost_EG  | Initial:  20 | Min:   0 | Max:  35 | Tuned: 20 | xfavorite=16; extended upper slightly
+[x] Rook_Outpost_MG    | Initial:  28 | Min:   5 | Max:  50 | Tuned: 28 | xfavorite=25
+[x] Rook_Outpost_EG    | Initial:  14 | Min:   0 | Max:  32 | Tuned: 12 | xfavorite=13
+[x] Queen_Outpost_MG   | Initial:   4 | Min:   0 | Max:  25 | Tuned:  4 | xfavorite=6
+[x] Queen_Outpost_EG   | Initial:   5 | Min:   0 | Max:  22 | Tuned:  8 | xfavorite=6
 
 Budget: 400
-Best:
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(Bishop_Outpost_EG=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Outpost_MG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_EG=Scalar{Cl(0,35,b),Int}[sigma=Scalar{exp=2.03}],Knight_Outpost_MG=Scalar{Cl(0,45,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_EG=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Queen_Outpost_MG=Scalar{Cl(0,30,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_EG=Scalar{Cl(0,38,b),Int}[sigma=Scalar{exp=2.03}],Rook_Outpost_MG=Scalar{Cl(0,55,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-02 18:34:04", "#num-ask": 317, "#num-tell": 302, "#num-tell-not-asked": 1, "#uid": "b8b72f5b7cf54473a95d095b67985c7f", "#lineage": "a6d0b8b56433481d8151344adae506ee", "#generation": 19, "#parents_uids": ["61a6bdf4eaf14340a06e23bd79c43fc8"], "#loss": 0.4325, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "Bishop_Outpost_EG": 20, "Bishop_Outpost_EG#sigma": 5.333333333333335, "Bishop_Outpost_EG#sigma#sigma": 1.0, "Bishop_Outpost_MG": 4, "Bishop_Outpost_MG#sigma": 6.333333333333334, "Bishop_Outpost_MG#sigma#sigma": 1.0, "Knight_Outpost_EG": 10, "Knight_Outpost_EG#sigma": 5.833333333333334, "Knight_Outpost_EG#sigma#sigma": 1.0, "Knight_Outpost_MG": 13, "Knight_Outpost_MG#sigma": 7.500000000000001, "Knight_Outpost_MG#sigma#sigma": 1.0, "Queen_Outpost_EG": 8, "Queen_Outpost_EG#sigma": 4.166666666666667, "Queen_Outpost_EG#sigma#sigma": 1.0, "Queen_Outpost_MG": 4, "Queen_Outpost_MG#sigma": 4.999999999999999, "Queen_Outpost_MG#sigma#sigma": 1.0, "Rook_Outpost_EG": 12, "Rook_Outpost_EG#sigma": 6.333333333333334, "Rook_Outpost_EG#sigma#sigma": 1.0, "Rook_Outpost_MG": 28, "Rook_Outpost_MG#sigma": 9.166666666666666, "Rook_Outpost_MG#sigma#sigma": 1.0}
 
 ================================================================
 VERIFICATION GATE
