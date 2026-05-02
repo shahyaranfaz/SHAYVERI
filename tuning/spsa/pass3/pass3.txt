@@ -20,37 +20,10 @@ EPD: ogpt_chess_startpos.epd
 EXAMPLE COMMANDS
 ================================================================
 
--- Batch 8a (master) --
 python3.10 lakas.py \
   --distributed-role master \
-  --budget 400 \
-  --num_workers 8 \
-  --concurrency 23 \
-  --output-data-file "batch8a.dat" \
-  --input-data-file  "batch8a.dat" \
-  --optimizer-log-file "batch8a.log" \
---input-param "{ \
-'Battery_Bishop_Queen': {'init':  11, 'lower':   0, 'upper':  25}, \
-'Battery_Rook_Queen':   {'init':  12, 'lower':   0, 'upper':  32}, \
-'Bishop_Openness_Max':  {'init':  42, 'lower':  15, 'upper':  68}, \
-'Bishop_Openness_SqWt': {'init':   2, 'lower':   0, 'upper':   6}, \
-'Center_Bonus':         {'init':   9, 'lower':   0, 'upper':  20}, \
-'Defended_Piece_Bonus': {'init':   4, 'lower':   0, 'upper':  14}, \
-'Enemy_Half_Bonus':     {'init':   4, 'lower':   0, 'upper':  14}, \
-'Ext_Center_Bonus':     {'init':   5, 'lower':   0, 'upper':  15}, \
-'Open_File_Mult':       {'init': 123, 'lower': 108, 'upper': 148}, \
-'Semi_Open_File_Mult':  {'init': 119, 'lower': 106, 'upper': 138}, \
-'Seventh_Rank_EG':      {'init':  24, 'lower':   8, 'upper':  48}, \
-'Seventh_Rank_MG':      {'init':  16, 'lower':   4, 'upper':  32}, \
-'Shared_Target_Bonus':  {'init':  10, 'lower':   0, 'upper':  25}, \
-'Support_Chain_Bonus':  {'init':   7, 'lower':   0, 'upper':  20} \
-}"
-
--- Batch 8b (master) --
-python3.10 lakas.py \
-  --distributed-role master \
-  --budget 400 \
-  --num_workers 8 \
+  --budget 200 \
+  --num_workers 9 \
   --concurrency 23 \
   --output-data-file "batch8b.dat" \
   --input-data-file  "batch8b.dat" \
@@ -304,23 +277,23 @@ with budget increased from 350 → 400 (~36 gens at popsize=11).
 Ranges tightened 15-25% from pass 2; Bishop_Openness_Max stable
 at 42 both passes so trimmed further.
 
-[ ] Center_Bonus          | Initial:   9 | Min:   0 | Max:  20 | Tuned: --- |
-[ ] Ext_Center_Bonus      | Initial:   5 | Min:   0 | Max:  15 | Tuned: --- | std=0.143 in pass 2
-[ ] Enemy_Half_Bonus      | Initial:   4 | Min:   0 | Max:  14 | Tuned: --- | std=0.139 in pass 2
-[ ] Seventh_Rank_MG       | Initial:  16 | Min:   4 | Max:  32 | Tuned: --- |
-[ ] Seventh_Rank_EG       | Initial:  24 | Min:   8 | Max:  48 | Tuned: --- |
-[ ] Defended_Piece_Bonus  | Initial:   4 | Min:   0 | Max:  14 | Tuned: --- |
-[ ] Shared_Target_Bonus   | Initial:  10 | Min:   0 | Max:  25 | Tuned: --- |
-[ ] Battery_Rook_Queen    | Initial:  12 | Min:   0 | Max:  32 | Tuned: --- |
-[ ] Battery_Bishop_Queen  | Initial:  11 | Min:   0 | Max:  25 | Tuned: --- | highest std (0.175) in pass 2
-[ ] Support_Chain_Bonus   | Initial:   7 | Min:   0 | Max:  20 | Tuned: --- |
-[ ] Open_File_Mult        | Initial: 123 | Min: 108 | Max: 148 | Tuned: --- | 129→123 converging; tightened
-[ ] Semi_Open_File_Mult   | Initial: 119 | Min: 106 | Max: 138 | Tuned: --- | 113→119; std=0.147
-[ ] Bishop_Openness_Max   | Initial:  42 | Min:  15 | Max:  68 | Tuned: --- | stable at 42 both passes; tightened
-[ ] Bishop_Openness_SqWt  | Initial:   2 | Min:   0 | Max:   6 | Tuned: --- | stable at 2 both passes
+[x] Center_Bonus          | Initial:   9 | Min:   0 | Max:  20 | Tuned:   7 |
+[x] Ext_Center_Bonus      | Initial:   5 | Min:   0 | Max:  15 | Tuned:   5 | std=0.143 in pass 2
+[x] Enemy_Half_Bonus      | Initial:   4 | Min:   0 | Max:  14 | Tuned:   4 | std=0.139 in pass 2
+[x] Seventh_Rank_MG       | Initial:  16 | Min:   4 | Max:  32 | Tuned:  16 |
+[x] Seventh_Rank_EG       | Initial:  24 | Min:   8 | Max:  48 | Tuned:  22 |
+[x] Defended_Piece_Bonus  | Initial:   4 | Min:   0 | Max:  14 | Tuned:   3 |
+[x] Shared_Target_Bonus   | Initial:  10 | Min:   0 | Max:  25 | Tuned:   8 |
+[x] Battery_Rook_Queen    | Initial:  12 | Min:   0 | Max:  32 | Tuned:  10 |
+[x] Battery_Bishop_Queen  | Initial:  11 | Min:   0 | Max:  25 | Tuned:  11 | highest std (0.175) in pass 2
+[x] Support_Chain_Bonus   | Initial:   7 | Min:   0 | Max:  20 | Tuned:   5 |
+[x] Open_File_Mult        | Initial: 123 | Min: 108 | Max: 148 | Tuned: 121 | 129→123 converging; tightened
+[x] Semi_Open_File_Mult   | Initial: 119 | Min: 106 | Max: 138 | Tuned: 117 | 113→119; std=0.147
+[x] Bishop_Openness_Max   | Initial:  42 | Min:  15 | Max:  68 | Tuned:  34 | stable at 42 both passes; tightened
+[x] Bishop_Openness_SqWt  | Initial:   2 | Min:   0 | Max:   6 | Tuned:   2 | stable at 2 both passes
 
 Budget: 400
-Best:
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(Battery_Bishop_Queen=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Battery_Rook_Queen=Scalar{Cl(0,32,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_Max=Scalar{Cl(15,68,b),Int}[sigma=Scalar{exp=2.03}],Bishop_Openness_SqWt=Scalar{Cl(0,6,b),Int}[sigma=Scalar{exp=2.03}],Center_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}],Defended_Piece_Bonus=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Enemy_Half_Bonus=Scalar{Cl(0,14,b),Int}[sigma=Scalar{exp=2.03}],Ext_Center_Bonus=Scalar{Cl(0,15,b),Int}[sigma=Scalar{exp=2.03}],Open_File_Mult=Scalar{Cl(108,148,b),Int}[sigma=Scalar{exp=2.03}],Semi_Open_File_Mult=Scalar{Cl(106,138,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_EG=Scalar{Cl(8,48,b),Int}[sigma=Scalar{exp=2.03}],Seventh_Rank_MG=Scalar{Cl(4,32,b),Int}[sigma=Scalar{exp=2.03}],Shared_Target_Bonus=Scalar{Cl(0,25,b),Int}[sigma=Scalar{exp=2.03}],Support_Chain_Bonus=Scalar{Cl(0,20,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-02 15:36:00", "#num-ask": 145, "#num-tell": 138, "#num-tell-not-asked": 1, "#uid": "e0c509c2101b487b9b96fe750e9a8fdb", "#lineage": "fa6b0ba0c39a496baf2143525fb9baef", "#generation": 9, "#parents_uids": ["96de23a9417140cf96063b6318d90783"], "#loss": 0.40249999999999997, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "Battery_Bishop_Queen": 11, "Battery_Bishop_Queen#sigma": 4.166666666666667, "Battery_Bishop_Queen#sigma#sigma": 1.0, "Battery_Rook_Queen": 10, "Battery_Rook_Queen#sigma": 5.333333333333335, "Battery_Rook_Queen#sigma#sigma": 1.0, "Bishop_Openness_Max": 34, "Bishop_Openness_Max#sigma": 8.833333333333336, "Bishop_Openness_Max#sigma#sigma": 1.0, "Bishop_Openness_SqWt": 2, "Bishop_Openness_SqWt#sigma": 1.0, "Bishop_Openness_SqWt#sigma#sigma": 1.0, "Center_Bonus": 7, "Center_Bonus#sigma": 3.333333333333334, "Center_Bonus#sigma#sigma": 1.0, "Defended_Piece_Bonus": 3, "Defended_Piece_Bonus#sigma": 2.3333333333333335, "Defended_Piece_Bonus#sigma#sigma": 1.0, "Enemy_Half_Bonus": 4, "Enemy_Half_Bonus#sigma": 2.3333333333333335, "Enemy_Half_Bonus#sigma#sigma": 1.0, "Ext_Center_Bonus": 5, "Ext_Center_Bonus#sigma": 2.5, "Ext_Center_Bonus#sigma#sigma": 1.0, "Open_File_Mult": 121, "Open_File_Mult#sigma": 6.666666666666668, "Open_File_Mult#sigma#sigma": 1.0, "Semi_Open_File_Mult": 117, "Semi_Open_File_Mult#sigma": 5.333333333333335, "Semi_Open_File_Mult#sigma#sigma": 1.0, "Seventh_Rank_EG": 22, "Seventh_Rank_EG#sigma": 6.666666666666668, "Seventh_Rank_EG#sigma#sigma": 1.0, "Seventh_Rank_MG": 16, "Seventh_Rank_MG#sigma": 4.666666666666668, "Seventh_Rank_MG#sigma#sigma": 1.0, "Shared_Target_Bonus": 8, "Shared_Target_Bonus#sigma": 4.166666666666667, "Shared_Target_Bonus#sigma#sigma": 1.0, "Support_Chain_Bonus": 5, "Support_Chain_Bonus#sigma": 3.333333333333334, "Support_Chain_Bonus#sigma#sigma": 1.0}
 
 ================================================================
 BATCH 8b – OUTPOSTS

@@ -276,26 +276,26 @@ inline int MOBILITY_ROOK_EG   =  2; //
 inline int MOBILITY_QUEEN_EG  =  1; //
 
 // File/diagonal openness multipliers (percent)
-inline int OPEN_FILE_MULTIPLIER             = 123; //
-inline int SEMI_OPEN_FILE_MULTIPLIER        = 119; //
+inline int OPEN_FILE_MULTIPLIER             = 121; //
+inline int SEMI_OPEN_FILE_MULTIPLIER        = 117; //
 static constexpr int CLOSED_FILE_MULTIPLIER = 100; //
 static constexpr int BISHOP_OPENNESS_BASE   = 100; //
-inline int BISHOP_OPENNESS_MAX_BONUS        =  42; //
+inline int BISHOP_OPENNESS_MAX_BONUS        =  34; //
 inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2; //
 
 // Territory
-inline int CENTER_BONUS          =  9; //
+inline int CENTER_BONUS          =  7; //
 inline int EXT_CENTER_BONUS      =  5; //
 inline int ENEMY_HALF_BONUS      =  4; //
 inline int SEVENTH_RANK_BONUS_MG = 16; //
-inline int SEVENTH_RANK_BONUS_EG = 24; //
+inline int SEVENTH_RANK_BONUS_EG = 22; //
 
 // Coordination
-inline int DEFENDED_PIECE_BONUS       =  4; //
-inline int SHARED_TARGET_BONUS        = 10; //
-inline int BATTERY_ROOK_QUEEN_BONUS   = 12; //
+inline int DEFENDED_PIECE_BONUS       =  3; //
+inline int SHARED_TARGET_BONUS        =  8; //
+inline int BATTERY_ROOK_QUEEN_BONUS   = 10; //
 inline int BATTERY_BISHOP_QUEEN_BONUS = 11; //
-inline int SUPPORT_CHAIN_BONUS        =  7; //
+inline int SUPPORT_CHAIN_BONUS        =  5; //
 
 // Tactical pressure
 inline int UNDEFENDED_ATTACK_BONUS        = 18; //
@@ -448,18 +448,18 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"KingAtk_7",              {&KING_ATTACK_COUNT_BONUS[7],  TuningOption::INT,   0,    90,   "16"}},
 
     // ── Territory ─────────────────────────────────────────────────
-    {"Center_Bonus",          {&CENTER_BONUS,          TuningOption::INT,   0,    24,    "9"}},
+    {"Center_Bonus",          {&CENTER_BONUS,          TuningOption::INT,   0,    24,    "7"}},
     {"Ext_Center_Bonus",      {&EXT_CENTER_BONUS,      TuningOption::INT,   0,    18,    "5"}},
     {"Enemy_Half_Bonus",      {&ENEMY_HALF_BONUS,      TuningOption::INT,   0,    18,    "4"}},
     {"Seventh_Rank_MG",       {&SEVENTH_RANK_BONUS_MG, TuningOption::INT,   3,    38,   "16"}},
-    {"Seventh_Rank_EG",       {&SEVENTH_RANK_BONUS_EG, TuningOption::INT,   6,    65,   "24"}},
+    {"Seventh_Rank_EG",       {&SEVENTH_RANK_BONUS_EG, TuningOption::INT,   6,    65,   "22"}},
 
     // ── Coordination ─────────────────────────────────────────────
-    {"Defended_Piece_Bonus",       {&DEFENDED_PIECE_BONUS,       TuningOption::INT,   0,   18,   "4"}},
-    {"Shared_Target_Bonus",        {&SHARED_TARGET_BONUS,        TuningOption::INT,   0,   32,  "10"}},
-    {"Battery_Rook_Queen",         {&BATTERY_ROOK_QUEEN_BONUS,   TuningOption::INT,   0,   40,  "12"}},
+    {"Defended_Piece_Bonus",       {&DEFENDED_PIECE_BONUS,       TuningOption::INT,   0,   18,   "3"}},
+    {"Shared_Target_Bonus",        {&SHARED_TARGET_BONUS,        TuningOption::INT,   0,   32,  "8"}},
+    {"Battery_Rook_Queen",         {&BATTERY_ROOK_QUEEN_BONUS,   TuningOption::INT,   0,   40,  "10"}},
     {"Battery_Bishop_Queen",       {&BATTERY_BISHOP_QUEEN_BONUS, TuningOption::INT,   0,   30,   "11"}},
-    {"Support_Chain_Bonus",        {&SUPPORT_CHAIN_BONUS,        TuningOption::INT,   0,   24,   "7"}},
+    {"Support_Chain_Bonus",        {&SUPPORT_CHAIN_BONUS,        TuningOption::INT,   0,   24,   "5"}},
 
     // ── Tactical pressure ─────────────────────────────────────────
     {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT,   4,   42,  "18"}},
@@ -502,9 +502,9 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Queen_Outpost_EG",   {&QUEEN_OUTPOST_EG,  TuningOption::INT,   0,   25,   "5"}},
 
     // ── File / diagonal openness ──────────────────────────────────
-    {"Open_File_Mult",         {&OPEN_FILE_MULTIPLIER,          TuningOption::INT, 100,  165, "123"}},
-    {"Semi_Open_File_Mult",    {&SEMI_OPEN_FILE_MULTIPLIER,     TuningOption::INT, 100,  140, "119"}},
-    {"Bishop_Openness_Max",    {&BISHOP_OPENNESS_MAX_BONUS,     TuningOption::INT,   5,   80,  "42"}},
+    {"Open_File_Mult",         {&OPEN_FILE_MULTIPLIER,          TuningOption::INT, 100,  165, "121"}},
+    {"Semi_Open_File_Mult",    {&SEMI_OPEN_FILE_MULTIPLIER,     TuningOption::INT, 100,  140, "117"}},
+    {"Bishop_Openness_Max",    {&BISHOP_OPENNESS_MAX_BONUS,     TuningOption::INT,   5,   80,  "34"}},
     {"Bishop_Openness_SqWt",   {&BISHOP_OPENNESS_SQUARE_WEIGHT, TuningOption::INT,   0,    8,   "2"}},
 };
 
