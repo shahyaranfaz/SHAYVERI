@@ -260,35 +260,35 @@ INITIAL CONFIDENCE: LOW – pass 1 incorrectly parallelized across
     Allow the optimizer to resolve this.
 
 [x] Undefended_Attack_Bonus   | Initial:  19 | Min:   4 | Max:   42 | Tuned:  19 |
-[x] Pin_Bonus                 | Initial:  35 | Min:  10 | Max:   65 | Tuned:  33 |
+[x] Pin_Bonus                 | Initial:  35 | Min:  10 | Max:   65 | Tuned:  36 |
 [-] Overloaded_Defender_Bonus | Initial:   0 | Min: --- | Max:  --- | Tuned:   0 | converged to 0 in both passes; skip
-[x] Unrec_Pressure_Bonus      | Initial:   5 | Min:   0 | Max:   18 | Tuned:   4 |
-[x] Undefended_Value_Div      | Initial:  65 | Min:  15 | Max:  130 | Tuned:  71 |
+[x] Unrec_Pressure_Bonus      | Initial:   5 | Min:   0 | Max:   18 | Tuned:   5 |
+[x] Undefended_Value_Div      | Initial:  65 | Min:  15 | Max:  130 | Tuned:  66 |
 
 -- Threats (pawn) --
-[x] Threat_Pawn_Knight_MG  | Initial:  44 | Min:  12 | Max:  100 | Tuned:  46 |
+[x] Threat_Pawn_Knight_MG  | Initial:  44 | Min:  12 | Max:  100 | Tuned:  42 |
 [x] Threat_Pawn_Bishop_MG  | Initial:  87 | Min:  35 | Max:  145 | Tuned:  89 |
-[x] Threat_Pawn_Rook_MG    | Initial: 109 | Min:  55 | Max:  160 | Tuned: 109 |
-[x] Threat_Pawn_Queen_MG   | Initial:  92 | Min:  40 | Max:  160 | Tuned:  93 |
-[x] Threat_Pawn_Knight_EG  | Initial:  78 | Min:  30 | Max:  140 | Tuned:  80 |
-[x] Threat_Pawn_Bishop_EG  | Initial:  90 | Min:  40 | Max:  155 | Tuned:  89 | was at boundary; upper extended
-[x] Threat_Pawn_Rook_EG    | Initial:  41 | Min:   8 | Max:  100 | Tuned:  40 | suspicious low value; wide range
-[x] Threat_Pawn_Queen_EG   | Initial:  70 | Min:  25 | Max:  140 | Tuned:  69 |
+[x] Threat_Pawn_Rook_MG    | Initial: 109 | Min:  55 | Max:  160 | Tuned: 113 |
+[x] Threat_Pawn_Queen_MG   | Initial:  92 | Min:  40 | Max:  160 | Tuned:  89 |
+[x] Threat_Pawn_Knight_EG  | Initial:  78 | Min:  30 | Max:  140 | Tuned:  77 |
+[x] Threat_Pawn_Bishop_EG  | Initial:  90 | Min:  40 | Max:  155 | Tuned:  94 | was at boundary; upper extended
+[x] Threat_Pawn_Rook_EG    | Initial:  41 | Min:   8 | Max:  100 | Tuned:  39 | suspicious low value; wide range
+[x] Threat_Pawn_Queen_EG   | Initial:  70 | Min:  25 | Max:  140 | Tuned:  71 |
 
 -- Threats (minor) --
-[x] Threat_Minor_Rook_MG   | Initial:  24 | Min:   0 | Max:   70 | Tuned: 28 |
-[x] Threat_Minor_Queen_MG  | Initial:  12 | Min:   0 | Max:   65 | Tuned: 10 |
+[x] Threat_Minor_Rook_MG   | Initial:  24 | Min:   0 | Max:   70 | Tuned: 26 |
+[x] Threat_Minor_Queen_MG  | Initial:  12 | Min:   0 | Max:   65 | Tuned: 11 |
 [x] Threat_Minor_Rook_EG   | Initial:  11 | Min:   0 | Max:   60 | Tuned: 10 | suspicious asymmetry vs Queen_EG
-[x] Threat_Minor_Queen_EG  | Initial:  51 | Min:  12 | Max:  110 | Tuned: 51 | suspicious asymmetry vs Rook_EG
+[x] Threat_Minor_Queen_EG  | Initial:  51 | Min:  12 | Max:  110 | Tuned: 54 | suspicious asymmetry vs Rook_EG
 
 -- Threats (rook) --
-[x] Threat_Rook_MG         | Initial:  60 | Min:  15 | Max:  120 | Tuned: 62 |
+[x] Threat_Rook_MG         | Initial:  60 | Min:  15 | Max:  120 | Tuned: 59 |
 [x] Threat_Rook_EG         | Initial:  47 | Min:   8 | Max:  100 | Tuned: 49 |
 
 -- Hanging --
-[x] Hanging_Penalty_MG     | Initial:  58 | Min:  15 | Max:  110 | Tuned: 58 |
+[x] Hanging_Penalty_MG     | Initial:  58 | Min:  15 | Max:  110 | Tuned: 54 |
 [-] Hanging_Penalty_EG     | Initial:   0 | Min: --- | Max:  --- | Tuned:  0 | converged to 0 in both passes; skip
-[x] Hanging_Value_Div      | Initial:  27 | Min:   4 | Max:   90 | Tuned: 29 |
+[x] Hanging_Value_Div      | Initial:  27 | Min:   4 | Max:   90 | Tuned: 21 |
 
 Budget: 500
 Best: {"#parametrization": "Instrumentation(Tuple(),Dict(Hanging_Penalty_MG=Scalar{Cl(15,110,b),Int}[sigma=Scalar{exp=2.03}],Hanging_Value_Div=Scalar{Cl(4,90,b),Int}[sigma=Scalar{exp=2.03}],Pin_Bonus=Scalar{Cl(10,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_EG=Scalar{Cl(12,110,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Queen_MG=Scalar{Cl(0,65,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_EG=Scalar{Cl(0,60,b),Int}[sigma=Scalar{exp=2.03}],Threat_Minor_Rook_MG=Scalar{Cl(0,70,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_EG=Scalar{Cl(40,155,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Bishop_MG=Scalar{Cl(35,145,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_EG=Scalar{Cl(30,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Knight_MG=Scalar{Cl(12,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_EG=Scalar{Cl(25,140,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Queen_MG=Scalar{Cl(40,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Pawn_Rook_MG=Scalar{Cl(55,160,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_EG=Scalar{Cl(8,100,b),Int}[sigma=Scalar{exp=2.03}],Threat_Rook_MG=Scalar{Cl(15,120,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Attack_Bonus=Scalar{Cl(4,42,b),Int}[sigma=Scalar{exp=2.03}],Undefended_Value_Div=Scalar{Cl(15,130,b),Int}[sigma=Scalar{exp=2.03}],Unrec_Pressure_Bonus=Scalar{Cl(0,18,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-01 16:16:12", "#num-ask": 79, "#num-tell": 72, "#num-tell-not-asked": 1, "#uid": "ec82546be981497480f682f661edaa37", "#lineage": "2c05309d2b8e42ccb683e0b0e6546e95", "#generation": 5, "#parents_uids": ["646c1f8573f5432c86c2fc06e86f8ef5"], "#loss": 0.4075, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "Hanging_Penalty_MG": 58, "Hanging_Penalty_MG#sigma": 15.833333333333334, "Hanging_Penalty_MG#sigma#sigma": 1.0, "Hanging_Value_Div": 29, "Hanging_Value_Div#sigma": 14.333333333333334, "Hanging_Value_Div#sigma#sigma": 1.0, "Pin_Bonus": 33, "Pin_Bonus#sigma": 9.166666666666666, "Pin_Bonus#sigma#sigma": 1.0, "Threat_Minor_Queen_EG": 51, "Threat_Minor_Queen_EG#sigma": 16.333333333333332, "Threat_Minor_Queen_EG#sigma#sigma": 1.0, "Threat_Minor_Queen_MG": 10, "Threat_Minor_Queen_MG#sigma": 10.833333333333337, "Threat_Minor_Queen_MG#sigma#sigma": 1.0, "Threat_Minor_Rook_EG": 10, "Threat_Minor_Rook_EG#sigma": 10.000000000000005, "Threat_Minor_Rook_EG#sigma#sigma": 1.0, "Threat_Minor_Rook_MG": 28, "Threat_Minor_Rook_MG#sigma": 11.666666666666668, "Threat_Minor_Rook_MG#sigma#sigma": 1.0, "Threat_Pawn_Bishop_EG": 89, "Threat_Pawn_Bishop_EG#sigma": 19.166666666666675, "Threat_Pawn_Bishop_EG#sigma#sigma": 1.0, "Threat_Pawn_Bishop_MG": 89, "Threat_Pawn_Bishop_MG#sigma": 18.33333333333333, "Threat_Pawn_Bishop_MG#sigma#sigma": 1.0, "Threat_Pawn_Knight_EG": 80, "Threat_Pawn_Knight_EG#sigma": 18.33333333333333, "Threat_Pawn_Knight_EG#sigma#sigma": 1.0, "Threat_Pawn_Knight_MG": 46, "Threat_Pawn_Knight_MG#sigma": 14.66666666666667, "Threat_Pawn_Knight_MG#sigma#sigma": 1.0, "Threat_Pawn_Queen_EG": 69, "Threat_Pawn_Queen_EG#sigma": 19.166666666666675, "Threat_Pawn_Queen_EG#sigma#sigma": 1.0, "Threat_Pawn_Queen_MG": 93, "Threat_Pawn_Queen_MG#sigma": 19.999999999999996, "Threat_Pawn_Queen_MG#sigma#sigma": 1.0, "Threat_Pawn_Rook_EG": 40, "Threat_Pawn_Rook_EG#sigma": 15.333333333333337, "Threat_Pawn_Rook_EG#sigma#sigma": 1.0, "Threat_Pawn_Rook_MG": 109, "Threat_Pawn_Rook_MG#sigma": 17.500000000000007, "Threat_Pawn_Rook_MG#sigma#sigma": 1.0, "Threat_Rook_EG": 49, "Threat_Rook_EG#sigma": 15.333333333333337, "Threat_Rook_EG#sigma#sigma": 1.0, "Threat_Rook_MG": 62, "Threat_Rook_MG#sigma": 17.500000000000007, "Threat_Rook_MG#sigma#sigma": 1.0, "Undefended_Attack_Bonus": 19, "Undefended_Attack_Bonus#sigma": 6.333333333333334, "Undefended_Attack_Bonus#sigma#sigma": 1.0, "Undefended_Value_Div": 71, "Undefended_Value_Div#sigma": 19.166666666666675, "Undefended_Value_Div#sigma#sigma": 1.0, "Unrec_Pressure_Bonus": 4, "Unrec_Pressure_Bonus#sigma": 3.0000000000000004, "Unrec_Pressure_Bonus#sigma#sigma": 1.0}
