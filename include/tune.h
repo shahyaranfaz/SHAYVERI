@@ -28,36 +28,36 @@ static constexpr int INF        = 1000000; //
 static constexpr int MATE_SCORE = 900000; //
 
 // Aspiration window initial delta
-inline int ASP_DELTA = 32;
+inline int ASP_DELTA = 32; //
 
 // Singular extensions
-inline int se_min_depth       =  9;
-inline int se_depth_margin    =  2;
-inline int se_margin          = 55;
-inline int se_reduction_denom =  3;
+inline int se_min_depth       =  9; //
+inline int se_depth_margin    =  2; //
+inline int se_margin          = 55; //
+inline int se_reduction_denom =  3; //
 
 // History gravity / bonus
 static constexpr int history_max = 16384; //
-inline int history_bonus_mult    =   463;
-inline int history_bonus_sub     =   164;
-inline int history_bonus_limit   =  2967;
+inline int history_bonus_mult    =   463; //
+inline int history_bonus_sub     =   164; //
+inline int history_bonus_limit   =  2967; //
 
 // History blending weights (percent, divided by 100 before accumulation)
-inline int main_history_weight = 79;
-inline int cmh_weight          = 83;
-inline int fmh_weight          = 36;
+inline int main_history_weight = 79; //
+inline int cmh_weight          = 83; //
+inline int fmh_weight          = 36; //
 
 // Pruning margins
-inline int rfp_margin_mult    =   84;
-inline int fp_base            =  195;
-inline int fp_mult            =  653;
-inline int lmp_base           =    3;
-inline int lmp_mult           =    1;
-inline int see_pruning_margin = -281;
+inline int rfp_margin_mult    =   84; //
+inline int fp_base            =  195; //
+inline int fp_mult            =  653; //
+inline int lmp_base           =    3; //
+inline int lmp_mult           =    1; //
+inline int see_pruning_margin = -281; //
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
-inline double lmr_base  = 1.25;
-inline double lmr_scale = 1.79;
+inline double lmr_base  = 1.25; //
+inline double lmr_scale = 1.79; //
 
 // ================================================================
 // Piece values
