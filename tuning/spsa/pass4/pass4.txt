@@ -1,17 +1,19 @@
 -- Batch 1 (master) --
 python3.10 lakas.py \
   --distributed-role master \
-  --budget 200 \
+  --budget 600 \
   --num_workers 9 \
   --concurrency 23 \
-  --output-data-file "batch1.dat" \
-  --input-data-file  "batch1.dat" \
-  --optimizer-log-file "batch1.log" \
-  --input-param "{ \
-  'LMR_Base':  {'init': 1.39, 'lower': 1.18, 'upper': 1.60}, \
-  'LMR_Scale': {'init': 1.73, 'lower': 1.50, 'upper': 1.95}, \
-  'FP_Mult':   {'init':  575, 'lower':  490, 'upper':  660}, \
-  'SE_Margin': {'init':   56, 'lower':   44, 'upper':   70} \
+  --output-data-file "batch2.dat" \
+  --input-data-file  "batch2.dat" \
+  --optimizer-log-file "batch2.log" \
+--input-param "{ \
+'History_Bonus_Mult':  {'init':  488,  'lower':  280,  'upper':  720}, \
+'History_Bonus_Sub':   {'init':  170,  'lower':   60,  'upper':  340}, \
+'History_Bonus_Limit': {'init': 2842,  'lower': 1500,  'upper': 4500}, \
+'Main_History_Weight': {'init':   78,  'lower':   25,  'upper':  160}, \
+'CMH_Weight':          {'init':   61,  'lower':   15,  'upper':  160}, \
+'FMH_Weight':          {'init':   33,  'lower':    0,  'upper':  130} \
 }"
 
 ================================================================
@@ -64,34 +66,6 @@ Permanent defers to Texel (no further SPSA):
             games. Further SPSA will not resolve.
 
 ================================================================
-TIME CONTROL CHANGE — BATCH 2
-================================================================
-
-All prior passes: TC 5+0.05, all batches.
-
-History/move-ordering parameters (batch 2) have chronically poor
-signal at this TC. Root cause: at 5+0.05, each game lasts ~40 moves
-and is dominated by tactical forcing sequences from the opening.
-A CMH/FMH weight change of ±10 points affects perhaps 0.2% of games
-at the margin. The CMA can barely detect this.
-
-Evidence: after 3 passes (budgets 150 / 300 / 300+), batch 2 sigma
-moved from 0.300 → 0.253 → 0.285 — no net compression. All 6
-params show direction reversals across passes (History_Bonus_Limit:
-2842 → 3006 → 2803; CMH_Weight: 61 → 51 → 69). This is noise, not
-signal, at the current TC.
-
-Recommendation: raise TC to 10+0.1 for batch 2 only.
-  Rationale:
-    - Longer games → more middlegame positions → more ordering decisions
-    - More complex positions → move quality differential is larger
-    - Each evaluation is twice as informative; budget can be same
-  Throughput impact: ~2× longer wall time per evaluation. With
-  budget 600 (66 gens at popsize=9), expect ~18-24 hours.
-
-All other batches: keep TC 5+0.05.
-
-================================================================
 BATCH 1 – CORE SEARCH (4 params, final pass)
 ================================================================
 
@@ -113,27 +87,34 @@ FP_Mult is stabilizing (577 → 575). SE_Margin oscillates in a
 narrow band (54-61); the noise is intrinsic and a tight range
 centering on 56-61 is appropriate.
 
-Ranges tightened to roughly ±15% of current values. Budget 300
-(popsize=8 → ~37 gens). Target final sigma < 0.10.
+Ranges tightened to roughly ±15% of current values. Budget 400
+(popsize=8 → 50 gens). Target final sigma < 0.10.
 
-[ ] LMR_Base  | Initial:  1.39 | Min: 1.18 | Max: 1.60 | Tuned: — | monotonic increase; c=0.05
-[ ] LMR_Scale | Initial:  1.73 | Min: 1.50 | Max: 1.95 | Tuned: — | monotonic decrease; c=0.05
-[ ] FP_Mult   | Initial:   575 | Min:  490 | Max:  660 | Tuned: — | stabilizing; tightened
-[ ] SE_Margin | Initial:    56 | Min:   44 | Max:   70 | Tuned: — | minor oscillation; tightened
+[x] LMR_Base  | Initial:  1.39 | Min: 1.18 | Max: 1.60 | Tuned: 1.39 | monotonic increase; c=0.05
+[x] LMR_Scale | Initial:  1.73 | Min: 1.50 | Max: 1.95 | Tuned: 1.78 | monotonic decrease; c=0.05
+[x] FP_Mult   | Initial:   575 | Min:  490 | Max:  660 | Tuned:  607 | stabilizing; tightened
+[x] SE_Margin | Initial:    56 | Min:   44 | Max:   70 | Tuned:   47 | minor oscillation; tightened
 
-[-] ASP_Delta           | 32;  rock-stable all passes; skip
-[-] RFP_Margin          | 79;  stable; skip
-[-] FP_Base             | 192; stable; skip
-[-] LMP_Base            |  3;  stable; skip
-[-] LMP_Mult            |  1;  permanent skip (floor)
+[-] ASP_Delta           |   32;  rock-stable all passes; skip
+[-] RFP_Margin          |   79;  stable; skip
+[-] FP_Base             |  192; stable; skip
+[-] LMP_Base            |    3;  stable; skip
+[-] LMP_Mult            |    1;  permanent skip (floor)
 [-] SEE_Pruning_Margin  | -273; -277/-273 consistent; skip
-[-] SE_Min_Depth        |  9;  stable; skip
-[-] SE_Depth_Margin     |  2;  stable; skip
-[-] SE_Reduction_Denom  |  3;  integer-stable; skip
+[-] SE_Min_Depth        |    9;  stable; skip
+[-] SE_Depth_Margin     |    2;  stable; skip
+[-] SE_Reduction_Denom  |    3;  integer-stable; skip
 
-Budget: 200 (plus the entirety of pass4 batch1)
+Budget: 500 (starting from pass3 batch1 (200))
 TC: 5+0.05 (no change)
 EPD: ogpt_chess_startpos.epd
+Best: {"#parametrization": "Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(450,720,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(1.1,1.55,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.45,2.1,b)}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(42,82,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-02 22:05:56", "#num-ask": 263, "#num-tell": 248, "#num-tell-not-asked": 1, "#uid": "f3a82cf868a746cc9b01923d73eb9bf6", "#lineage": "abca2b65299545ebb9dbf4a139ba7b20", "#generation": 15, "#parents_uids": ["6a041abd89e44075b824f08e5475a9f3"], "#loss": 0.405, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "FP_Mult": 607, "FP_Mult#sigma": 44.99999999999999, "FP_Mult#sigma#sigma": 1.0, "LMR_Base": 1.3906179567353354, "LMR_Base#sigma": 0.075, "LMR_Base#sigma#sigma": 1.0, "LMR_Scale": 1.77949313890196, "LMR_Scale#sigma": 0.10833333333333334, "LMR_Scale#sigma#sigma": 1.0, "SE_Margin": 47, "SE_Margin#sigma": 6.666666666666668, "SE_Margin#sigma#sigma": 1.0}
+
+800 games at 10+0.1 with 8mvs_+90_+99.epd:
+New v Old (W-L-D)
+B: 105-158-137
+W: 161-109-130
+OVRL: 265-267-267
 
 ================================================================
 BATCH 2 – HISTORY / MOVE ORDERING (full re-run, TC change)
@@ -153,6 +134,26 @@ Trajectories across passes 1, 2, 3:
 No parameter has a monotonic trajectory. The oscillation magnitudes
 (CMH: ±18, FMH: ±20 over range 0-130) are too large to be rounding
 noise. The CMA is genuinely exploring, not converging.
+
+History/move-ordering parameters (batch 2) have chronically poor
+signal at this TC. Root cause: at 5+0.05, each game lasts ~40 moves
+and is dominated by tactical forcing sequences from the opening.
+A CMH/FMH weight change of ±10 points affects perhaps 0.2% of games
+at the margin. The CMA can barely detect this.
+
+Evidence: after 3 passes (budgets 150 / 300 / 300+), batch 2 sigma
+moved from 0.300 → 0.253 → 0.285 — no net compression. All 6
+params show direction reversals across passes (History_Bonus_Limit:
+2842 → 3006 → 2803; CMH_Weight: 61 → 51 → 69). This is noise, not
+signal, at the current TC.
+
+Recommendation: raise TC to 10+0.1 for batch 2 only.
+  Rationale:
+    - Longer games → more middlegame positions → more ordering decisions
+    - More complex positions → move quality differential is larger
+    - Each evaluation is twice as informative; budget can be same
+  Throughput impact: ~2× longer wall time per evaluation. With
+  budget 600 (66 gens at popsize=9), expect ~18-24 hours.
 
 With TC change to 10+0.1:
   History_Bonus_Mult: range tightened around 3-pass center (~488)
