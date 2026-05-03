@@ -119,4 +119,4 @@ int see(const Board &b, Move m) {
     return gain[0];
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

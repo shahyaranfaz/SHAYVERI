@@ -185,4 +185,4 @@ bool is_square_attacked(const Board &b, Square sq, Colour attacker) {
     return false;
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

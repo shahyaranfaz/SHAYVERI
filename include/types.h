@@ -60,6 +60,6 @@ inline Piece piece_from_fen_char(char c) {
     }
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // TYPES_H

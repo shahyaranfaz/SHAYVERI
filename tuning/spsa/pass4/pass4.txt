@@ -1,0 +1,346 @@
+-- Batch 1 (master) --
+python3.10 lakas.py \
+  --distributed-role master \
+  --budget 200 \
+  --num_workers 9 \
+  --concurrency 23 \
+  --output-data-file "batch1.dat" \
+  --input-data-file  "batch1.dat" \
+  --optimizer-log-file "batch1.log" \
+  --input-param "{ \
+  'LMR_Base':  {'init': 1.39, 'lower': 1.18, 'upper': 1.60}, \
+  'LMR_Scale': {'init': 1.73, 'lower': 1.50, 'upper': 1.95}, \
+  'FP_Mult':   {'init':  575, 'lower':  490, 'upper':  660}, \
+  'SE_Margin': {'init':   56, 'lower':   44, 'upper':   70} \
+}"
+
+================================================================
+  SHAYBOT  –  SPSA TUNING TRACKER  (ParametrizedCMA)
+                         PASS 4
+================================================================
+Format per row:
+  [STATUS] Name | Initial | Min | Max | Tuned | Notes
+
+STATUS codes:
+  [ ] not started
+  [~] in progress
+  [x] converged / done
+  [!] re-run queued (value still drifting)
+  [-] skipped / not tuning this pass
+
+All initials are pass 3 best-loss JSON values.
+All runs: ParametrizedCMA, correctly parallelized.
+Base EPD: ogpt_chess_startpos.epd (batch 2 uses changed TC; see below)
+
+================================================================
+PASS 4 STATE ASSESSMENT
+================================================================
+
+Approximate elo trajectory across passes:
+  pass1 v untuned:  488-139-173  (+~170 elo, 30+0.3 TC)
+  pass2 v pass1:    232-257-311  (~-10 elo; minor regression)
+  pass3 v pass2:    269-236-295  (+~15 elo)
+  pass3 v pass1:    249-214-337  (+~15 elo over pass1)
+  pass3 (implied):  ~+185 elo over untuned
+
+Pass 4 is warranted. Convergence state after pass 3:
+
+  Batch 1  – sigma=0.242 (sigma0=0.30),  10 gens, budget 200 → RE-RUN
+  Batch 2  – sigma=0.285 (sigma0=0.30),  18 gens, budget 300 → RE-RUN + TC CHANGE
+  Batch 8a – sigma=0.122 (sigma0=0.30),  9 gens, budget 400  → RE-RUN
+  Batch 8b – sigma=0.181 (sigma0=0.30),  19 gens, budget 400 → SKIP → TEXEL
+
+Converged (pass 3 confirmed skip from pass 2):
+  Batches 3, 4, 6, 7: SKIP in pass 4. Note dataset-specific artifacts:
+    Isolated_MG=-1, Backward_EG=0: genuinely zero for sharp opening
+    book (weak pawn structures rarely arise); do NOT re-run with
+    same book. Texel on quiet positions will correct these.
+    Bishop_Pair_Bonus=22: consistent across 2 passes; low vs typical
+    engine (~25-35) but accepted as dataset result. Texel corrects.
+
+Permanent defers to Texel (no further SPSA):
+  Batch 5:  passed pawns; SPSA signal failure documented in passes 1-2.
+  Batch 8b: outpost positions structurally too rare in opening-book
+            games. Further SPSA will not resolve.
+
+================================================================
+TIME CONTROL CHANGE — BATCH 2
+================================================================
+
+All prior passes: TC 5+0.05, all batches.
+
+History/move-ordering parameters (batch 2) have chronically poor
+signal at this TC. Root cause: at 5+0.05, each game lasts ~40 moves
+and is dominated by tactical forcing sequences from the opening.
+A CMH/FMH weight change of ±10 points affects perhaps 0.2% of games
+at the margin. The CMA can barely detect this.
+
+Evidence: after 3 passes (budgets 150 / 300 / 300+), batch 2 sigma
+moved from 0.300 → 0.253 → 0.285 — no net compression. All 6
+params show direction reversals across passes (History_Bonus_Limit:
+2842 → 3006 → 2803; CMH_Weight: 61 → 51 → 69). This is noise, not
+signal, at the current TC.
+
+Recommendation: raise TC to 10+0.1 for batch 2 only.
+  Rationale:
+    - Longer games → more middlegame positions → more ordering decisions
+    - More complex positions → move quality differential is larger
+    - Each evaluation is twice as informative; budget can be same
+  Throughput impact: ~2× longer wall time per evaluation. With
+  budget 600 (66 gens at popsize=9), expect ~18-24 hours.
+
+All other batches: keep TC 5+0.05.
+
+================================================================
+BATCH 1 – CORE SEARCH (4 params, final pass)
+================================================================
+
+Pass 3: sigma=0.242 (sigma0=0.30), 10 gens (budget 200, popsize=8).
+Condition number=6.4. Not converged.
+
+Trajectories across passes 1, 2, 3:
+  LMR_Base:  1.236 → 1.331 → 1.393  (monotonic increase; still drifting)
+  LMR_Scale: 1.796 → 1.766 → 1.724  (monotonic decrease; still drifting)
+  FP_Mult:     657 →   577 →   575   (converging; near-stable)
+  SE_Margin:    54 →    61 →    56   (oscillating ±5; acceptable noise)
+
+LMR_Base and LMR_Scale both show unbroken monotonic drift across 3
+passes. The absolute sigma remaining (LMR_Base#sigma=0.075 at pass 3
+end) is still ~56% of the initial sigma (0.133). These are the
+highest-leverage search parameters and warrant one final tight pass.
+
+FP_Mult is stabilizing (577 → 575). SE_Margin oscillates in a
+narrow band (54-61); the noise is intrinsic and a tight range
+centering on 56-61 is appropriate.
+
+Ranges tightened to roughly ±15% of current values. Budget 300
+(popsize=8 → ~37 gens). Target final sigma < 0.10.
+
+[ ] LMR_Base  | Initial:  1.39 | Min: 1.18 | Max: 1.60 | Tuned: — | monotonic increase; c=0.05
+[ ] LMR_Scale | Initial:  1.73 | Min: 1.50 | Max: 1.95 | Tuned: — | monotonic decrease; c=0.05
+[ ] FP_Mult   | Initial:   575 | Min:  490 | Max:  660 | Tuned: — | stabilizing; tightened
+[ ] SE_Margin | Initial:    56 | Min:   44 | Max:   70 | Tuned: — | minor oscillation; tightened
+
+[-] ASP_Delta           | 32;  rock-stable all passes; skip
+[-] RFP_Margin          | 79;  stable; skip
+[-] FP_Base             | 192; stable; skip
+[-] LMP_Base            |  3;  stable; skip
+[-] LMP_Mult            |  1;  permanent skip (floor)
+[-] SEE_Pruning_Margin  | -273; -277/-273 consistent; skip
+[-] SE_Min_Depth        |  9;  stable; skip
+[-] SE_Depth_Margin     |  2;  stable; skip
+[-] SE_Reduction_Denom  |  3;  integer-stable; skip
+
+Budget: 200 (plus the entirety of pass4 batch1)
+TC: 5+0.05 (no change)
+EPD: ogpt_chess_startpos.epd
+
+================================================================
+BATCH 2 – HISTORY / MOVE ORDERING (full re-run, TC change)
+================================================================
+
+Pass 3: sigma=0.285 (sigma0=0.30), 18 gens (budget 300, popsize=9).
+Condition number=6.3. Essentially unconverged after 3 passes.
+
+Trajectories across passes 1, 2, 3:
+  History_Bonus_Mult:   488 →  468 →  509  (oscillating ±40; no trend)
+  History_Bonus_Sub:    170 →  165 →  155  (slow decline; plausible)
+  History_Bonus_Limit: 2842 → 3006 → 2803  (reversals; no clear trend)
+  Main_History_Weight:   78 →   71 →   80  (oscillating ±9)
+  CMH_Weight:            61 →   51 →   69  (oscillating ±18)
+  FMH_Weight:            33 →   43 →   24  (oscillating ±20)
+
+No parameter has a monotonic trajectory. The oscillation magnitudes
+(CMH: ±18, FMH: ±20 over range 0-130) are too large to be rounding
+noise. The CMA is genuinely exploring, not converging.
+
+With TC change to 10+0.1:
+  History_Bonus_Mult: range tightened around 3-pass center (~488)
+  History_Bonus_Sub:  range tightened around slow-decline center (~160)
+  History_Bonus_Limit: range centered on 2800 (no trend; keep moderate)
+  Main_History_Weight: moderate range; oscillating 71-80
+  CMH_Weight, FMH_Weight: wider ranges; high uncertainty retained
+
+If batch 2 still fails to compress sigma below 0.15 at budget 600
+with TC 10+0.1, accept pass 3 values and defer to Texel. Move
+ordering params have some eval interaction (via history scores
+feeding into search) but are primarily search parameters; Texel
+will not tune them, so this is the final SPSA attempt.
+
+[ ] History_Bonus_Mult  | Initial:  509 | Min:  400 | Max:  620 | Tuned: — | 3-pass range ~470-510; tightened
+[ ] History_Bonus_Sub   | Initial:  155 | Min:   90 | Max:  230 | Tuned: — | declining 170→155; tightened
+[ ] History_Bonus_Limit | Initial: 2803 | Min: 1800 | Max: 3800 | Tuned: — | oscillating; moderate range
+[ ] Main_History_Weight | Initial:   80 | Min:   40 | Max:  120 | Tuned: — | oscillating 71-80; moderate
+[ ] CMH_Weight          | Initial:   69 | Min:   20 | Max:  130 | Tuned: — | high variance; wide
+[ ] FMH_Weight          | Initial:   24 | Min:    5 | Max:  100 | Tuned: — | high variance; wide
+
+Budget: 600
+TC: 10+0.1 (CHANGED from 5+0.05)
+EPD: ogpt_chess_startpos.epd
+
+================================================================
+BATCH 3 – CORE EVAL                          [SKIPPED – CONVERGED]
+================================================================
+
+Stable across passes 2 and 3. Bishop_Pair_Bonus=22 is accepted as
+the dataset result; it will be corrected when Texel simultaneously
+tunes PSTs and piece values. All values carry forward to Texel.
+
+[-] Tempo_Bonus         | Tuned:  22 |
+[-] Bishop_Pair_Bonus   | Tuned:  22 | low vs typical ~25-35; Texel will correct with PSTs
+[-] Development_Bonus   | Tuned:  12 |
+[-] Castled_Bonus       | Tuned:   5 |
+[-] Mobility_Knight_MG  | Tuned:   6 |
+[-] Mobility_Bishop_MG  | Tuned:  10 |
+[-] Mobility_Rook_MG    | Tuned:   5 |
+[-] Mobility_Queen_MG   | Tuned:   4 |
+[-] Mobility_Knight_EG  | Tuned:   5 |
+[-] Mobility_Bishop_EG  | Tuned:   4 |
+[-] Mobility_Rook_EG    | Tuned:   2 |
+[-] Mobility_Queen_EG   | Tuned:   1 |
+
+================================================================
+BATCH 4 – PAWN STRUCTURE                     [SKIPPED – DATASET BIAS]
+================================================================
+
+Technically converged (sigma=0.084 in pass 2), but the dataset
+suppresses pawn weakness signals. In sharp opening-book games,
+isolated and backward pawn structures are rare and often irrelevant
+(the tactical tempo matters more than structural integrity). The
+optimizer found zero/near-zero penalties because they genuinely
+cost little in this game type, not because they are zero in chess.
+
+Do NOT re-run with ogpt_chess_startpos.epd — it will reproduce
+the same biased values. Texel on a large quiet-position dataset
+will correctly resolve these.
+
+For Texel phase 2, use theory-informed starting points, NOT the
+biased SPSA values:
+  Isolated_MG: start at -15 (not -1)
+  Isolated_EG: start at -20 (not -3)
+  Backward_EG: start at  -8 (not  0)
+  Doubled_MG:  start at -16 (not -12)
+  Doubled_EG:  start at -16 (not  -9)
+
+[-] All batch 4 params → Texel pass 1 phase 2 (corrected initials)
+
+================================================================
+BATCH 5 – PASSED PAWNS                       [TEXEL – NO SPSA]
+================================================================
+No change from pass 2 decision. SPSA signal failure documented.
+Requires quiet-position dataset, minimum 5-10M positions.
+
+================================================================
+BATCH 6 – KING SAFETY                        [SKIPPED – CONVERGED]
+================================================================
+
+Converged in pass 2 (sigma=0.082, 33 iters). Pass 3 confirmed.
+KingAtk curve (7, 25, 33, 44, 27, 16) is credible and stable.
+
+[-] All batch 6 params: carry forward at pass 2/3 values
+
+================================================================
+BATCH 7 – THREATS, HANGING                   [SKIPPED – CONVERGED]
+================================================================
+
+Most converged eval batch (sigma=0.037 after pass 2). Pass 3
+confirmed via skip. Values accepted. Threat_Minor_Rook_EG=10 vs
+Threat_Minor_Queen_EG=54 asymmetry was allowed to resolve with
+full budget and range (500 evals), and settled here; accepted as
+dataset-specific result. Texel may shift these.
+
+[-] All batch 7 params: carry forward at pass 2/3 values
+
+================================================================
+BATCH 8a – COORDINATION, FILE BONUSES, TERRITORY
+================================================================
+
+Pass 3: sigma=0.122 (sigma0=0.30), 9 gens (budget 400, popsize=11).
+Compare pass 2 sigma=0.119 after 31 iters — pass 3 ran far fewer
+gens than intended relative to budget, suggesting the wall time
+limited the run (or budget was counting evals from multi-batch
+pipeline differently). Either way: sigma is not compressing.
+
+Values comparison pass 2 → pass 3 (most stable within ±2):
+  Bishop_Openness_Max: 42 → 34  (significant; 42 may have been noise peak)
+  Center_Bonus:         9 →  7
+  Battery_Rook_Queen:  12 → 10
+  Semi_Open_File_Mult: 119 → 117
+  Shared_Target_Bonus:  10 →  8
+  Support_Chain_Bonus:   7 →  5
+  (all others stable within ±2)
+
+Accept pass 3 values as better-quality estimate. Bishop_Openness_Max
+at 34 is well-interior to both prior ranges; centre new range there.
+Ranges tightened to ±22% of pass 3 values on stable params.
+Budget raised to 600 to allow genuine sigma compression to < 0.10.
+
+[ ] Center_Bonus         | Initial:   7 | Min:   0 | Max:  16 | Tuned: — |
+[ ] Ext_Center_Bonus     | Initial:   5 | Min:   0 | Max:  12 | Tuned: — |
+[ ] Enemy_Half_Bonus     | Initial:   4 | Min:   0 | Max:  10 | Tuned: — |
+[ ] Seventh_Rank_MG      | Initial:  16 | Min:   7 | Max:  26 | Tuned: — |
+[ ] Seventh_Rank_EG      | Initial:  22 | Min:  10 | Max:  36 | Tuned: — |
+[ ] Defended_Piece_Bonus | Initial:   3 | Min:   0 | Max:   9 | Tuned: — |
+[ ] Shared_Target_Bonus  | Initial:   8 | Min:   0 | Max:  18 | Tuned: — |
+[ ] Battery_Rook_Queen   | Initial:  10 | Min:   0 | Max:  22 | Tuned: — |
+[ ] Battery_Bishop_Queen | Initial:  11 | Min:   0 | Max:  22 | Tuned: — |
+[ ] Support_Chain_Bonus  | Initial:   5 | Min:   0 | Max:  14 | Tuned: — |
+[ ] Open_File_Mult       | Initial: 121 | Min: 110 | Max: 136 | Tuned: — | 3-pass trend: 129→123→121; converging
+[ ] Semi_Open_File_Mult  | Initial: 117 | Min: 108 | Max: 130 | Tuned: — | 3-pass: 113→119→117; modest oscillation
+[ ] Bishop_Openness_Max  | Initial:  34 | Min:  16 | Max:  52 | Tuned: — | drifted 42→34; centered on pass3 value
+[ ] Bishop_Openness_SqWt | Initial:   2 | Min:   0 | Max:   5 | Tuned: — | stable at 2 all passes
+
+Budget: 600
+TC: 5+0.05 (no change)
+EPD: ogpt_chess_startpos.epd
+
+================================================================
+BATCH 8b – OUTPOSTS                          [SKIPPED → TEXEL]
+================================================================
+
+After 2 dedicated re-runs (pass 2 budget 200, pass 3 budget 400),
+sigma remains 0.18-0.24. The fundamental cause is structural:
+outpost positions (a piece in the opponent's half on a square that
+cannot be challenged by an enemy pawn, protected by a friendly pawn)
+arise in perhaps 5-10% of positions from ogpt_chess_startpos.epd
+games. With ~80 games per evaluation and 10% outpost frequency, each
+eval contains ~320 outpost decisions on average — far too few to
+separate the signal from game result noise.
+
+Further SPSA investment will not fix this regardless of budget.
+A positional EPD (closed structures, longer games, more maneuvering)
+would help, but then search and tactics parameters would need
+retuning on that book too, creating an inconsistency.
+
+Correct approach: Texel tuning on a large quiet-position dataset.
+Outpost positions at all frequencies will appear naturally in 10M+
+positions, and the gradient is computed analytically rather than
+estimated from game results. Use the following rough theory priors
+as Texel starting points (not the noisy SPSA values):
+
+  Knight_Outpost: MG ~18, EG ~10
+  Bishop_Outpost: MG ~10, EG ~12
+  Rook_Outpost:   MG ~25, EG ~15
+  Queen_Outpost:  MG ~ 6, EG ~ 6
+
+[-] All batch 8b params → Texel pass 1 phase 2
+
+================================================================
+VERIFICATION GATE
+================================================================
+
+After each batch:
+  1. dat: sigma target < 0.10 for batch 1, < 0.15 for batches 2
+     and 8a. If not reached, extend by 200 evals and requeue.
+  2. No params at hard boundaries; if any param is at min or max,
+     expand that bound by 30% and requeue only that param.
+  3. xbest vs xfavorite: flag any param differing > 15% of range
+     as low-confidence (note; do not re-run — Texel corrects).
+  4. Run 400-game match: pass 4 vs pass 3 binary at 30+0.3 TC
+     (same as the test used for pass 1 v untuned). Expect parity
+     or better; regression > 5 elo triggers batch review.
+  5. If batch 2 (at 10+0.1) still fails to compress sigma below
+     0.15 by budget 600: accept current values as final SPSA
+     result for history params and proceed to Texel.
+  6. After all pass 4 batches clear: run pass 4 vs pass 1 (400
+     games) and vs untuned (400 games) for complete picture.

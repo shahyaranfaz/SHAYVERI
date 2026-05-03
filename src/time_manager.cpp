@@ -92,4 +92,4 @@ bool TimeManager::on_iter(int depth, Move best_move, int score) {
     return elapsed >= adjusted;
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

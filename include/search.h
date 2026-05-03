@@ -32,6 +32,6 @@ SearchResult search(Board &b, int max_depth,
                     IterCallback on_iter = nullptr,
                     bool silent = false);
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // SEARCH_H

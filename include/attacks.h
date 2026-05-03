@@ -17,6 +17,6 @@ Square king_square(const Board &b, Colour c);
 
 void init_attacks();
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // ATTACKS_H

@@ -154,4 +154,4 @@ void unmake_move(Board &b, Move m, const Undo &u) {
     b.hash       = u.hash;
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

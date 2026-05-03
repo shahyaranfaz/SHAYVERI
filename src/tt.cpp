@@ -48,4 +48,4 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
     }
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

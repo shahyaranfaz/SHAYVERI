@@ -68,4 +68,4 @@ bool set_from_fen(Board &b, const std::string &fen) {
     return true;
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

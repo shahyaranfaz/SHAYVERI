@@ -78183,6 +78183,6 @@ static constexpr BookEntry OPENING_BOOK[] = {
 
 static constexpr int OPENING_BOOK_SIZE = 78170;
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // OPENING_BOOK_H

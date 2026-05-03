@@ -39,6 +39,6 @@ inline bool set_startpos(Board &b) {
     return set_from_fen(b, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // BOARD_H

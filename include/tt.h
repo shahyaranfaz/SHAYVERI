@@ -39,6 +39,6 @@ private:
 
 extern TranspositionTable TT;
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // TT_H

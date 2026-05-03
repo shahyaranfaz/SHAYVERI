@@ -9,6 +9,6 @@ namespace SHAYVERI {
 // Positive means the side to move is better.
 int evaluate(const Board &b);
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // EVALUATE_H

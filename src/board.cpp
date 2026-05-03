@@ -37,4 +37,4 @@ Piece Board::get_piece(Square s) const {
     return mailbox[s];
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

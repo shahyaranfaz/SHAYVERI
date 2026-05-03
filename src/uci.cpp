@@ -61,7 +61,7 @@ static const BookEntry *probe_book(U64 zobrist_key) {
     return nullptr;
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 // main() must be at global scope (C++ entry point)
 int main() {

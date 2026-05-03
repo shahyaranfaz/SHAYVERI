@@ -890,4 +890,4 @@ int evaluate(const Board &b) {
     int score = (mg * phase + eg * (MAX_PHASE - phase)) / MAX_PHASE;
     return b.side_to_move == WHITE ? score : -score;
 }
-} // namespace ShayBot
+} // namespace SHAYVERI

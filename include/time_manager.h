@@ -55,6 +55,6 @@ private:
 
 extern TimeManager g_time_manager;
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // TIME_MANAGER_H

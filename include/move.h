@@ -23,6 +23,6 @@ constexpr Square    move_to(Move m)    { return Square((m >> 6) & 63u); }
 constexpr PieceType move_promo(Move m) { return PieceType((m >> 12) & 15u); }
 constexpr bool      is_promo(Move m)   { return move_promo(m) != NONE_PTYPE; }
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // MOVE_H

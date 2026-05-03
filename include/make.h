@@ -20,6 +20,6 @@ struct Undo {
 bool make_move(Board &b, Move m, Undo &u);
 void unmake_move(Board &b, Move m, const Undo &u);
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // MAKE_H

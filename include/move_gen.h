@@ -15,6 +15,6 @@ struct MoveList {
 MoveList generate_pseudo_legal_moves(Board &b);
 MoveList generate_legal_moves(Board &b);
 
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // MOVE_GEN_H

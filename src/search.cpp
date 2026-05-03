@@ -675,4 +675,4 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     return {final_best_move, MOVE_NONE, final_best_score, completed_depth, static_cast<U64>(node_count.load())};
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI

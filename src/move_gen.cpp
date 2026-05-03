@@ -196,4 +196,4 @@ MoveList generate_legal_moves(Board &b) {
     return legal;
 }
 
-} // namespace ShayBot
+} // namespace SHAYVERI
