@@ -1,3 +1,11 @@
+./fengen \
+  -input output_dh2010pc03.pgn,output_dh2010pc04.pgn,output_dh2010pc06.pgn,output_dh2010pc10.pgn,output_dh2010pc11.pgn,output_dh2010pc13.pgn,output_dh2010pc20.pgn,output_dh2010pc21.pgn,output_dh2010pc22.pgn,output_dh2020pc10.pgn,output_dh2020pc14.pgn,output_dh2020pc18.pgn,output_dh2026pc19.pgn,output_dh2026pc19.pgn \
+  -output ./fens/ \
+  -limit 50 \
+  -threads 23
+
+grep -c '^\[Event ' output_*.pgn | awk -F: '{s+=$2} END {print s}'
+
 ================================================================
   SHAYBOT  –  TEXEL TUNING TRACKER
                   TEXEL PASS 1
@@ -20,26 +28,31 @@ Final CMA-ES on search only follows after texelpass1 converges.
 DATASET
 ================================================================
 
-Target: 10M+ positions with WDL labels drawn from self-play at
-mid TC (10+0.1) using shaybot_pass4 binary.
+Runs:
+ 1.      8 PCs * ~2700 games
+ 2.      9 PCs * 10000 games
+ 3.      5 PCs *  5200 games
+ 4.      6 PCs *  1200 games
+ Total:         144479 games.
 
-Position filter (standard quiet criteria):
-  - Side to move is not in check
-  - Last move was not a capture or pawn push
-  - Ply >= 8 (discard opening book plies)
-  - Eval within reasonable window (e.g. |eval| < 1000cp) to
-    avoid skewing on already-decided positions
+All at 10+0.1 using:
 
-At ~30 qualifying plies per game this yields ~200k positions
-per 10k games; 500k games required for 10M positions.
+books = [
+    "UHO_Lichess_4852_v1.epd",
+    "popularpos_lichess_v3.epd",
+    "bjbraams_chessdb_198350_lines.pgn",
+    "noob_5moves.epd",
+    "8moves_v3.pgn",
+    "6mvs_+90_+99.epd",
+    "2moves_v1.epd",
+    "closedpos.epd"
+]
+weights = [ 0.25, 0.2, 0.15, 0.15, 0.15, 0.05, 0.03, 0.02 ]
+plies = [ 12, 12, 12, 8, 8, 2, 5, 6 ]
 
-Supplement with a standard quiet-labeled EPD (Zurichess, CCRL
-quiet, or Ethereal dataset) to improve coverage of:
-  - Pawn weakness structures (batch 4 bias correction)
-  - Endgame outpost positions (batch 8b signal failure)
-  - Passed pawn endgames (batch 5 signal failure)
-These are genuinely underrepresented in opening-book self-play
-games at any TC, and no amount of self-play volume fixes it.
+Filtered pgns to fens via fengen (Github repo) to generate 1,028,547 FENs.
+Supplemented with Ethereal E12.52-1M-D12-Resolved (10M Positions).
+Thus, a total of 20.03M positions for tuning.
 
 Tune K (sigmoid scaling constant) first on a held-out 500k
 subset before running any parameter optimization. Fix K for
