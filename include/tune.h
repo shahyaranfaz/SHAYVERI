@@ -28,36 +28,36 @@ static constexpr int INF        = 1000000; //
 static constexpr int MATE_SCORE = 900000; //
 
 // Aspiration window initial delta
-inline int ASP_DELTA = 32; //
+inline int ASP_DELTA = 32;
 
 // Singular extensions
-inline int se_min_depth       =  9; //
-inline int se_depth_margin    =  2; //
-inline int se_margin          = 47; //
-inline int se_reduction_denom =  3; //
+inline int se_min_depth       =  9;
+inline int se_depth_margin    =  2;
+inline int se_margin          = 55;
+inline int se_reduction_denom =  3;
 
 // History gravity / bonus
 static constexpr int history_max = 16384; //
-inline int history_bonus_mult    =   509; //
-inline int history_bonus_sub     =   155; //
-inline int history_bonus_limit   =  2803; //
+inline int history_bonus_mult    =   463;
+inline int history_bonus_sub     =   164;
+inline int history_bonus_limit   =  2967;
 
 // History blending weights (percent, divided by 100 before accumulation)
-inline int main_history_weight = 80; //
-inline int cmh_weight          = 69; //
-inline int fmh_weight          = 24; //
+inline int main_history_weight = 79;
+inline int cmh_weight          = 83;
+inline int fmh_weight          = 36;
 
 // Pruning margins
-inline int rfp_margin_mult    =   79; //
-inline int fp_base            =  192; //
-inline int fp_mult            =  607; //
-inline int lmp_base           =    3; //
-inline int lmp_mult           =    1; //
-inline int see_pruning_margin = -273; //
+inline int rfp_margin_mult    =   84;
+inline int fp_base            =  195;
+inline int fp_mult            =  653;
+inline int lmp_base           =    3;
+inline int lmp_mult           =    1;
+inline int see_pruning_margin = -281;
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
-inline double lmr_base  = 1.39; //
-inline double lmr_scale = 1.78; //
+inline double lmr_base  = 1.25;
+inline double lmr_scale = 1.79;
 
 // ================================================================
 // Piece values
@@ -218,120 +218,120 @@ inline int PST_KING_EG[64] = {
 // ================================================================
 
 // Misc
-inline int TEMPO_BONUS       = 22; //
-inline int BISHOP_PAIR_BONUS = 22; //
+inline int TEMPO_BONUS       = 22;
+inline int BISHOP_PAIR_BONUS = 22;
 
 // Passed pawns (indexed by relative rank 0-7)
-inline int PASSED_PAWN_BONUS_MG[8] = { 0,  5, 10, 20,  30,  50,  70, 0 }; //
-inline int PASSED_PAWN_BONUS_EG[8] = { 0, 10, 20, 40,  60,  90, 120, 0 }; //
+inline int PASSED_PAWN_BONUS_MG[8] = { 0,  5, 10, 20,  30,  50,  70, 0 };
+inline int PASSED_PAWN_BONUS_EG[8] = { 0, 10, 20, 40,  60,  90, 120, 0 };
 
 // Candidate / connected / outside passed
-inline int CANDIDATE_PAWN_BONUS_MG   =  8; //
-inline int CANDIDATE_PAWN_BONUS_EG   = 12; //
-inline int CONNECTED_PASSED_BONUS_MG = 10; //
-inline int CONNECTED_PASSED_BONUS_EG = 18; //
-inline int OUTSIDE_PASSED_BONUS_MG   =  8; //
-inline int OUTSIDE_PASSED_BONUS_EG   = 20; //
+inline int CANDIDATE_PAWN_BONUS_MG   =  8;
+inline int CANDIDATE_PAWN_BONUS_EG   = 12;
+inline int CONNECTED_PASSED_BONUS_MG = 10;
+inline int CONNECTED_PASSED_BONUS_EG = 18;
+inline int OUTSIDE_PASSED_BONUS_MG   =  8;
+inline int OUTSIDE_PASSED_BONUS_EG   = 20;
 
 // Pawn structure penalties
-inline int ISOLATED_PAWN_PENALTY_MG =  -1; //
-inline int ISOLATED_PAWN_PENALTY_EG =  -3; //
-inline int DOUBLED_PAWN_PENALTY_MG  = -12; //
-inline int DOUBLED_PAWN_PENALTY_EG  =  -9; //
-inline int BACKWARD_PAWN_PENALTY_MG = -13; //
-inline int BACKWARD_PAWN_PENALTY_EG =   0; //
-inline int SUPPORTED_PAWN_BONUS_MG  =  14; //
-inline int WEAK_PAWN_PENALTY_MG     = -18; //
-inline int PAWN_ISLAND_PENALTY_MG   = -32; //
-inline int PAWN_ISLAND_PENALTY_EG   =  -5; //
+inline int ISOLATED_PAWN_PENALTY_MG =  -1;
+inline int ISOLATED_PAWN_PENALTY_EG =  -3;
+inline int DOUBLED_PAWN_PENALTY_MG  = -12;
+inline int DOUBLED_PAWN_PENALTY_EG  =  -9;
+inline int BACKWARD_PAWN_PENALTY_MG = -13;
+inline int BACKWARD_PAWN_PENALTY_EG =   0;
+inline int SUPPORTED_PAWN_BONUS_MG  =  14;
+inline int WEAK_PAWN_PENALTY_MG     = -18;
+inline int PAWN_ISLAND_PENALTY_MG   = -32;
+inline int PAWN_ISLAND_PENALTY_EG   =  -5;
 
 // Pawn center control
-inline int PAWN_CENTER_BONUS_MG     = 7; //
-inline int PAWN_CENTER_BONUS_EG     = 0; //
-inline int PAWN_EXT_CENTER_BONUS_MG = 0; //
-inline int PAWN_EXT_CENTER_BONUS_EG = 3; //
+inline int PAWN_CENTER_BONUS_MG     = 7;
+inline int PAWN_CENTER_BONUS_EG     = 0;
+inline int PAWN_EXT_CENTER_BONUS_MG = 0;
+inline int PAWN_EXT_CENTER_BONUS_EG = 3;
 
 // Pawn storm toward enemy king
-inline int PAWN_STORM_BASE      = 2; //
-inline int PAWN_STORM_RANK_MULT = 1; //
+inline int PAWN_STORM_BASE      = 2;
+inline int PAWN_STORM_RANK_MULT = 1;
 
 // King safety
-inline int KING_SHIELD_MISSING_PENALTY = -27; //
-inline int KING_OPEN_FILE_PENALTY      = -29; //
-inline int KING_SEMI_OPEN_FILE_PENALTY =  -6; //
-inline int KING_ESCAPE_BONUS           =   4; //
-inline int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11, 0 }; //
-inline int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 7, 25, 33, 44, 27, 16 }; //
-inline int KING_DANGER_DIVISOR         =  10; //
-inline int KING_DANGER_MAX             = 641; //
+inline int KING_SHIELD_MISSING_PENALTY = -27;
+inline int KING_OPEN_FILE_PENALTY      = -29;
+inline int KING_SEMI_OPEN_FILE_PENALTY =  -6;
+inline int KING_ESCAPE_BONUS           =   4;
+inline int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11, 0 };
+inline int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 7, 25, 33, 44, 27, 16 };
+inline int KING_DANGER_DIVISOR         =  10;
+inline int KING_DANGER_MAX             = 641;
 
 // Mobility
-inline int MOBILITY_KNIGHT_MG =  6; //
-inline int MOBILITY_BISHOP_MG = 10; //
-inline int MOBILITY_ROOK_MG   =  5; //
-inline int MOBILITY_QUEEN_MG  =  4; //
-inline int MOBILITY_KNIGHT_EG =  5; //
-inline int MOBILITY_BISHOP_EG =  4; //
-inline int MOBILITY_ROOK_EG   =  2; //
-inline int MOBILITY_QUEEN_EG  =  1; //
+inline int MOBILITY_KNIGHT_MG =  6;
+inline int MOBILITY_BISHOP_MG = 10;
+inline int MOBILITY_ROOK_MG   =  5;
+inline int MOBILITY_QUEEN_MG  =  4;
+inline int MOBILITY_KNIGHT_EG =  5;
+inline int MOBILITY_BISHOP_EG =  4;
+inline int MOBILITY_ROOK_EG   =  2;
+inline int MOBILITY_QUEEN_EG  =  1;
 
 // File/diagonal openness multipliers (percent)
-inline int OPEN_FILE_MULTIPLIER             = 121; //
-inline int SEMI_OPEN_FILE_MULTIPLIER        = 117; //
+inline int OPEN_FILE_MULTIPLIER             = 121;
+inline int SEMI_OPEN_FILE_MULTIPLIER        = 117;
 static constexpr int CLOSED_FILE_MULTIPLIER = 100; //
 static constexpr int BISHOP_OPENNESS_BASE   = 100; //
-inline int BISHOP_OPENNESS_MAX_BONUS        =  34; //
-inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2; //
+inline int BISHOP_OPENNESS_MAX_BONUS        =  34;
+inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
 
 // Territory
-inline int CENTER_BONUS          =  7; //
-inline int EXT_CENTER_BONUS      =  5; //
-inline int ENEMY_HALF_BONUS      =  4; //
-inline int SEVENTH_RANK_BONUS_MG = 16; //
-inline int SEVENTH_RANK_BONUS_EG = 22; //
+inline int CENTER_BONUS          =  7;
+inline int EXT_CENTER_BONUS      =  5;
+inline int ENEMY_HALF_BONUS      =  4;
+inline int SEVENTH_RANK_BONUS_MG = 16;
+inline int SEVENTH_RANK_BONUS_EG = 22;
 
 // Coordination
-inline int DEFENDED_PIECE_BONUS       =  3; //
-inline int SHARED_TARGET_BONUS        =  8; //
-inline int BATTERY_ROOK_QUEEN_BONUS   = 10; //
-inline int BATTERY_BISHOP_QUEEN_BONUS = 11; //
-inline int SUPPORT_CHAIN_BONUS        =  5; //
+inline int DEFENDED_PIECE_BONUS       =  3;
+inline int SHARED_TARGET_BONUS        =  8;
+inline int BATTERY_ROOK_QUEEN_BONUS   = 10;
+inline int BATTERY_BISHOP_QUEEN_BONUS = 11;
+inline int SUPPORT_CHAIN_BONUS        =  5;
 
 // Tactical pressure
-inline int UNDEFENDED_ATTACK_BONUS        = 18; //
-inline int PIN_BONUS                      = 36; //
-inline int OVERLOADED_DEFENDER_BONUS      =  0; //
-inline int UNRECIPROCATED_PRESSURE_BONUS  =  5; //
-inline int UNDEFENDED_VALUE_DIVISOR       = 66; //
+inline int UNDEFENDED_ATTACK_BONUS        = 18;
+inline int PIN_BONUS                      = 36;
+inline int OVERLOADED_DEFENDER_BONUS      =  0;
+inline int UNRECIPROCATED_PRESSURE_BONUS  =  5;
+inline int UNDEFENDED_VALUE_DIVISOR       = 66;
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
-inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 42, 89, 113, 89,  0 }; //
-inline int THREAT_BY_PAWN_EG[7]  = { 0,  0, 77, 94,  39, 71,  0 }; //
+inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 42, 89, 113, 89,  0 };
+inline int THREAT_BY_PAWN_EG[7]  = { 0,  0, 77, 94,  39, 71,  0 };
 // Bonus when a minor attacks an enemy piece of higher value
-inline int THREAT_BY_MINOR_MG[7] = { 0,  0,  0,  0, 26, 11,  0 }; //
-inline int THREAT_BY_MINOR_EG[7] = { 0,  0,  0,  0, 10, 54,  0 }; //
+inline int THREAT_BY_MINOR_MG[7] = { 0,  0,  0,  0, 26, 11,  0 };
+inline int THREAT_BY_MINOR_EG[7] = { 0,  0,  0,  0, 10, 54,  0 };
 // Bonus when a rook attacks an enemy queen
-inline int THREAT_BY_ROOK_MG = 58; //
-inline int THREAT_BY_ROOK_EG = 48; //
+inline int THREAT_BY_ROOK_MG = 58;
+inline int THREAT_BY_ROOK_EG = 48;
 
 // Hanging piece penalties
-inline int HANGING_BASE_PENALTY_MG = 54; //
-inline int HANGING_BASE_PENALTY_EG =  0; //
-inline int HANGING_VALUE_DIVISOR   = 21; //
+inline int HANGING_BASE_PENALTY_MG = 54;
+inline int HANGING_BASE_PENALTY_EG =  0;
+inline int HANGING_VALUE_DIVISOR   = 21;
 
 // Outposts
-inline int KNIGHT_OUTPOST_MG = 13; //
-inline int KNIGHT_OUTPOST_EG = 10; //
-inline int BISHOP_OUTPOST_MG =  4; //
-inline int BISHOP_OUTPOST_EG = 20; //
-inline int ROOK_OUTPOST_MG   = 28; //
-inline int ROOK_OUTPOST_EG   = 12; //
-inline int QUEEN_OUTPOST_MG  =  4; //
-inline int QUEEN_OUTPOST_EG  =  8; //
+inline int KNIGHT_OUTPOST_MG = 13;
+inline int KNIGHT_OUTPOST_EG = 10;
+inline int BISHOP_OUTPOST_MG =  4;
+inline int BISHOP_OUTPOST_EG = 20;
+inline int ROOK_OUTPOST_MG   = 28;
+inline int ROOK_OUTPOST_EG   = 12;
+inline int QUEEN_OUTPOST_MG  =  4;
+inline int QUEEN_OUTPOST_EG  =  8;
 
 // Development / initiative
-inline int DEVELOPMENT_BONUS = 12; //
-inline int CASTLED_BONUS     =  5; //
+inline int DEVELOPMENT_BONUS = 12;
+inline int CASTLED_BONUS     =  5;
 
 // ================================================================
 // Tuning infrastructure
@@ -351,26 +351,26 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
     // ── Core search ──────────────────────────────────────────────
     {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    18,    55,  "32"}},
-    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.39"}}, // DOUBLE ignores min/max
-    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.78"}}, // DOUBLE ignores min/max
-    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    40,   160,  "79"}},
-    {"FP_Base",             {&fp_base,                TuningOption::INT,   110,   330,  "192"}},
-    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   400,   950,  "607"}},
+    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.25"}}, // DOUBLE ignores min/max
+    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.79"}}, // DOUBLE ignores min/max
+    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    40,   160,  "84"}},
+    {"FP_Base",             {&fp_base,                TuningOption::INT,   110,   330,  "195"}},
+    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   400,   950,  "653"}},
     {"LMP_Base",            {&lmp_base,               TuningOption::INT,     2,     7,   "3"}},
     {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     6,   "1"}},   // Skipped pass 2
-    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -420,  -120, "-273"}},
+    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -420,  -120, "-281"}},
     {"SE_Min_Depth",        {&se_min_depth,           TuningOption::INT,     5,    16,   "9"}},
     {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     5,   "2"}},
-    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    95,  "47"}},
+    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    95,  "55"}},
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     1,     6,   "3"}},
 
     // ── History ──────────────────────────────────────────────────
-    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "509"}},
-    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "155"}},
-    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "2803"}},
-    {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "80"}},
-    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "69"}},
-    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "24"}},
+    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "463"}},
+    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "164"}},
+    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "2967"}},
+    {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "79"}},
+    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "83"}},
+    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "36"}},
 
     // ── Eval – misc ───────────────────────────────────────────────
     {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,     4,    48,   "22"}},

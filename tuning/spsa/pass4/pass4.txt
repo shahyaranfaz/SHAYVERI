@@ -65,56 +65,34 @@ Permanent defers to Texel (no further SPSA):
   Batch 8b: outpost positions structurally too rare in opening-book
             games. Further SPSA will not resolve.
 
+While 8a should be reran, we will fix all search constants to
+the mode of
+- Top-10% centroid
+- Top-20% centroid
+- Inv-loss wtd
+
 ================================================================
 BATCH 1 – CORE SEARCH (4 params, final pass)
 ================================================================
 
-Pass 3: sigma=0.242 (sigma0=0.30), 10 gens (budget 200, popsize=8).
-Condition number=6.4. Not converged.
+[x] LMR_Base  | Initial:  1.39 | Min: 1.18 | Max: 1.60 | Tuned: 1.25 | monotonic increase; c=0.05
+[x] LMR_Scale | Initial:  1.73 | Min: 1.50 | Max: 1.95 | Tuned: 1.79 | monotonic decrease; c=0.05
+[x] FP_Mult   | Initial:   575 | Min:  490 | Max:  660 | Tuned:  653 | stabilizing; tightened
+[x] SE_Margin | Initial:    56 | Min:   44 | Max:   70 | Tuned:   55 | minor oscillation; tightened
 
-Trajectories across passes 1, 2, 3:
-  LMR_Base:  1.236 → 1.331 → 1.393  (monotonic increase; still drifting)
-  LMR_Scale: 1.796 → 1.766 → 1.724  (monotonic decrease; still drifting)
-  FP_Mult:     657 →   577 →   575   (converging; near-stable)
-  SE_Margin:    54 →    61 →    56   (oscillating ±5; acceptable noise)
-
-LMR_Base and LMR_Scale both show unbroken monotonic drift across 3
-passes. The absolute sigma remaining (LMR_Base#sigma=0.075 at pass 3
-end) is still ~56% of the initial sigma (0.133). These are the
-highest-leverage search parameters and warrant one final tight pass.
-
-FP_Mult is stabilizing (577 → 575). SE_Margin oscillates in a
-narrow band (54-61); the noise is intrinsic and a tight range
-centering on 56-61 is appropriate.
-
-Ranges tightened to roughly ±15% of current values. Budget 400
-(popsize=8 → 50 gens). Target final sigma < 0.10.
-
-[x] LMR_Base  | Initial:  1.39 | Min: 1.18 | Max: 1.60 | Tuned: 1.39 | monotonic increase; c=0.05
-[x] LMR_Scale | Initial:  1.73 | Min: 1.50 | Max: 1.95 | Tuned: 1.78 | monotonic decrease; c=0.05
-[x] FP_Mult   | Initial:   575 | Min:  490 | Max:  660 | Tuned:  607 | stabilizing; tightened
-[x] SE_Margin | Initial:    56 | Min:   44 | Max:   70 | Tuned:   47 | minor oscillation; tightened
-
-[-] ASP_Delta           |   32;  rock-stable all passes; skip
-[-] RFP_Margin          |   79;  stable; skip
-[-] FP_Base             |  192; stable; skip
-[-] LMP_Base            |    3;  stable; skip
-[-] LMP_Mult            |    1;  permanent skip (floor)
-[-] SEE_Pruning_Margin  | -273; -277/-273 consistent; skip
-[-] SE_Min_Depth        |    9;  stable; skip
-[-] SE_Depth_Margin     |    2;  stable; skip
-[-] SE_Reduction_Denom  |    3;  integer-stable; skip
+[-] ASP_Delta           |   32;
+[-] RFP_Margin          |   84;
+[-] FP_Base             |  195;
+[-] LMP_Base            |    3;
+[-] LMP_Mult            |    1;
+[-] SEE_Pruning_Margin  | -281;
+[-] SE_Min_Depth        |    9;
+[-] SE_Depth_Margin     |    2;
+[-] SE_Reduction_Denom  |    3;
 
 Budget: 500 (starting from pass3 batch1 (200))
 TC: 5+0.05 (no change)
 EPD: ogpt_chess_startpos.epd
-Best: {"#parametrization": "Instrumentation(Tuple(),Dict(FP_Mult=Scalar{Cl(450,720,b),Int}[sigma=Scalar{exp=2.03}],LMR_Base=Scalar{Cl(1.1,1.55,b)}[sigma=Scalar{exp=2.03}],LMR_Scale=Scalar{Cl(1.45,2.1,b)}[sigma=Scalar{exp=2.03}],SE_Margin=Scalar{Cl(42,82,b),Int}[sigma=Scalar{exp=2.03}]))", "#optimizer": "ParametrizedCMA()", "#session": "26-05-02 22:05:56", "#num-ask": 263, "#num-tell": 248, "#num-tell-not-asked": 1, "#uid": "f3a82cf868a746cc9b01923d73eb9bf6", "#lineage": "abca2b65299545ebb9dbf4a139ba7b20", "#generation": 15, "#parents_uids": ["6a041abd89e44075b824f08e5475a9f3"], "#loss": 0.405, "#optimizer#scale": "1.0", "#optimizer#elitist": "False", "#optimizer#popsize": "None", "#optimizer#popsize_factor": "3.0", "#optimizer#diagonal": "False", "#optimizer#zero": "False", "#optimizer#high_speed": "False", "#optimizer#fcmaes": "False", "#optimizer#random_init": "False", "#optimizer#inopts": "None", "#optimizer#algorithm": "quad", "FP_Mult": 607, "FP_Mult#sigma": 44.99999999999999, "FP_Mult#sigma#sigma": 1.0, "LMR_Base": 1.3906179567353354, "LMR_Base#sigma": 0.075, "LMR_Base#sigma#sigma": 1.0, "LMR_Scale": 1.77949313890196, "LMR_Scale#sigma": 0.10833333333333334, "LMR_Scale#sigma#sigma": 1.0, "SE_Margin": 47, "SE_Margin#sigma": 6.666666666666668, "SE_Margin#sigma#sigma": 1.0}
-
-800 games at 10+0.1 with 8mvs_+90_+99.epd:
-New v Old (W-L-D)
-B: 105-158-137
-W: 161-109-130
-OVRL: 265-267-267
 
 ================================================================
 BATCH 2 – HISTORY / MOVE ORDERING (full re-run, TC change)
@@ -168,12 +146,12 @@ ordering params have some eval interaction (via history scores
 feeding into search) but are primarily search parameters; Texel
 will not tune them, so this is the final SPSA attempt.
 
-[ ] History_Bonus_Mult  | Initial:  509 | Min:  400 | Max:  620 | Tuned: — | 3-pass range ~470-510; tightened
-[ ] History_Bonus_Sub   | Initial:  155 | Min:   90 | Max:  230 | Tuned: — | declining 170→155; tightened
-[ ] History_Bonus_Limit | Initial: 2803 | Min: 1800 | Max: 3800 | Tuned: — | oscillating; moderate range
-[ ] Main_History_Weight | Initial:   80 | Min:   40 | Max:  120 | Tuned: — | oscillating 71-80; moderate
-[ ] CMH_Weight          | Initial:   69 | Min:   20 | Max:  130 | Tuned: — | high variance; wide
-[ ] FMH_Weight          | Initial:   24 | Min:    5 | Max:  100 | Tuned: — | high variance; wide
+[x] History_Bonus_Mult  | Initial:  509 | Min:  400 | Max:  620 | Tuned:  463 | 3-pass range ~470-510; tightened
+[x] History_Bonus_Sub   | Initial:  155 | Min:   90 | Max:  230 | Tuned:  164 | declining 170→155; tightened
+[x] History_Bonus_Limit | Initial: 2803 | Min: 1800 | Max: 3800 | Tuned: 2967 | oscillating; moderate range
+[x] Main_History_Weight | Initial:   80 | Min:   40 | Max:  120 | Tuned:   79 | oscillating 71-80; moderate
+[x] CMH_Weight          | Initial:   69 | Min:   20 | Max:  130 | Tuned:   83 | high variance; wide
+[x] FMH_Weight          | Initial:   24 | Min:    5 | Max:  100 | Tuned:   36 | high variance; wide
 
 Budget: 600
 TC: 10+0.1 (CHANGED from 5+0.05)
@@ -253,47 +231,12 @@ dataset-specific result. Texel may shift these.
 [-] All batch 7 params: carry forward at pass 2/3 values
 
 ================================================================
-BATCH 8a – COORDINATION, FILE BONUSES, TERRITORY
+BATCH 8a – COORDINATION, FILE BONUSES, TERRITORY  [SKIPPED → TEXEL]
 ================================================================
 
-Pass 3: sigma=0.122 (sigma0=0.30), 9 gens (budget 400, popsize=11).
-Compare pass 2 sigma=0.119 after 31 iters — pass 3 ran far fewer
-gens than intended relative to budget, suggesting the wall time
-limited the run (or budget was counting evals from multi-batch
-pipeline differently). Either way: sigma is not compressing.
+Let Texel's fix whatever is wrong.
 
-Values comparison pass 2 → pass 3 (most stable within ±2):
-  Bishop_Openness_Max: 42 → 34  (significant; 42 may have been noise peak)
-  Center_Bonus:         9 →  7
-  Battery_Rook_Queen:  12 → 10
-  Semi_Open_File_Mult: 119 → 117
-  Shared_Target_Bonus:  10 →  8
-  Support_Chain_Bonus:   7 →  5
-  (all others stable within ±2)
-
-Accept pass 3 values as better-quality estimate. Bishop_Openness_Max
-at 34 is well-interior to both prior ranges; centre new range there.
-Ranges tightened to ±22% of pass 3 values on stable params.
-Budget raised to 600 to allow genuine sigma compression to < 0.10.
-
-[ ] Center_Bonus         | Initial:   7 | Min:   0 | Max:  16 | Tuned: — |
-[ ] Ext_Center_Bonus     | Initial:   5 | Min:   0 | Max:  12 | Tuned: — |
-[ ] Enemy_Half_Bonus     | Initial:   4 | Min:   0 | Max:  10 | Tuned: — |
-[ ] Seventh_Rank_MG      | Initial:  16 | Min:   7 | Max:  26 | Tuned: — |
-[ ] Seventh_Rank_EG      | Initial:  22 | Min:  10 | Max:  36 | Tuned: — |
-[ ] Defended_Piece_Bonus | Initial:   3 | Min:   0 | Max:   9 | Tuned: — |
-[ ] Shared_Target_Bonus  | Initial:   8 | Min:   0 | Max:  18 | Tuned: — |
-[ ] Battery_Rook_Queen   | Initial:  10 | Min:   0 | Max:  22 | Tuned: — |
-[ ] Battery_Bishop_Queen | Initial:  11 | Min:   0 | Max:  22 | Tuned: — |
-[ ] Support_Chain_Bonus  | Initial:   5 | Min:   0 | Max:  14 | Tuned: — |
-[ ] Open_File_Mult       | Initial: 121 | Min: 110 | Max: 136 | Tuned: — | 3-pass trend: 129→123→121; converging
-[ ] Semi_Open_File_Mult  | Initial: 117 | Min: 108 | Max: 130 | Tuned: — | 3-pass: 113→119→117; modest oscillation
-[ ] Bishop_Openness_Max  | Initial:  34 | Min:  16 | Max:  52 | Tuned: — | drifted 42→34; centered on pass3 value
-[ ] Bishop_Openness_SqWt | Initial:   2 | Min:   0 | Max:   5 | Tuned: — | stable at 2 all passes
-
-Budget: 600
-TC: 5+0.05 (no change)
-EPD: ogpt_chess_startpos.epd
+[-] All batch 8a params: carry forward at pass 3 values
 
 ================================================================
 BATCH 8b – OUTPOSTS                          [SKIPPED → TEXEL]
@@ -325,23 +268,3 @@ as Texel starting points (not the noisy SPSA values):
   Queen_Outpost:  MG ~ 6, EG ~ 6
 
 [-] All batch 8b params → Texel pass 1 phase 2
-
-================================================================
-VERIFICATION GATE
-================================================================
-
-After each batch:
-  1. dat: sigma target < 0.10 for batch 1, < 0.15 for batches 2
-     and 8a. If not reached, extend by 200 evals and requeue.
-  2. No params at hard boundaries; if any param is at min or max,
-     expand that bound by 30% and requeue only that param.
-  3. xbest vs xfavorite: flag any param differing > 15% of range
-     as low-confidence (note; do not re-run — Texel corrects).
-  4. Run 400-game match: pass 4 vs pass 3 binary at 30+0.3 TC
-     (same as the test used for pass 1 v untuned). Expect parity
-     or better; regression > 5 elo triggers batch review.
-  5. If batch 2 (at 10+0.1) still fails to compress sigma below
-     0.15 by budget 600: accept current values as final SPSA
-     result for history params and proceed to Texel.
-  6. After all pass 4 batches clear: run pass 4 vs pass 1 (400
-     games) and vs untuned (400 games) for complete picture.
