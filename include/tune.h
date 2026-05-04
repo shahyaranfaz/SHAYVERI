@@ -17,6 +17,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace chess { class Board; }
+
 namespace SHAYVERI {
 
 namespace Tune {
@@ -529,7 +531,7 @@ inline void handle_setoption(const std::string& name, const std::string& value) 
 }
 
 #ifndef coefficients_t
-    #define coefficients_t std::vector<I16>
+    #define coefficients_t std::vector<int16_t>
 #endif
 
 #ifndef tune_t
@@ -550,10 +552,7 @@ struct EvalResult {
     tune_t         endgame_scale = 1;
 };
 
-enum class GamePhases { Midgame = 0, Endgame = 1 };
-
-// Forward declaration of chess::Board for texel-tuner qsearch support
-namespace chess { class Board; }
+enum class PhaseStages { Midgame = 0, Endgame = 1 };
 
 // Push an {mg, eg} pair from two separate ints.
 inline void push_pair(parameters_t& p, int mg, int eg) {
@@ -574,15 +573,16 @@ class TexelTuner {
 public:
     // Tuner configuration constants
     constexpr static bool    includes_additional_score      = true;
-    constexpr static bool    supports_external_chess_eval   = true;
+    constexpr static bool    supports_external_chess_eval   = false;
     constexpr static bool    retune_from_zero               = false;
     constexpr static tune_t  preferred_k                    = 0;
-    constexpr static I32 max_epoch                      = 5001;
+    constexpr static I32     max_epoch                      = 5001;
     constexpr static bool    enable_qsearch                 = false;
     constexpr static bool    filter_in_check                = false;
     constexpr static tune_t  initial_learning_rate          = 1;
-    constexpr static I32 learning_rate_drop_interval    = 10000;
+    constexpr static I32     learning_rate_drop_interval    = 10000;
     constexpr static tune_t  learning_rate_drop_ratio       = 1;
+    constexpr static I32     data_load_print_interval       = 10000;
 
     // Returns the vector of initial {mg, eg} parameter pairs drawn from tune.h.
     // Parameter ordering is documented inside the implementation file.

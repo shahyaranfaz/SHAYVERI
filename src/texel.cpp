@@ -861,17 +861,8 @@ EvalResult TexelTuner::get_fen_eval_result(const std::string& fen) {
 }
 
 EvalResult TexelTuner::get_external_eval_result(const chess::Board& board) {
-    // Delegate to the FEN-based path.  chess::Board::getFen() is part of the
-    // chess.hpp public API used by the texel-tuner.
-#ifdef CHESS_HPP_INCLUDED
-    return get_fen_eval_result(board.getFen());
-#else
     (void)board;
-    // Should not be reached when CHESS_HPP_INCLUDED is not defined, because
-    // enable_qsearch = false so get_external_eval_result is never called by
-    // the tuner during data loading.  Provide a stub to satisfy the linker.
     return EvalResult{};
-#endif
 }
 
 // print_parameters
