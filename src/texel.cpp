@@ -38,6 +38,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -826,6 +827,8 @@ parameters_t TexelTuner::get_initial_parameters() {
 }
 
 EvalResult TexelTuner::get_fen_eval_result(const std::string& fen) {
+    static std::once_flag init_flag;
+    std::call_once(init_flag, []{ SHAYVERI::init_attacks(); });
     SHAYVERI::Board board;
     SHAYVERI::set_from_fen(board, fen);
 
