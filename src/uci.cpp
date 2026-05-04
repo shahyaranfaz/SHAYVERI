@@ -105,8 +105,8 @@ int main() {
                 << "option name UCI_Chess960 type check default false\n"
                 << "option name UCI_Opponent type string default \"\"\n";
 
-            for (auto const& [name, opt] : SHAYVERI::Tune::tuning_registry) {
-                if (opt.type == SHAYVERI::Tune::TuningOption::INT)
+            for (auto const& [name, opt] : Tune::tuning_registry) {
+                if (opt.type == Tune::TuningOption::INT)
                     std::cout << "option name " << name
                               << " type spin default " << opt.default_str
                               << " min " << opt.min_val

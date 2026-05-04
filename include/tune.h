@@ -11,8 +11,11 @@
 
 #include "types.h"
 
+#include <array>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace SHAYVERI {
 
@@ -354,7 +357,7 @@ struct TuningOption {
 // header is included in more than one translation unit (C++17).
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
-    // ── Core search ──────────────────────────────────────────────
+    // Core search
     {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    18,    55,  "32"}},
     {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.25"}}, // DOUBLE ignores min/max
     {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.79"}}, // DOUBLE ignores min/max
@@ -369,7 +372,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    95,  "55"}},
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     1,     6,   "3"}},
 
-    // ── History ──────────────────────────────────────────────────
+    // History
     {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "463"}},
     {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "164"}},
     {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "2967"}},
@@ -377,13 +380,13 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "83"}},
     {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "36"}},
 
-    // ── Eval – misc ───────────────────────────────────────────────
+    // Eval – misc
     {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,     4,    48,   "22"}},
     {"Bishop_Pair_Bonus",   {&BISHOP_PAIR_BONUS,      TuningOption::INT,     8,    55,   "22"}},
     {"Development_Bonus",   {&DEVELOPMENT_BONUS,      TuningOption::INT,     0,    28,   "12"}},
     {"Castled_Bonus",       {&CASTLED_BONUS,          TuningOption::INT,     0,    38,    "5"}},
 
-    // ── Mobility ─────────────────────────────────────────────────
+    // Mobility
     {"Mobility_Knight_MG",  {&MOBILITY_KNIGHT_MG,     TuningOption::INT,     0,    16,    "6"}},
     {"Mobility_Bishop_MG",  {&MOBILITY_BISHOP_MG,     TuningOption::INT,     2,    22,   "10"}},
     {"Mobility_Rook_MG",    {&MOBILITY_ROOK_MG,       TuningOption::INT,     0,    14,    "5"}},
@@ -393,7 +396,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Mobility_Rook_EG",    {&MOBILITY_ROOK_EG,       TuningOption::INT,     0,    12,    "2"}},
     {"Mobility_Queen_EG",   {&MOBILITY_QUEEN_EG,      TuningOption::INT,     0,     8,    "1"}},
 
-    // ── Pawn structure ────────────────────────────────────────────
+    // Pawn structure
     {"Isolated_MG",         {&ISOLATED_PAWN_PENALTY_MG, TuningOption::INT, -35,     0,   "-15"}},
     {"Isolated_EG",         {&ISOLATED_PAWN_PENALTY_EG, TuningOption::INT, -28,     0,   "-20"}},
     {"Doubled_MG",          {&DOUBLED_PAWN_PENALTY_MG,  TuningOption::INT, -45,     0,  "-12"}},
@@ -411,7 +414,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Pawn_Storm_Base",     {&PAWN_STORM_BASE,          TuningOption::INT,   0,    16,    "2"}},
     {"Pawn_Storm_Rank_Mult",{&PAWN_STORM_RANK_MULT,     TuningOption::INT,   0,     9,    "1"}},
 
-    // ── Passed pawns (ranks 1-6; ranks 0 and 7 are always 0) ──────
+    // Passed pawns (ranks 1-6; ranks 0 and 7 are always 0)
     // Note: Moved to Texel tuning. Ranges kept as original.
     {"PassedMG_R1",         {&PASSED_PAWN_BONUS_MG[1], TuningOption::INT,  0,   20,   "5"}},
     {"PassedMG_R2",         {&PASSED_PAWN_BONUS_MG[2], TuningOption::INT,  0,   30,   "10"}},
@@ -432,7 +435,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Outside_Passed_MG",   {&OUTSIDE_PASSED_BONUS_MG,   TuningOption::INT, 0,  30,   "8"}},
     {"Outside_Passed_EG",   {&OUTSIDE_PASSED_BONUS_EG,   TuningOption::INT, 0,  60,   "20"}},
 
-    // ── King safety ───────────────────────────────────────────────
+    // King safety
     {"King_Shield_Penalty",    {&KING_SHIELD_MISSING_PENALTY, TuningOption::INT, -60,    -5,  "-27"}},
     {"King_Open_File_Penalty", {&KING_OPEN_FILE_PENALTY,      TuningOption::INT, -55,    -5,  "-29"}},
     {"King_SemiOpen_Penalty",  {&KING_SEMI_OPEN_FILE_PENALTY, TuningOption::INT, -25,     0,   "-6"}},
@@ -452,28 +455,28 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"KingAtk_6",              {&KING_ATTACK_COUNT_BONUS[6],  TuningOption::INT,   0,    90,   "27"}},
     {"KingAtk_7",              {&KING_ATTACK_COUNT_BONUS[7],  TuningOption::INT,   0,    90,   "16"}},
 
-    // ── Territory ─────────────────────────────────────────────────
+    // Territory
     {"Center_Bonus",          {&CENTER_BONUS,          TuningOption::INT,   0,    24,    "7"}},
     {"Ext_Center_Bonus",      {&EXT_CENTER_BONUS,      TuningOption::INT,   0,    18,    "5"}},
     {"Enemy_Half_Bonus",      {&ENEMY_HALF_BONUS,      TuningOption::INT,   0,    18,    "4"}},
     {"Seventh_Rank_MG",       {&SEVENTH_RANK_BONUS_MG, TuningOption::INT,   3,    38,   "16"}},
     {"Seventh_Rank_EG",       {&SEVENTH_RANK_BONUS_EG, TuningOption::INT,   6,    65,   "22"}},
 
-    // ── Coordination ─────────────────────────────────────────────
+    // Coordination
     {"Defended_Piece_Bonus",       {&DEFENDED_PIECE_BONUS,       TuningOption::INT,   0,   18,   "3"}},
     {"Shared_Target_Bonus",        {&SHARED_TARGET_BONUS,        TuningOption::INT,   0,   32,  "8"}},
     {"Battery_Rook_Queen",         {&BATTERY_ROOK_QUEEN_BONUS,   TuningOption::INT,   0,   40,  "10"}},
     {"Battery_Bishop_Queen",       {&BATTERY_BISHOP_QUEEN_BONUS, TuningOption::INT,   0,   30,   "11"}},
     {"Support_Chain_Bonus",        {&SUPPORT_CHAIN_BONUS,        TuningOption::INT,   0,   24,   "5"}},
 
-    // ── Tactical pressure ─────────────────────────────────────────
+    // Tactical pressure
     {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT,   4,   42,  "18"}},
     {"Pin_Bonus",                 {&PIN_BONUS,                    TuningOption::INT,  10,   65,  "36"}},
     {"Overloaded_Defender_Bonus", {&OVERLOADED_DEFENDER_BONUS,    TuningOption::INT,   0,   30,   "4"}}, // Skipped pass 2
     {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS,TuningOption::INT,   0,   18,   "5"}},
     {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,     TuningOption::INT,  15,  130,  "66"}},
 
-    // ── Threats ───────────────────────────────────────────────────
+    // Threats
     // Pawn threats vs piece types 2-5 (knight/bishop/rook/queen)
     {"Threat_Pawn_Knight_MG", {&THREAT_BY_PAWN_MG[2], TuningOption::INT,  12,  100,  "42"}},
     {"Threat_Pawn_Bishop_MG", {&THREAT_BY_PAWN_MG[3], TuningOption::INT,  35,  145,  "89"}},
@@ -496,7 +499,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Hanging_Penalty_EG",    {&HANGING_BASE_PENALTY_EG, TuningOption::INT,   0,   40,   "6"}}, // Skipped pass 2
     {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT,   4,   90,  "21"}},
 
-    // ── Outposts ──────────────────────────────────────────────────
+    // Outposts
     {"Knight_Outpost_MG",  {&KNIGHT_OUTPOST_MG, TuningOption::INT,   0,   45,  "18"}},
     {"Knight_Outpost_EG",  {&KNIGHT_OUTPOST_EG, TuningOption::INT,   0,   35,   "10"}},
     {"Bishop_Outpost_MG",  {&BISHOP_OUTPOST_MG, TuningOption::INT,   0,   38,  "10"}},
@@ -506,7 +509,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Queen_Outpost_MG",   {&QUEEN_OUTPOST_MG,  TuningOption::INT,   0,   30,   "4"}},
     {"Queen_Outpost_EG",   {&QUEEN_OUTPOST_EG,  TuningOption::INT,   0,   25,   "8"}},
 
-    // ── File / diagonal openness ──────────────────────────────────
+    // File / diagonal openness
     {"Open_File_Mult",         {&OPEN_FILE_MULTIPLIER,          TuningOption::INT, 100,  165, "121"}},
     {"Semi_Open_File_Mult",    {&SEMI_OPEN_FILE_MULTIPLIER,     TuningOption::INT, 100,  140, "117"}},
     {"Bishop_Openness_Max",    {&BISHOP_OPENNESS_MAX_BONUS,     TuningOption::INT,   5,   80,  "34"}},
@@ -525,7 +528,81 @@ inline void handle_setoption(const std::string& name, const std::string& value) 
         *static_cast<double*>(opt.ptr) = std::stod(value);
 }
 
+#ifndef coefficients_t
+    #define coefficients_t std::vector<I16>
+#endif
+
+#ifndef tune_t
+    #define tune_t double
+#endif
+
+#ifndef pair_t
+    #define pair_t std::array<tune_t, 2>
+#endif
+
+#ifndef parameters_t
+    #define parameters_t std::vector<pair_t>
+#endif
+
+struct EvalResult {
+    coefficients_t coefficients;
+    tune_t         score         = 0;
+    tune_t         endgame_scale = 1;
+};
+
+enum class GamePhases { Midgame = 0, Endgame = 1 };
+
+// Forward declaration of chess::Board for texel-tuner qsearch support
+namespace chess { class Board; }
+
+// Push an {mg, eg} pair from two separate ints.
+inline void push_pair(parameters_t& p, int mg, int eg) {
+    p.push_back({static_cast<tune_t>(mg), static_cast<tune_t>(eg)});
+}
+
+// Each trace field is I32[2] where [0] = WHITE count, [1] = BLACK count.
+// The coefficient is white_count - black_count.
+inline void push_coeff(coefficients_t& c, const I32 f[2]) {
+    c.push_back(static_cast<I16>(f[0] - f[1]));
+}
+inline void push_coeff_arr(coefficients_t& c, const I32 (*arr)[2], int n) {
+    for (int i = 0; i < n; ++i)
+        c.push_back(static_cast<I16>(arr[i][0] - arr[i][1]));
+}
+
+class TexelTuner {
+public:
+    // Tuner configuration constants
+    constexpr static bool    includes_additional_score      = true;
+    constexpr static bool    supports_external_chess_eval   = true;
+    constexpr static bool    retune_from_zero               = false;
+    constexpr static tune_t  preferred_k                    = 0;
+    constexpr static I32 max_epoch                      = 5001;
+    constexpr static bool    enable_qsearch                 = false;
+    constexpr static bool    filter_in_check                = false;
+    constexpr static tune_t  initial_learning_rate          = 1;
+    constexpr static I32 learning_rate_drop_interval    = 10000;
+    constexpr static tune_t  learning_rate_drop_ratio       = 1;
+
+    // Returns the vector of initial {mg, eg} parameter pairs drawn from tune.h.
+    // Parameter ordering is documented inside the implementation file.
+    static parameters_t get_initial_parameters();
+
+    // Parses a FEN string, runs the trace evaluation and returns an EvalResult
+    // whose coefficients represent linear feature counts and whose score field
+    // holds the non-linear residual (king safety, development, etc.) already
+    // tapered and expressed from White's perspective.
+    static EvalResult get_fen_eval_result(const std::string& fen);
+
+    // Converts a chess::Board (texel-tuner's chess.hpp Board) to a FEN string
+    // and delegates to get_fen_eval_result.
+    static EvalResult get_external_eval_result(const chess::Board& board);
+
+    // Prints the tuned parameters in tune.h initialiser format to stdout.
+    static void print_parameters(const parameters_t& parameters);
+};
+
 } // namespace Tune
-} // namespace ShayBot
+} // namespace SHAYVERI
 
 #endif // TUNE_H
