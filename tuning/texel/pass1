@@ -6,6 +6,8 @@
 
 grep -c '^\[Event ' output_*.pgn | awk -F: '{s+=$2} END {print s}'
 
+cd ~/texel/tuner/build && cmake ../src -DCMAKE_BUILD_TYPE=Release && make -j20
+
 ================================================================
   SHAYBOT  –  TEXEL TUNING TRACKER
                   TEXEL PASS 1

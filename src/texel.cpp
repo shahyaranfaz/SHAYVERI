@@ -636,7 +636,7 @@ static coefficients_t get_coefficients(const Trace& tr) {
     coefficients_t c;
 
     // 1. Material (5 types: PAWN-QUEEN)
-    push_coeff_arr(c, tr.material, 5);
+    push_coeff_arr(c, tr.material + 1, 4);
 
     // 2. PST (6 types × 64 squares)
     for (int pt = 0; pt < 6; ++pt)
@@ -746,7 +746,7 @@ parameters_t TexelTuner::get_initial_parameters() {
 
     // 1. Material (piece values MG/EG, PAWN-QUEEN)
     // Piece enum: WP=1, WN=2, WB=3, WR=4, WQ=5
-    for (int pt = 1; pt <= 5; ++pt)
+    for (int pt = 2; pt <= 5; ++pt)
         push_pair(p, PIECE_VALUES_MG[pt], PIECE_VALUES_EG[pt]);
 
     // 2. PST (6 types × 64 squares)
@@ -837,7 +837,7 @@ EvalResult TexelTuner::get_fen_eval_result(const std::string& fen) {
     if (board.side_to_move == SHAYVERI::BLACK) full_eval = -full_eval;
 
     // Trace the linear features.
-    Trace tr   = trace_evaluate(board);
+    Trace tr              = trace_evaluate(board);
     coefficients_t coeffs = get_coefficients(tr);
 
     // Compute the linear contribution at the current (initial) parameter values
@@ -880,16 +880,21 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     // Material
     ss << "// Piece values MG\n";
     ss << "inline int PIECE_VALUES_MG[PIECE_COUNT] = {\n    0,";
-    for (int pt = 0; pt < 5; ++pt) ss << " " << mg(i + pt) << ",";
+    ss << "   100,";
+    for (int pt = 0; pt < 4; ++pt) ss << " " << mg(i + pt) << ",";
     ss << " 0,\n    ";
-    for (int pt = 0; pt < 5; ++pt) ss << " " << mg(i + pt) << ",";
+    ss << "   100,";
+    for (int pt = 0; pt < 4; ++pt) ss << " " << mg(i + pt) << ",";
     ss << " 0,\n};\n";
+
     ss << "inline int PIECE_VALUES_EG[PIECE_COUNT] = {\n    0,";
-    for (int pt = 0; pt < 5; ++pt) ss << " " << eg(i + pt) << ",";
+    ss << "   100,";
+    for (int pt = 0; pt < 4; ++pt) ss << " " << eg(i + pt) << ",";
     ss << " 0,\n    ";
-    for (int pt = 0; pt < 5; ++pt) ss << " " << eg(i + pt) << ",";
+    ss << "   100,";
+    for (int pt = 0; pt < 4; ++pt) ss << " " << eg(i + pt) << ",";
     ss << " 0,\n};\n";
-    i += 5;
+    i += 4;
 
     // PST
     static const char* pst_names[] = {
