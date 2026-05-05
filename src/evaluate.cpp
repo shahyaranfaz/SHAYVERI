@@ -259,10 +259,10 @@ static void evaluate_pawns(const Board &b, Colour c,
                                         ISOLATED_PAWN_PENALTY_EG, c);
 
         bool supported = is_supported_pawn(c, sq, pawns);
-        if (supported) add_score(mg, eg, SUPPORTED_PAWN_BONUS_MG, 0, c);
+        if (supported) add_score(mg, eg, SUPPORTED_PAWN_BONUS_MG, SUPPORTED_PAWN_BONUS_EG, c);
 
         bool weak = (enemy_attacks.pawn & sq_bb) && !supported;
-        if (weak) add_score(mg, eg, WEAK_PAWN_PENALTY_MG, 0, c);
+        if (weak) add_score(mg, eg, WEAK_PAWN_PENALTY_MG, WEAK_PAWN_PENALTY_EG, c);
 
         if (passed[sq]) {
             add_score(mg, eg, PASSED_PAWN_BONUS_MG[rel_rank],

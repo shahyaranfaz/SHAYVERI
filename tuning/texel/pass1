@@ -6,7 +6,7 @@
 
 grep -c '^\[Event ' output_*.pgn | awk -F: '{s+=$2} END {print s}'
 
-cd ~/texel/tuner/build && cmake ../src -DCMAKE_BUILD_TYPE=Release && make -j20
+mkcd ~/texel/texel_tuner/build  && cmake ../src -DCMAKE_BUILD_TYPE=Release && cmake --build . -j23 && install -m 755 tuner ~/texel/tuner && cd ~/texel && ./tuner sources.csv
 
 ================================================================
   SHAYBOT  –  TEXEL TUNING TRACKER
@@ -135,26 +135,31 @@ Elo = 106.4 +- 25.4
 PHASE 2. PAWN STRUCTURE / STORM / PASSED EXTRAS
 ================================================================
 
-  [ ] Isolated_Pawn_Penalty_MG
-  [ ] Isolated_Pawn_Penalty_EG
-  [ ] Doubled_Pawn_Penalty_MG
-  [ ] Doubled_Pawn_Penalty_EG
-  [ ] Backward_Pawn_Penalty_MG
-  [ ] Backward_Pawn_Penalty_EG
-  [ ] Supported_Pawn_Bonus_MG
-  [ ] Weak_Pawn_Penalty_MG
-  [ ] Pawn_Island_Penalty_MG
-  [ ] Pawn_Island_Penalty_EG
+  [x] Isolated_Pawn_Penalty_MG
+  [x] Isolated_Pawn_Penalty_EG
+  [x] Doubled_Pawn_Penalty_MG
+  [x] Doubled_Pawn_Penalty_EG
+  [x] Backward_Pawn_Penalty_MG
+  [x] Backward_Pawn_Penalty_EG
+  [x] Supported_Pawn_Bonus_MG
+  [x] Supported_Pawn_Bonus_EG
+  [x] Weak_Pawn_Penalty_MG
+  [x] Weak_Pawn_Penalty_EG
+  [x] Pawn_Island_Penalty_MG
+  [x] Pawn_Island_Penalty_EG
 
-  [ ] Pawn_Storm_Base
-  [ ] Pawn_Storm_Rank_Mult
+  [x] Pawn_Storm_Base
+  [x] Pawn_Storm_Rank_Mult
 
-  [ ] Candidate_Pawn_Bonus_MG
-  [ ] Candidate_Pawn_Bonus_EG
-  [ ] Connected_Passed_Bonus_MG
-  [ ] Connected_Passed_Bonus_EG
-  [ ] Outside_Passed_Bonus_MG
-  [ ] Outside_Passed_Bonus_EG
+  [x] Passed_Pawn_Bonuses_MG
+  [x] Passed_Pawn_Bonuses_EG
+
+  [x] Candidate_Pawn_Bonus_MG
+  [x] Candidate_Pawn_Bonus_EG
+  [x] Connected_Passed_Bonus_MG
+  [x] Connected_Passed_Bonus_EG
+  [x] Outside_Passed_Bonus_MG
+  [x] Outside_Passed_Bonus_EG
 
 ================================================================
 PHASE 3. ACTIVITY / MOBILITY / TERRITORY / COORDINATION

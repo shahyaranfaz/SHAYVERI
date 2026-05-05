@@ -234,32 +234,34 @@ inline int BISHOP_PAIR_BONUS_MG = 22;
 inline int BISHOP_PAIR_BONUS_EG = 11;
 
 // Passed pawns (indexed by relative rank 0-7)
-inline int PASSED_PAWN_BONUS_MG[8] = { 0, 8, 2, 7, 39, 92, 145, 0 };
-inline int PASSED_PAWN_BONUS_EG[8] = { 0, 4, 8, 40, 60, 99, 129, 0 };
+inline int PASSED_PAWN_BONUS_MG[8] = { 0, 2, 4, 6, 33, 76, 119, 0 };
+inline int PASSED_PAWN_BONUS_EG[8] = { 0, 5, 8, 39, 72, 125, 164, 0 };
 
 // Candidate / connected / outside passed
-inline int CANDIDATE_PAWN_BONUS_MG   =  8;
-inline int CANDIDATE_PAWN_BONUS_EG   = 12;
-inline int CONNECTED_PASSED_BONUS_MG = 10;
-inline int CONNECTED_PASSED_BONUS_EG = 18;
-inline int OUTSIDE_PASSED_BONUS_MG   =  8;
-inline int OUTSIDE_PASSED_BONUS_EG   = 20;
+inline int CANDIDATE_PAWN_BONUS_MG   =  9;
+inline int CANDIDATE_PAWN_BONUS_EG   = 11;
+inline int CONNECTED_PASSED_BONUS_MG = 8;
+inline int CONNECTED_PASSED_BONUS_EG = 23;
+inline int OUTSIDE_PASSED_BONUS_MG   = 17;
+inline int OUTSIDE_PASSED_BONUS_EG   =  8;
 
 // Pawn structure penalties
 inline int ISOLATED_PAWN_PENALTY_MG =  -1;
-inline int ISOLATED_PAWN_PENALTY_EG =  -3;
-inline int DOUBLED_PAWN_PENALTY_MG  = -12;
-inline int DOUBLED_PAWN_PENALTY_EG  =  -9;
-inline int BACKWARD_PAWN_PENALTY_MG = -13;
-inline int BACKWARD_PAWN_PENALTY_EG =   0;
-inline int SUPPORTED_PAWN_BONUS_MG  =  14;
-inline int WEAK_PAWN_PENALTY_MG     = -18;
-inline int PAWN_ISLAND_PENALTY_MG   = -32;
-inline int PAWN_ISLAND_PENALTY_EG   =  -5;
+inline int ISOLATED_PAWN_PENALTY_EG = -14;
+inline int DOUBLED_PAWN_PENALTY_MG  = -11;
+inline int DOUBLED_PAWN_PENALTY_EG  = -15;
+inline int BACKWARD_PAWN_PENALTY_MG =  -8;
+inline int BACKWARD_PAWN_PENALTY_EG =  -3;
+inline int SUPPORTED_PAWN_BONUS_MG  =  15;
+inline int SUPPORTED_PAWN_BONUS_EG  =   7;
+inline int WEAK_PAWN_PENALTY_MG     = -21;
+inline int WEAK_PAWN_PENALTY_EG     = -10;
+inline int PAWN_ISLAND_PENALTY_MG   = -25;
+inline int PAWN_ISLAND_PENALTY_EG   = -13;
 
 // Pawn storm toward enemy king
-inline int PAWN_STORM_BASE      = 2;
-inline int PAWN_STORM_RANK_MULT = 1;
+inline int PAWN_STORM_BASE      = -43;
+inline int PAWN_STORM_RANK_MULT =  14;
 
 // King safety
 inline int KING_SHIELD_MISSING_PENALTY = -27;
@@ -308,14 +310,14 @@ inline int SUPPORT_CHAIN_BONUS_MG        =  5;
 inline int SUPPORT_CHAIN_BONUS_EG        =  5;
 
 // Tactical pressure
-inline int UNDEFENDED_ATTACK_BONUS        = 18;
+inline int UNDEFENDED_ATTACK_BONUS           = 18;
 inline int PIN_BONUS_MG                      = 36;
 inline int PIN_BONUS_EG                      = 18;
 inline int OVERLOADED_DEFENDER_BONUS_MG      =  4;
 inline int OVERLOADED_DEFENDER_BONUS_EG      =  2;
 inline int UNRECIPROCATED_PRESSURE_BONUS_MG  =  5;
 inline int UNRECIPROCATED_PRESSURE_BONUS_EG  =  2;
-inline int UNDEFENDED_VALUE_DIVISOR       = 66;
+inline int UNDEFENDED_VALUE_DIVISOR          = 66;
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
 inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 42, 89, 113, 89,  0 };
@@ -413,7 +415,9 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Backward_MG",         {&BACKWARD_PAWN_PENALTY_MG, TuningOption::INT, -40,     0,  "-13"}},
     {"Backward_EG",         {&BACKWARD_PAWN_PENALTY_EG, TuningOption::INT, -25,     0,   "-8"}},
     {"Supported_Pawn_MG",   {&SUPPORTED_PAWN_BONUS_MG,  TuningOption::INT,   3,    38,   "14"}},
+    {"Supported_Pawn_EG",   {&SUPPORTED_PAWN_BONUS_EG,  TuningOption::INT,   3,    38,   "7"}},
     {"Weak_Pawn_MG",        {&WEAK_PAWN_PENALTY_MG,     TuningOption::INT, -50,    -3,  "-18"}},
+    {"Weak_Pawn_EG",        {&WEAK_PAWN_PENALTY_EG,     TuningOption::INT, -50,    -3,  "-9"}},
     {"Pawn_Island_MG",      {&PAWN_ISLAND_PENALTY_MG,   TuningOption::INT, -60,    -5,  "-32"}},
     {"Pawn_Island_EG",      {&PAWN_ISLAND_PENALTY_EG,   TuningOption::INT, -25,     0,   "-5"}},
     {"Pawn_Storm_Base",     {&PAWN_STORM_BASE,          TuningOption::INT,   0,    16,    "2"}},

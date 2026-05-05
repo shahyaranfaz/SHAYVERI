@@ -58,7 +58,7 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
 }
 
 #ifndef SHAYBOT_TEXEL_PHASE
-#define SHAYBOT_TEXEL_PHASE 1
+#define SHAYBOT_TEXEL_PHASE 2
 #endif
 
 // Build with -DSHAYBOT_TEXEL_PHASE=N to choose the active parameter set:
@@ -851,8 +851,8 @@ parameters_t TexelTuner::get_initial_parameters() {
         push_pair(p, ISOLATED_PAWN_PENALTY_MG,  ISOLATED_PAWN_PENALTY_EG);
         push_pair(p, DOUBLED_PAWN_PENALTY_MG,   DOUBLED_PAWN_PENALTY_EG);
         push_pair(p, BACKWARD_PAWN_PENALTY_MG,  BACKWARD_PAWN_PENALTY_EG);
-        push_pair(p, SUPPORTED_PAWN_BONUS_MG,   0);
-        push_pair(p, WEAK_PAWN_PENALTY_MG,      0);
+        push_pair(p, SUPPORTED_PAWN_BONUS_MG,   SUPPORTED_PAWN_BONUS_EG);
+        push_pair(p, WEAK_PAWN_PENALTY_MG,      WEAK_PAWN_PENALTY_EG);
         push_pair(p, PAWN_ISLAND_PENALTY_MG,    PAWN_ISLAND_PENALTY_EG);
     }
 
@@ -1069,8 +1069,10 @@ void TexelTuner::print_parameters(const parameters_t& p) {
             ss << "inline int DOUBLED_PAWN_PENALTY_EG  = " << eg(i++)  << ";\n";
             ss << "inline int BACKWARD_PAWN_PENALTY_MG = " << mg(i)   << ";\n";
             ss << "inline int BACKWARD_PAWN_PENALTY_EG = " << eg(i++)  << ";\n";
-            ss << "inline int SUPPORTED_PAWN_BONUS_MG  = " << mg(i++)  << ";\n";
-            ss << "inline int WEAK_PAWN_PENALTY_MG     = " << mg(i++)  << ";\n";
+            ss << "inline int SUPPORTED_PAWN_BONUS_MG  = " << mg(i)  << ";\n";
+            ss << "inline int SUPPORTED_PAWN_BONUS_EG  = " << eg(i++)  << ";\n";
+            ss << "inline int WEAK_PAWN_PENALTY_MG     = " << mg(i)  << ";\n";
+            ss << "inline int WEAK_PAWN_PENALTY_EG     = " << mg(i++)  << ";\n";
             ss << "inline int PAWN_ISLAND_PENALTY_MG   = " << mg(i)   << ";\n";
             ss << "inline int PAWN_ISLAND_PENALTY_EG   = " << eg(i++)  << ";\n";
         }
@@ -1269,8 +1271,10 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     ss << "inline int DOUBLED_PAWN_PENALTY_EG  = " << eg(i++)  << ";\n";
     ss << "inline int BACKWARD_PAWN_PENALTY_MG = " << mg(i)   << ";\n";
     ss << "inline int BACKWARD_PAWN_PENALTY_EG = " << eg(i++)  << ";\n";
-    ss << "inline int SUPPORTED_PAWN_BONUS_MG  = " << mg(i++)  << ";\n";
-    ss << "inline int WEAK_PAWN_PENALTY_MG     = " << mg(i++)  << ";\n";
+    ss << "inline int SUPPORTED_PAWN_BONUS_MG  = " << mg(i)  << ";\n";
+    ss << "inline int SUPPORTED_PAWN_BONUS_EG  = " << eg(i++)  << ";\n";
+    ss << "inline int WEAK_PAWN_PENALTY_MG     = " << mg(i)  << ";\n";
+    ss << "inline int WEAK_PAWN_PENALTY_EG     = " << eg(i++)  << ";\n";
     ss << "inline int PAWN_ISLAND_PENALTY_MG   = " << mg(i)   << ";\n";
     ss << "inline int PAWN_ISLAND_PENALTY_EG   = " << eg(i++)  << ";\n";
     // Pawn storm
