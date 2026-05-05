@@ -264,9 +264,9 @@ inline int PAWN_STORM_BASE      = -43;
 inline int PAWN_STORM_RANK_MULT =  14;
 
 // King safety
-inline int KING_SHIELD_MISSING_PENALTY = -27;
-inline int KING_OPEN_FILE_PENALTY      = -29;
-inline int KING_SEMI_OPEN_FILE_PENALTY =  -6;
+inline int KING_SHIELD_MISSING_PENALTY = -21;
+inline int KING_OPEN_FILE_PENALTY      = -20;
+inline int KING_SEMI_OPEN_FILE_PENALTY = -11;
 inline int KING_ESCAPE_BONUS           =   4;
 inline int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11, 0 };
 inline int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 7, 25, 33, 44, 27, 16 };
@@ -310,27 +310,27 @@ inline int SUPPORT_CHAIN_BONUS_MG        =  4;
 inline int SUPPORT_CHAIN_BONUS_EG        = 13;
 
 // Tactical pressure
-inline int UNDEFENDED_ATTACK_BONUS           = 18;
-inline int PIN_BONUS_MG                      = 36;
-inline int PIN_BONUS_EG                      = 18;
-inline int OVERLOADED_DEFENDER_BONUS_MG      =  4;
-inline int OVERLOADED_DEFENDER_BONUS_EG      =  2;
-inline int UNRECIPROCATED_PRESSURE_BONUS_MG  =  5;
-inline int UNRECIPROCATED_PRESSURE_BONUS_EG  =  2;
-inline int UNDEFENDED_VALUE_DIVISOR          = 66;
+inline int UNDEFENDED_ATTACK_BONUS          = 18;
+inline int PIN_BONUS_MG                     = 18;
+inline int PIN_BONUS_EG                     = 18;
+inline int OVERLOADED_DEFENDER_BONUS_MG     =  2;
+inline int OVERLOADED_DEFENDER_BONUS_EG     =  0;
+inline int UNRECIPROCATED_PRESSURE_BONUS_MG =  1;
+inline int UNRECIPROCATED_PRESSURE_BONUS_EG = 13;
+inline int UNDEFENDED_VALUE_DIVISOR         = 66;
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
-inline int THREAT_BY_PAWN_MG[7]  = { 0,  0, 42, 89, 113, 89,  0 };
-inline int THREAT_BY_PAWN_EG[7]  = { 0,  0, 77, 94,  39, 71,  0 };
+inline int THREAT_BY_PAWN_MG[7] = { 0, 0, 48, 45, 59, 26, 0 };
+inline int THREAT_BY_PAWN_EG[7] = { 0, 0, 25, 51, 0, 18, 0 };
 // Bonus when a minor attacks an enemy piece of higher value
-inline int THREAT_BY_MINOR_MG[7] = { 0,  0,  0,  0, 26, 11,  0 };
-inline int THREAT_BY_MINOR_EG[7] = { 0,  0,  0,  0, 10, 54,  0 };
+inline int THREAT_BY_MINOR_MG[7] = { 0, 0, 0, 0, 46, 15, 0 };
+inline int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0, 0, 8, 0 };
 // Bonus when a rook attacks an enemy queen
-inline int THREAT_BY_ROOK_MG = 58;
-inline int THREAT_BY_ROOK_EG = 48;
+inline int THREAT_BY_ROOK_MG = 28;
+inline int THREAT_BY_ROOK_EG =  0;
 
 // Hanging piece penalties
-inline int HANGING_BASE_PENALTY_MG = 54;
+inline int HANGING_BASE_PENALTY_MG = 36;
 inline int HANGING_BASE_PENALTY_EG =  0;
 inline int HANGING_VALUE_DIVISOR   = 21;
 

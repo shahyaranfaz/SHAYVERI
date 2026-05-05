@@ -58,7 +58,7 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
 }
 
 #ifndef SHAYBOT_TEXEL_PHASE
-    #define SHAYBOT_TEXEL_PHASE 3
+    #define SHAYBOT_TEXEL_PHASE 4
 #endif
 
 // Build with -DSHAYBOT_TEXEL_PHASE=N to choose the active parameter set:

@@ -6,7 +6,7 @@
 
 grep -c '^\[Event ' output_*.pgn | awk -F: '{s+=$2} END {print s}'
 
-mkcd ~/texel/texel_tuner/build  && cmake ../src -DCMAKE_BUILD_TYPE=Release && cmake --build . -j23 && install -m 755 tuner ~/texel/tuner && cd ~/texel && ./tuner sources.csv
+mkcd ~/texel/texel_tuner/build  && cmake ../src -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-DSHAYBOT_TEXEL_PHASE=4" && cmake --build . -j23 && install -m 755 tuner ~/texel/tuner && cd ~/texel && ./tuner sources.csv
 
 ================================================================
   SHAYBOT  –  TEXEL TUNING TRACKER
@@ -104,8 +104,8 @@ PHASE 1. PIECE VALUES / TABLES / SOME ASSOCIATED ITEMS
   [X] Rook_PST_EG
   [X] Queen_PST_MG
   [X] Queen_PST_EG
-  [!] King_PST_MG        | REJECTED ON FIRST PASS, RETUNE TBD
-  [!] King_PST_EG        | REJECTED ON FIRST PASS, RETUNE TBD
+  [!] King_PST_MG        | rejected from phase 1 output; keep baseline table for now
+  [!] King_PST_EG        | rejected from phase 1 output; retune separately only after phase 4
 
   [x] Tempo_Bonus_MG
   [x] Tempo_Bonus_EG
@@ -127,9 +127,9 @@ PHASE 1. PIECE VALUES / TABLES / SOME ASSOCIATED ITEMS
 
 600 games at 10+0.1 with 8mvs_+90_+99.epd:
 TEXEL1 VS SPSA4
-Black: 120 - 91 - 78
 White: 185 - 42 - 63
-Elo = 106.4 +- 25.4
+Black: 120 - 91 - 78
+Elo = 106 +- 25
 
 ================================================================
 PHASE 2. PAWN STRUCTURE / STORM / PASSED EXTRAS
@@ -163,9 +163,10 @@ PHASE 2. PAWN STRUCTURE / STORM / PASSED EXTRAS
 
 800 games at 10+0.1 with 8mvs_+90_+99.epd:
 TEXEL2 VS TEXEL1
-Black: 106 - 171 - 123
 White: 166 - 103 - 131
+Black: 106 - 171 - 123
 Elo = -1 +- 20
+Decision: neutral. Keep only because it did not regress; do not treat as a validated gain.
 
 ================================================================
 PHASE 3. ACTIVITY / MOBILITY / TERRITORY / COORDINATION
@@ -207,53 +208,67 @@ PHASE 3. ACTIVITY / MOBILITY / TERRITORY / COORDINATION
 
 800 games at 10+0.1 with 8mvs_+90_+99.epd:
 TEXEL3 VS TEXEL2
-Black: 81 - 184 - 135
 White: 175 - 77 - 148
+Black: 81 - 184 - 135
 Elo = -2 +- 19
+Decision: neutral. Keep only because it did not regress; do not treat as a validated gain.
 
 ================================================================
 PHASE 4. KING SAFETY / TACTICS / THREATS / HANGING
 ================================================================
 
-  [ ] King_Shield_Missing_Penalty
-  [ ] King_Open_File_Penalty
-  [ ] King_Semi_Open_File_Penalty
+  [x] King_Shield_Missing_Penalty
+  [x] King_Open_File_Penalty
+  [x] King_Semi_Open_File_Penalty
 
-  [ ] Pin_Bonus_MG
-  [ ] Pin_Bonus_EG
-  [ ] Overloaded_Defender_Bonus_MG
-  [ ] Overloaded_Defender_Bonus_EG
-  [ ] Unreciprocated_Pressure_Bonus_MG
-  [ ] Unreciprocated_Pressure_Bonus_EG
+  [x] Pin_Bonus_MG
+  [x] Pin_Bonus_EG
+  [x] Overloaded_Defender_Bonus_MG
+  [x] Overloaded_Defender_Bonus_EG
+  [x] Unreciprocated_Pressure_Bonus_MG
+  [x] Unreciprocated_Pressure_Bonus_EG
 
-  [ ] Threat_By_Pawn_Knight_MG
-  [ ] Threat_By_Pawn_Knight_EG
-  [ ] Threat_By_Pawn_Bishop_MG
-  [ ] Threat_By_Pawn_Bishop_EG
-  [ ] Threat_By_Pawn_Rook_MG
-  [ ] Threat_By_Pawn_Rook_EG
-  [ ] Threat_By_Pawn_Queen_MG
-  [ ] Threat_By_Pawn_Queen_EG
+  [x] Threat_By_Pawn_Knight_MG
+  [x] Threat_By_Pawn_Knight_EG
+  [x] Threat_By_Pawn_Bishop_MG
+  [x] Threat_By_Pawn_Bishop_EG
+  [x] Threat_By_Pawn_Rook_MG
+  [x] Threat_By_Pawn_Rook_EG
+  [x] Threat_By_Pawn_Queen_MG
+  [x] Threat_By_Pawn_Queen_EG
 
-  [ ] Threat_By_Minor_Rook_MG
-  [ ] Threat_By_Minor_Rook_EG
-  [ ] Threat_By_Minor_Queen_MG
-  [ ] Threat_By_Minor_Queen_EG
+  [x] Threat_By_Minor_Rook_MG
+  [x] Threat_By_Minor_Rook_EG
+  [x] Threat_By_Minor_Queen_MG
+  [x] Threat_By_Minor_Queen_EG
 
-  [ ] Threat_By_Rook_MG
-  [ ] Threat_By_Rook_EG
+  [x] Threat_By_Rook_MG
+  [x] Threat_By_Rook_EG
 
-  [ ] Hanging_Base_Penalty_MG
-  [ ] Hanging_Base_Penalty_EG
+  [x] Hanging_Base_Penalty_MG
+  [x] Hanging_Base_Penalty_EG
+
+800 games at 10+0.1 with 8mvs_+90_+99.epd:
+TEXEL4 VS TEXEL3
+White: 160 - 95 - 145
+Black: 70 - 163 - 167
+Elo = -12 +- 19
+
+800 games at 10+0.1 with 8mvs_+90_+99.epd:
+TEXEL4 VS TEXEL1
+White: 173-92-135
+Black: 96-167-137
+Elo = 4 +- 20
 
 ================================================================
 PHASE 5. REDO ALL OF PHASE 1-4 EXCLUDING PSTs and PIECE VALUES
 ================================================================
 
-    [ ] Tune King PSTs
+    [ ] Optional: tune king PSTs alone, with material/PSTs otherwise frozen
     [ ] Re-anchor MG and EG pawn values to 100
-    [ ] Multiply each MG/EG parameter by MG new_pawn/old_pawn or EG new/old, respectively
-    [ ] Run Texel Phase
+    [ ] Multiply additive MG params by 100 / PIECE_VALUES_MG[PAWN]
+    [ ] Multiply additive EG params by 100 / PIECE_VALUES_EG[PAWN]
+    [ ] Run refine Texel phase excluding material and non-king PSTs
 
 ================================================================
 POST-TEXEL: FINAL CMA-ES (SEARCH ONLY)
@@ -276,5 +291,4 @@ Parameters to re-tune:
 
 Use top-10% centroid metric for all final value selection.
 Minimum TC 10+0.1; prefer 30+0.3 for this final pass.
-
 
