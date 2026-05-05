@@ -58,7 +58,11 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
 }
 
 #ifndef SHAYBOT_TEXEL_PHASE
-    #define SHAYBOT_TEXEL_PHASE 4
+    #define SHAYBOT_TEXEL_PHASE 5
+#endif
+
+#ifndef SHAYBOT_TEXEL_ONLY_KING_PST
+    #define SHAYBOT_TEXEL_ONLY_KING_PST 0
 #endif
 
 // Build with -DSHAYBOT_TEXEL_PHASE=N to choose the active parameter set:
@@ -71,16 +75,17 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
 static constexpr int TEXEL_PHASE = SHAYBOT_TEXEL_PHASE;
 static_assert(TEXEL_PHASE >= 0 && TEXEL_PHASE <= 5, "Unsupported SHAYBOT_TEXEL_PHASE");
 
+static constexpr bool tune_only_king_pst = SHAYBOT_TEXEL_ONLY_KING_PST != 0;
 static constexpr bool tune_all              = TEXEL_PHASE == 0;
 static constexpr bool tune_refine           = TEXEL_PHASE == 5;
-static constexpr bool tune_material         = tune_all || TEXEL_PHASE == 1;
-static constexpr bool tune_pst              = tune_all || TEXEL_PHASE == 1;
-static constexpr bool tune_bishop_pair      = tune_all || tune_refine || TEXEL_PHASE == 1;
+static constexpr bool tune_material         = !tune_only_king_pst && (tune_all || TEXEL_PHASE == 1);
+static constexpr bool tune_pst              = tune_only_king_pst || tune_all || TEXEL_PHASE == 1;
+static constexpr bool tune_bishop_pair      = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1);
 static constexpr bool tune_pawn_structure   = tune_all || tune_refine || TEXEL_PHASE == 2;
 static constexpr bool tune_pawn_storm       = tune_all || tune_refine || TEXEL_PHASE == 2;
-static constexpr bool tune_passed_ranks     = tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 2;
+static constexpr bool tune_passed_ranks     = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 2);
 static constexpr bool tune_passed_extras    = tune_all || tune_refine || TEXEL_PHASE == 2;
-static constexpr bool tune_mobility         = tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 3;
+static constexpr bool tune_mobility         = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 3);
 static constexpr bool tune_king_safety      = tune_all || tune_refine || TEXEL_PHASE == 4;
 static constexpr bool tune_territory        = tune_all || tune_refine || TEXEL_PHASE == 3;
 static constexpr bool tune_coordination     = tune_all || tune_refine || TEXEL_PHASE == 3;
@@ -88,7 +93,7 @@ static constexpr bool tune_tactical         = tune_all || tune_refine || TEXEL_P
 static constexpr bool tune_threats          = tune_all || tune_refine || TEXEL_PHASE == 4;
 static constexpr bool tune_hanging          = tune_all || tune_refine || TEXEL_PHASE == 4;
 static constexpr bool tune_outposts         = tune_all || tune_refine || TEXEL_PHASE == 3;
-static constexpr bool tune_tempo            = tune_all || tune_refine || TEXEL_PHASE == 1;
+static constexpr bool tune_tempo            = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1);
 
 
 // Pre-baked masks (copies of evaluate.cpp static data)
@@ -703,6 +708,9 @@ static coefficients_t get_coefficients(const Trace& tr) {
     if constexpr (tune_pst) {
         for (int pt = 0; pt < 6; ++pt) {
             PieceType ptype = static_cast<PieceType>(pt + 1);
+            if constexpr (tune_only_king_pst) {
+                if (ptype != KING) continue;
+            }
             for (int sq = 0; sq < 64; ++sq) {
                 if (skip_pst_param(ptype, sq)) continue;
                 c.push_back(static_cast<I16>(tr.pst[pt][sq][0] - tr.pst[pt][sq][1]));
@@ -837,6 +845,9 @@ parameters_t TexelTuner::get_initial_parameters() {
     // 2. PST (6 types × 64 squares, with anchor squares removed for N/B/R/Q)
     if constexpr (tune_pst) {
         for (int pt = 1; pt <= 6; ++pt) {
+            if constexpr (tune_only_king_pst) {
+                if (pt != KING) continue;
+            }
             for (int sq = 0; sq < 64; ++sq) {
                 if (skip_pst_param(static_cast<PieceType>(pt), sq)) continue;
                 push_pair(p, MG_PTAB[pt][sq], EG_PTAB[pt][sq]);
@@ -1022,6 +1033,9 @@ void TexelTuner::print_parameters(const parameters_t& p) {
             };
             for (int pt = 0; pt < 6; ++pt) {
                 PieceType ptype = static_cast<PieceType>(pt + 1);
+                if constexpr (tune_only_king_pst) {
+                    if (ptype != KING) continue;
+                }
                 std::array<int, 64> idx{};
                 int next_i = i;
                 for (int sq = 0; sq < 64; ++sq) {

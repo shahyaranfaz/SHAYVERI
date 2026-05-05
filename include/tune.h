@@ -70,12 +70,12 @@ inline double lmr_scale = 1.79; //
 
 // Per-piece (indexed by Piece enum), MG and EG
 inline int PIECE_VALUES_MG[PIECE_COUNT] = {
-    0,   114, 402, 446, 581, 1066, 0,
-         114, 402, 446, 581, 1066, 0,
+    0,   100, 353, 391, 510, 935, 0,
+         100, 353, 391, 510, 935, 0,
 };
 inline int PIECE_VALUES_EG[PIECE_COUNT] = {
-    0,   126, 366, 371, 679, 1077, 0,
-         126, 366, 371, 679, 1077, 0,
+    0,   100, 290, 294, 539, 855, 0,
+         100, 290, 294, 539, 855, 0,
 };
 
 // Indexed by PieceType (0-6).  King = 20000 for SEE termination.
@@ -99,128 +99,140 @@ static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = { //
 
 inline int PST_PAWN_MG[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
-    -21, -38, -48, -45, -49, -16,  -6, -37,
-    -21, -44, -38, -36, -28, -12,  -5, -14,
-    -13, -27, -16, -20,   0,  -7, -16, -20,
-      5, -10,  -7,  11,  18,  28,   0,  -5,
-     14,  21,  19,  13,  28, 113,  65,  20,
-    126,  85,  87,  88,  84,  35, -36,  -9,
+    -22, -37, -46, -43, -47, -18,  -9, -36,
+    -22, -43, -37, -36, -29, -15,  -8, -16,
+    -15, -28, -18, -22,  -4, -10, -18, -22,
+      0, -13, -10,   6,  12,  21,  -4,  -8,
+      8,  14,  13,   7,  21,  95,  53,  14,
+    107,  71,  72,  73,  70,  27, -36, -12,
       0,   0,   0,   0,   0,   0,   0,   0,
+
 };
 inline int PST_PAWN_EG[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
-     11,  10,   3,   6,  19,  -2,  -7, -18,
-      7,   7,  -1,   5,   6,  -5,  -6, -14,
-     13,  11, -10,  -9, -12, -10,   1,  -8,
-     29,  20,  11, -15,  -9, -12,   2,  -2,
-     53,  42,  28,   8,  -1, -10, -12,  14,
-     33,  51,  46,  20,   4,  43,  54,  30,
+      2,   1,  -5,  -2,   8,  -9, -13, -21,
+     -1,  -1,  -8,  -3,  -2, -11, -12, -18,
+      3,   2, -15, -14, -17, -15,  -6, -13,
+     17,   9,   2, -19, -14, -17,  -5,  -9,
+     35,  26,  15,  -1,  -8, -15, -17,   4,
+     19,  33,  30,   9,  -4,  27,  36,  17,
       0,   0,   0,   0,   0,   0,   0,   0,
+
 };
 
 inline int PST_KNIGHT_MG[64] = {
-     -47,  -10,  -32,  -19,   -1,   -2,   -8,  -75,
-     -31,  -28,  -16,    7,    1,   -3,  -20,   -8,
-     -25,  -18,   -9,   16,   20,    1,    0,  -11,
-     -12,    4,    9,   14,   26,   16,   46,   20,
-      -4,   -5,   12,   35,    2,   36,   -2,   36,
-     -40,   -1,   22,   39,   67,   95,   47,   41,
-     -26,  -26,    8,   41,   55,   62,   -8,    7,
-    -111,  -33,  -31,   -5,    9,  -22,  -25,  -80,
+    -41,  -9, -28, -17,  -1,  -2,  -7, -66,
+    -27, -25, -14,   6,   1,  -3, -18,  -7,
+    -22, -16,  -8,  14,  18,   1,   0, -10,
+    -11,   4,   8,  12,  23,  14,  40,  19,
+     -4,  -4,  11,  31,   2,  32,  -2,  32,
+    -35,  -1,  19,  34,  59,  83,  41,  36,
+    -23, -23,   7,  36,  48,  54,  -7,   6,
+    -97, -29, -27,  -4,   8, -19, -22, -70,
+
 };
 inline int PST_KNIGHT_EG[64] = {
-    -40, -57, -24, -12, -23, -29, -47, -44,
-    -31,   3, -14,  -9,  -5, -22,  -9, -23,
-    -30,   1, -12,   9,   5, -14,  -3, -14,
-      4,  13,  20,  24,  23,  26,  19,   6,
-      2,  12,  17,  29,  36,  22,  32,   9,
-     -2,  12,  16,  11,  10,  15,  11,   9,
-     -5,  13,   9,  31,  20,   2,  16, -10,
-    -58,   5,  22,  21,  22,  25,  10, -55,
+    -32, -45, -19, -10, -18, -23, -37, -35,
+    -25,   2, -11,  -7,  -4, -17,  -7, -18,
+    -24,   1, -10,   7,   4, -11,  -2, -11,
+      3,  10,  16,  19,  18,  21,  15,   5,
+      1,  10,  13,  23,  29,  17,  25,   7,
+     -2,  10,  13,   9,   8,  12,   9,   7,
+     -4,  10,   7,  25,  16,   2,  13,  -8,
+    -46,   4,  17,  17,  17,  20,   8, -44,
+
 };
 
 inline int PST_BISHOP_MG[64] = {
-    -32,   2,   3, -30, -25,   1,  -2,   1,
-     -3,  13,   8,   2,   0,  11,  31,  18,
-     -4,  -7,   7,   5,   8,   9,  17,  13,
-    -11,   5,  -2,  22,  29,  -4,   2,  16,
-     -8,   6,  16,  22,  24,  34,   7,  -9,
-     -7,  11,  23,  17,  49,  63,  60,  21,
-    -44, -29,   6, -26, -17,  -5, -49, -49,
-    -21, -15, -51, -28, -30, -49,  -8, -17,
+    -28,   2,   3, -26, -22,   1,  -2,   1,
+     -3,  11,   8,   2,   0,  10,  27,  16,
+     -4,  -6,   6,   4,   7,   8,  15,  11,
+    -10,   4,  -2,  19,  25,  -4,   2,  15,
+     -7,   5,  14,  19,  21,  30,   6,  -8,
+     -6,  10,  20,  15,  43,  55,  53,  18,
+    -39, -25,   5, -23, -15,  -3, -43, -43,
+    -18, -13, -45, -25, -26, -43,  -7, -15,
+
 };
 inline int PST_BISHOP_EG[64] = {
-    -13, -16, -25,  -3,   2, -13, -14,  -2,
-    -16, -23, -15,  -4,  -4, -19, -30, -35,
-     -1,   1,  -4,   1,   3,  -7,  -8,   2,
-      8,  -3,   1, -10, -15,   0,   9,   7,
-      8,   3, -18, -18, -17, -13,  13,  21,
-     18,   8,  -7, -11,  -6,  -7,  -1,  19,
-     26,  12,   8,  17,  10,   6,  13,  17,
-     27,  18,  19,  20,  16,  18,  10,  17,
+    -10, -13, -20,  -2,   2, -10, -11,  -2,
+    -13, -18, -12,  -3,  -3, -15, -24, -27,
+     -1,   1,  -3,   1,   2,  -6,  -6,   2,
+      6,  -2,   1,  -8, -12,   0,   7,   6,
+      6,   2, -14, -14, -13, -10,  10,  17,
+     14,   6,  -6,  -9,  -5,  -6,  -1,  16,
+     21,  10,   6,  13,   8,   5,  10,  13,
+     21,  14,  15,  16,  13,  14,   8,  13,
+
 };
 
 inline int PST_ROOK_MG[64] = {
-    -17, -19, -12,   0,  -1,   3,  -3, -15,
-    -48, -41, -30, -22, -14,  -7, -13, -61,
-    -40, -41, -39, -33, -25, -34, -26, -44,
-    -43, -47, -36, -29, -22, -26, -16, -30,
-    -23, -17,   3,  26,  16,  26,   9,  -5,
-    -15,  25,  22,  47,  66,  65,  69,  42,
-     -9, -24,   4,  19,  27,  49,  34,  58,
-     54,  47,   9,  22,  20,  49,  56,  60,
+    -15, -17, -11,   0,  -1,   3,  -3, -13,
+    -42, -36, -27, -19, -12,  -6, -11, -54,
+    -35, -36, -34, -29, -22, -30, -23, -39,
+    -38, -41, -32, -25, -19, -23, -14, -26,
+    -21, -15,   3,  23,  14,  23,   8,  -4,
+    -13,  22,  19,  41,  58,  57,  61,  37,
+     -8, -21,   4,  17,  24,  42,  30,  51,
+     47,  41,   8,  19,  18,  43,  49,  53,
+
 };
 inline int PST_ROOK_EG[64] = {
-    -37, -21, -17, -27, -32, -19, -27, -28,
-    -13, -15, -12, -16, -26, -35, -36, -21,
-    -17,  -3,  -4, -10, -16,  -9, -17, -12,
-     15,  23,  17,   8,   6,  10,   6,   8,
-     22,  20,  14,  10,  11,  13,  12,  19,
-     26,  14,  16,   5,   1,   9,   1,  12,
-     -2,   5,  -1,  -3,  -7, -18, -10, -17,
-      7,  19,  33,  27,  37,  38,  37,  27,
+    -29, -17, -13, -21, -25, -15, -21, -22,
+    -10, -12, -10, -13, -21, -28, -29, -17,
+    -13,  -2,  -3,  -8, -13,  -7, -13, -10,
+     12,  18,  13,   6,   5,   8,   5,   6,
+     17,  16,  11,   8,   9,  10,  10,  15,
+     21,  11,  13,   4,   1,   7,   1,  10,
+     -2,   4,  -1,  -2,  -6, -14,  -8, -13,
+      6,  15,  26,  21,  29,  30,  29,  21,
+
 };
 
 inline int PST_QUEEN_MG[64] = {
-    -51,   1,   4,  19,  25,  -4, -25, -11,
-      5,  19,  31,  26,  31,  48,  37,  10,
-     -7,   2,   7,   8,  17,  16,  23,  26,
-     -3,  -3, -11, -12,  -2,   9,   9,  36,
-    -17, -25, -15, -48, -25,   6,  14,   6,
-    -21, -28, -31, -23,   6,  16,  22, -18,
-    -37, -76, -49, -50, -53,   4, -35,  50,
-     -3,  12,  12,   6,  19,  27,  36,  38,
+    -45,   1,   4,  17,  22,  -4, -22, -10,
+      4,  17,  27,  23,  27,  42,  32,   9,
+     -6,   2,   6,   7,  15,  14,  20,  23,
+     -3,  -3, -10, -11,  -2,   8,   8,  33,
+    -15, -22, -13, -42, -22,   5,  12,   5,
+    -18, -25, -27, -20,   5,  14,  19, -16,
+    -32, -67, -43, -44, -46,   4, -31,  44,
+     -3,  11,  11,   5,  17,  24,  32,  33,
+
 };
 inline int PST_QUEEN_EG[64] = {
-     -52,  -59,  -43,  -45,  -65,  -58,  -52,  -48,
-     -21,  -46,  -67,  -38,  -40, -110, -109,  -40,
-       0,  -15,  -20,  -23,  -22,   -2,  -15,   -5,
-      19,   -1,  -12,  -19,   -5,   29,   39,   46,
-      23,   28,   -6,    8,   27,   49,   61,   60,
-      26,   15,   16,   25,   27,   46,   48,   56,
-      25,   16,    9,   26,   45,   24,   19,   36,
-       9,   17,   22,   15,   26,   34,   35,   32,
+    -41, -47, -34, -36, -52, -46, -41, -38,
+    -17, -37, -53, -30, -32, -87, -87, -31,
+      0, -12, -16, -18, -17,  -2, -12,  -4,
+     15,  -1, -10, -15,  -4,  23,  31,  37,
+     18,  22,  -5,   6,  21,  39,  48,  48,
+     21,  12,  13,  20,  21,  37,  38,  45,
+     20,  13,   7,  21,  36,  19,  15,  29,
+      7,  13,  17,  12,  21,  27,  28,  25,
+
 };
 
 inline int PST_KING_MG[64] = {
-     20, 30, 10,  0,  0, 10, 30, 20,
-     20, 20,  0,  0,  0,  0, 20, 20,
-    -10,-20,-20,-20,-20,-20,-20,-10,
-    -20,-30,-30,-40,-40,-30,-30,-20,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
-    -30,-40,-40,-50,-50,-40,-40,-30,
+      7,  50,  25, -11,  27,  -7,  36,  17,
+     19,  25,  25,   2,   1,   5,  29,  19,
+      0,  11,  17,  19,  21,  20,  18, -17,
+     -3,   5,   5, -13,  -3,  10,  10, -17,
+     -3,  -3, -11, -31, -32,  -3,   0,  -4,
+     -4,  -2,  -7, -22, -24,  -5,   1,   0,
+     -7,  -6,  -7, -18, -20,  -4,  -4,  -8,
+    -15, -14, -14, -24, -23, -11, -10, -17,
+
 };
 inline int PST_KING_EG[64] = {
-    -50,-30,-30,-30,-30,-30,-30,-50,
-    -30,-30,  0,  0,  0,  0,-30,-30,
-    -30,-10, 20, 30, 30, 20,-10,-30,
-    -30,-10, 30, 40, 40, 30,-10,-30,
-    -30,-10, 30, 40, 40, 30,-10,-30,
-    -30,-10, 20, 30, 30, 20,-10,-30,
-    -30,-20,-10,  0,  0,-10,-20,-30,
-    -50,-40,-30,-20,-20,-30,-40,-50,
+    -65, -48, -16, -11, -39, -13, -37, -71,
+    -22, -15,  -8,  -3,  -3,  -4, -19, -31,
+    -13, -15,  -2,   6,   5,  -2, -15, -14,
+    -16,   4,  11,  17,  17,  10,   0, -16,
+      2,  16,  23,  21,  20,  21,  18,   0,
+     11,  30,  34,  25,  25,  40,  36,  17,
+     -7,  22,  30,  26,  30,  36,  31,   3,
+    -59, -10,   1,  10,  13,  13,  10, -60,
+
 };
 
 // ================================================================
@@ -228,45 +240,45 @@ inline int PST_KING_EG[64] = {
 // ================================================================
 
 // Misc
-inline int TEMPO_BONUS_MG = 27;
-inline int TEMPO_BONUS_EG = 11;
-inline int BISHOP_PAIR_BONUS_MG = 22;
-inline int BISHOP_PAIR_BONUS_EG = 11;
+inline int TEMPO_BONUS_MG = 24;
+inline int TEMPO_BONUS_EG = 9;
+inline int BISHOP_PAIR_BONUS_MG = 19;
+inline int BISHOP_PAIR_BONUS_EG = 9;
 
 // Passed pawns (indexed by relative rank 0-7)
-inline int PASSED_PAWN_BONUS_MG[8] = { 0, 2, 4, 6, 33, 76, 119, 0 };
-inline int PASSED_PAWN_BONUS_EG[8] = { 0, 5, 8, 39, 72, 125, 164, 0 };
+inline int PASSED_PAWN_BONUS_MG[8] = { 0, 2, 4, 5, 29, 67, 104, 0 };
+inline int PASSED_PAWN_BONUS_EG[8] = { 0, 4, 6, 31, 57, 99, 130, 0 };
 
 // Candidate / connected / outside passed
-inline int CANDIDATE_PAWN_BONUS_MG   =  9;
-inline int CANDIDATE_PAWN_BONUS_EG   = 11;
-inline int CONNECTED_PASSED_BONUS_MG = 8;
-inline int CONNECTED_PASSED_BONUS_EG = 23;
-inline int OUTSIDE_PASSED_BONUS_MG   = 17;
-inline int OUTSIDE_PASSED_BONUS_EG   =  8;
+inline int CANDIDATE_PAWN_BONUS_MG   =  8;
+inline int CANDIDATE_PAWN_BONUS_EG   = 9;
+inline int CONNECTED_PASSED_BONUS_MG = 7;
+inline int CONNECTED_PASSED_BONUS_EG = 18;
+inline int OUTSIDE_PASSED_BONUS_MG   = 15;
+inline int OUTSIDE_PASSED_BONUS_EG   =  6;
 
 // Pawn structure penalties
 inline int ISOLATED_PAWN_PENALTY_MG =  -1;
-inline int ISOLATED_PAWN_PENALTY_EG = -14;
-inline int DOUBLED_PAWN_PENALTY_MG  = -11;
-inline int DOUBLED_PAWN_PENALTY_EG  = -15;
-inline int BACKWARD_PAWN_PENALTY_MG =  -8;
-inline int BACKWARD_PAWN_PENALTY_EG =  -3;
-inline int SUPPORTED_PAWN_BONUS_MG  =  15;
-inline int SUPPORTED_PAWN_BONUS_EG  =   7;
-inline int WEAK_PAWN_PENALTY_MG     = -21;
-inline int WEAK_PAWN_PENALTY_EG     = -10;
-inline int PAWN_ISLAND_PENALTY_MG   = -25;
-inline int PAWN_ISLAND_PENALTY_EG   = -13;
+inline int ISOLATED_PAWN_PENALTY_EG = -11;
+inline int DOUBLED_PAWN_PENALTY_MG  = -10;
+inline int DOUBLED_PAWN_PENALTY_EG  = -12;
+inline int BACKWARD_PAWN_PENALTY_MG =  -7;
+inline int BACKWARD_PAWN_PENALTY_EG =  -2;
+inline int SUPPORTED_PAWN_BONUS_MG  =  13;
+inline int SUPPORTED_PAWN_BONUS_EG  =   6;
+inline int WEAK_PAWN_PENALTY_MG     = -18;
+inline int WEAK_PAWN_PENALTY_EG     = -8;
+inline int PAWN_ISLAND_PENALTY_MG   = -22;
+inline int PAWN_ISLAND_PENALTY_EG   = -10;
 
 // Pawn storm toward enemy king
-inline int PAWN_STORM_BASE      = -43;
-inline int PAWN_STORM_RANK_MULT =  14;
+inline int PAWN_STORM_BASE      = -38;
+inline int PAWN_STORM_RANK_MULT =  12;
 
 // King safety
-inline int KING_SHIELD_MISSING_PENALTY = -21;
-inline int KING_OPEN_FILE_PENALTY      = -20;
-inline int KING_SEMI_OPEN_FILE_PENALTY = -11;
+inline int KING_SHIELD_MISSING_PENALTY = -18;
+inline int KING_OPEN_FILE_PENALTY      = -18;
+inline int KING_SEMI_OPEN_FILE_PENALTY = -10;
 inline int KING_ESCAPE_BONUS           =   4;
 inline int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11, 0 };
 inline int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 7, 25, 33, 44, 27, 16 };
@@ -274,14 +286,14 @@ inline int KING_DANGER_DIVISOR         =  10;
 inline int KING_DANGER_MAX             = 641;
 
 // Mobility
-inline int MOBILITY_KNIGHT_MG =  8;
-inline int MOBILITY_KNIGHT_EG =  7;
-inline int MOBILITY_BISHOP_MG =  5;
-inline int MOBILITY_BISHOP_EG =  9;
+inline int MOBILITY_KNIGHT_MG =  7;
+inline int MOBILITY_KNIGHT_EG =  6;
+inline int MOBILITY_BISHOP_MG =  4;
+inline int MOBILITY_BISHOP_EG =  7;
 inline int MOBILITY_ROOK_MG   =  3;
-inline int MOBILITY_ROOK_EG   =  5;
+inline int MOBILITY_ROOK_EG   =  4;
 inline int MOBILITY_QUEEN_MG  =  0;
-inline int MOBILITY_QUEEN_EG  = 14;
+inline int MOBILITY_QUEEN_EG  = 11;
 
 // File/diagonal openness multipliers (percent)
 inline int OPEN_FILE_MULTIPLIER             = 121;
@@ -292,61 +304,61 @@ inline int BISHOP_OPENNESS_MAX_BONUS        =  34;
 inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
 
 // Territory
-inline int SEVENTH_RANK_BONUS_MG       =  16;
-inline int SEVENTH_RANK_BONUS_EG       =  24;
-inline int QUEEN_SEVENTH_RANK_BONUS_MG = -11;
-inline int QUEEN_SEVENTH_RANK_BONUS_EG =  48;
+inline int SEVENTH_RANK_BONUS_MG       =  14;
+inline int SEVENTH_RANK_BONUS_EG       =  19;
+inline int QUEEN_SEVENTH_RANK_BONUS_MG = -10;
+inline int QUEEN_SEVENTH_RANK_BONUS_EG =  38;
 
 // Coordination
 inline int DEFENDED_PIECE_BONUS_MG       =  0;
 inline int DEFENDED_PIECE_BONUS_EG       =  0;
 inline int SHARED_TARGET_BONUS_MG        =  0;
-inline int SHARED_TARGET_BONUS_EG        = 42;
-inline int BATTERY_ROOK_QUEEN_BONUS_MG   =  5;
-inline int BATTERY_ROOK_QUEEN_BONUS_EG   = 56;
-inline int BATTERY_BISHOP_QUEEN_BONUS_MG =  8;
-inline int BATTERY_BISHOP_QUEEN_BONUS_EG = 40;
+inline int SHARED_TARGET_BONUS_EG        = 33;
+inline int BATTERY_ROOK_QUEEN_BONUS_MG   =  4;
+inline int BATTERY_ROOK_QUEEN_BONUS_EG   = 44;
+inline int BATTERY_BISHOP_QUEEN_BONUS_MG =  7;
+inline int BATTERY_BISHOP_QUEEN_BONUS_EG = 32;
 inline int SUPPORT_CHAIN_BONUS_MG        =  4;
-inline int SUPPORT_CHAIN_BONUS_EG        = 13;
+inline int SUPPORT_CHAIN_BONUS_EG        = 10;
 
 // Tactical pressure
-inline int UNDEFENDED_ATTACK_BONUS          = 18;
-inline int PIN_BONUS_MG                     = 18;
-inline int PIN_BONUS_EG                     = 18;
+inline int UNDEFENDED_ATTACK_BONUS          = 16;
+inline int PIN_BONUS_MG                     = 16;
+inline int PIN_BONUS_EG                     = 14;
 inline int OVERLOADED_DEFENDER_BONUS_MG     =  2;
 inline int OVERLOADED_DEFENDER_BONUS_EG     =  0;
 inline int UNRECIPROCATED_PRESSURE_BONUS_MG =  1;
-inline int UNRECIPROCATED_PRESSURE_BONUS_EG = 13;
+inline int UNRECIPROCATED_PRESSURE_BONUS_EG = 10;
 inline int UNDEFENDED_VALUE_DIVISOR         = 66;
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
-inline int THREAT_BY_PAWN_MG[7] = { 0, 0, 48, 45, 59, 26, 0 };
-inline int THREAT_BY_PAWN_EG[7] = { 0, 0, 25, 51, 0, 18, 0 };
+inline int THREAT_BY_PAWN_MG[7] = { 0, 0, 42, 39, 52, 23, 0 };
+inline int THREAT_BY_PAWN_EG[7] = { 0, 0, 20, 40, 0, 14, 0 };
 // Bonus when a minor attacks an enemy piece of higher value
-inline int THREAT_BY_MINOR_MG[7] = { 0, 0, 0, 0, 46, 15, 0 };
-inline int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0, 0, 8, 0 };
+inline int THREAT_BY_MINOR_MG[7] = { 0, 0, 0, 0, 40, 13, 0 };
+inline int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0, 0, 6, 0 };
 // Bonus when a rook attacks an enemy queen
-inline int THREAT_BY_ROOK_MG = 28;
+inline int THREAT_BY_ROOK_MG = 25;
 inline int THREAT_BY_ROOK_EG =  0;
 
 // Hanging piece penalties
-inline int HANGING_BASE_PENALTY_MG = 36;
+inline int HANGING_BASE_PENALTY_MG = 32;
 inline int HANGING_BASE_PENALTY_EG =  0;
 inline int HANGING_VALUE_DIVISOR   = 21;
 
 // Outposts
-inline int KNIGHT_OUTPOST_MG =  8;
-inline int KNIGHT_OUTPOST_EG = 33;
-inline int BISHOP_OUTPOST_MG = 21;
-inline int BISHOP_OUTPOST_EG = 13;
-inline int ROOK_OUTPOST_MG   = 23;
+inline int KNIGHT_OUTPOST_MG =  7;
+inline int KNIGHT_OUTPOST_EG = 26;
+inline int BISHOP_OUTPOST_MG = 18;
+inline int BISHOP_OUTPOST_EG = 10;
+inline int ROOK_OUTPOST_MG   = 20;
 inline int ROOK_OUTPOST_EG   =  0;
 inline int QUEEN_OUTPOST_MG  = -2;
-inline int QUEEN_OUTPOST_EG  = 25;
+inline int QUEEN_OUTPOST_EG  = 20;
 
 // Development / initiative
-inline int DEVELOPMENT_BONUS = 12;
-inline int CASTLED_BONUS     =  5;
+inline int DEVELOPMENT_BONUS = 11;
+inline int CASTLED_BONUS     =  4;
 
 // ================================================================
 // Tuning infrastructure
@@ -600,12 +612,12 @@ public:
     constexpr static bool    supports_external_chess_eval   = false;
     constexpr static bool    retune_from_zero               = false;
     constexpr static tune_t  preferred_k                    = 0;
-    constexpr static I32     max_epoch                      = 12001;
+    constexpr static I32     max_epoch                      = 6001;
     constexpr static bool    enable_qsearch                 = false;
     constexpr static bool    filter_in_check                = false;
-    constexpr static tune_t  initial_learning_rate          = 0.01;
-    constexpr static I32     learning_rate_drop_interval    = 3000;
-    constexpr static tune_t  learning_rate_drop_ratio       = 0.6;
+    constexpr static tune_t  initial_learning_rate          = 0.03;
+    constexpr static I32     learning_rate_drop_interval    = 2000;
+    constexpr static tune_t  learning_rate_drop_ratio       = 0.5;
     constexpr static I32     data_load_print_interval       = 100000;
 
     // Returns the vector of initial {mg, eg} parameter pairs drawn from tune.h.
