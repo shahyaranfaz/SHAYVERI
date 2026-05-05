@@ -68,12 +68,6 @@ static const U64 CENTER_MASK =
     (1ULL << (3*8+3)) | (1ULL << (3*8+4)) |
     (1ULL << (4*8+3)) | (1ULL << (4*8+4));
 
-static const U64 EXT_CENTER_MASK =
-    (1ULL<<(2*8+2))|(1ULL<<(2*8+3))|(1ULL<<(2*8+4))|(1ULL<<(2*8+5)) |
-    (1ULL<<(3*8+2))|(1ULL<<(3*8+5)) |
-    (1ULL<<(4*8+2))|(1ULL<<(4*8+5)) |
-    (1ULL<<(5*8+2))|(1ULL<<(5*8+3))|(1ULL<<(5*8+4))|(1ULL<<(5*8+5));
-
 // ============================================================
 // AttackInfo
 // Stores per-type attack bitboards so king danger can weight
@@ -297,10 +291,7 @@ static void evaluate_pawns(const Board &b, Colour c,
                                   BACKWARD_PAWN_PENALTY_EG, c);
         }
 
-        if (sq_bb & CENTER_MASK)
-            add_score(mg, eg, PAWN_CENTER_BONUS_MG, PAWN_CENTER_BONUS_EG, c);
-        else if (sq_bb & EXT_CENTER_MASK)
-            add_score(mg, eg, PAWN_EXT_CENTER_BONUS_MG, PAWN_EXT_CENTER_BONUS_EG, c);
+
     }
 
     // Pawn storm toward enemy king
@@ -427,27 +418,17 @@ static void evaluate_piece_activity(const Board &b, Colour c,
     temp = (c == WHITE) ? b.bit_boards[WN] : b.bit_boards[BN];
     while (temp) {
         Square sq = pop_lsb(temp);
-        U64 sq_bb  = bb_square(sq);
         U64 attacks = knight_attacks(sq) & safe;
         mobility_bonus(popcount(attacks), MOBILITY_KNIGHT_MG, MOBILITY_KNIGHT_EG, 100, mg, eg, c);
-        if      (sq_bb & CENTER_MASK)     add_score(mg, eg, CENTER_BONUS,     CENTER_BONUS/2,     c);
-        else if (sq_bb & EXT_CENTER_MASK) add_score(mg, eg, EXT_CENTER_BONUS, EXT_CENTER_BONUS/2, c);
-        if ((c == WHITE && get_rank(sq) >= 4) || (c == BLACK && get_rank(sq) <= 3))
-            add_score(mg, eg, ENEMY_HALF_BONUS, ENEMY_HALF_BONUS, c);
     }
 
     // Bishops
     temp = (c == WHITE) ? b.bit_boards[WB] : b.bit_boards[BB];
     while (temp) {
         Square sq   = pop_lsb(temp);
-        U64 sq_bb   = bb_square(sq);
         U64 attacks = bishop_attacks(sq, b.occupied) & safe;
         int mult    = bishop_openness_multiplier(attacks);
         mobility_bonus(popcount(attacks), MOBILITY_BISHOP_MG, MOBILITY_BISHOP_EG, mult, mg, eg, c);
-        if      (sq_bb & CENTER_MASK)     add_score(mg, eg, CENTER_BONUS,     CENTER_BONUS/2,     c);
-        else if (sq_bb & EXT_CENTER_MASK) add_score(mg, eg, EXT_CENTER_BONUS, EXT_CENTER_BONUS/2, c);
-        if ((c == WHITE && get_rank(sq) >= 4) || (c == BLACK && get_rank(sq) <= 3))
-            add_score(mg, eg, ENEMY_HALF_BONUS, ENEMY_HALF_BONUS, c);
     }
 
     // Rooks
@@ -459,25 +440,18 @@ static void evaluate_piece_activity(const Board &b, Colour c,
         mobility_bonus(popcount(attacks), MOBILITY_ROOK_MG, MOBILITY_ROOK_EG, mult, mg, eg, c);
         if ((c == WHITE && get_rank(sq) == RANK_7) || (c == BLACK && get_rank(sq) == RANK_2))
             add_score(mg, eg, SEVENTH_RANK_BONUS_MG, SEVENTH_RANK_BONUS_EG, c);
-        if ((c == WHITE && get_rank(sq) >= 4) || (c == BLACK && get_rank(sq) <= 3))
-            add_score(mg, eg, ENEMY_HALF_BONUS, ENEMY_HALF_BONUS, c);
     }
 
     // Queens
     temp = (c == WHITE) ? b.bit_boards[WQ] : b.bit_boards[BQ];
     while (temp) {
         Square sq   = pop_lsb(temp);
-        U64 sq_bb   = bb_square(sq);
         U64 attacks = queen_attacks(sq, b.occupied) & safe;
         int mult    = std::max(openness_multiplier_for_file(pawns, all_pawns, get_file(sq)),
                                bishop_openness_multiplier(attacks));
         mobility_bonus(popcount(attacks), MOBILITY_QUEEN_MG, MOBILITY_QUEEN_EG, mult, mg, eg, c);
-        if      (sq_bb & CENTER_MASK)     add_score(mg, eg, CENTER_BONUS,     CENTER_BONUS/2,     c);
-        else if (sq_bb & EXT_CENTER_MASK) add_score(mg, eg, EXT_CENTER_BONUS, EXT_CENTER_BONUS/2, c);
         if ((c == WHITE && get_rank(sq) == RANK_7) || (c == BLACK && get_rank(sq) == RANK_2))
-            add_score(mg, eg, SEVENTH_RANK_BONUS_MG/2, SEVENTH_RANK_BONUS_EG/2, c);
-        if ((c == WHITE && get_rank(sq) >= 4) || (c == BLACK && get_rank(sq) <= 3))
-            add_score(mg, eg, ENEMY_HALF_BONUS, ENEMY_HALF_BONUS, c);
+            add_score(mg, eg, QUEEN_SEVENTH_RANK_BONUS_MG, QUEEN_SEVENTH_RANK_BONUS_EG, c);
     }
 }
 

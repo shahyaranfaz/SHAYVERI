@@ -255,12 +255,6 @@ inline int WEAK_PAWN_PENALTY_MG     = -18;
 inline int PAWN_ISLAND_PENALTY_MG   = -32;
 inline int PAWN_ISLAND_PENALTY_EG   =  -5;
 
-// Pawn center control
-inline int PAWN_CENTER_BONUS_MG     = 7;
-inline int PAWN_CENTER_BONUS_EG     = 2;
-inline int PAWN_EXT_CENTER_BONUS_MG = 2;
-inline int PAWN_EXT_CENTER_BONUS_EG = 3;
-
 // Pawn storm toward enemy king
 inline int PAWN_STORM_BASE      = 2;
 inline int PAWN_STORM_RANK_MULT = 1;
@@ -294,11 +288,10 @@ inline int BISHOP_OPENNESS_MAX_BONUS        =  34;
 inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
 
 // Territory
-inline int CENTER_BONUS          =  7;
-inline int EXT_CENTER_BONUS      =  5;
-inline int ENEMY_HALF_BONUS      =  4;
 inline int SEVENTH_RANK_BONUS_MG = 16;
 inline int SEVENTH_RANK_BONUS_EG = 22;
+inline int QUEEN_SEVENTH_RANK_BONUS_MG = 8;
+inline int QUEEN_SEVENTH_RANK_BONUS_EG = 11;
 
 // Coordination
 inline int DEFENDED_PIECE_BONUS       =  3;
@@ -409,10 +402,6 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Weak_Pawn_MG",        {&WEAK_PAWN_PENALTY_MG,     TuningOption::INT, -50,    -3,  "-18"}},
     {"Pawn_Island_MG",      {&PAWN_ISLAND_PENALTY_MG,   TuningOption::INT, -60,    -5,  "-32"}},
     {"Pawn_Island_EG",      {&PAWN_ISLAND_PENALTY_EG,   TuningOption::INT, -25,     0,   "-5"}},
-    {"Pawn_Center_MG",      {&PAWN_CENTER_BONUS_MG,     TuningOption::INT,   0,    24,    "7"}},
-    {"Pawn_Center_EG",      {&PAWN_CENTER_BONUS_EG,     TuningOption::INT,   0,    10,    "2"}},  // Skipped pass 2
-    {"Pawn_ExtCenter_MG",   {&PAWN_EXT_CENTER_BONUS_MG, TuningOption::INT,   0,    12,    "2"}},  // Skipped pass 2
-    {"Pawn_ExtCenter_EG",   {&PAWN_EXT_CENTER_BONUS_EG, TuningOption::INT,   0,    14,    "3"}},
     {"Pawn_Storm_Base",     {&PAWN_STORM_BASE,          TuningOption::INT,   0,    16,    "2"}},
     {"Pawn_Storm_Rank_Mult",{&PAWN_STORM_RANK_MULT,     TuningOption::INT,   0,     9,    "1"}},
 
@@ -458,11 +447,10 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"KingAtk_7",              {&KING_ATTACK_COUNT_BONUS[7],  TuningOption::INT,   0,    90,   "16"}},
 
     // Territory
-    {"Center_Bonus",          {&CENTER_BONUS,          TuningOption::INT,   0,    24,    "7"}},
-    {"Ext_Center_Bonus",      {&EXT_CENTER_BONUS,      TuningOption::INT,   0,    18,    "5"}},
-    {"Enemy_Half_Bonus",      {&ENEMY_HALF_BONUS,      TuningOption::INT,   0,    18,    "4"}},
     {"Seventh_Rank_MG",       {&SEVENTH_RANK_BONUS_MG, TuningOption::INT,   3,    38,   "16"}},
     {"Seventh_Rank_EG",       {&SEVENTH_RANK_BONUS_EG, TuningOption::INT,   6,    65,   "22"}},
+    {"Queen_Seventh_MG",      {&QUEEN_SEVENTH_RANK_BONUS_MG, TuningOption::INT,  0, 30,  "8"}},
+    {"Queen_Seventh_EG",      {&QUEEN_SEVENTH_RANK_BONUS_EG, TuningOption::INT,  0, 40,  "11"}},
 
     // Coordination
     {"Defended_Piece_Bonus",       {&DEFENDED_PIECE_BONUS,       TuningOption::INT,   0,   18,   "3"}},
@@ -575,14 +563,14 @@ public:
     constexpr static bool    includes_additional_score      = true;
     constexpr static bool    supports_external_chess_eval   = false;
     constexpr static bool    retune_from_zero               = false;
-    constexpr static tune_t  preferred_k                    = 0;
-    constexpr static I32     max_epoch                      = 5001;
+    constexpr static tune_t  preferred_k                    = 0.4;
+    constexpr static I32     max_epoch                      = 20001;
     constexpr static bool    enable_qsearch                 = false;
     constexpr static bool    filter_in_check                = false;
-    constexpr static tune_t  initial_learning_rate          = 1;
-    constexpr static I32     learning_rate_drop_interval    = 10000;
-    constexpr static tune_t  learning_rate_drop_ratio       = 1;
-    constexpr static I32     data_load_print_interval       = 10000;
+    constexpr static tune_t  initial_learning_rate          = 0.01;
+    constexpr static I32     learning_rate_drop_interval    = 1500;
+    constexpr static tune_t  learning_rate_drop_ratio       = 0.7;
+    constexpr static I32     data_load_print_interval       = 100000;
 
     // Returns the vector of initial {mg, eg} parameter pairs drawn from tune.h.
     // Parameter ordering is documented inside the implementation file.
