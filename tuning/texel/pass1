@@ -268,7 +268,7 @@ PHASE 5. REDO ALL OF PHASE 1-4 EXCLUDING PSTs and PIECE VALUES
     [x] Re-anchor MG and EG pawn values to 100
     [x] Multiply additive MG params by 100 / PIECE_VALUES_MG[PAWN]
     [x] Multiply additive EG params by 100 / PIECE_VALUES_EG[PAWN]
-    [ ] Run refine Texel phase excluding material and non-king PSTs
+    [x] Run Texel refine stage (bishop pair, passed ranks, mobility, seventh-rank, tempo)
 
 ================================================================
 POST-TEXEL: FINAL CMA-ES (SEARCH ONLY)

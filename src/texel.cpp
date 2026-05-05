@@ -57,42 +57,42 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
            (pt == KNIGHT || pt == BISHOP || pt == ROOK || pt == QUEEN);
 }
 
-#ifndef SHAYBOT_TEXEL_PHASE
-    #define SHAYBOT_TEXEL_PHASE 5
+#ifndef SHAYVERI_TEXEL_ONLY_KING_PST
+    #define SHAYVERI_TEXEL_ONLY_KING_PST 5
 #endif
 
-#ifndef SHAYBOT_TEXEL_ONLY_KING_PST
-    #define SHAYBOT_TEXEL_ONLY_KING_PST 0
+#ifndef SHAYVERI_TEXEL_ONLY_KING_PST
+    #define SHAYVERI_TEXEL_ONLY_KING_PST 0
 #endif
 
-// Build with -DSHAYBOT_TEXEL_PHASE=N to choose the active parameter set:
+// Build with -DSHAYVERI_TEXEL_PHASE=N to choose the active parameter set:
 //   0: all traced linear terms
 //   1: core eval (material, PST, bishop pair, passed ranks, mobility, tempo)
 //   2: pawn extras (structure, storm, passed ranks/extras)
 //   3: activity (mobility, territory, coordination, outposts)
 //   4: king/tactics (king safety, tactical pressure, threats, hanging)
-//   5: all excluding pst, material
-static constexpr int TEXEL_PHASE = SHAYBOT_TEXEL_PHASE;
-static_assert(TEXEL_PHASE >= 0 && TEXEL_PHASE <= 5, "Unsupported SHAYBOT_TEXEL_PHASE");
+//   5: narrow refinement (bishop pair, passed ranks, mobility, seventh-rank, tempo)
+static constexpr int TEXEL_PHASE = SHAYVERI_TEXEL_ONLY_KING_PST;
+static_assert(TEXEL_PHASE >= 0 && TEXEL_PHASE <= 5, "Unsupported SHAYVERI_TEXEL_PHASE");
 
-static constexpr bool tune_only_king_pst = SHAYBOT_TEXEL_ONLY_KING_PST != 0;
+static constexpr bool tune_only_king_pst = SHAYVERI_TEXEL_ONLY_KING_PST != 0;
 static constexpr bool tune_all              = TEXEL_PHASE == 0;
 static constexpr bool tune_refine           = TEXEL_PHASE == 5;
 static constexpr bool tune_material         = !tune_only_king_pst && (tune_all || TEXEL_PHASE == 1);
 static constexpr bool tune_pst              = tune_only_king_pst || tune_all || TEXEL_PHASE == 1;
 static constexpr bool tune_bishop_pair      = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1);
-static constexpr bool tune_pawn_structure   = tune_all || tune_refine || TEXEL_PHASE == 2;
-static constexpr bool tune_pawn_storm       = tune_all || tune_refine || TEXEL_PHASE == 2;
+static constexpr bool tune_pawn_structure   = tune_all || TEXEL_PHASE == 2;
+static constexpr bool tune_pawn_storm       = tune_all || TEXEL_PHASE == 2;
 static constexpr bool tune_passed_ranks     = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 2);
-static constexpr bool tune_passed_extras    = tune_all || tune_refine || TEXEL_PHASE == 2;
+static constexpr bool tune_passed_extras    = tune_all || TEXEL_PHASE == 2;
 static constexpr bool tune_mobility         = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 3);
-static constexpr bool tune_king_safety      = tune_all || tune_refine || TEXEL_PHASE == 4;
+static constexpr bool tune_king_safety      = tune_all || TEXEL_PHASE == 4;
 static constexpr bool tune_territory        = tune_all || tune_refine || TEXEL_PHASE == 3;
-static constexpr bool tune_coordination     = tune_all || tune_refine || TEXEL_PHASE == 3;
-static constexpr bool tune_tactical         = tune_all || tune_refine || TEXEL_PHASE == 4;
-static constexpr bool tune_threats          = tune_all || tune_refine || TEXEL_PHASE == 4;
-static constexpr bool tune_hanging          = tune_all || tune_refine || TEXEL_PHASE == 4;
-static constexpr bool tune_outposts         = tune_all || tune_refine || TEXEL_PHASE == 3;
+static constexpr bool tune_coordination     = tune_all || TEXEL_PHASE == 3;
+static constexpr bool tune_tactical         = tune_all || TEXEL_PHASE == 4;
+static constexpr bool tune_threats          = tune_all || TEXEL_PHASE == 4;
+static constexpr bool tune_hanging          = tune_all || TEXEL_PHASE == 4;
+static constexpr bool tune_outposts         = tune_all || TEXEL_PHASE == 3;
 static constexpr bool tune_tempo            = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1);
 
 
@@ -1005,7 +1005,7 @@ void TexelTuner::print_parameters(const parameters_t& p) {
         auto mg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][0] * 100.0)); };
         auto eg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][1] * 100.0)); };
 
-        ss << "// SHAYBOT_TEXEL_PHASE=" << TEXEL_PHASE << "\n";
+        ss << "// SHAYVERI_TEXEL_PHASE=" << TEXEL_PHASE << "\n";
 
         if constexpr (tune_material) {
             ss << "// Piece values MG\n";

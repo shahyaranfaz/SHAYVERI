@@ -240,14 +240,14 @@ inline int PST_KING_EG[64] = {
 // ================================================================
 
 // Misc
-inline int TEMPO_BONUS_MG = 24;
-inline int TEMPO_BONUS_EG = 9;
+inline int TEMPO_BONUS_MG       = 21;
+inline int TEMPO_BONUS_EG       = 10;
 inline int BISHOP_PAIR_BONUS_MG = 19;
-inline int BISHOP_PAIR_BONUS_EG = 9;
+inline int BISHOP_PAIR_BONUS_EG =  9;
 
 // Passed pawns (indexed by relative rank 0-7)
-inline int PASSED_PAWN_BONUS_MG[8] = { 0, 2, 4, 5, 29, 67, 104, 0 };
-inline int PASSED_PAWN_BONUS_EG[8] = { 0, 4, 6, 31, 57, 99, 130, 0 };
+inline int PASSED_PAWN_BONUS_MG[8] = { 0, 5, 7, 8, 32, 69, 103, 0 };
+inline int PASSED_PAWN_BONUS_EG[8] = { 0, 7, 9, 34, 60, 98, 128, 0 };
 
 // Candidate / connected / outside passed
 inline int CANDIDATE_PAWN_BONUS_MG   =  8;
@@ -286,13 +286,13 @@ inline int KING_DANGER_DIVISOR         =  10;
 inline int KING_DANGER_MAX             = 641;
 
 // Mobility
-inline int MOBILITY_KNIGHT_MG =  7;
-inline int MOBILITY_KNIGHT_EG =  6;
+inline int MOBILITY_KNIGHT_MG =  6;
+inline int MOBILITY_KNIGHT_EG =  5;
 inline int MOBILITY_BISHOP_MG =  4;
 inline int MOBILITY_BISHOP_EG =  7;
 inline int MOBILITY_ROOK_MG   =  3;
 inline int MOBILITY_ROOK_EG   =  4;
-inline int MOBILITY_QUEEN_MG  =  0;
+inline int MOBILITY_QUEEN_MG  =  1;
 inline int MOBILITY_QUEEN_EG  = 11;
 
 // File/diagonal openness multipliers (percent)
@@ -304,10 +304,10 @@ inline int BISHOP_OPENNESS_MAX_BONUS        =  34;
 inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
 
 // Territory
-inline int SEVENTH_RANK_BONUS_MG       =  14;
-inline int SEVENTH_RANK_BONUS_EG       =  19;
-inline int QUEEN_SEVENTH_RANK_BONUS_MG = -10;
-inline int QUEEN_SEVENTH_RANK_BONUS_EG =  38;
+inline int SEVENTH_RANK_BONUS_MG =       12;
+inline int SEVENTH_RANK_BONUS_EG =       16;
+inline int QUEEN_SEVENTH_RANK_BONUS_MG = -7;
+inline int QUEEN_SEVENTH_RANK_BONUS_EG = 39;
 
 // Coordination
 inline int DEFENDED_PIECE_BONUS_MG       =  0;
@@ -605,18 +605,18 @@ inline void push_coeff_arr(coefficients_t& c, const I32 (*arr)[2], int n) {
 
 class TexelTuner {
 public:
-    // src/texel.cpp can be built with -DSHAYBOT_TEXEL_PHASE=N:
-    // 0 all, 1 core eval, 2 pawn extras, 3 activity, 4 king/tactics, 5 all but pst/material
+    // src/texel.cpp can be built with -DSHAYVERI_TEXEL_PHASE=N:
+    // 0 all, 1 core eval, 2 pawn extras, 3 activity, 4 king/tactics, 5 narrow refinement
     // Tuner configuration constants
     constexpr static bool    includes_additional_score      = true;
     constexpr static bool    supports_external_chess_eval   = false;
     constexpr static bool    retune_from_zero               = false;
     constexpr static tune_t  preferred_k                    = 0;
-    constexpr static I32     max_epoch                      = 6001;
+    constexpr static I32     max_epoch                      = 4001;
     constexpr static bool    enable_qsearch                 = false;
     constexpr static bool    filter_in_check                = false;
-    constexpr static tune_t  initial_learning_rate          = 0.03;
-    constexpr static I32     learning_rate_drop_interval    = 2000;
+    constexpr static tune_t  initial_learning_rate          = 0.001;
+    constexpr static I32     learning_rate_drop_interval    = 1500;
     constexpr static tune_t  learning_rate_drop_ratio       = 0.5;
     constexpr static I32     data_load_print_interval       = 100000;
 

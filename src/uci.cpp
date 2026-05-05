@@ -90,8 +90,8 @@ int main() {
         // --------------------------------------------------------
         if (token == "uci") {
             std::cout
-                << "id name ShayBot\n"
-                << "id author Shahyar\n"
+                << "id name SHAYVERI\n"
+                << "id author Shahyar Anfaz and Averi Wylie\n"
                 << "option name Hash type spin default 64 min 1 max 32768\n"
                 << "option name Clear Hash type button\n"
                 << "option name Threads type spin default 1 min 1 max 512\n"
