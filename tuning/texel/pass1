@@ -161,43 +161,55 @@ PHASE 2. PAWN STRUCTURE / STORM / PASSED EXTRAS
   [x] Outside_Passed_Bonus_MG
   [x] Outside_Passed_Bonus_EG
 
+800 games at 10+0.1 with 8mvs_+90_+99.epd:
+TEXEL2 VS TEXEL1
+Black: 106 - 171 - 123
+White: 166 - 103 - 131
+Elo = -1 +- 20
+
 ================================================================
 PHASE 3. ACTIVITY / MOBILITY / TERRITORY / COORDINATION
 ================================================================
 
-  [ ] Mobility_Knight_MG
-  [ ] Mobility_Knight_EG
-  [ ] Mobility_Bishop_MG
-  [ ] Mobility_Bishop_EG
-  [ ] Mobility_Rook_MG
-  [ ] Mobility_Rook_EG
-  [ ] Mobility_Queen_MG
-  [ ] Mobility_Queen_EG
+  [x] Mobility_Knight_MG
+  [x] Mobility_Knight_EG
+  [x] Mobility_Bishop_MG
+  [x] Mobility_Bishop_EG
+  [x] Mobility_Rook_MG
+  [x] Mobility_Rook_EG
+  [x] Mobility_Queen_MG
+  [x] Mobility_Queen_EG
 
-  [ ] Seventh_Rank_Bonus_MG
-  [ ] Seventh_Rank_Bonus_EG
-  [ ] Queen_Seventh_Rank_Bonus_MG
-  [ ] Queen_Seventh_Rank_Bonus_EG
+  [x] Seventh_Rank_Bonus_MG
+  [x] Seventh_Rank_Bonus_EG
+  [x] Queen_Seventh_Rank_Bonus_MG
+  [x] Queen_Seventh_Rank_Bonus_EG
 
-  [ ] Defended_Piece_Bonus_MG
-  [ ] Defended_Piece_Bonus_EG
-  [ ] Shared_Target_Bonus_MG
-  [ ] Shared_Target_Bonus_EG
-  [ ] Battery_Rook_Queen_Bonus_MG
-  [ ] Battery_Rook_Queen_Bonus_EG
-  [ ] Battery_Bishop_Queen_Bonus_MG
-  [ ] Battery_Bishop_Queen_Bonus_EG
-  [ ] Support_Chain_Bonus_MG
-  [ ] Support_Chain_Bonus_EG
+  [x] Defended_Piece_Bonus_MG
+  [x] Defended_Piece_Bonus_EG
+  [x] Shared_Target_Bonus_MG
+  [x] Shared_Target_Bonus_EG
+  [x] Battery_Rook_Queen_Bonus_MG
+  [x] Battery_Rook_Queen_Bonus_EG
+  [x] Battery_Bishop_Queen_Bonus_MG
+  [x] Battery_Bishop_Queen_Bonus_EG
+  [x] Support_Chain_Bonus_MG
+  [x] Support_Chain_Bonus_EG
 
-  [ ] Knight_Outpost_MG
-  [ ] Knight_Outpost_EG
-  [ ] Bishop_Outpost_MG
-  [ ] Bishop_Outpost_EG
-  [ ] Rook_Outpost_MG
-  [ ] Rook_Outpost_EG
-  [ ] Queen_Outpost_MG
-  [ ] Queen_Outpost_EG
+  [x] Knight_Outpost_MG
+  [x] Knight_Outpost_EG
+  [x] Bishop_Outpost_MG
+  [x] Bishop_Outpost_EG
+  [x] Rook_Outpost_MG
+  [x] Rook_Outpost_EG
+  [x] Queen_Outpost_MG
+  [x] Queen_Outpost_EG
+
+800 games at 10+0.1 with 8mvs_+90_+99.epd:
+TEXEL3 VS TEXEL2
+Black: 81 - 184 - 135
+White: 175 - 77 - 148
+Elo = -2 +- 19
 
 ================================================================
 PHASE 4. KING SAFETY / TACTICS / THREATS / HANGING
@@ -233,6 +245,15 @@ PHASE 4. KING SAFETY / TACTICS / THREATS / HANGING
 
   [ ] Hanging_Base_Penalty_MG
   [ ] Hanging_Base_Penalty_EG
+
+================================================================
+PHASE 5. REDO ALL OF PHASE 1-4 EXCLUDING PSTs and PIECE VALUES
+================================================================
+
+    [ ] Tune King PSTs
+    [ ] Re-anchor MG and EG pawn values to 100
+    [ ] Multiply each MG/EG parameter by MG new_pawn/old_pawn or EG new/old, respectively
+    [ ] Run Texel Phase
 
 ================================================================
 POST-TEXEL: FINAL CMA-ES (SEARCH ONLY)

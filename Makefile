@@ -1,4 +1,4 @@
-CXX := clang++
+CXX := g++
 CXXFLAGS := -std=c++20 -O3 -mbmi2 -march=native -Wall -Wextra -Wpedantic
 LDFLAGS := -lpthread -flto
 INCLUDES := -Iinclude

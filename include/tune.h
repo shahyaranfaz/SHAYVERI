@@ -274,13 +274,13 @@ inline int KING_DANGER_DIVISOR         =  10;
 inline int KING_DANGER_MAX             = 641;
 
 // Mobility
-inline int MOBILITY_KNIGHT_MG = 8;
-inline int MOBILITY_KNIGHT_EG = 8;
-inline int MOBILITY_BISHOP_MG = 5;
-inline int MOBILITY_BISHOP_EG = 8;
-inline int MOBILITY_ROOK_MG   = 3;
-inline int MOBILITY_ROOK_EG   = 4;
-inline int MOBILITY_QUEEN_MG  = 1;
+inline int MOBILITY_KNIGHT_MG =  8;
+inline int MOBILITY_KNIGHT_EG =  7;
+inline int MOBILITY_BISHOP_MG =  5;
+inline int MOBILITY_BISHOP_EG =  9;
+inline int MOBILITY_ROOK_MG   =  3;
+inline int MOBILITY_ROOK_EG   =  5;
+inline int MOBILITY_QUEEN_MG  =  0;
 inline int MOBILITY_QUEEN_EG  = 14;
 
 // File/diagonal openness multipliers (percent)
@@ -292,22 +292,22 @@ inline int BISHOP_OPENNESS_MAX_BONUS        =  34;
 inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
 
 // Territory
-inline int SEVENTH_RANK_BONUS_MG = 16;
-inline int SEVENTH_RANK_BONUS_EG = 22;
-inline int QUEEN_SEVENTH_RANK_BONUS_MG = 8;
-inline int QUEEN_SEVENTH_RANK_BONUS_EG = 11;
+inline int SEVENTH_RANK_BONUS_MG       =  16;
+inline int SEVENTH_RANK_BONUS_EG       =  24;
+inline int QUEEN_SEVENTH_RANK_BONUS_MG = -11;
+inline int QUEEN_SEVENTH_RANK_BONUS_EG =  48;
 
 // Coordination
-inline int DEFENDED_PIECE_BONUS_MG       =  3;
-inline int DEFENDED_PIECE_BONUS_EG       =  3;
-inline int SHARED_TARGET_BONUS_MG        =  8;
-inline int SHARED_TARGET_BONUS_EG        =  8;
-inline int BATTERY_ROOK_QUEEN_BONUS_MG   = 10;
-inline int BATTERY_ROOK_QUEEN_BONUS_EG   = 10;
-inline int BATTERY_BISHOP_QUEEN_BONUS_MG = 11;
-inline int BATTERY_BISHOP_QUEEN_BONUS_EG = 11;
-inline int SUPPORT_CHAIN_BONUS_MG        =  5;
-inline int SUPPORT_CHAIN_BONUS_EG        =  5;
+inline int DEFENDED_PIECE_BONUS_MG       =  0;
+inline int DEFENDED_PIECE_BONUS_EG       =  0;
+inline int SHARED_TARGET_BONUS_MG        =  0;
+inline int SHARED_TARGET_BONUS_EG        = 42;
+inline int BATTERY_ROOK_QUEEN_BONUS_MG   =  5;
+inline int BATTERY_ROOK_QUEEN_BONUS_EG   = 56;
+inline int BATTERY_BISHOP_QUEEN_BONUS_MG =  8;
+inline int BATTERY_BISHOP_QUEEN_BONUS_EG = 40;
+inline int SUPPORT_CHAIN_BONUS_MG        =  4;
+inline int SUPPORT_CHAIN_BONUS_EG        = 13;
 
 // Tactical pressure
 inline int UNDEFENDED_ATTACK_BONUS           = 18;
@@ -335,14 +335,14 @@ inline int HANGING_BASE_PENALTY_EG =  0;
 inline int HANGING_VALUE_DIVISOR   = 21;
 
 // Outposts
-inline int KNIGHT_OUTPOST_MG = 13;
-inline int KNIGHT_OUTPOST_EG = 10;
-inline int BISHOP_OUTPOST_MG =  4;
-inline int BISHOP_OUTPOST_EG = 20;
-inline int ROOK_OUTPOST_MG   = 28;
-inline int ROOK_OUTPOST_EG   = 12;
-inline int QUEEN_OUTPOST_MG  =  4;
-inline int QUEEN_OUTPOST_EG  =  8;
+inline int KNIGHT_OUTPOST_MG =  8;
+inline int KNIGHT_OUTPOST_EG = 33;
+inline int BISHOP_OUTPOST_MG = 21;
+inline int BISHOP_OUTPOST_EG = 13;
+inline int ROOK_OUTPOST_MG   = 23;
+inline int ROOK_OUTPOST_EG   =  0;
+inline int QUEEN_OUTPOST_MG  = -2;
+inline int QUEEN_OUTPOST_EG  = 25;
 
 // Development / initiative
 inline int DEVELOPMENT_BONUS = 12;
@@ -594,18 +594,18 @@ inline void push_coeff_arr(coefficients_t& c, const I32 (*arr)[2], int n) {
 class TexelTuner {
 public:
     // src/texel.cpp can be built with -DSHAYBOT_TEXEL_PHASE=N:
-    // 0 all, 1 core eval, 2 pawn extras, 3 activity, 4 king/tactics.
+    // 0 all, 1 core eval, 2 pawn extras, 3 activity, 4 king/tactics, 5 all but pst/material
     // Tuner configuration constants
     constexpr static bool    includes_additional_score      = true;
     constexpr static bool    supports_external_chess_eval   = false;
     constexpr static bool    retune_from_zero               = false;
     constexpr static tune_t  preferred_k                    = 0;
-    constexpr static I32     max_epoch                      = 20001;
+    constexpr static I32     max_epoch                      = 12001;
     constexpr static bool    enable_qsearch                 = false;
     constexpr static bool    filter_in_check                = false;
     constexpr static tune_t  initial_learning_rate          = 0.01;
-    constexpr static I32     learning_rate_drop_interval    = 5000;
-    constexpr static tune_t  learning_rate_drop_ratio       = 0.7;
+    constexpr static I32     learning_rate_drop_interval    = 3000;
+    constexpr static tune_t  learning_rate_drop_ratio       = 0.6;
     constexpr static I32     data_load_print_interval       = 100000;
 
     // Returns the vector of initial {mg, eg} parameter pairs drawn from tune.h.

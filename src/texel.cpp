@@ -58,7 +58,7 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
 }
 
 #ifndef SHAYBOT_TEXEL_PHASE
-#define SHAYBOT_TEXEL_PHASE 2
+    #define SHAYBOT_TEXEL_PHASE 3
 #endif
 
 // Build with -DSHAYBOT_TEXEL_PHASE=N to choose the active parameter set:
@@ -67,26 +67,28 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
 //   2: pawn extras (structure, storm, passed ranks/extras)
 //   3: activity (mobility, territory, coordination, outposts)
 //   4: king/tactics (king safety, tactical pressure, threats, hanging)
+//   5: all excluding pst, material
 static constexpr int TEXEL_PHASE = SHAYBOT_TEXEL_PHASE;
-static_assert(TEXEL_PHASE >= 0 && TEXEL_PHASE <= 4, "Unsupported SHAYBOT_TEXEL_PHASE");
+static_assert(TEXEL_PHASE >= 0 && TEXEL_PHASE <= 5, "Unsupported SHAYBOT_TEXEL_PHASE");
 
 static constexpr bool tune_all              = TEXEL_PHASE == 0;
+static constexpr bool tune_refine           = TEXEL_PHASE == 5;
 static constexpr bool tune_material         = tune_all || TEXEL_PHASE == 1;
 static constexpr bool tune_pst              = tune_all || TEXEL_PHASE == 1;
-static constexpr bool tune_bishop_pair      = tune_all || TEXEL_PHASE == 1;
-static constexpr bool tune_pawn_structure   = tune_all || TEXEL_PHASE == 2;
-static constexpr bool tune_pawn_storm       = tune_all || TEXEL_PHASE == 2;
-static constexpr bool tune_passed_ranks     = tune_all || TEXEL_PHASE == 1 || TEXEL_PHASE == 2;
-static constexpr bool tune_passed_extras    = tune_all || TEXEL_PHASE == 2;
-static constexpr bool tune_mobility         = tune_all || TEXEL_PHASE == 1 || TEXEL_PHASE == 3;
-static constexpr bool tune_king_safety      = tune_all || TEXEL_PHASE == 4;
-static constexpr bool tune_territory        = tune_all || TEXEL_PHASE == 3;
-static constexpr bool tune_coordination     = tune_all || TEXEL_PHASE == 3;
-static constexpr bool tune_tactical         = tune_all || TEXEL_PHASE == 4;
-static constexpr bool tune_threats          = tune_all || TEXEL_PHASE == 4;
-static constexpr bool tune_hanging          = tune_all || TEXEL_PHASE == 4;
-static constexpr bool tune_outposts         = tune_all || TEXEL_PHASE == 3;
-static constexpr bool tune_tempo            = tune_all || TEXEL_PHASE == 1;
+static constexpr bool tune_bishop_pair      = tune_all || tune_refine || TEXEL_PHASE == 1;
+static constexpr bool tune_pawn_structure   = tune_all || tune_refine || TEXEL_PHASE == 2;
+static constexpr bool tune_pawn_storm       = tune_all || tune_refine || TEXEL_PHASE == 2;
+static constexpr bool tune_passed_ranks     = tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 2;
+static constexpr bool tune_passed_extras    = tune_all || tune_refine || TEXEL_PHASE == 2;
+static constexpr bool tune_mobility         = tune_all || tune_refine || TEXEL_PHASE == 1 || TEXEL_PHASE == 3;
+static constexpr bool tune_king_safety      = tune_all || tune_refine || TEXEL_PHASE == 4;
+static constexpr bool tune_territory        = tune_all || tune_refine || TEXEL_PHASE == 3;
+static constexpr bool tune_coordination     = tune_all || tune_refine || TEXEL_PHASE == 3;
+static constexpr bool tune_tactical         = tune_all || tune_refine || TEXEL_PHASE == 4;
+static constexpr bool tune_threats          = tune_all || tune_refine || TEXEL_PHASE == 4;
+static constexpr bool tune_hanging          = tune_all || tune_refine || TEXEL_PHASE == 4;
+static constexpr bool tune_outposts         = tune_all || tune_refine || TEXEL_PHASE == 3;
+static constexpr bool tune_tempo            = tune_all || tune_refine || TEXEL_PHASE == 1;
 
 
 // Pre-baked masks (copies of evaluate.cpp static data)
