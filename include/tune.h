@@ -228,8 +228,10 @@ inline int PST_KING_EG[64] = {
 // ================================================================
 
 // Misc
-inline int TEMPO_BONUS       = 22;
-inline int BISHOP_PAIR_BONUS = 22;
+inline int TEMPO_BONUS_MG    = 22;
+inline int TEMPO_BONUS_EG    = 22;
+inline int BISHOP_PAIR_BONUS_MG = 22;
+inline int BISHOP_PAIR_BONUS_EG = 11;
 
 // Passed pawns (indexed by relative rank 0-7)
 inline int PASSED_PAWN_BONUS_MG[8] = { 0,  5, 10, 20,  30,  50,  70, 0 };
@@ -294,17 +296,25 @@ inline int QUEEN_SEVENTH_RANK_BONUS_MG = 8;
 inline int QUEEN_SEVENTH_RANK_BONUS_EG = 11;
 
 // Coordination
-inline int DEFENDED_PIECE_BONUS       =  3;
-inline int SHARED_TARGET_BONUS        =  8;
-inline int BATTERY_ROOK_QUEEN_BONUS   = 10;
-inline int BATTERY_BISHOP_QUEEN_BONUS = 11;
-inline int SUPPORT_CHAIN_BONUS        =  5;
+inline int DEFENDED_PIECE_BONUS_MG       =  3;
+inline int DEFENDED_PIECE_BONUS_EG       =  3;
+inline int SHARED_TARGET_BONUS_MG        =  8;
+inline int SHARED_TARGET_BONUS_EG        =  8;
+inline int BATTERY_ROOK_QUEEN_BONUS_MG   = 10;
+inline int BATTERY_ROOK_QUEEN_BONUS_EG   = 10;
+inline int BATTERY_BISHOP_QUEEN_BONUS_MG = 11;
+inline int BATTERY_BISHOP_QUEEN_BONUS_EG = 11;
+inline int SUPPORT_CHAIN_BONUS_MG        =  5;
+inline int SUPPORT_CHAIN_BONUS_EG        =  5;
 
 // Tactical pressure
 inline int UNDEFENDED_ATTACK_BONUS        = 18;
-inline int PIN_BONUS                      = 36;
-inline int OVERLOADED_DEFENDER_BONUS      =  4;
-inline int UNRECIPROCATED_PRESSURE_BONUS  =  5;
+inline int PIN_BONUS_MG                      = 36;
+inline int PIN_BONUS_EG                      = 18;
+inline int OVERLOADED_DEFENDER_BONUS_MG      =  4;
+inline int OVERLOADED_DEFENDER_BONUS_EG      =  2;
+inline int UNRECIPROCATED_PRESSURE_BONUS_MG  =  5;
+inline int UNRECIPROCATED_PRESSURE_BONUS_EG  =  2;
 inline int UNDEFENDED_VALUE_DIVISOR       = 66;
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
@@ -376,8 +386,12 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "36"}},
 
     // Eval – misc
-    {"Tempo_Bonus",         {&TEMPO_BONUS,            TuningOption::INT,     4,    48,   "22"}},
-    {"Bishop_Pair_Bonus",   {&BISHOP_PAIR_BONUS,      TuningOption::INT,     8,    55,   "22"}},
+    {"Tempo_Bonus_MG",      {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
+    {"Tempo_Bonus_EG",      {&TEMPO_BONUS_EG,         TuningOption::INT,     4,    48,   "22"}},
+    {"Tempo_Bonus",         {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
+    {"Bishop_Pair_Bonus_MG", {&BISHOP_PAIR_BONUS_MG,  TuningOption::INT,     8,    55,   "22"}},
+    {"Bishop_Pair_Bonus_EG", {&BISHOP_PAIR_BONUS_EG,  TuningOption::INT,     4,    40,   "11"}},
+    {"Bishop_Pair_Bonus",    {&BISHOP_PAIR_BONUS_MG,  TuningOption::INT,     8,    55,   "22"}},
     {"Development_Bonus",   {&DEVELOPMENT_BONUS,      TuningOption::INT,     0,    28,   "12"}},
     {"Castled_Bonus",       {&CASTLED_BONUS,          TuningOption::INT,     0,    38,    "5"}},
 
@@ -453,17 +467,33 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Queen_Seventh_EG",      {&QUEEN_SEVENTH_RANK_BONUS_EG, TuningOption::INT,  0, 40,  "11"}},
 
     // Coordination
-    {"Defended_Piece_Bonus",       {&DEFENDED_PIECE_BONUS,       TuningOption::INT,   0,   18,   "3"}},
-    {"Shared_Target_Bonus",        {&SHARED_TARGET_BONUS,        TuningOption::INT,   0,   32,  "8"}},
-    {"Battery_Rook_Queen",         {&BATTERY_ROOK_QUEEN_BONUS,   TuningOption::INT,   0,   40,  "10"}},
-    {"Battery_Bishop_Queen",       {&BATTERY_BISHOP_QUEEN_BONUS, TuningOption::INT,   0,   30,   "11"}},
-    {"Support_Chain_Bonus",        {&SUPPORT_CHAIN_BONUS,        TuningOption::INT,   0,   24,   "5"}},
+    {"Defended_Piece_Bonus_MG",       {&DEFENDED_PIECE_BONUS_MG,       TuningOption::INT,   0,   18,   "3"}},
+    {"Defended_Piece_Bonus_EG",       {&DEFENDED_PIECE_BONUS_EG,       TuningOption::INT,   0,   18,   "3"}},
+    {"Defended_Piece_Bonus",          {&DEFENDED_PIECE_BONUS_MG,       TuningOption::INT,   0,   18,   "3"}},
+    {"Shared_Target_Bonus_MG",        {&SHARED_TARGET_BONUS_MG,        TuningOption::INT,   0,   32,   "8"}},
+    {"Shared_Target_Bonus_EG",        {&SHARED_TARGET_BONUS_EG,        TuningOption::INT,   0,   32,   "8"}},
+    {"Shared_Target_Bonus",           {&SHARED_TARGET_BONUS_MG,        TuningOption::INT,   0,   32,   "8"}},
+    {"Battery_Rook_Queen_MG",         {&BATTERY_ROOK_QUEEN_BONUS_MG,   TuningOption::INT,   0,   40,  "10"}},
+    {"Battery_Rook_Queen_EG",         {&BATTERY_ROOK_QUEEN_BONUS_EG,   TuningOption::INT,   0,   40,  "10"}},
+    {"Battery_Rook_Queen",            {&BATTERY_ROOK_QUEEN_BONUS_MG,   TuningOption::INT,   0,   40,  "10"}},
+    {"Battery_Bishop_Queen_MG",       {&BATTERY_BISHOP_QUEEN_BONUS_MG, TuningOption::INT,   0,   30,  "11"}},
+    {"Battery_Bishop_Queen_EG",       {&BATTERY_BISHOP_QUEEN_BONUS_EG, TuningOption::INT,   0,   30,  "11"}},
+    {"Battery_Bishop_Queen",          {&BATTERY_BISHOP_QUEEN_BONUS_MG, TuningOption::INT,   0,   30,  "11"}},
+    {"Support_Chain_Bonus_MG",        {&SUPPORT_CHAIN_BONUS_MG,        TuningOption::INT,   0,   24,   "5"}},
+    {"Support_Chain_Bonus_EG",        {&SUPPORT_CHAIN_BONUS_EG,        TuningOption::INT,   0,   24,   "5"}},
+    {"Support_Chain_Bonus",           {&SUPPORT_CHAIN_BONUS_MG,        TuningOption::INT,   0,   24,   "5"}},
 
     // Tactical pressure
     {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT,   4,   42,  "18"}},
-    {"Pin_Bonus",                 {&PIN_BONUS,                    TuningOption::INT,  10,   65,  "36"}},
-    {"Overloaded_Defender_Bonus", {&OVERLOADED_DEFENDER_BONUS,    TuningOption::INT,   0,   30,   "4"}}, // Skipped pass 2
-    {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS,TuningOption::INT,   0,   18,   "5"}},
+    {"Pin_Bonus_MG",              {&PIN_BONUS_MG,                 TuningOption::INT,  10,   65,  "36"}},
+    {"Pin_Bonus_EG",              {&PIN_BONUS_EG,                 TuningOption::INT,   5,   45,  "18"}},
+    {"Pin_Bonus",                 {&PIN_BONUS_MG,                 TuningOption::INT,  10,   65,  "36"}},
+    {"Overloaded_Defender_Bonus_MG", {&OVERLOADED_DEFENDER_BONUS_MG, TuningOption::INT, 0, 30, "4"}}, // Skipped pass 2
+    {"Overloaded_Defender_Bonus_EG", {&OVERLOADED_DEFENDER_BONUS_EG, TuningOption::INT, 0, 25, "2"}}, // Skipped pass 2
+    {"Overloaded_Defender_Bonus", {&OVERLOADED_DEFENDER_BONUS_MG, TuningOption::INT, 0, 30, "4"}}, // Legacy MG alias
+    {"Unrec_Pressure_Bonus_MG",   {&UNRECIPROCATED_PRESSURE_BONUS_MG,TuningOption::INT,0,   18,   "5"}},
+    {"Unrec_Pressure_Bonus_EG",   {&UNRECIPROCATED_PRESSURE_BONUS_EG,TuningOption::INT,0,   18,   "2"}},
+    {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS_MG,TuningOption::INT,0,   18,   "5"}},
     {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,     TuningOption::INT,  15,  130,  "66"}},
 
     // Threats
@@ -563,7 +593,7 @@ public:
     constexpr static bool    includes_additional_score      = true;
     constexpr static bool    supports_external_chess_eval   = false;
     constexpr static bool    retune_from_zero               = false;
-    constexpr static tune_t  preferred_k                    = 0.4;
+    constexpr static tune_t  preferred_k                    = 0;
     constexpr static I32     max_epoch                      = 20001;
     constexpr static bool    enable_qsearch                 = false;
     constexpr static bool    filter_in_check                = false;
@@ -578,8 +608,9 @@ public:
 
     // Parses a FEN string, runs the trace evaluation and returns an EvalResult
     // whose coefficients represent linear feature counts and whose score field
-    // holds the non-linear residual (king safety, development, etc.) already
-    // tapered and expressed from White's perspective.
+    // holds the full static evaluation expressed from White's perspective.
+    // The upstream tuner derives the residual itself when
+    // includes_additional_score is true.
     static EvalResult get_fen_eval_result(const std::string& fen);
 
     // Converts a chess::Board (texel-tuner's chess.hpp Board) to a FEN string

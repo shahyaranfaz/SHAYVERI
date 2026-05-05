@@ -4,17 +4,15 @@
 // fed to the GediminasMasaitis texel-tuner.
 //
 // Non-linear parts of the evaluation (king danger/escape,
-// piece-value-weighted hanging / undefended penalties, openness multipliers)
+// piece-value-weighted hanging / undefended penalties, development scaling)
 // cannot be expressed as a simple coefficient × parameter product. They are
 // captured in the
-// EvalResult::score "additional_score" field:
+// EvalResult::score full-evaluation field:
 //
-//   additional_score = full_engine_eval(white perspective)
-//                    − Σ (initial_param[i] ⋅ coefficient[i])  (tapered)
+//   EvalResult::score = full_engine_eval(white perspective)
 //
-// At initialization the predicted score exactly equals the engine eval; the
-// tuner then adjusts the linear parameters to minimise MSE while the
-// additional_score residual is held fixed per position.
+// The upstream tuner derives the fixed additional_score residual from that
+// full eval when includes_additional_score is true.
 //
 // When building inside the texel-tuner source tree, replace the TAPERED and
 // chess.hpp includes as noted in texel_eval.h.
@@ -39,6 +37,7 @@
 #include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <stdexcept>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -184,7 +183,7 @@ static bool has_clear_wing(int file, U64 enemy_pawns) {
     return false;
 }
 
-// Openness helpers (used for additional_score computation)
+// Openness helpers
 static int file_openness(U64 own_p, U64 all_p, int file) {
     U64 m = FILE_MASKS[file];
     bool has_own = (own_p & m) != 0;
@@ -192,6 +191,11 @@ static int file_openness(U64 own_p, U64 all_p, int file) {
     if (!has_any)  return OPEN_FILE_MULTIPLIER;
     if (!has_own)  return SEMI_OPEN_FILE_MULTIPLIER;
     return CLOSED_FILE_MULTIPLIER;
+}
+
+static int bishop_openness(U64 attacks) {
+    return BISHOP_OPENNESS_BASE +
+           std::min(BISHOP_OPENNESS_MAX_BONUS, pcnt(attacks) * BISHOP_OPENNESS_SQUARE_WEIGHT);
 }
 
 // Pin counter (mirrors evaluate.cpp)
@@ -284,7 +288,8 @@ struct Trace {
     I32 candidate[2];
     I32 connected_passed[2];
     I32 outside_passed[2];
-    // Mobility (raw square count; openness factor is absorbed into additional_score)
+    // Mobility in percent-scaled units. A coefficient of 100 means one fully
+    // weighted safe square, matching evaluate.cpp's /100 mobility scaling.
     I32 mob_knight[2];
     I32 mob_bishop[2];
     I32 mob_rook[2];
@@ -320,9 +325,6 @@ struct Trace {
     I32 bishop_outpost[2];
     I32 rook_outpost[2];
     I32 queen_outpost[2];
-    // Development / initiative
-    I32 development[2];
-    I32 castled[2];
     // Tempo (+1 for the side to move)
     I32 tempo[2];
 };
@@ -335,8 +337,6 @@ static Trace trace_evaluate(const Board& b) {
 
     AInfo wa = build_ai(b, WHITE);
     AInfo ba = build_ai(b, BLACK);
-    int phase = phase_of(b);
-
     // Material + PST
 
     int wb = 0, bb_cnt = 0;  // bishop counts
@@ -478,7 +478,7 @@ static Trace trace_evaluate(const Board& b) {
         while (tmp) {
             Square sq   = pop_lsb(tmp);
             U64 atk     = knight_attacks(sq) & safe;
-            tr.mob_knight[ci] += pcnt(atk);
+            tr.mob_knight[ci] += pcnt(atk) * 100;
         }
 
         // Bishops
@@ -486,7 +486,7 @@ static Trace trace_evaluate(const Board& b) {
         while (tmp) {
             Square sq   = pop_lsb(tmp);
             U64 atk     = bishop_attacks(sq, b.occupied) & safe;
-            tr.mob_bishop[ci] += pcnt(atk);  // openness factor absorbed into additional_score
+            tr.mob_bishop[ci] += pcnt(atk) * bishop_openness(atk);
         }
 
         // Rooks
@@ -494,7 +494,9 @@ static Trace trace_evaluate(const Board& b) {
         while (tmp) {
             Square sq   = pop_lsb(tmp);
             U64 atk     = rook_attacks(sq, b.occupied) & safe;
-            tr.mob_rook[ci] += pcnt(atk);    // openness factor absorbed into additional_score
+            U64 pawns = (c==WHITE)?b.bit_boards[WP]:b.bit_boards[BP];
+            U64 all_p = b.bit_boards[WP]|b.bit_boards[BP];
+            tr.mob_rook[ci] += pcnt(atk) * file_openness(pawns, all_p, get_file(sq));
             if ((c==WHITE && get_rank(sq)==RANK_7)||(c==BLACK && get_rank(sq)==RANK_2)) tr.seventh_rook[ci]++;
         }
 
@@ -503,7 +505,11 @@ static Trace trace_evaluate(const Board& b) {
         while (tmp) {
             Square sq   = pop_lsb(tmp);
             U64 atk     = queen_attacks(sq, b.occupied) & safe;
-            tr.mob_queen[ci] += pcnt(atk);   // openness factor absorbed into additional_score
+            U64 pawns = (c==WHITE)?b.bit_boards[WP]:b.bit_boards[BP];
+            U64 all_p = b.bit_boards[WP]|b.bit_boards[BP];
+            int mult = std::max(file_openness(pawns, all_p, get_file(sq)),
+                                bishop_openness(atk));
+            tr.mob_queen[ci] += pcnt(atk) * mult;
             if ((c==WHITE && get_rank(sq)==RANK_7)||(c==BLACK && get_rank(sq)==RANK_2)) tr.seventh_queen[ci]++;
         }
     }
@@ -648,35 +654,10 @@ static Trace trace_evaluate(const Board& b) {
         }
     }
 
-    // Development / initiative (linear components only)
-    double dev_scale = (phase > MAX_PHASE / 2)
-        ? double(phase - MAX_PHASE / 2) / (MAX_PHASE / 2)
-        : 0.0;
+    // Development / initiative is intentionally left in additional_score.
+    // It is scaled by phase twice in evaluate.cpp, which cannot be represented
+    // accurately with the tuner's integer MG/EG coefficient pair.
 
-    for (int ci = 0; ci < 2; ++ci) {
-        Colour c = (ci == 0) ? WHITE : BLACK;
-        int developed = 0;
-        if (c == WHITE) {
-            if (!(b.bit_boards[WN] & bb_square(make_square(FILE_B, RANK_1)))) developed++;
-            if (!(b.bit_boards[WN] & bb_square(make_square(FILE_G, RANK_1)))) developed++;
-            if (!(b.bit_boards[WB] & bb_square(make_square(FILE_C, RANK_1)))) developed++;
-            if (!(b.bit_boards[WB] & bb_square(make_square(FILE_F, RANK_1)))) developed++;
-        } else {
-            if (!(b.bit_boards[BN] & bb_square(make_square(FILE_B, RANK_8)))) developed++;
-            if (!(b.bit_boards[BN] & bb_square(make_square(FILE_G, RANK_8)))) developed++;
-            if (!(b.bit_boards[BB] & bb_square(make_square(FILE_C, RANK_8)))) developed++;
-            if (!(b.bit_boards[BB] & bb_square(make_square(FILE_F, RANK_8)))) developed++;
-        }
-
-        Square ksq = king_square(b, c);
-        bool castled = (c == WHITE)
-            ? (ksq == make_square(FILE_G, RANK_1) || ksq == make_square(FILE_C, RANK_1))
-            : (ksq == make_square(FILE_G, RANK_8) || ksq == make_square(FILE_C, RANK_8));
-
-        int scale = int(dev_scale * 256 + 0.5);
-        tr.development[ci] += developed * scale;
-        tr.castled[ci]     += (castled ? 1 : 0) * scale;
-    }
     // Tempo
     tr.tempo[(b.side_to_move == WHITE) ? 0 : 1]++;
 
@@ -769,11 +750,7 @@ static coefficients_t get_coefficients(const Trace& tr) {
     push_coeff(c, tr.rook_outpost);
     push_coeff(c, tr.queen_outpost);
 
-    // 16. Development / initiative
-    push_coeff(c, tr.development);
-    push_coeff(c, tr.castled);
-
-    // 17. Tempo
+    // 16. Tempo
     push_coeff(c, tr.tempo);
 
     return c;
@@ -791,7 +768,7 @@ static const int* const EG_PTAB[7] = {nullptr, PST_PAWN_EG, PST_KNIGHT_EG,
 // TexelTuner public methods
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Parameter ordering (434 pairs total):
+// Parameter ordering (432 pairs total):
 //   0-3    : piece values (KNIGHT-QUEEN)
 //   4-383  : PST (6 types × 64 sq, anchor squares removed for N/B/R/Q)
 //   384    : bishop pair
@@ -807,8 +784,7 @@ static const int* const EG_PTAB[7] = {nullptr, PST_PAWN_EG, PST_KNIGHT_EG,
 //   419-425: threats (pawn×4, minor×2, rook)
 //   426    : hanging base penalty
 //   427-430: outposts (knight, bishop, rook, queen)
-//   431-432: development (developed, castled)
-//   433    : tempo
+//   431    : tempo
 
 parameters_t TexelTuner::get_initial_parameters() {
     parameters_t p;
@@ -827,8 +803,8 @@ parameters_t TexelTuner::get_initial_parameters() {
         }
     }
 
-    // 3. Bishop pair {MG, MG/2}
-    push_pair(p, BISHOP_PAIR_BONUS, BISHOP_PAIR_BONUS / 2);
+    // 3. Bishop pair
+    push_pair(p, BISHOP_PAIR_BONUS_MG, BISHOP_PAIR_BONUS_EG);
 
     // 4. Pawn structure
     push_pair(p, ISOLATED_PAWN_PENALTY_MG,  ISOLATED_PAWN_PENALTY_EG);
@@ -852,10 +828,10 @@ parameters_t TexelTuner::get_initial_parameters() {
     push_pair(p, OUTSIDE_PASSED_BONUS_MG,   OUTSIDE_PASSED_BONUS_EG);
 
     // 8. Mobility
-    push_pair(p, MOBILITY_KNIGHT_MG, MOBILITY_KNIGHT_EG);
-    push_pair(p, MOBILITY_BISHOP_MG, MOBILITY_BISHOP_EG);
-    push_pair(p, MOBILITY_ROOK_MG,   MOBILITY_ROOK_EG);
-    push_pair(p, MOBILITY_QUEEN_MG,  MOBILITY_QUEEN_EG);
+    p.push_back({MOBILITY_KNIGHT_MG / 100.0, MOBILITY_KNIGHT_EG / 100.0});
+    p.push_back({MOBILITY_BISHOP_MG / 100.0, MOBILITY_BISHOP_EG / 100.0});
+    p.push_back({MOBILITY_ROOK_MG   / 100.0, MOBILITY_ROOK_EG   / 100.0});
+    p.push_back({MOBILITY_QUEEN_MG  / 100.0, MOBILITY_QUEEN_EG  / 100.0});
 
     // 9. King safety (linear components)
     push_pair(p, KING_SHIELD_MISSING_PENALTY, 0);
@@ -867,16 +843,16 @@ parameters_t TexelTuner::get_initial_parameters() {
     push_pair(p, QUEEN_SEVENTH_RANK_BONUS_MG, QUEEN_SEVENTH_RANK_BONUS_EG);
 
     // 11. Coordination
-    push_pair(p, DEFENDED_PIECE_BONUS,       DEFENDED_PIECE_BONUS);
-    push_pair(p, SHARED_TARGET_BONUS,        SHARED_TARGET_BONUS);
-    push_pair(p, BATTERY_ROOK_QUEEN_BONUS,   BATTERY_ROOK_QUEEN_BONUS);
-    push_pair(p, BATTERY_BISHOP_QUEEN_BONUS, BATTERY_BISHOP_QUEEN_BONUS);
-    push_pair(p, SUPPORT_CHAIN_BONUS,        SUPPORT_CHAIN_BONUS);
+    push_pair(p, DEFENDED_PIECE_BONUS_MG,       DEFENDED_PIECE_BONUS_EG);
+    push_pair(p, SHARED_TARGET_BONUS_MG,        SHARED_TARGET_BONUS_EG);
+    push_pair(p, BATTERY_ROOK_QUEEN_BONUS_MG,   BATTERY_ROOK_QUEEN_BONUS_EG);
+    push_pair(p, BATTERY_BISHOP_QUEEN_BONUS_MG, BATTERY_BISHOP_QUEEN_BONUS_EG);
+    push_pair(p, SUPPORT_CHAIN_BONUS_MG,        SUPPORT_CHAIN_BONUS_EG);
 
     // 12. Tactical
-    push_pair(p, PIN_BONUS,                       PIN_BONUS / 2);
-    push_pair(p, OVERLOADED_DEFENDER_BONUS,        OVERLOADED_DEFENDER_BONUS / 2);
-    push_pair(p, UNRECIPROCATED_PRESSURE_BONUS,    UNRECIPROCATED_PRESSURE_BONUS / 2);
+    push_pair(p, PIN_BONUS_MG,                       PIN_BONUS_EG);
+    push_pair(p, OVERLOADED_DEFENDER_BONUS_MG,        OVERLOADED_DEFENDER_BONUS_EG);
+    push_pair(p, UNRECIPROCATED_PRESSURE_BONUS_MG,    UNRECIPROCATED_PRESSURE_BONUS_EG);
 
     // 13. Threats
     push_pair(p, THREAT_BY_PAWN_MG[KNIGHT], THREAT_BY_PAWN_EG[KNIGHT]);
@@ -896,12 +872,8 @@ parameters_t TexelTuner::get_initial_parameters() {
     push_pair(p, ROOK_OUTPOST_MG,   ROOK_OUTPOST_EG);
     push_pair(p, QUEEN_OUTPOST_MG,  QUEEN_OUTPOST_EG);
 
-    // 16. Development / initiative
-    push_pair(p, DEVELOPMENT_BONUS, 0);
-    push_pair(p, CASTLED_BONUS,     0);
-
-    // 17. Tempo
-    push_pair(p, TEMPO_BONUS, TEMPO_BONUS);
+    // 16. Tempo
+    push_pair(p, TEMPO_BONUS_MG, TEMPO_BONUS_EG);
 
     return p;
 }
@@ -920,25 +892,17 @@ EvalResult TexelTuner::get_fen_eval_result(const std::string& fen) {
     Trace tr              = trace_evaluate(board);
     coefficients_t coeffs = get_coefficients(tr);
 
-    // Compute the linear contribution at the current (initial) parameter values
-    // tapered with the position's phase.  This is subtracted from the full eval
-    // to obtain additional_score, which captures nonlinear king danger/escape,
-    // value-weighted hanging/undefended penalties, and the openness-multiplier
-    // effect on mobility.
+    // The upstream tuner subtracts the traced linear contribution from
+    // EvalResult::score when includes_additional_score is true. Keep the
+    // coefficient/parameter count check here so ordering mistakes fail loudly.
     static const parameters_t initial = TexelTuner::get_initial_parameters();
-    int phase = phase_of(board);
 
-    tune_t lin_mg = 0, lin_eg = 0;
-    for (std::size_t i = 0; i < coeffs.size(); ++i) {
-        lin_mg += static_cast<tune_t>(coeffs[i]) * initial[i][0];
-        lin_eg += static_cast<tune_t>(coeffs[i]) * initial[i][1];
-    }
-    tune_t lin_tapered = (lin_mg * phase + lin_eg * (MAX_PHASE - phase))
-                         / static_cast<tune_t>(MAX_PHASE);
+    if (coeffs.size() != initial.size())
+        throw std::runtime_error("Texel coefficient/parameter count mismatch");
 
     EvalResult result;
     result.coefficients  = std::move(coeffs);
-    result.score         = static_cast<tune_t>(full_eval) - lin_tapered;
+    result.score         = static_cast<tune_t>(full_eval);
     result.endgame_scale = 1.0;
     return result;
 }
@@ -956,6 +920,8 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     int i = 0;
     auto mg = [&](int idx) { return static_cast<int>(std::round(p[idx][0])); };
     auto eg = [&](int idx) { return static_cast<int>(std::round(p[idx][1])); };
+    auto mg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][0] * 100.0)); };
+    auto eg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][1] * 100.0)); };
 
     // Material
     ss << "// Piece values MG\n";
@@ -990,22 +956,24 @@ void TexelTuner::print_parameters(const parameters_t& p) {
         }
 
         ss << "inline int " << pst_names[pt] << "_MG[64] = {\n";
-        for (int r = 7; r >= 0; --r) {
+        for (int r = 0; r < 8; ++r) {
             ss << "   ";
             for (int f = 0; f < 8; ++f) {
                 int sq = r * 8 + f;
                 int val = (idx[sq] < 0) ? MG_PTAB[ptype][sq] : mg(idx[sq]);
+                if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
                 ss << " " << std::setw(4) << val << ",";
             }
             ss << "\n";
         }
         ss << "};\n";
         ss << "inline int " << pst_names[pt] << "_EG[64] = {\n";
-        for (int r = 7; r >= 0; --r) {
+        for (int r = 0; r < 8; ++r) {
             ss << "   ";
             for (int f = 0; f < 8; ++f) {
                 int sq = r * 8 + f;
                 int val = (idx[sq] < 0) ? EG_PTAB[ptype][sq] : eg(idx[sq]);
+                if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
                 ss << " " << std::setw(4) << val << ",";
             }
             ss << "\n";
@@ -1015,7 +983,8 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     }
 
     // Bishop pair
-    ss << "inline int BISHOP_PAIR_BONUS = " << mg(i) << "; // EG=" << eg(i) << "\n";
+    ss << "inline int BISHOP_PAIR_BONUS_MG = " << mg(i) << ";\n";
+    ss << "inline int BISHOP_PAIR_BONUS_EG = " << eg(i) << ";\n";
     i++;
 
     // Pawn structure
@@ -1050,14 +1019,14 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     ss << "inline int OUTSIDE_PASSED_BONUS_EG   = " << eg(i++) << ";\n";
 
     // Mobility
-    ss << "inline int MOBILITY_KNIGHT_MG = " << mg(i) << ";\n";
-    ss << "inline int MOBILITY_KNIGHT_EG = " << eg(i++) << ";\n";
-    ss << "inline int MOBILITY_BISHOP_MG = " << mg(i) << ";\n";
-    ss << "inline int MOBILITY_BISHOP_EG = " << eg(i++) << ";\n";
-    ss << "inline int MOBILITY_ROOK_MG   = " << mg(i) << ";\n";
-    ss << "inline int MOBILITY_ROOK_EG   = " << eg(i++) << ";\n";
-    ss << "inline int MOBILITY_QUEEN_MG  = " << mg(i) << ";\n";
-    ss << "inline int MOBILITY_QUEEN_EG  = " << eg(i++) << ";\n";
+    ss << "inline int MOBILITY_KNIGHT_MG = " << mg_pct(i) << ";\n";
+    ss << "inline int MOBILITY_KNIGHT_EG = " << eg_pct(i++) << ";\n";
+    ss << "inline int MOBILITY_BISHOP_MG = " << mg_pct(i) << ";\n";
+    ss << "inline int MOBILITY_BISHOP_EG = " << eg_pct(i++) << ";\n";
+    ss << "inline int MOBILITY_ROOK_MG   = " << mg_pct(i) << ";\n";
+    ss << "inline int MOBILITY_ROOK_EG   = " << eg_pct(i++) << ";\n";
+    ss << "inline int MOBILITY_QUEEN_MG  = " << mg_pct(i) << ";\n";
+    ss << "inline int MOBILITY_QUEEN_EG  = " << eg_pct(i++) << ";\n";
 
     // File / diagonal openness
     ss << "inline int OPEN_FILE_MULTIPLIER          = " << OPEN_FILE_MULTIPLIER << ";\n";
@@ -1087,16 +1056,24 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     ss << "inline int QUEEN_SEVENTH_RANK_BONUS_EG = " << eg(i++) << ";\n";
 
     // Coordination
-    ss << "inline int DEFENDED_PIECE_BONUS       = " << mg(i++) << ";\n";
-    ss << "inline int SHARED_TARGET_BONUS        = " << mg(i++) << ";\n";
-    ss << "inline int BATTERY_ROOK_QUEEN_BONUS   = " << mg(i++) << ";\n";
-    ss << "inline int BATTERY_BISHOP_QUEEN_BONUS = " << mg(i++) << ";\n";
-    ss << "inline int SUPPORT_CHAIN_BONUS        = " << mg(i++) << ";\n";
+    ss << "inline int DEFENDED_PIECE_BONUS_MG       = " << mg(i) << ";\n";
+    ss << "inline int DEFENDED_PIECE_BONUS_EG       = " << eg(i++) << ";\n";
+    ss << "inline int SHARED_TARGET_BONUS_MG        = " << mg(i) << ";\n";
+    ss << "inline int SHARED_TARGET_BONUS_EG        = " << eg(i++) << ";\n";
+    ss << "inline int BATTERY_ROOK_QUEEN_BONUS_MG   = " << mg(i) << ";\n";
+    ss << "inline int BATTERY_ROOK_QUEEN_BONUS_EG   = " << eg(i++) << ";\n";
+    ss << "inline int BATTERY_BISHOP_QUEEN_BONUS_MG = " << mg(i) << ";\n";
+    ss << "inline int BATTERY_BISHOP_QUEEN_BONUS_EG = " << eg(i++) << ";\n";
+    ss << "inline int SUPPORT_CHAIN_BONUS_MG        = " << mg(i) << ";\n";
+    ss << "inline int SUPPORT_CHAIN_BONUS_EG        = " << eg(i++) << ";\n";
 
     // Tactical
-    ss << "inline int PIN_BONUS                      = " << mg(i++) << ";\n";
-    ss << "inline int OVERLOADED_DEFENDER_BONUS      = " << mg(i++) << ";\n";
-    ss << "inline int UNRECIPROCATED_PRESSURE_BONUS  = " << mg(i++) << ";\n";
+    ss << "inline int PIN_BONUS_MG                      = " << mg(i) << ";\n";
+    ss << "inline int PIN_BONUS_EG                      = " << eg(i++) << ";\n";
+    ss << "inline int OVERLOADED_DEFENDER_BONUS_MG      = " << mg(i) << ";\n";
+    ss << "inline int OVERLOADED_DEFENDER_BONUS_EG      = " << eg(i++) << ";\n";
+    ss << "inline int UNRECIPROCATED_PRESSURE_BONUS_MG  = " << mg(i) << ";\n";
+    ss << "inline int UNRECIPROCATED_PRESSURE_BONUS_EG  = " << eg(i++) << ";\n";
     ss << "inline int UNDEFENDED_ATTACK_BONUS        = " << UNDEFENDED_ATTACK_BONUS << ";\n";
     ss << "inline int UNDEFENDED_VALUE_DIVISOR       = " << UNDEFENDED_VALUE_DIVISOR << ";\n";
 
@@ -1131,14 +1108,13 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     ss << "inline int QUEEN_OUTPOST_MG  = " << mg(i) << ";\n";
     ss << "inline int QUEEN_OUTPOST_EG  = " << eg(i++) << ";\n";
 
-    // Development / initiative
-    ss << "inline int DEVELOPMENT_BONUS = " << mg(i) << ";\n";
-    i++;
-    ss << "inline int CASTLED_BONUS     = " << mg(i) << ";\n";
-    i++;
+    // Development / initiative is kept fixed in the Texel residual.
+    ss << "inline int DEVELOPMENT_BONUS = " << DEVELOPMENT_BONUS << ";\n";
+    ss << "inline int CASTLED_BONUS     = " << CASTLED_BONUS << ";\n";
 
     // Tempo
-    ss << "inline int TEMPO_BONUS = " << mg(i++) << ";\n";
+    ss << "inline int TEMPO_BONUS_MG = " << mg(i) << ";\n";
+    ss << "inline int TEMPO_BONUS_EG = " << eg(i++) << ";\n";
 
     std::cout << ss.str() << std::flush;
 }

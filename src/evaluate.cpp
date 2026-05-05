@@ -469,7 +469,7 @@ static void evaluate_coordination(const Board &b, Colour c,
     while (temp) {
         Square sq = pop_lsb(temp);
         if (attacks.counts[sq] > 0)
-            add_score(mg, eg, DEFENDED_PIECE_BONUS, DEFENDED_PIECE_BONUS, c);
+            add_score(mg, eg, DEFENDED_PIECE_BONUS_MG, DEFENDED_PIECE_BONUS_EG, c);
     }
 
     // Shared attack targets
@@ -477,7 +477,7 @@ static void evaluate_coordination(const Board &b, Colour c,
     while (temp) {
         Square sq = pop_lsb(temp);
         if (attacks.counts[sq] >= 2)
-            add_score(mg, eg, SHARED_TARGET_BONUS, SHARED_TARGET_BONUS, c);
+            add_score(mg, eg, SHARED_TARGET_BONUS_MG, SHARED_TARGET_BONUS_EG, c);
     }
 
     // Batteries
@@ -489,13 +489,13 @@ static void evaluate_coordination(const Board &b, Colour c,
     while (temp) {
         Square sq = pop_lsb(temp);
         if (rook_attacks(sq, b.occupied) & queens)
-            add_score(mg, eg, BATTERY_ROOK_QUEEN_BONUS, BATTERY_ROOK_QUEEN_BONUS, c);
+            add_score(mg, eg, BATTERY_ROOK_QUEEN_BONUS_MG, BATTERY_ROOK_QUEEN_BONUS_EG, c);
     }
     temp = bishops;
     while (temp) {
         Square sq = pop_lsb(temp);
         if (bishop_attacks(sq, b.occupied) & queens)
-            add_score(mg, eg, BATTERY_BISHOP_QUEEN_BONUS, BATTERY_BISHOP_QUEEN_BONUS, c);
+            add_score(mg, eg, BATTERY_BISHOP_QUEEN_BONUS_MG, BATTERY_BISHOP_QUEEN_BONUS_EG, c);
     }
 
     // Support chains (non-pawn pieces protecting each other)
@@ -503,7 +503,7 @@ static void evaluate_coordination(const Board &b, Colour c,
     while (temp) {
         Square sq = pop_lsb(temp);
         if (attacks.non_pawn_counts[sq] > 0)
-            add_score(mg, eg, SUPPORT_CHAIN_BONUS, SUPPORT_CHAIN_BONUS, c);
+            add_score(mg, eg, SUPPORT_CHAIN_BONUS_MG, SUPPORT_CHAIN_BONUS_EG, c);
     }
 }
 
@@ -612,19 +612,19 @@ static void evaluate_tactical_pressure(const Board &b, Colour c,
     }
 
     int pins       = count_pins(b, c);
-    if (pins > 0)  add_score(mg, eg, pins * PIN_BONUS, pins * (PIN_BONUS/2), c);
+    if (pins > 0)  add_score(mg, eg, pins * PIN_BONUS_MG, pins * PIN_BONUS_EG, c);
 
     int overloaded = count_overloaded_defenders(b, flip(c), attacks);
     if (overloaded > 0)
-        add_score(mg, eg, overloaded * OVERLOADED_DEFENDER_BONUS,
-                          overloaded * (OVERLOADED_DEFENDER_BONUS/2), c);
+        add_score(mg, eg, overloaded * OVERLOADED_DEFENDER_BONUS_MG,
+                          overloaded * OVERLOADED_DEFENDER_BONUS_EG, c);
 
     int atk_on_enemy = popcount(attacks.all     & enemy);
     int atk_on_us    = popcount(enemy_attacks.all & b.occupancies[c]);
     int pressure     = atk_on_enemy - atk_on_us;
     if (pressure != 0)
-        add_score(mg, eg, pressure * UNRECIPROCATED_PRESSURE_BONUS,
-                          pressure * (UNRECIPROCATED_PRESSURE_BONUS/2), c);
+        add_score(mg, eg, pressure * UNRECIPROCATED_PRESSURE_BONUS_MG,
+                          pressure * UNRECIPROCATED_PRESSURE_BONUS_EG, c);
 }
 
 // ============================================================
@@ -818,8 +818,8 @@ int evaluate(const Board &b) {
             else            bb_cnt++;
         }
     }
-    if (wb     >= 2) { mg += BISHOP_PAIR_BONUS; eg += BISHOP_PAIR_BONUS / 2; }
-    if (bb_cnt >= 2) { mg -= BISHOP_PAIR_BONUS; eg -= BISHOP_PAIR_BONUS / 2; }
+    if (wb     >= 2) { mg += BISHOP_PAIR_BONUS_MG; eg += BISHOP_PAIR_BONUS_EG; }
+    if (bb_cnt >= 2) { mg -= BISHOP_PAIR_BONUS_MG; eg -= BISHOP_PAIR_BONUS_EG; }
 
     // ---- Pawn structure ----
     evaluate_pawns(b, WHITE, black_attacks, mg, eg);
@@ -851,14 +851,12 @@ int evaluate(const Board &b) {
 
     // ---- Development / initiative ----
     int dev_diff     = development_score(b, WHITE, phase) - development_score(b, BLACK, phase);
-    int pressure_diff = popcount(white_attacks.all & b.occupancies[BLACK])
-                      - popcount(black_attacks.all & b.occupancies[WHITE]);
     int opening_scale = phase;
-    mg += (dev_diff + pressure_diff) * opening_scale / MAX_PHASE;
+    mg += dev_diff * opening_scale / MAX_PHASE;
 
     // ---- Tempo ----
-    if (b.side_to_move == WHITE) { mg += TEMPO_BONUS; eg += TEMPO_BONUS; }
-    else                          { mg -= TEMPO_BONUS; eg -= TEMPO_BONUS; }
+    if (b.side_to_move == WHITE) { mg += TEMPO_BONUS_MG; eg += TEMPO_BONUS_EG; }
+    else                          { mg -= TEMPO_BONUS_MG; eg -= TEMPO_BONUS_EG; }
 
     // ---- Tapered interpolation ----
     int score = (mg * phase + eg * (MAX_PHASE - phase)) / MAX_PHASE;
