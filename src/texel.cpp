@@ -57,14 +57,37 @@ static inline bool skip_pst_param(PieceType pt, int sq) {
            (pt == KNIGHT || pt == BISHOP || pt == ROOK || pt == QUEEN);
 }
 
-// (0 = pure endgame, 24 = pure opening/middlegame)
-static int phase_of(const Board &b) {
-    int p = pcnt(b.bit_boards[WN] | b.bit_boards[BN])
-          + pcnt(b.bit_boards[WB] | b.bit_boards[BB])
-          + pcnt(b.bit_boards[WR] | b.bit_boards[BR]) * 2
-          + pcnt(b.bit_boards[WQ] | b.bit_boards[BQ]) * 4;
-    return std::min(p, MAX_PHASE);
-}
+#ifndef SHAYBOT_TEXEL_PHASE
+#define SHAYBOT_TEXEL_PHASE 1
+#endif
+
+// Build with -DSHAYBOT_TEXEL_PHASE=N to choose the active parameter set:
+//   0: all traced linear terms
+//   1: core eval (material, PST, bishop pair, passed ranks, mobility, tempo)
+//   2: pawn extras (structure, storm, passed ranks/extras)
+//   3: activity (mobility, territory, coordination, outposts)
+//   4: king/tactics (king safety, tactical pressure, threats, hanging)
+static constexpr int TEXEL_PHASE = SHAYBOT_TEXEL_PHASE;
+static_assert(TEXEL_PHASE >= 0 && TEXEL_PHASE <= 4, "Unsupported SHAYBOT_TEXEL_PHASE");
+
+static constexpr bool tune_all              = TEXEL_PHASE == 0;
+static constexpr bool tune_material         = tune_all || TEXEL_PHASE == 1;
+static constexpr bool tune_pst              = tune_all || TEXEL_PHASE == 1;
+static constexpr bool tune_bishop_pair      = tune_all || TEXEL_PHASE == 1;
+static constexpr bool tune_pawn_structure   = tune_all || TEXEL_PHASE == 2;
+static constexpr bool tune_pawn_storm       = tune_all || TEXEL_PHASE == 2;
+static constexpr bool tune_passed_ranks     = tune_all || TEXEL_PHASE == 1 || TEXEL_PHASE == 2;
+static constexpr bool tune_passed_extras    = tune_all || TEXEL_PHASE == 2;
+static constexpr bool tune_mobility         = tune_all || TEXEL_PHASE == 1 || TEXEL_PHASE == 3;
+static constexpr bool tune_king_safety      = tune_all || TEXEL_PHASE == 4;
+static constexpr bool tune_territory        = tune_all || TEXEL_PHASE == 3;
+static constexpr bool tune_coordination     = tune_all || TEXEL_PHASE == 3;
+static constexpr bool tune_tactical         = tune_all || TEXEL_PHASE == 4;
+static constexpr bool tune_threats          = tune_all || TEXEL_PHASE == 4;
+static constexpr bool tune_hanging          = tune_all || TEXEL_PHASE == 4;
+static constexpr bool tune_outposts         = tune_all || TEXEL_PHASE == 3;
+static constexpr bool tune_tempo            = tune_all || TEXEL_PHASE == 1;
+
 
 // Pre-baked masks (copies of evaluate.cpp static data)
 static const std::array<U64, 8> FILE_MASKS = [] {
@@ -671,87 +694,114 @@ static coefficients_t get_coefficients(const Trace& tr) {
     coefficients_t c;
 
     // 1. Material (4 types: KNIGHT-QUEEN)
-    push_coeff_arr(c, tr.material + 1, 4);
+    if constexpr (tune_material)
+        push_coeff_arr(c, tr.material + 1, 4);
 
     // 2. PST (6 types × 64 squares, with anchor squares removed for N/B/R/Q)
-    for (int pt = 0; pt < 6; ++pt) {
-        PieceType ptype = static_cast<PieceType>(pt + 1);
-        for (int sq = 0; sq < 64; ++sq) {
-            if (skip_pst_param(ptype, sq)) continue;
-            c.push_back(static_cast<I16>(tr.pst[pt][sq][0] - tr.pst[pt][sq][1]));
+    if constexpr (tune_pst) {
+        for (int pt = 0; pt < 6; ++pt) {
+            PieceType ptype = static_cast<PieceType>(pt + 1);
+            for (int sq = 0; sq < 64; ++sq) {
+                if (skip_pst_param(ptype, sq)) continue;
+                c.push_back(static_cast<I16>(tr.pst[pt][sq][0] - tr.pst[pt][sq][1]));
+            }
         }
     }
 
     // 3. Bishop pair
-    push_coeff(c, tr.bishop_pair);
+    if constexpr (tune_bishop_pair)
+        push_coeff(c, tr.bishop_pair);
 
     // 4. Pawn structure
-    push_coeff(c, tr.isolated);
-    push_coeff(c, tr.doubled);
-    push_coeff(c, tr.backward);
-    push_coeff(c, tr.supported);
-    push_coeff(c, tr.weak_pawn);
-    push_coeff(c, tr.island);
+    if constexpr (tune_pawn_structure) {
+        push_coeff(c, tr.isolated);
+        push_coeff(c, tr.doubled);
+        push_coeff(c, tr.backward);
+        push_coeff(c, tr.supported);
+        push_coeff(c, tr.weak_pawn);
+        push_coeff(c, tr.island);
+    }
 
     // 5. Pawn storm
-    push_coeff(c, tr.storm_base);
-    push_coeff(c, tr.storm_rank);
+    if constexpr (tune_pawn_storm) {
+        push_coeff(c, tr.storm_base);
+        push_coeff(c, tr.storm_rank);
+    }
 
     // 6. Passed pawns (ranks 1-6)
-    push_coeff_arr(c, tr.passed_rank + 1, 6);
+    if constexpr (tune_passed_ranks)
+        push_coeff_arr(c, tr.passed_rank + 1, 6);
 
     // 7. Candidate / connected / outside
-    push_coeff(c, tr.candidate);
-    push_coeff(c, tr.connected_passed);
-    push_coeff(c, tr.outside_passed);
+    if constexpr (tune_passed_extras) {
+        push_coeff(c, tr.candidate);
+        push_coeff(c, tr.connected_passed);
+        push_coeff(c, tr.outside_passed);
+    }
 
     // 8. Mobility
-    push_coeff(c, tr.mob_knight);
-    push_coeff(c, tr.mob_bishop);
-    push_coeff(c, tr.mob_rook);
-    push_coeff(c, tr.mob_queen);
+    if constexpr (tune_mobility) {
+        push_coeff(c, tr.mob_knight);
+        push_coeff(c, tr.mob_bishop);
+        push_coeff(c, tr.mob_rook);
+        push_coeff(c, tr.mob_queen);
+    }
 
     // 9. King safety (linear components)
-    push_coeff(c, tr.king_shield_missing);
-    push_coeff(c, tr.king_open_file);
-    push_coeff(c, tr.king_semi_open_file);
+    if constexpr (tune_king_safety) {
+        push_coeff(c, tr.king_shield_missing);
+        push_coeff(c, tr.king_open_file);
+        push_coeff(c, tr.king_semi_open_file);
+    }
 
     // 10. Territory
-    push_coeff(c, tr.seventh_rook);
-    push_coeff(c, tr.seventh_queen);
+    if constexpr (tune_territory) {
+        push_coeff(c, tr.seventh_rook);
+        push_coeff(c, tr.seventh_queen);
+    }
 
     // 11. Coordination
-    push_coeff(c, tr.defended);
-    push_coeff(c, tr.shared_target);
-    push_coeff(c, tr.battery_rq);
-    push_coeff(c, tr.battery_bq);
-    push_coeff(c, tr.support_chain);
+    if constexpr (tune_coordination) {
+        push_coeff(c, tr.defended);
+        push_coeff(c, tr.shared_target);
+        push_coeff(c, tr.battery_rq);
+        push_coeff(c, tr.battery_bq);
+        push_coeff(c, tr.support_chain);
+    }
 
     // 12. Tactical
-    push_coeff(c, tr.pin);
-    push_coeff(c, tr.overloaded);
-    push_coeff(c, tr.unrec_pressure);
+    if constexpr (tune_tactical) {
+        push_coeff(c, tr.pin);
+        push_coeff(c, tr.overloaded);
+        push_coeff(c, tr.unrec_pressure);
+    }
 
     // 13. Threats
-    push_coeff(c, tr.threat_pawn_knight);
-    push_coeff(c, tr.threat_pawn_bishop);
-    push_coeff(c, tr.threat_pawn_rook);
-    push_coeff(c, tr.threat_pawn_queen);
-    push_coeff(c, tr.threat_minor_rook);
-    push_coeff(c, tr.threat_minor_queen);
-    push_coeff(c, tr.threat_rook);
+    if constexpr (tune_threats) {
+        push_coeff(c, tr.threat_pawn_knight);
+        push_coeff(c, tr.threat_pawn_bishop);
+        push_coeff(c, tr.threat_pawn_rook);
+        push_coeff(c, tr.threat_pawn_queen);
+        push_coeff(c, tr.threat_minor_rook);
+        push_coeff(c, tr.threat_minor_queen);
+        push_coeff(c, tr.threat_rook);
+    }
 
     // 14. Hanging (base penalty only)
-    c.push_back(static_cast<I16>(tr.hanging[1] - tr.hanging[0]));
+    if constexpr (tune_hanging)
+        c.push_back(static_cast<I16>(tr.hanging[1] - tr.hanging[0]));
 
     // 15. Outposts
-    push_coeff(c, tr.knight_outpost);
-    push_coeff(c, tr.bishop_outpost);
-    push_coeff(c, tr.rook_outpost);
-    push_coeff(c, tr.queen_outpost);
+    if constexpr (tune_outposts) {
+        push_coeff(c, tr.knight_outpost);
+        push_coeff(c, tr.bishop_outpost);
+        push_coeff(c, tr.rook_outpost);
+        push_coeff(c, tr.queen_outpost);
+    }
 
     // 16. Tempo
-    push_coeff(c, tr.tempo);
+    if constexpr (tune_tempo)
+        push_coeff(c, tr.tempo);
 
     return c;
 }
@@ -768,23 +818,8 @@ static const int* const EG_PTAB[7] = {nullptr, PST_PAWN_EG, PST_KNIGHT_EG,
 // TexelTuner public methods
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Parameter ordering (432 pairs total):
-//   0-3    : piece values (KNIGHT-QUEEN)
-//   4-383  : PST (6 types × 64 sq, anchor squares removed for N/B/R/Q)
-//   384    : bishop pair
-//   385-390: pawn structure (isolated, doubled, backward, supported, weak, island)
-//   391-392: pawn storm (base, rank_mult)
-//   393-398: passed ranks 1-6
-//   399-401: candidate, connected_passed, outside_passed
-//   402-405: mobility (knight, bishop, rook, queen)
-//   406-408: king safety (shield_missing, open_file, semi_open_file)
-//   409-410: territory (seventh_rook, seventh_queen)
-//   411-415: coordination (defended, shared_target, battery_rq, battery_bq, support_chain)
-//   416-418: tactical (pin, overloaded, unrec_pressure)
-//   419-425: threats (pawn×4, minor×2, rook)
-//   426    : hanging base penalty
-//   427-430: outposts (knight, bishop, rook, queen)
-//   431    : tempo
+// Parameter ordering follows the enabled phase groups in the order below.
+// Disabled groups stay fixed inside EvalResult::score's additional residual.
 
 parameters_t TexelTuner::get_initial_parameters() {
     parameters_t p;
@@ -792,88 +827,117 @@ parameters_t TexelTuner::get_initial_parameters() {
 
     // 1. Material (piece values MG/EG, KNIGHT-QUEEN)
     // Piece enum: WP=1, WN=2, WB=3, WR=4, WQ=5
-    for (int pt = 2; pt <= 5; ++pt)
-        push_pair(p, PIECE_VALUES_MG[pt], PIECE_VALUES_EG[pt]);
+    if constexpr (tune_material) {
+        for (int pt = 2; pt <= 5; ++pt)
+            push_pair(p, PIECE_VALUES_MG[pt], PIECE_VALUES_EG[pt]);
+    }
 
     // 2. PST (6 types × 64 squares, with anchor squares removed for N/B/R/Q)
-    for (int pt = 1; pt <= 6; ++pt) {
-        for (int sq = 0; sq < 64; ++sq) {
-            if (skip_pst_param(static_cast<PieceType>(pt), sq)) continue;
-            push_pair(p, MG_PTAB[pt][sq], EG_PTAB[pt][sq]);
+    if constexpr (tune_pst) {
+        for (int pt = 1; pt <= 6; ++pt) {
+            for (int sq = 0; sq < 64; ++sq) {
+                if (skip_pst_param(static_cast<PieceType>(pt), sq)) continue;
+                push_pair(p, MG_PTAB[pt][sq], EG_PTAB[pt][sq]);
+            }
         }
     }
 
     // 3. Bishop pair
-    push_pair(p, BISHOP_PAIR_BONUS_MG, BISHOP_PAIR_BONUS_EG);
+    if constexpr (tune_bishop_pair)
+        push_pair(p, BISHOP_PAIR_BONUS_MG, BISHOP_PAIR_BONUS_EG);
 
     // 4. Pawn structure
-    push_pair(p, ISOLATED_PAWN_PENALTY_MG,  ISOLATED_PAWN_PENALTY_EG);
-    push_pair(p, DOUBLED_PAWN_PENALTY_MG,   DOUBLED_PAWN_PENALTY_EG);
-    push_pair(p, BACKWARD_PAWN_PENALTY_MG,  BACKWARD_PAWN_PENALTY_EG);
-    push_pair(p, SUPPORTED_PAWN_BONUS_MG,   0);
-    push_pair(p, WEAK_PAWN_PENALTY_MG,      0);
-    push_pair(p, PAWN_ISLAND_PENALTY_MG,    PAWN_ISLAND_PENALTY_EG);
+    if constexpr (tune_pawn_structure) {
+        push_pair(p, ISOLATED_PAWN_PENALTY_MG,  ISOLATED_PAWN_PENALTY_EG);
+        push_pair(p, DOUBLED_PAWN_PENALTY_MG,   DOUBLED_PAWN_PENALTY_EG);
+        push_pair(p, BACKWARD_PAWN_PENALTY_MG,  BACKWARD_PAWN_PENALTY_EG);
+        push_pair(p, SUPPORTED_PAWN_BONUS_MG,   0);
+        push_pair(p, WEAK_PAWN_PENALTY_MG,      0);
+        push_pair(p, PAWN_ISLAND_PENALTY_MG,    PAWN_ISLAND_PENALTY_EG);
+    }
 
     // 5. Pawn storm {storm_base MG, storm_rank MG}
-    push_pair(p, PAWN_STORM_BASE,      0);
-    push_pair(p, PAWN_STORM_RANK_MULT, 0);
+    if constexpr (tune_pawn_storm) {
+        push_pair(p, PAWN_STORM_BASE,      0);
+        push_pair(p, PAWN_STORM_RANK_MULT, 0);
+    }
 
     // 6. Passed pawns ranks 1-6
-    for (int r = 1; r <= 6; ++r)
-        push_pair(p, PASSED_PAWN_BONUS_MG[r], PASSED_PAWN_BONUS_EG[r]);
+    if constexpr (tune_passed_ranks) {
+        for (int r = 1; r <= 6; ++r)
+            push_pair(p, PASSED_PAWN_BONUS_MG[r], PASSED_PAWN_BONUS_EG[r]);
+    }
 
     // 7. Candidate / connected / outside
-    push_pair(p, CANDIDATE_PAWN_BONUS_MG,   CANDIDATE_PAWN_BONUS_EG);
-    push_pair(p, CONNECTED_PASSED_BONUS_MG, CONNECTED_PASSED_BONUS_EG);
-    push_pair(p, OUTSIDE_PASSED_BONUS_MG,   OUTSIDE_PASSED_BONUS_EG);
+    if constexpr (tune_passed_extras) {
+        push_pair(p, CANDIDATE_PAWN_BONUS_MG,   CANDIDATE_PAWN_BONUS_EG);
+        push_pair(p, CONNECTED_PASSED_BONUS_MG, CONNECTED_PASSED_BONUS_EG);
+        push_pair(p, OUTSIDE_PASSED_BONUS_MG,   OUTSIDE_PASSED_BONUS_EG);
+    }
 
     // 8. Mobility
-    p.push_back({MOBILITY_KNIGHT_MG / 100.0, MOBILITY_KNIGHT_EG / 100.0});
-    p.push_back({MOBILITY_BISHOP_MG / 100.0, MOBILITY_BISHOP_EG / 100.0});
-    p.push_back({MOBILITY_ROOK_MG   / 100.0, MOBILITY_ROOK_EG   / 100.0});
-    p.push_back({MOBILITY_QUEEN_MG  / 100.0, MOBILITY_QUEEN_EG  / 100.0});
+    if constexpr (tune_mobility) {
+        p.push_back({MOBILITY_KNIGHT_MG / 100.0, MOBILITY_KNIGHT_EG / 100.0});
+        p.push_back({MOBILITY_BISHOP_MG / 100.0, MOBILITY_BISHOP_EG / 100.0});
+        p.push_back({MOBILITY_ROOK_MG   / 100.0, MOBILITY_ROOK_EG   / 100.0});
+        p.push_back({MOBILITY_QUEEN_MG  / 100.0, MOBILITY_QUEEN_EG  / 100.0});
+    }
 
     // 9. King safety (linear components)
-    push_pair(p, KING_SHIELD_MISSING_PENALTY, 0);
-    push_pair(p, KING_OPEN_FILE_PENALTY,      0);
-    push_pair(p, KING_SEMI_OPEN_FILE_PENALTY, 0);
+    if constexpr (tune_king_safety) {
+        push_pair(p, KING_SHIELD_MISSING_PENALTY, 0);
+        push_pair(p, KING_OPEN_FILE_PENALTY,      0);
+        push_pair(p, KING_SEMI_OPEN_FILE_PENALTY, 0);
+    }
 
     // 10. Territory
-    push_pair(p, SEVENTH_RANK_BONUS_MG, SEVENTH_RANK_BONUS_EG);
-    push_pair(p, QUEEN_SEVENTH_RANK_BONUS_MG, QUEEN_SEVENTH_RANK_BONUS_EG);
+    if constexpr (tune_territory) {
+        push_pair(p, SEVENTH_RANK_BONUS_MG, SEVENTH_RANK_BONUS_EG);
+        push_pair(p, QUEEN_SEVENTH_RANK_BONUS_MG, QUEEN_SEVENTH_RANK_BONUS_EG);
+    }
 
     // 11. Coordination
-    push_pair(p, DEFENDED_PIECE_BONUS_MG,       DEFENDED_PIECE_BONUS_EG);
-    push_pair(p, SHARED_TARGET_BONUS_MG,        SHARED_TARGET_BONUS_EG);
-    push_pair(p, BATTERY_ROOK_QUEEN_BONUS_MG,   BATTERY_ROOK_QUEEN_BONUS_EG);
-    push_pair(p, BATTERY_BISHOP_QUEEN_BONUS_MG, BATTERY_BISHOP_QUEEN_BONUS_EG);
-    push_pair(p, SUPPORT_CHAIN_BONUS_MG,        SUPPORT_CHAIN_BONUS_EG);
+    if constexpr (tune_coordination) {
+        push_pair(p, DEFENDED_PIECE_BONUS_MG,       DEFENDED_PIECE_BONUS_EG);
+        push_pair(p, SHARED_TARGET_BONUS_MG,        SHARED_TARGET_BONUS_EG);
+        push_pair(p, BATTERY_ROOK_QUEEN_BONUS_MG,   BATTERY_ROOK_QUEEN_BONUS_EG);
+        push_pair(p, BATTERY_BISHOP_QUEEN_BONUS_MG, BATTERY_BISHOP_QUEEN_BONUS_EG);
+        push_pair(p, SUPPORT_CHAIN_BONUS_MG,        SUPPORT_CHAIN_BONUS_EG);
+    }
 
     // 12. Tactical
-    push_pair(p, PIN_BONUS_MG,                       PIN_BONUS_EG);
-    push_pair(p, OVERLOADED_DEFENDER_BONUS_MG,        OVERLOADED_DEFENDER_BONUS_EG);
-    push_pair(p, UNRECIPROCATED_PRESSURE_BONUS_MG,    UNRECIPROCATED_PRESSURE_BONUS_EG);
+    if constexpr (tune_tactical) {
+        push_pair(p, PIN_BONUS_MG,                       PIN_BONUS_EG);
+        push_pair(p, OVERLOADED_DEFENDER_BONUS_MG,        OVERLOADED_DEFENDER_BONUS_EG);
+        push_pair(p, UNRECIPROCATED_PRESSURE_BONUS_MG,    UNRECIPROCATED_PRESSURE_BONUS_EG);
+    }
 
     // 13. Threats
-    push_pair(p, THREAT_BY_PAWN_MG[KNIGHT], THREAT_BY_PAWN_EG[KNIGHT]);
-    push_pair(p, THREAT_BY_PAWN_MG[BISHOP], THREAT_BY_PAWN_EG[BISHOP]);
-    push_pair(p, THREAT_BY_PAWN_MG[ROOK],   THREAT_BY_PAWN_EG[ROOK]);
-    push_pair(p, THREAT_BY_PAWN_MG[QUEEN],  THREAT_BY_PAWN_EG[QUEEN]);
-    push_pair(p, THREAT_BY_MINOR_MG[ROOK],  THREAT_BY_MINOR_EG[ROOK]);
-    push_pair(p, THREAT_BY_MINOR_MG[QUEEN], THREAT_BY_MINOR_EG[QUEEN]);
-    push_pair(p, THREAT_BY_ROOK_MG,         THREAT_BY_ROOK_EG);
+    if constexpr (tune_threats) {
+        push_pair(p, THREAT_BY_PAWN_MG[KNIGHT], THREAT_BY_PAWN_EG[KNIGHT]);
+        push_pair(p, THREAT_BY_PAWN_MG[BISHOP], THREAT_BY_PAWN_EG[BISHOP]);
+        push_pair(p, THREAT_BY_PAWN_MG[ROOK],   THREAT_BY_PAWN_EG[ROOK]);
+        push_pair(p, THREAT_BY_PAWN_MG[QUEEN],  THREAT_BY_PAWN_EG[QUEEN]);
+        push_pair(p, THREAT_BY_MINOR_MG[ROOK],  THREAT_BY_MINOR_EG[ROOK]);
+        push_pair(p, THREAT_BY_MINOR_MG[QUEEN], THREAT_BY_MINOR_EG[QUEEN]);
+        push_pair(p, THREAT_BY_ROOK_MG,         THREAT_BY_ROOK_EG);
+    }
 
     // 14. Hanging (base penalty only)
-    push_pair(p, HANGING_BASE_PENALTY_MG, HANGING_BASE_PENALTY_EG);
+    if constexpr (tune_hanging)
+        push_pair(p, HANGING_BASE_PENALTY_MG, HANGING_BASE_PENALTY_EG);
 
     // 15. Outposts
-    push_pair(p, KNIGHT_OUTPOST_MG, KNIGHT_OUTPOST_EG);
-    push_pair(p, BISHOP_OUTPOST_MG, BISHOP_OUTPOST_EG);
-    push_pair(p, ROOK_OUTPOST_MG,   ROOK_OUTPOST_EG);
-    push_pair(p, QUEEN_OUTPOST_MG,  QUEEN_OUTPOST_EG);
+    if constexpr (tune_outposts) {
+        push_pair(p, KNIGHT_OUTPOST_MG, KNIGHT_OUTPOST_EG);
+        push_pair(p, BISHOP_OUTPOST_MG, BISHOP_OUTPOST_EG);
+        push_pair(p, ROOK_OUTPOST_MG,   ROOK_OUTPOST_EG);
+        push_pair(p, QUEEN_OUTPOST_MG,  QUEEN_OUTPOST_EG);
+    }
 
     // 16. Tempo
-    push_pair(p, TEMPO_BONUS_MG, TEMPO_BONUS_EG);
+    if constexpr (tune_tempo)
+        push_pair(p, TEMPO_BONUS_MG, TEMPO_BONUS_EG);
 
     return p;
 }
@@ -915,6 +979,217 @@ EvalResult TexelTuner::get_external_eval_result(const chess::Board& board) {
 // print_parameters
 // Prints tuned values in tune.h format so they can be pasted back directly.
 void TexelTuner::print_parameters(const parameters_t& p) {
+    {
+        std::stringstream ss;
+        int i = 0;
+
+        auto require = [&]() {
+            if (i >= static_cast<int>(p.size()))
+                throw std::runtime_error("Texel print parameter count mismatch");
+        };
+        auto mg = [&](int idx) { return static_cast<int>(std::round(p[idx][0])); };
+        auto eg = [&](int idx) { return static_cast<int>(std::round(p[idx][1])); };
+        auto mg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][0] * 100.0)); };
+        auto eg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][1] * 100.0)); };
+
+        ss << "// SHAYBOT_TEXEL_PHASE=" << TEXEL_PHASE << "\n";
+
+        if constexpr (tune_material) {
+            ss << "// Piece values MG\n";
+            ss << "inline int PIECE_VALUES_MG[PIECE_COUNT] = {\n    0,";
+            ss << "   100,";
+            for (int pt = 0; pt < 4; ++pt) ss << " " << mg(i + pt) << ",";
+            ss << " 0,\n    ";
+            ss << "   100,";
+            for (int pt = 0; pt < 4; ++pt) ss << " " << mg(i + pt) << ",";
+            ss << " 0,\n};\n";
+
+            ss << "inline int PIECE_VALUES_EG[PIECE_COUNT] = {\n    0,";
+            ss << "   100,";
+            for (int pt = 0; pt < 4; ++pt) ss << " " << eg(i + pt) << ",";
+            ss << " 0,\n    ";
+            ss << "   100,";
+            for (int pt = 0; pt < 4; ++pt) ss << " " << eg(i + pt) << ",";
+            ss << " 0,\n};\n";
+            i += 4;
+        }
+
+        if constexpr (tune_pst) {
+            static const char* pst_names[] = {
+                "PST_PAWN", "PST_KNIGHT", "PST_BISHOP", "PST_ROOK", "PST_QUEEN", "PST_KING"
+            };
+            for (int pt = 0; pt < 6; ++pt) {
+                PieceType ptype = static_cast<PieceType>(pt + 1);
+                std::array<int, 64> idx{};
+                int next_i = i;
+                for (int sq = 0; sq < 64; ++sq) {
+                    if (skip_pst_param(ptype, sq)) idx[sq] = -1;
+                    else idx[sq] = next_i++;
+                }
+
+                ss << "inline int " << pst_names[pt] << "_MG[64] = {\n";
+                for (int r = 0; r < 8; ++r) {
+                    ss << "   ";
+                    for (int f = 0; f < 8; ++f) {
+                        int sq = r * 8 + f;
+                        int val = (idx[sq] < 0) ? MG_PTAB[ptype][sq] : mg(idx[sq]);
+                        if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
+                        ss << " " << std::setw(4) << val << ",";
+                    }
+                    ss << "\n";
+                }
+                ss << "};\n";
+                ss << "inline int " << pst_names[pt] << "_EG[64] = {\n";
+                for (int r = 0; r < 8; ++r) {
+                    ss << "   ";
+                    for (int f = 0; f < 8; ++f) {
+                        int sq = r * 8 + f;
+                        int val = (idx[sq] < 0) ? EG_PTAB[ptype][sq] : eg(idx[sq]);
+                        if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
+                        ss << " " << std::setw(4) << val << ",";
+                    }
+                    ss << "\n";
+                }
+                ss << "};\n";
+                i = next_i;
+            }
+        }
+
+        if constexpr (tune_bishop_pair) {
+            require();
+            ss << "inline int BISHOP_PAIR_BONUS_MG = " << mg(i) << ";\n";
+            ss << "inline int BISHOP_PAIR_BONUS_EG = " << eg(i) << ";\n";
+            i++;
+        }
+
+        if constexpr (tune_pawn_structure) {
+            ss << "inline int ISOLATED_PAWN_PENALTY_MG = " << mg(i)   << ";\n";
+            ss << "inline int ISOLATED_PAWN_PENALTY_EG = " << eg(i++)  << ";\n";
+            ss << "inline int DOUBLED_PAWN_PENALTY_MG  = " << mg(i)   << ";\n";
+            ss << "inline int DOUBLED_PAWN_PENALTY_EG  = " << eg(i++)  << ";\n";
+            ss << "inline int BACKWARD_PAWN_PENALTY_MG = " << mg(i)   << ";\n";
+            ss << "inline int BACKWARD_PAWN_PENALTY_EG = " << eg(i++)  << ";\n";
+            ss << "inline int SUPPORTED_PAWN_BONUS_MG  = " << mg(i++)  << ";\n";
+            ss << "inline int WEAK_PAWN_PENALTY_MG     = " << mg(i++)  << ";\n";
+            ss << "inline int PAWN_ISLAND_PENALTY_MG   = " << mg(i)   << ";\n";
+            ss << "inline int PAWN_ISLAND_PENALTY_EG   = " << eg(i++)  << ";\n";
+        }
+
+        if constexpr (tune_pawn_storm) {
+            ss << "inline int PAWN_STORM_BASE      = " << mg(i++) << ";\n";
+            ss << "inline int PAWN_STORM_RANK_MULT = " << mg(i++) << ";\n";
+        }
+
+        if constexpr (tune_passed_ranks) {
+            ss << "inline int PASSED_PAWN_BONUS_MG[8] = { 0,";
+            for (int r = 0; r < 6; ++r) ss << " " << mg(i + r) << ",";
+            ss << " 0 };\n";
+            ss << "inline int PASSED_PAWN_BONUS_EG[8] = { 0,";
+            for (int r = 0; r < 6; ++r) ss << " " << eg(i + r) << ",";
+            ss << " 0 };\n";
+            i += 6;
+        }
+
+        if constexpr (tune_passed_extras) {
+            ss << "inline int CANDIDATE_PAWN_BONUS_MG   = " << mg(i)   << ";\n";
+            ss << "inline int CANDIDATE_PAWN_BONUS_EG   = " << eg(i++) << ";\n";
+            ss << "inline int CONNECTED_PASSED_BONUS_MG = " << mg(i)   << ";\n";
+            ss << "inline int CONNECTED_PASSED_BONUS_EG = " << eg(i++) << ";\n";
+            ss << "inline int OUTSIDE_PASSED_BONUS_MG   = " << mg(i)   << ";\n";
+            ss << "inline int OUTSIDE_PASSED_BONUS_EG   = " << eg(i++) << ";\n";
+        }
+
+        if constexpr (tune_mobility) {
+            ss << "inline int MOBILITY_KNIGHT_MG = " << mg_pct(i) << ";\n";
+            ss << "inline int MOBILITY_KNIGHT_EG = " << eg_pct(i++) << ";\n";
+            ss << "inline int MOBILITY_BISHOP_MG = " << mg_pct(i) << ";\n";
+            ss << "inline int MOBILITY_BISHOP_EG = " << eg_pct(i++) << ";\n";
+            ss << "inline int MOBILITY_ROOK_MG   = " << mg_pct(i) << ";\n";
+            ss << "inline int MOBILITY_ROOK_EG   = " << eg_pct(i++) << ";\n";
+            ss << "inline int MOBILITY_QUEEN_MG  = " << mg_pct(i) << ";\n";
+            ss << "inline int MOBILITY_QUEEN_EG  = " << eg_pct(i++) << ";\n";
+        }
+
+        if constexpr (tune_king_safety) {
+            ss << "inline int KING_SHIELD_MISSING_PENALTY = " << mg(i++) << ";\n";
+            ss << "inline int KING_OPEN_FILE_PENALTY      = " << mg(i++) << ";\n";
+            ss << "inline int KING_SEMI_OPEN_FILE_PENALTY = " << mg(i++) << ";\n";
+        }
+
+        if constexpr (tune_territory) {
+            ss << "inline int SEVENTH_RANK_BONUS_MG = " << mg(i) << ";\n";
+            ss << "inline int SEVENTH_RANK_BONUS_EG = " << eg(i++) << ";\n";
+            ss << "inline int QUEEN_SEVENTH_RANK_BONUS_MG = " << mg(i) << ";\n";
+            ss << "inline int QUEEN_SEVENTH_RANK_BONUS_EG = " << eg(i++) << ";\n";
+        }
+
+        if constexpr (tune_coordination) {
+            ss << "inline int DEFENDED_PIECE_BONUS_MG       = " << mg(i) << ";\n";
+            ss << "inline int DEFENDED_PIECE_BONUS_EG       = " << eg(i++) << ";\n";
+            ss << "inline int SHARED_TARGET_BONUS_MG        = " << mg(i) << ";\n";
+            ss << "inline int SHARED_TARGET_BONUS_EG        = " << eg(i++) << ";\n";
+            ss << "inline int BATTERY_ROOK_QUEEN_BONUS_MG   = " << mg(i) << ";\n";
+            ss << "inline int BATTERY_ROOK_QUEEN_BONUS_EG   = " << eg(i++) << ";\n";
+            ss << "inline int BATTERY_BISHOP_QUEEN_BONUS_MG = " << mg(i) << ";\n";
+            ss << "inline int BATTERY_BISHOP_QUEEN_BONUS_EG = " << eg(i++) << ";\n";
+            ss << "inline int SUPPORT_CHAIN_BONUS_MG        = " << mg(i) << ";\n";
+            ss << "inline int SUPPORT_CHAIN_BONUS_EG        = " << eg(i++) << ";\n";
+        }
+
+        if constexpr (tune_tactical) {
+            ss << "inline int PIN_BONUS_MG                      = " << mg(i) << ";\n";
+            ss << "inline int PIN_BONUS_EG                      = " << eg(i++) << ";\n";
+            ss << "inline int OVERLOADED_DEFENDER_BONUS_MG      = " << mg(i) << ";\n";
+            ss << "inline int OVERLOADED_DEFENDER_BONUS_EG      = " << eg(i++) << ";\n";
+            ss << "inline int UNRECIPROCATED_PRESSURE_BONUS_MG  = " << mg(i) << ";\n";
+            ss << "inline int UNRECIPROCATED_PRESSURE_BONUS_EG  = " << eg(i++) << ";\n";
+        }
+
+        if constexpr (tune_threats) {
+            ss << "inline int THREAT_BY_PAWN_MG[7] = { 0, 0,"
+               << " " << mg(i) << ", " << mg(i+1) << ", " << mg(i+2) << ", " << mg(i+3)
+               << ", 0 };\n";
+            ss << "inline int THREAT_BY_PAWN_EG[7] = { 0, 0,"
+               << " " << eg(i) << ", " << eg(i+1) << ", " << eg(i+2) << ", " << eg(i+3)
+               << ", 0 };\n";
+            i += 4;
+            ss << "inline int THREAT_BY_MINOR_MG[7] = { 0, 0, 0, 0,"
+               << " " << mg(i) << ", " << mg(i+1) << ", 0 };\n";
+            ss << "inline int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0,"
+               << " " << eg(i) << ", " << eg(i+1) << ", 0 };\n";
+            i += 2;
+            ss << "inline int THREAT_BY_ROOK_MG = " << mg(i) << ";\n";
+            ss << "inline int THREAT_BY_ROOK_EG = " << eg(i++) << ";\n";
+        }
+
+        if constexpr (tune_hanging) {
+            ss << "inline int HANGING_BASE_PENALTY_MG = " << mg(i) << ";\n";
+            ss << "inline int HANGING_BASE_PENALTY_EG = " << eg(i++) << ";\n";
+        }
+
+        if constexpr (tune_outposts) {
+            ss << "inline int KNIGHT_OUTPOST_MG = " << mg(i) << ";\n";
+            ss << "inline int KNIGHT_OUTPOST_EG = " << eg(i++) << ";\n";
+            ss << "inline int BISHOP_OUTPOST_MG = " << mg(i) << ";\n";
+            ss << "inline int BISHOP_OUTPOST_EG = " << eg(i++) << ";\n";
+            ss << "inline int ROOK_OUTPOST_MG   = " << mg(i) << ";\n";
+            ss << "inline int ROOK_OUTPOST_EG   = " << eg(i++) << ";\n";
+            ss << "inline int QUEEN_OUTPOST_MG  = " << mg(i) << ";\n";
+            ss << "inline int QUEEN_OUTPOST_EG  = " << eg(i++) << ";\n";
+        }
+
+        if constexpr (tune_tempo) {
+            ss << "inline int TEMPO_BONUS_MG = " << mg(i) << ";\n";
+            ss << "inline int TEMPO_BONUS_EG = " << eg(i++) << ";\n";
+        }
+
+        if (i != static_cast<int>(p.size()))
+            throw std::runtime_error("Texel print did not consume every parameter");
+
+        std::cout << ss.str() << std::flush;
+        return;
+    }
+
     std::stringstream ss;
 
     int i = 0;
@@ -929,7 +1204,7 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     ss << "   100,";
     for (int pt = 0; pt < 4; ++pt) ss << " " << mg(i + pt) << ",";
     ss << " 0,\n    ";
-    ss << "   100,";
+    ss << "     100,";
     for (int pt = 0; pt < 4; ++pt) ss << " " << mg(i + pt) << ",";
     ss << " 0,\n};\n";
 
@@ -937,7 +1212,7 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     ss << "   100,";
     for (int pt = 0; pt < 4; ++pt) ss << " " << eg(i + pt) << ",";
     ss << " 0,\n    ";
-    ss << "   100,";
+    ss << "     100,";
     for (int pt = 0; pt < 4; ++pt) ss << " " << eg(i + pt) << ",";
     ss << " 0,\n};\n";
     i += 4;

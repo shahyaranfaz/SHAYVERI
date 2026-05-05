@@ -10,7 +10,6 @@ cd ~/texel/tuner/build && cmake ../src -DCMAKE_BUILD_TYPE=Release && make -j20
 
 ================================================================
   SHAYBOT  –  TEXEL TUNING TRACKER
-                  TEXEL PASS 1
 ================================================================
 Format per row:
   [STATUS] Name | Initial | Notes
@@ -19,7 +18,6 @@ STATUS codes:
   [ ] not started
   [~] in progress
   [x] converged / done
-  [!] biased initial; theory prior used instead of SPSA value
   [-] frozen (search param — do not Texel)
 
 Initial values are pass 3 tuned values unless otherwise noted.
@@ -56,12 +54,8 @@ Filtered pgns to fens via fengen (Github repo) to generate 1,028,547 FENs.
 Supplemented with Ethereal E12.52-1M-D12-Resolved (10M Positions).
 Thus, a total of 20.03M positions for tuning.
 
-Tune K (sigmoid scaling constant) first on a held-out 500k
-subset before running any parameter optimization. Fix K for
-all subsequent steps.
-
 ================================================================
-FROZEN — SEARCH PARAMETERS (do not Texel)
+SEARCH PARAMETERS (FROZEN)
 ================================================================
 
 Batch 1:
@@ -88,304 +82,152 @@ Batch 2:
   [-] FMH_Weight           |   36  | top-10% centroid pass4 log
 
 ================================================================
-PIECE VALUES  (untuned; tune jointly with PSTs)
+PHASE 1. PIECE VALUES / TABLES / SOME ASSOCIATED ITEMS
 ================================================================
 
-Pawns fixed at 100 (reference unit). All others free.
-Tune MG and EG independently. Integers only.
-Expect meaningful movement especially on Rook_EG and Queen values.
+  [X] Knight_MG
+  [X] Bishop_MG
+  [X] Rook_MG
+  [X] Queen_MG
+  [X] Knight_EG
+  [X] Bishop_EG
+  [X] Rook_EG
+  [X] Queen_EG
 
-  [ ] Knight_MG  | Initial: 320 |
-  [ ] Bishop_MG  | Initial: 330 |
-  [ ] Rook_MG    | Initial: 500 |
-  [ ] Queen_MG   | Initial: 900 |
-  [ ] Knight_EG  | Initial: 310 |
-  [ ] Bishop_EG  | Initial: 330 |
-  [ ] Rook_EG    | Initial: 510 |
-  [ ] Queen_EG   | Initial: 900 |
+  [X] Pawn_PST_MG
+  [X] Pawn_PST_EG
+  [X] Knight_PST_MG
+  [X] Knight_PST_EG
+  [X] Bishop_PST_MG
+  [X] Bishop_PST_EG
+  [X] Rook_PST_MG
+  [X] Rook_PST_EG
+  [X] Queen_PST_MG
+  [X] Queen_PST_EG
+  [!] King_PST_MG        | REJECTED ON FIRST PASS, RETUNE TBD
+  [!] King_PST_EG        | REJECTED ON FIRST PASS, RETUNE TBD
 
-Piece values and PSTs are strongly correlated. Tune simultaneously
-in the same optimization loop, not sequentially. If coordinate
-descent is used, iterate piece values → PSTs until neither moves.
+  [x] Tempo_Bonus_MG
+  [x] Tempo_Bonus_EG
 
-================================================================
-PIECE SQUARE TABLES  (12 tables; all untuned)
-================================================================
+  [x] Mobility_Knight_MG
+  [x] Mobility_Bishop_MG
+  [x] Mobility_Rook_MG
+  [x] Mobility_Queen_MG
+  [x] Mobility_Knight_EG
+  [x] Mobility_Bishop_EG
+  [x] Mobility_Rook_EG
+  [x] Mobility_Queen_EG
 
-6 piece types × 2 phases = 12 tables, 32 free values each
-(mirror over vertical axis to enforce left-right symmetry).
-Total: 384 free PST scalars.
+  [x] Passed_Pawn_Bonuses_MG
+  [x] Passed_Pawn_Bonuses_EG
 
-Initial values: PeSTO-style priors (well-established empirically;
-warm start is strongly preferred over flat tables).
+  [x] Bishop_Pair_Bonus_MG
+  [x] Bishop_Pair_Bonus_EG
 
-Structural constraints to enforce:
-  Pawn_PST_MG / _EG : ranks 1 and 8 always 0 (illegal squares)
-  King_PST_MG        : penalize e/d file centre squares (-50 to -80)
-  King_PST_EG        : bonus for centre activity (d4-e5 area +10 to +30)
-  Knight_PST          : corner << edge << centre (both phases)
-  Pawn_PST_MG        : d/e file centre bonus
-
-  [ ] Pawn_PST_MG    | 32 values | Initial: PeSTO prior
-  [ ] Pawn_PST_EG    | 32 values | Initial: PeSTO prior
-  [ ] Knight_PST_MG  | 32 values | Initial: PeSTO prior
-  [ ] Knight_PST_EG  | 32 values | Initial: PeSTO prior
-  [ ] Bishop_PST_MG  | 32 values | Initial: PeSTO prior
-  [ ] Bishop_PST_EG  | 32 values | Initial: PeSTO prior
-  [ ] Rook_PST_MG    | 32 values | Initial: PeSTO prior
-  [ ] Rook_PST_EG    | 32 values | Initial: PeSTO prior
-  [ ] Queen_PST_MG   | 32 values | Initial: PeSTO prior
-  [ ] Queen_PST_EG   | 32 values | Initial: PeSTO prior
-  [ ] King_PST_MG    | 32 values | Initial: PeSTO prior
-  [ ] King_PST_EG    | 32 values | Initial: PeSTO prior
+600 games at 10+0.1 with 8mvs_+90_+99.epd:
+TEXEL1 VS SPSA4
+Black: 120 - 91 - 78
+White: 185 - 42 - 63
+Elo = 106.4 +- 25.4
 
 ================================================================
-BATCH 3 – CORE EVAL
+PHASE 2. PAWN STRUCTURE / STORM / PASSED EXTRAS
 ================================================================
 
-SPSA reliable (2+ consistent passes). Use pass 3 values as warm
-start. Bishop_Pair_Bonus=22 is low vs typical engine range ~28-32;
-Texel will correct this once PSTs are in place and the dataset
-covers sufficient closed positions.
+  [ ] Isolated_Pawn_Penalty_MG
+  [ ] Isolated_Pawn_Penalty_EG
+  [ ] Doubled_Pawn_Penalty_MG
+  [ ] Doubled_Pawn_Penalty_EG
+  [ ] Backward_Pawn_Penalty_MG
+  [ ] Backward_Pawn_Penalty_EG
+  [ ] Supported_Pawn_Bonus_MG
+  [ ] Weak_Pawn_Penalty_MG
+  [ ] Pawn_Island_Penalty_MG
+  [ ] Pawn_Island_Penalty_EG
 
-  [ ] Tempo_Bonus         | Initial:  22 | SPSA reliable
-  [ ] Bishop_Pair_Bonus   | Initial:  22 | low; expect upward drift with PSTs
-  [ ] Development_Bonus   | Initial:  12 | may shift with PSTs
-  [ ] Castled_Bonus       | Initial:   5 |
-  [ ] Mobility_Knight_MG  | Initial:   6 |
-  [ ] Mobility_Bishop_MG  | Initial:  10 |
-  [ ] Mobility_Rook_MG    | Initial:   5 |
-  [ ] Mobility_Queen_MG   | Initial:   4 |
-  [ ] Mobility_Knight_EG  | Initial:   5 |
-  [ ] Mobility_Bishop_EG  | Initial:   4 |
-  [ ] Mobility_Rook_EG    | Initial:   2 |
-  [ ] Mobility_Queen_EG   | Initial:   1 | may round to 0
+  [ ] Pawn_Storm_Base
+  [ ] Pawn_Storm_Rank_Mult
 
-================================================================
-BATCH 4 – PAWN STRUCTURE
-================================================================
-
-Dataset bias warning: opening-book self-play games have low
-frequency of isolated, backward, and doubled structures. SPSA
-zeroed or near-zeroed several penalties for this reason, not
-because the true value is zero. Use theory priors for the
-affected params (marked [!]) rather than SPSA values.
-Supplemented quiet EPD dataset corrects this.
-
-  [!] Isolated_MG          | Initial:  -15 | SPSA gave  -1 (dataset bias)
-  [!] Isolated_EG          | Initial:  -20 | SPSA gave  -3 (dataset bias)
-  [ ] Doubled_MG           | Initial:  -12 |
-  [ ] Doubled_EG           | Initial:   -9 |
-  [ ] Backward_MG          | Initial:  -13 |
-  [!] Backward_EG          | Initial:   -8 | SPSA gave   0 (dataset bias)
-  [ ] Supported_Pawn_MG    | Initial:   14 |
-  [ ] Weak_Pawn_MG         | Initial:  -18 |
-  [ ] Pawn_Island_MG       | Initial:  -32 | consistent across passes; reliable
-  [ ] Pawn_Island_EG       | Initial:   -5 |
-  [ ] Pawn_Center_MG       | Initial:    7 |
-  [!] Pawn_Center_EG       | Initial:    2 | SPSA gave 0 (dataset bias)
-  [!] Pawn_ExtCenter_MG    | Initial:    2 | SPSA gave 0 (dataset bias)
-  [ ] Pawn_ExtCenter_EG    | Initial:    3 |
-  [ ] Pawn_Storm_Base      | Initial:    2 |
-  [ ] Pawn_Storm_Rank_Mult | Initial:    1 |
+  [ ] Candidate_Pawn_Bonus_MG
+  [ ] Candidate_Pawn_Bonus_EG
+  [ ] Connected_Passed_Bonus_MG
+  [ ] Connected_Passed_Bonus_EG
+  [ ] Outside_Passed_Bonus_MG
+  [ ] Outside_Passed_Bonus_EG
 
 ================================================================
-BATCH 5 – PASSED PAWNS
+PHASE 3. ACTIVITY / MOBILITY / TERRITORY / COORDINATION
 ================================================================
 
-SPSA signal failure in passes 1 and 2. All 18 params returned
-their initials both times — not a budget issue, a signal issue.
-Pure Texel from the start. Dataset must include meaningful
-late-middlegame and endgame positions. If self-play games are
-overwhelmingly opening/early middlegame, supplement with a
-dedicated endgame EPD or CCRL endgame positions.
+  [ ] Mobility_Knight_MG
+  [ ] Mobility_Knight_EG
+  [ ] Mobility_Bishop_MG
+  [ ] Mobility_Bishop_EG
+  [ ] Mobility_Rook_MG
+  [ ] Mobility_Rook_EG
+  [ ] Mobility_Queen_MG
+  [ ] Mobility_Queen_EG
 
-Rank arrays treated as 6 independent scalars (ranks 2-7; ranks
-1 and 8 are structurally 0). Enforce monotonicity:
-  PassedMG_R[n] <= PassedMG_R[n+1]  for n in 2..6
-  PassedEG_R[n] <= PassedEG_R[n+1]  for n in 2..6
-Implement via delta reparametrization or soft penalty term.
+  [ ] Seventh_Rank_Bonus_MG
+  [ ] Seventh_Rank_Bonus_EG
+  [ ] Queen_Seventh_Rank_Bonus_MG
+  [ ] Queen_Seventh_Rank_Bonus_EG
 
-  [!] PassedMG_R2             | Initial:   5 | code value; unvalidated by SPSA
-  [!] PassedMG_R3             | Initial:  10 |
-  [!] PassedMG_R4             | Initial:  20 |
-  [!] PassedMG_R5             | Initial:  30 |
-  [!] PassedMG_R6             | Initial:  50 |
-  [!] PassedMG_R7             | Initial:  70 |
-  [!] PassedEG_R2             | Initial:  10 |
-  [!] PassedEG_R3             | Initial:  20 |
-  [!] PassedEG_R4             | Initial:  40 |
-  [!] PassedEG_R5             | Initial:  60 |
-  [!] PassedEG_R6             | Initial:  90 |
-  [!] PassedEG_R7             | Initial: 120 |
-  [!] Candidate_Pawn_MG       | Initial:   8 |
-  [!] Candidate_Pawn_EG       | Initial:  12 |
-  [!] Connected_Passed_MG     | Initial:  10 |
-  [!] Connected_Passed_EG     | Initial:  18 |
-  [!] Outside_Passed_MG       | Initial:   8 |
-  [!] Outside_Passed_EG       | Initial:  20 |
+  [ ] Defended_Piece_Bonus_MG
+  [ ] Defended_Piece_Bonus_EG
+  [ ] Shared_Target_Bonus_MG
+  [ ] Shared_Target_Bonus_EG
+  [ ] Battery_Rook_Queen_Bonus_MG
+  [ ] Battery_Rook_Queen_Bonus_EG
+  [ ] Battery_Bishop_Queen_Bonus_MG
+  [ ] Battery_Bishop_Queen_Bonus_EG
+  [ ] Support_Chain_Bonus_MG
+  [ ] Support_Chain_Bonus_EG
 
-================================================================
-BATCH 6 – KING SAFETY
-================================================================
-
-SPSA converged in pass 2 (sigma=0.082, 33 iters). Pass 3
-confirmed skip. KingAtk curve shape credible. Use pass 3 values.
-
-  [ ] King_Shield_Penalty    | Initial:  -27 |
-  [ ] King_Open_File_Penalty | Initial:  -29 |
-  [ ] King_SemiOpen_Penalty  | Initial:   -6 |
-  [ ] King_Escape_Bonus      | Initial:    4 |
-  [ ] King_Danger_Divisor    | Initial:   10 |
-  [ ] King_Danger_Max        | Initial:  641 |
-  [ ] King_Attacker_Knight   | Initial:    2 |
-  [ ] King_Attacker_Bishop   | Initial:    3 |
-  [ ] King_Attacker_Rook     | Initial:    4 |
-  [ ] King_Attacker_Queen    | Initial:   11 |
-  [ ] KingAtk_2              | Initial:    7 |
-  [ ] KingAtk_3              | Initial:   25 |
-  [ ] KingAtk_4              | Initial:   33 |
-  [ ] KingAtk_5              | Initial:   44 |
-  [ ] KingAtk_6              | Initial:   27 |
-  [ ] KingAtk_7              | Initial:   16 |
+  [ ] Knight_Outpost_MG
+  [ ] Knight_Outpost_EG
+  [ ] Bishop_Outpost_MG
+  [ ] Bishop_Outpost_EG
+  [ ] Rook_Outpost_MG
+  [ ] Rook_Outpost_EG
+  [ ] Queen_Outpost_MG
+  [ ] Queen_Outpost_EG
 
 ================================================================
-BATCH 7 – THREATS, HANGING
+PHASE 4. KING SAFETY / TACTICS / THREATS / HANGING
 ================================================================
 
-Best-converged SPSA batch (sigma=0.037 at pass 2; sigma0=0.15).
-All values reliable. Threat_Minor_Rook_EG=10 vs
-Threat_Minor_Queen_EG=54 asymmetry accepted as dataset result;
-Texel on broader dataset may shift this.
+  [ ] King_Shield_Missing_Penalty
+  [ ] King_Open_File_Penalty
+  [ ] King_Semi_Open_File_Penalty
 
-Overloaded_Defender_Bonus and Hanging_Penalty_EG both zeroed in
-SPSA across passes 1 and 2. Include in Texel with small theory
-priors as initial to avoid optimizer sticking at boundary.
+  [ ] Pin_Bonus_MG
+  [ ] Pin_Bonus_EG
+  [ ] Overloaded_Defender_Bonus_MG
+  [ ] Overloaded_Defender_Bonus_EG
+  [ ] Unreciprocated_Pressure_Bonus_MG
+  [ ] Unreciprocated_Pressure_Bonus_EG
 
-  [ ] Undefended_Attack_Bonus  | Initial:  18 |
-  [ ] Pin_Bonus                | Initial:  36 |
-  [!] Overloaded_Defender_Bonus| Initial:   4 | SPSA gave 0; dataset bias
-  [ ] Unrec_Pressure_Bonus     | Initial:   5 |
-  [ ] Undefended_Value_Div     | Initial:  66 |
-  [ ] Threat_Pawn_Knight_MG    | Initial:  42 |
-  [ ] Threat_Pawn_Bishop_MG    | Initial:  89 |
-  [ ] Threat_Pawn_Rook_MG      | Initial: 113 |
-  [ ] Threat_Pawn_Queen_MG     | Initial:  89 |
-  [ ] Threat_Pawn_Knight_EG    | Initial:  77 |
-  [ ] Threat_Pawn_Bishop_EG    | Initial:  94 |
-  [ ] Threat_Pawn_Rook_EG      | Initial:  39 |
-  [ ] Threat_Pawn_Queen_EG     | Initial:  71 |
-  [ ] Threat_Minor_Rook_MG     | Initial:  26 |
-  [ ] Threat_Minor_Queen_MG    | Initial:  11 |
-  [ ] Threat_Minor_Rook_EG     | Initial:  10 | asymmetry vs Queen_EG; may resolve with dataset
-  [ ] Threat_Minor_Queen_EG    | Initial:  54 | asymmetry vs Rook_EG; may resolve with dataset
-  [ ] Threat_Rook_MG           | Initial:  58 |
-  [ ] Threat_Rook_EG           | Initial:  48 |
-  [ ] Hanging_Penalty_MG       | Initial:  54 |
-  [!] Hanging_Penalty_EG       | Initial:   6 | SPSA gave 0; include with range [0, 30]
-  [ ] Hanging_Value_Div        | Initial:  21 |
+  [ ] Threat_By_Pawn_Knight_MG
+  [ ] Threat_By_Pawn_Knight_EG
+  [ ] Threat_By_Pawn_Bishop_MG
+  [ ] Threat_By_Pawn_Bishop_EG
+  [ ] Threat_By_Pawn_Rook_MG
+  [ ] Threat_By_Pawn_Rook_EG
+  [ ] Threat_By_Pawn_Queen_MG
+  [ ] Threat_By_Pawn_Queen_EG
 
-================================================================
-BATCH 8a – COORDINATION, FILE BONUSES, TERRITORY
-================================================================
+  [ ] Threat_By_Minor_Rook_MG
+  [ ] Threat_By_Minor_Rook_EG
+  [ ] Threat_By_Minor_Queen_MG
+  [ ] Threat_By_Minor_Queen_EG
 
-Moderate SPSA signal. Pass 3 values used as warm start.
-Bishop_Openness_Max drifted 42→34 between pass 2 and pass 3;
-pass 3 value used.
+  [ ] Threat_By_Rook_MG
+  [ ] Threat_By_Rook_EG
 
-  [ ] Center_Bonus           | Initial:   7 |
-  [ ] Ext_Center_Bonus       | Initial:   5 |
-  [ ] Enemy_Half_Bonus       | Initial:   4 |
-  [ ] Seventh_Rank_MG        | Initial:  16 |
-  [ ] Seventh_Rank_EG        | Initial:  22 |
-  [ ] Defended_Piece_Bonus   | Initial:   3 |
-  [ ] Shared_Target_Bonus    | Initial:   8 |
-  [ ] Battery_Rook_Queen     | Initial:  10 |
-  [ ] Battery_Bishop_Queen   | Initial:  11 |
-  [ ] Support_Chain_Bonus    | Initial:   5 |
-  [ ] Open_File_Mult         | Initial: 121 |
-  [ ] Semi_Open_File_Mult    | Initial: 117 |
-  [ ] Bishop_Openness_Max    | Initial:  34 |
-  [ ] Bishop_Openness_SqWt   | Initial:   2 |
-
-================================================================
-BATCH 8b – OUTPOSTS
-================================================================
-
-SPSA signal failure across 2 dedicated passes (sigma never below
-0.18). Outpost positions are ~5-10% frequency in tactical
-opening-book games — insufficient for CMA gradient estimation.
-Large quiet dataset corrects this naturally.
-
-Theory priors used for Knight_Outpost_MG and Bishop_Outpost_MG
-where SPSA values are implausibly low. Remaining values carry
-pass 3 SPSA as warm start.
-
-  [!] Knight_Outpost_MG  | Initial:  18 | SPSA gave 13; theory prior
-  [ ] Knight_Outpost_EG  | Initial:  10 |
-  [!] Bishop_Outpost_MG  | Initial:  10 | SPSA gave  4; theory prior
-  [ ] Bishop_Outpost_EG  | Initial:  20 |
-  [ ] Rook_Outpost_MG    | Initial:  28 |
-  [ ] Rook_Outpost_EG    | Initial:  12 |
-  [ ] Queen_Outpost_MG   | Initial:   4 |
-  [ ] Queen_Outpost_EG   | Initial:   8 |
-
-================================================================
-TUNING ORDER
-================================================================
-
-Step 1 – K calibration
-  Tune K on held-out 500k subset. Fix K for all steps.
-
-Step 2 – Piece values + all 12 PSTs simultaneously
-  Highest-leverage step. Expect significant movement: piece
-  values may shift 10-30 points, PST corner/edge values may
-  swing large. Do not proceed until this stabilizes.
-
-Step 3 – Batches 3, 6, 7, 8a simultaneously
-  Reasonable SPSA warm starts; expect smaller deltas than step 2.
-
-Step 4 – Batch 4 (pawn structure) + Batch 5 (passed pawns)
-  Run separately because pawn terms interact strongly with
-  Pawn_PST (fixed from step 2). Enforce passed pawn
-  monotonicity constraint throughout.
-
-Step 5 – Batch 8b (outposts)
-  Low cross-parameter interaction; can run jointly with step 4.
-
-Step 6 – Full joint re-tune (all eval params, one final pass)
-  Resolves cross-parameter compensation from sequential tuning.
-  Expect small (<5 point) movements. Optional but recommended.
-
-If using gradient-based optimizer (Adam/SGD) over the full
-parameter vector simultaneously, steps 2-6 collapse into a
-single run. This is preferred if implementation supports it.
-
-================================================================
-VERIFICATION GATE
-================================================================
-
-After each step:
-  1. MSE on held-out 500k: must decrease monotonically.
-     Any increase signals overfitting; reduce learning rate
-     or check dataset imbalance (too few endgame positions).
-  2. 400-game match vs shaybot_pass4 at 30+0.3 after each step.
-     Expect monotone elo improvement. Regression > 10 elo flags
-     that step's parameter group for investigation.
-  3. After step 2 sanity checks:
-       - Queen > 2*Rook + Pawn implied value
-       - Bishop_Pair_Bonus (SPSA 22) + implied PST correction >= 26
-       - King_PST_MG: e1/d1 squares are most negative on board
-       - King_PST_EG: e4/d4/d5/e5 squares are most positive
-  4. After step 4:
-       - Isolated_MG more negative than Isolated_EG
-       - Pawn_Center_EG and Pawn_ExtCenter_MG nonzero confirms
-         dataset bias has been corrected by quiet supplement
-       - Backward_EG nonzero (was 0 in SPSA)
-  5. Final binary: texelpass1 vs shaybot_pass4 at 30+0.3
-     (800 games). Expect substantial elo gain from PST and
-     piece value tuning alone. If not, check for compensation
-     artifacts (large PST + piece value shifts that cancel).
+  [ ] Hanging_Base_Penalty_MG
+  [ ] Hanging_Base_Penalty_EG
 
 ================================================================
 POST-TEXEL: FINAL CMA-ES (SEARCH ONLY)
