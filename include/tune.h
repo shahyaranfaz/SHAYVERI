@@ -377,18 +377,18 @@ struct TuningOption {
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
     // Core search
-    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    18,    55,  "32"}},
+    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    64,  "32"}},
     {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.25"}}, // DOUBLE ignores min/max
     {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.79"}}, // DOUBLE ignores min/max
     {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    40,   160,  "84"}},
-    {"FP_Base",             {&fp_base,                TuningOption::INT,   110,   330,  "195"}},
-    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   400,   950,  "653"}},
+    {"FP_Base",             {&fp_base,                TuningOption::INT,   100,   330,  "195"}},
+    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   350,   950,  "653"}},
     {"LMP_Base",            {&lmp_base,               TuningOption::INT,     2,     7,   "3"}},
     {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     6,   "1"}},   // Skipped pass 2
-    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -420,  -120, "-281"}},
+    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -480,  -80, "-281"}},
     {"SE_Min_Depth",        {&se_min_depth,           TuningOption::INT,     5,    16,   "9"}},
     {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     5,   "2"}},
-    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    95,  "55"}},
+    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "55"}},
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     1,     6,   "3"}},
 
     // History
