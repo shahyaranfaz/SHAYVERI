@@ -33,36 +33,36 @@ static constexpr int INF        = 1000000;
 static constexpr int MATE_SCORE =  900000;
 
 // Aspiration window initial delta
-inline int ASP_DELTA = 35;
+static constexpr int ASP_DELTA = 36;
 
 // Singular extensions
-inline int se_min_depth       =  9; //
-inline int se_depth_margin    =  2; //
-inline int se_margin          = 56; //
-inline int se_reduction_denom =  4; //
+static constexpr int se_min_depth       =  9;
+static constexpr int se_depth_margin    =  2;
+static constexpr int se_margin          = 58;
+static constexpr int se_reduction_denom =  4;
 
 // History gravity / bonus
-inline int history_max           = 16384;
-inline int history_bonus_mult    =   460;
-inline int history_bonus_sub     =   170;
-inline int history_bonus_limit   =  3063;
+static constexpr int history_max           = 16384;
+static constexpr int history_bonus_mult    =   468;
+static constexpr int history_bonus_sub     =   165;
+static constexpr int history_bonus_limit   =  3090;
 
 // History blending weights (percent, divided by 100 before accumulation)
-inline int main_history_weight = 85;
-inline int cmh_weight          = 74;
-inline int fmh_weight          = 35;
+static constexpr int main_history_weight = 85;
+static constexpr int cmh_weight          = 75;
+static constexpr int fmh_weight          = 30;
 
 // Pruning margins
-inline int rfp_margin_mult    =   62;
-inline int fp_base            =  215;
-inline int fp_mult            =  672;
-inline int lmp_base           =    3;
-inline int lmp_mult           =    1;
-inline int see_pruning_margin = -259;
+static constexpr int rfp_margin_mult    =   60;
+static constexpr int fp_base            =  220;
+static constexpr int fp_mult            =  693;
+static constexpr int lmp_base           =    3;
+static constexpr int lmp_mult           =    1;
+static constexpr int see_pruning_margin = -252;
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
-inline double lmr_base  = 1.17017;
-inline double lmr_scale = 1.77385;
+static constexpr int lmr_base  = 1.18093;
+static constexpr int lmr_scale = 1.82857;
 
 // ================================================================
 // Piece values
@@ -375,7 +375,7 @@ struct TuningOption {
 // `inline` on the map and the function body guarantees ODR-safety when this
 // header is included in more than one translation unit (C++17).
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
-
+/*
     // Core search
     {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    80,  "35"}},
     {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.17017"}}, // DOUBLE ignores min/max
@@ -387,7 +387,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     3,   "1"}},   // Skipped pass 2
     {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -600,  -40, "-259"}},
     {"SE_Min_Depth",        {&se_min_depth,           TuningOption::INT,     1,    16,   "9"}},
-    {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     20,   "2"}},
+    {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     8,   "2"}},
     {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "56"}},
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     2,     6,   "4"}},
 
@@ -398,7 +398,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "85"}},
     {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "74"}},
     {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "35"}},
-/*
+
     // Eval – misc
     {"Tempo_Bonus_MG",      {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
     {"Tempo_Bonus_EG",      {&TEMPO_BONUS_EG,         TuningOption::INT,     4,    48,   "22"}},
