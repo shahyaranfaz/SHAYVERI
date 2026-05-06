@@ -40,11 +40,11 @@ import psutil
 # --------------------------
 HARDCODE_OPTIMIZER = "cmaes"
 HARDCODE_MATCH_MANAGER_PATH = "cutechess-cli"
-HARDCODE_BASE_TIME_SEC = 5
-HARDCODE_INC_TIME_SEC = 0.05
-HARDCODE_GAMES_PER_BUDGET = 200
+HARDCODE_BASE_TIME_SEC = 10
+HARDCODE_INC_TIME_SEC = 0.1
+HARDCODE_GAMES_PER_BUDGET = 300
 HARDCODE_ENGINE = "./shaybot"
-HARDCODE_OPENING_FILE = "./start_opening/ogpt_chess_startpos.epd"
+HARDCODE_OPENING_FILE = "./start_opening/final_search_mix_shuf.epd"
 
 
 os_name = platform.system()  # Linux, Windows or ''

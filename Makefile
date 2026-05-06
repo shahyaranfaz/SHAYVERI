@@ -18,8 +18,8 @@ SRC := \
 	src/time_manager.cpp \
 	src/texel.cpp
 
-BIN := shaybot
-BIN_WIN := shaybot.exe
+BIN := SHAYVERI
+BIN_WIN := SHAYVERI.exe
 CXX_WIN := x86_64-w64-mingw32-g++
 CXXFLAGS_WIN := -std=c++20 -O3 -mbmi2 -march=native
 LDFLAGS_WIN := -lpthread -static -flto

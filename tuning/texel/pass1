@@ -275,11 +275,14 @@ No elo difference between texel4 and 5
 ================================================================
 POST-TEXEL: FINAL CMA-ES (SEARCH ONLY)
 ================================================================
+ master: dh2010pc12
+workers: dh2010pc12,15,17,20,21,22,24,25 // dh2020pc04,06,08,10
+  games: dh2020pc18
 
 python3.10 lakas.py \
   --distributed-role master \
   --budget 600 \
-  --num_workers 9 \
+  --num_workers 12 \
   --concurrency 23 \
   --output-data-file "batch_final.dat" \
   --input-data-file  "batch_final.dat" \
