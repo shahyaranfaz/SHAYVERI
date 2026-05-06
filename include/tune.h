@@ -33,47 +33,47 @@ static constexpr int INF        = 1000000; //
 static constexpr int MATE_SCORE = 900000; //
 
 // Aspiration window initial delta
-inline int ASP_DELTA = 32; //
+static constexpr int ASP_DELTA = 35; //
 
 // Singular extensions
-inline int se_min_depth       =  9; //
-inline int se_depth_margin    =  2; //
-inline int se_margin          = 55; //
-inline int se_reduction_denom =  3; //
+static constexpr int se_min_depth       =  9; //
+static constexpr int se_depth_margin    =  2; //
+static constexpr int se_margin          = 56; //
+static constexpr int se_reduction_denom =  4; //
 
 // History gravity / bonus
 static constexpr int history_max = 16384; //
-inline int history_bonus_mult    =   463; //
-inline int history_bonus_sub     =   164; //
-inline int history_bonus_limit   =  2967; //
+static constexpr int history_bonus_mult    =   460; //
+static constexpr int history_bonus_sub     =   170; //
+static constexpr int history_bonus_limit   =  3063; //
 
 // History blending weights (percent, divided by 100 before accumulation)
-inline int main_history_weight = 79; //
-inline int cmh_weight          = 83; //
-inline int fmh_weight          = 36; //
+static constexpr int main_history_weight = 85; //
+static constexpr int cmh_weight          = 74; //
+static constexpr int fmh_weight          = 35; //
 
 // Pruning margins
-inline int rfp_margin_mult    =   84; //
-inline int fp_base            =  195; //
-inline int fp_mult            =  653; //
-inline int lmp_base           =    3; //
-inline int lmp_mult           =    1; //
-inline int see_pruning_margin = -281; //
+static constexpr int rfp_margin_mult    =   62; //
+static constexpr int fp_base            =  215; //
+static constexpr int fp_mult            =  672; //
+static constexpr int lmp_base           =    3; //
+static constexpr int lmp_mult           =    1; //
+static constexpr int see_pruning_margin = -259; //
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
-inline double lmr_base  = 1.25; //
-inline double lmr_scale = 1.79; //
+static constexpr double lmr_base  = 1.17017; //
+static constexpr double lmr_scale = 1.77385; //
 
 // ================================================================
 // Piece values
 // ================================================================
 
 // Per-piece (indexed by Piece enum), MG and EG
-inline int PIECE_VALUES_MG[PIECE_COUNT] = {
+static constexpr int PIECE_VALUES_MG[PIECE_COUNT] = {
     0,   100, 353, 391, 510, 935, 0,
          100, 353, 391, 510, 935, 0,
 };
-inline int PIECE_VALUES_EG[PIECE_COUNT] = {
+static constexpr int PIECE_VALUES_EG[PIECE_COUNT] = {
     0,   100, 290, 294, 539, 855, 0,
          100, 290, 294, 539, 855, 0,
 };
@@ -97,7 +97,7 @@ static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = { //
 // Piece-square tables  (white perspective, index 0 = a1)
 // ================================================================
 
-inline int PST_PAWN_MG[64] = {
+static constexpr int PST_PAWN_MG[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
     -22, -37, -46, -43, -47, -18,  -9, -36,
     -22, -43, -37, -36, -29, -15,  -8, -16,
@@ -108,7 +108,7 @@ inline int PST_PAWN_MG[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
 
 };
-inline int PST_PAWN_EG[64] = {
+static constexpr int PST_PAWN_EG[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
       2,   1,  -5,  -2,   8,  -9, -13, -21,
      -1,  -1,  -8,  -3,  -2, -11, -12, -18,
@@ -120,7 +120,7 @@ inline int PST_PAWN_EG[64] = {
 
 };
 
-inline int PST_KNIGHT_MG[64] = {
+static constexpr int PST_KNIGHT_MG[64] = {
     -41,  -9, -28, -17,  -1,  -2,  -7, -66,
     -27, -25, -14,   6,   1,  -3, -18,  -7,
     -22, -16,  -8,  14,  18,   1,   0, -10,
@@ -131,7 +131,7 @@ inline int PST_KNIGHT_MG[64] = {
     -97, -29, -27,  -4,   8, -19, -22, -70,
 
 };
-inline int PST_KNIGHT_EG[64] = {
+static constexpr int PST_KNIGHT_EG[64] = {
     -32, -45, -19, -10, -18, -23, -37, -35,
     -25,   2, -11,  -7,  -4, -17,  -7, -18,
     -24,   1, -10,   7,   4, -11,  -2, -11,
@@ -143,7 +143,7 @@ inline int PST_KNIGHT_EG[64] = {
 
 };
 
-inline int PST_BISHOP_MG[64] = {
+static constexpr int PST_BISHOP_MG[64] = {
     -28,   2,   3, -26, -22,   1,  -2,   1,
      -3,  11,   8,   2,   0,  10,  27,  16,
      -4,  -6,   6,   4,   7,   8,  15,  11,
@@ -154,7 +154,7 @@ inline int PST_BISHOP_MG[64] = {
     -18, -13, -45, -25, -26, -43,  -7, -15,
 
 };
-inline int PST_BISHOP_EG[64] = {
+static constexpr int PST_BISHOP_EG[64] = {
     -10, -13, -20,  -2,   2, -10, -11,  -2,
     -13, -18, -12,  -3,  -3, -15, -24, -27,
      -1,   1,  -3,   1,   2,  -6,  -6,   2,
@@ -166,7 +166,7 @@ inline int PST_BISHOP_EG[64] = {
 
 };
 
-inline int PST_ROOK_MG[64] = {
+static constexpr int PST_ROOK_MG[64] = {
     -15, -17, -11,   0,  -1,   3,  -3, -13,
     -42, -36, -27, -19, -12,  -6, -11, -54,
     -35, -36, -34, -29, -22, -30, -23, -39,
@@ -177,7 +177,7 @@ inline int PST_ROOK_MG[64] = {
      47,  41,   8,  19,  18,  43,  49,  53,
 
 };
-inline int PST_ROOK_EG[64] = {
+static constexpr int PST_ROOK_EG[64] = {
     -29, -17, -13, -21, -25, -15, -21, -22,
     -10, -12, -10, -13, -21, -28, -29, -17,
     -13,  -2,  -3,  -8, -13,  -7, -13, -10,
@@ -189,7 +189,7 @@ inline int PST_ROOK_EG[64] = {
 
 };
 
-inline int PST_QUEEN_MG[64] = {
+static constexpr int PST_QUEEN_MG[64] = {
     -45,   1,   4,  17,  22,  -4, -22, -10,
       4,  17,  27,  23,  27,  42,  32,   9,
      -6,   2,   6,   7,  15,  14,  20,  23,
@@ -200,7 +200,7 @@ inline int PST_QUEEN_MG[64] = {
      -3,  11,  11,   5,  17,  24,  32,  33,
 
 };
-inline int PST_QUEEN_EG[64] = {
+static constexpr int PST_QUEEN_EG[64] = {
     -41, -47, -34, -36, -52, -46, -41, -38,
     -17, -37, -53, -30, -32, -87, -87, -31,
       0, -12, -16, -18, -17,  -2, -12,  -4,
@@ -212,7 +212,7 @@ inline int PST_QUEEN_EG[64] = {
 
 };
 
-inline int PST_KING_MG[64] = {
+static constexpr int PST_KING_MG[64] = {
       7,  50,  25, -11,  27,  -7,  36,  17,
      19,  25,  25,   2,   1,   5,  29,  19,
       0,  11,  17,  19,  21,  20,  18, -17,
@@ -223,7 +223,7 @@ inline int PST_KING_MG[64] = {
     -15, -14, -14, -24, -23, -11, -10, -17,
 
 };
-inline int PST_KING_EG[64] = {
+static constexpr int PST_KING_EG[64] = {
     -65, -48, -16, -11, -39, -13, -37, -71,
     -22, -15,  -8,  -3,  -3,  -4, -19, -31,
     -13, -15,  -2,   6,   5,  -2, -15, -14,
@@ -240,125 +240,125 @@ inline int PST_KING_EG[64] = {
 // ================================================================
 
 // Misc
-inline int TEMPO_BONUS_MG       = 21;
-inline int TEMPO_BONUS_EG       = 10;
-inline int BISHOP_PAIR_BONUS_MG = 19;
-inline int BISHOP_PAIR_BONUS_EG =  9;
+static constexpr int TEMPO_BONUS_MG       = 21;
+static constexpr int TEMPO_BONUS_EG       = 10;
+static constexpr int BISHOP_PAIR_BONUS_MG = 19;
+static constexpr int BISHOP_PAIR_BONUS_EG =  9;
 
 // Passed pawns (indexed by relative rank 0-7)
-inline int PASSED_PAWN_BONUS_MG[8] = { 0, 5, 7, 8, 32, 69, 103, 0 };
-inline int PASSED_PAWN_BONUS_EG[8] = { 0, 7, 9, 34, 60, 98, 128, 0 };
+static constexpr int PASSED_PAWN_BONUS_MG[8] = { 0, 5, 7, 8, 32, 69, 103, 0 };
+static constexpr int PASSED_PAWN_BONUS_EG[8] = { 0, 7, 9, 34, 60, 98, 128, 0 };
 
 // Candidate / connected / outside passed
-inline int CANDIDATE_PAWN_BONUS_MG   =  8;
-inline int CANDIDATE_PAWN_BONUS_EG   = 9;
-inline int CONNECTED_PASSED_BONUS_MG = 7;
-inline int CONNECTED_PASSED_BONUS_EG = 18;
-inline int OUTSIDE_PASSED_BONUS_MG   = 15;
-inline int OUTSIDE_PASSED_BONUS_EG   =  6;
+static constexpr int CANDIDATE_PAWN_BONUS_MG   =  8;
+static constexpr int CANDIDATE_PAWN_BONUS_EG   = 9;
+static constexpr int CONNECTED_PASSED_BONUS_MG = 7;
+static constexpr int CONNECTED_PASSED_BONUS_EG = 18;
+static constexpr int OUTSIDE_PASSED_BONUS_MG   = 15;
+static constexpr int OUTSIDE_PASSED_BONUS_EG   =  6;
 
 // Pawn structure penalties
-inline int ISOLATED_PAWN_PENALTY_MG =  -1;
-inline int ISOLATED_PAWN_PENALTY_EG = -11;
-inline int DOUBLED_PAWN_PENALTY_MG  = -10;
-inline int DOUBLED_PAWN_PENALTY_EG  = -12;
-inline int BACKWARD_PAWN_PENALTY_MG =  -7;
-inline int BACKWARD_PAWN_PENALTY_EG =  -2;
-inline int SUPPORTED_PAWN_BONUS_MG  =  13;
-inline int SUPPORTED_PAWN_BONUS_EG  =   6;
-inline int WEAK_PAWN_PENALTY_MG     = -18;
-inline int WEAK_PAWN_PENALTY_EG     = -8;
-inline int PAWN_ISLAND_PENALTY_MG   = -22;
-inline int PAWN_ISLAND_PENALTY_EG   = -10;
+static constexpr int ISOLATED_PAWN_PENALTY_MG =  -1;
+static constexpr int ISOLATED_PAWN_PENALTY_EG = -11;
+static constexpr int DOUBLED_PAWN_PENALTY_MG  = -10;
+static constexpr int DOUBLED_PAWN_PENALTY_EG  = -12;
+static constexpr int BACKWARD_PAWN_PENALTY_MG =  -7;
+static constexpr int BACKWARD_PAWN_PENALTY_EG =  -2;
+static constexpr int SUPPORTED_PAWN_BONUS_MG  =  13;
+static constexpr int SUPPORTED_PAWN_BONUS_EG  =   6;
+static constexpr int WEAK_PAWN_PENALTY_MG     = -18;
+static constexpr int WEAK_PAWN_PENALTY_EG     = -8;
+static constexpr int PAWN_ISLAND_PENALTY_MG   = -22;
+static constexpr int PAWN_ISLAND_PENALTY_EG   = -10;
 
 // Pawn storm toward enemy king
-inline int PAWN_STORM_BASE      = -38;
-inline int PAWN_STORM_RANK_MULT =  12;
+static constexpr int PAWN_STORM_BASE      = -38;
+static constexpr int PAWN_STORM_RANK_MULT =  12;
 
 // King safety
-inline int KING_SHIELD_MISSING_PENALTY = -18;
-inline int KING_OPEN_FILE_PENALTY      = -18;
-inline int KING_SEMI_OPEN_FILE_PENALTY = -10;
-inline int KING_ESCAPE_BONUS           =   4;
-inline int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11, 0 };
-inline int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 7, 25, 33, 44, 27, 16 };
-inline int KING_DANGER_DIVISOR         =  10;
-inline int KING_DANGER_MAX             = 641;
+static constexpr int KING_SHIELD_MISSING_PENALTY = -18;
+static constexpr int KING_OPEN_FILE_PENALTY      = -18;
+static constexpr int KING_SEMI_OPEN_FILE_PENALTY = -10;
+static constexpr int KING_ESCAPE_BONUS           =   4;
+static constexpr int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11, 0 };
+static constexpr int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 7, 25, 33, 44, 27, 16 };
+static constexpr int KING_DANGER_DIVISOR         =  10;
+static constexpr int KING_DANGER_MAX             = 641;
 
 // Mobility
-inline int MOBILITY_KNIGHT_MG =  6;
-inline int MOBILITY_KNIGHT_EG =  5;
-inline int MOBILITY_BISHOP_MG =  4;
-inline int MOBILITY_BISHOP_EG =  7;
-inline int MOBILITY_ROOK_MG   =  3;
-inline int MOBILITY_ROOK_EG   =  4;
-inline int MOBILITY_QUEEN_MG  =  1;
-inline int MOBILITY_QUEEN_EG  = 11;
+static constexpr int MOBILITY_KNIGHT_MG =  6;
+static constexpr int MOBILITY_KNIGHT_EG =  5;
+static constexpr int MOBILITY_BISHOP_MG =  4;
+static constexpr int MOBILITY_BISHOP_EG =  7;
+static constexpr int MOBILITY_ROOK_MG   =  3;
+static constexpr int MOBILITY_ROOK_EG   =  4;
+static constexpr int MOBILITY_QUEEN_MG  =  1;
+static constexpr int MOBILITY_QUEEN_EG  = 11;
 
 // File/diagonal openness multipliers (percent)
-inline int OPEN_FILE_MULTIPLIER             = 121;
-inline int SEMI_OPEN_FILE_MULTIPLIER        = 117;
+static constexpr int OPEN_FILE_MULTIPLIER             = 121;
+static constexpr int SEMI_OPEN_FILE_MULTIPLIER        = 117;
 static constexpr int CLOSED_FILE_MULTIPLIER = 100; //
 static constexpr int BISHOP_OPENNESS_BASE   = 100; //
-inline int BISHOP_OPENNESS_MAX_BONUS        =  34;
-inline int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
+static constexpr int BISHOP_OPENNESS_MAX_BONUS        =  34;
+static constexpr int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
 
 // Territory
-inline int SEVENTH_RANK_BONUS_MG =       12;
-inline int SEVENTH_RANK_BONUS_EG =       16;
-inline int QUEEN_SEVENTH_RANK_BONUS_MG = -7;
-inline int QUEEN_SEVENTH_RANK_BONUS_EG = 39;
+static constexpr int SEVENTH_RANK_BONUS_MG =       12;
+static constexpr int SEVENTH_RANK_BONUS_EG =       16;
+static constexpr int QUEEN_SEVENTH_RANK_BONUS_MG = -7;
+static constexpr int QUEEN_SEVENTH_RANK_BONUS_EG = 39;
 
 // Coordination
-inline int DEFENDED_PIECE_BONUS_MG       =  0;
-inline int DEFENDED_PIECE_BONUS_EG       =  0;
-inline int SHARED_TARGET_BONUS_MG        =  0;
-inline int SHARED_TARGET_BONUS_EG        = 33;
-inline int BATTERY_ROOK_QUEEN_BONUS_MG   =  4;
-inline int BATTERY_ROOK_QUEEN_BONUS_EG   = 44;
-inline int BATTERY_BISHOP_QUEEN_BONUS_MG =  7;
-inline int BATTERY_BISHOP_QUEEN_BONUS_EG = 32;
-inline int SUPPORT_CHAIN_BONUS_MG        =  4;
-inline int SUPPORT_CHAIN_BONUS_EG        = 10;
+static constexpr int DEFENDED_PIECE_BONUS_MG       =  0;
+static constexpr int DEFENDED_PIECE_BONUS_EG       =  0;
+static constexpr int SHARED_TARGET_BONUS_MG        =  0;
+static constexpr int SHARED_TARGET_BONUS_EG        = 33;
+static constexpr int BATTERY_ROOK_QUEEN_BONUS_MG   =  4;
+static constexpr int BATTERY_ROOK_QUEEN_BONUS_EG   = 44;
+static constexpr int BATTERY_BISHOP_QUEEN_BONUS_MG =  7;
+static constexpr int BATTERY_BISHOP_QUEEN_BONUS_EG = 32;
+static constexpr int SUPPORT_CHAIN_BONUS_MG        =  4;
+static constexpr int SUPPORT_CHAIN_BONUS_EG        = 10;
 
 // Tactical pressure
-inline int UNDEFENDED_ATTACK_BONUS          = 16;
-inline int PIN_BONUS_MG                     = 16;
-inline int PIN_BONUS_EG                     = 14;
-inline int OVERLOADED_DEFENDER_BONUS_MG     =  2;
-inline int OVERLOADED_DEFENDER_BONUS_EG     =  0;
-inline int UNRECIPROCATED_PRESSURE_BONUS_MG =  1;
-inline int UNRECIPROCATED_PRESSURE_BONUS_EG = 10;
-inline int UNDEFENDED_VALUE_DIVISOR         = 66;
+static constexpr int UNDEFENDED_ATTACK_BONUS          = 16;
+static constexpr int PIN_BONUS_MG                     = 16;
+static constexpr int PIN_BONUS_EG                     = 14;
+static constexpr int OVERLOADED_DEFENDER_BONUS_MG     =  2;
+static constexpr int OVERLOADED_DEFENDER_BONUS_EG     =  0;
+static constexpr int UNRECIPROCATED_PRESSURE_BONUS_MG =  1;
+static constexpr int UNRECIPROCATED_PRESSURE_BONUS_EG = 10;
+static constexpr int UNDEFENDED_VALUE_DIVISOR         = 66;
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
-inline int THREAT_BY_PAWN_MG[7] = { 0, 0, 42, 39, 52, 23, 0 };
-inline int THREAT_BY_PAWN_EG[7] = { 0, 0, 20, 40, 0, 14, 0 };
+static constexpr int THREAT_BY_PAWN_MG[7] = { 0, 0, 42, 39, 52, 23, 0 };
+static constexpr int THREAT_BY_PAWN_EG[7] = { 0, 0, 20, 40, 0, 14, 0 };
 // Bonus when a minor attacks an enemy piece of higher value
-inline int THREAT_BY_MINOR_MG[7] = { 0, 0, 0, 0, 40, 13, 0 };
-inline int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0, 0, 6, 0 };
+static constexpr int THREAT_BY_MINOR_MG[7] = { 0, 0, 0, 0, 40, 13, 0 };
+static constexpr int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0, 0, 6, 0 };
 // Bonus when a rook attacks an enemy queen
-inline int THREAT_BY_ROOK_MG = 25;
-inline int THREAT_BY_ROOK_EG =  0;
+static constexpr int THREAT_BY_ROOK_MG = 25;
+static constexpr int THREAT_BY_ROOK_EG =  0;
 
 // Hanging piece penalties
-inline int HANGING_BASE_PENALTY_MG = 32;
-inline int HANGING_BASE_PENALTY_EG =  0;
-inline int HANGING_VALUE_DIVISOR   = 21;
+static constexpr int HANGING_BASE_PENALTY_MG = 32;
+static constexpr int HANGING_BASE_PENALTY_EG =  0;
+static constexpr int HANGING_VALUE_DIVISOR   = 21;
 
 // Outposts
-inline int KNIGHT_OUTPOST_MG =  7;
-inline int KNIGHT_OUTPOST_EG = 26;
-inline int BISHOP_OUTPOST_MG = 18;
-inline int BISHOP_OUTPOST_EG = 10;
-inline int ROOK_OUTPOST_MG   = 20;
-inline int ROOK_OUTPOST_EG   =  0;
-inline int QUEEN_OUTPOST_MG  = -2;
-inline int QUEEN_OUTPOST_EG  = 20;
+static constexpr int KNIGHT_OUTPOST_MG =  7;
+static constexpr int KNIGHT_OUTPOST_EG = 26;
+static constexpr int BISHOP_OUTPOST_MG = 18;
+static constexpr int BISHOP_OUTPOST_EG = 10;
+static constexpr int ROOK_OUTPOST_MG   = 20;
+static constexpr int ROOK_OUTPOST_EG   =  0;
+static constexpr int QUEEN_OUTPOST_MG  = -2;
+static constexpr int QUEEN_OUTPOST_EG  = 20;
 
 // Development / initiative
-inline int DEVELOPMENT_BONUS = 11;
-inline int CASTLED_BONUS     =  4;
+static constexpr int DEVELOPMENT_BONUS = 11;
+static constexpr int CASTLED_BONUS     =  4;
 
 // ================================================================
 // Tuning infrastructure
@@ -375,29 +375,29 @@ struct TuningOption {
 // `inline` on the map and the function body guarantees ODR-safety when this
 // header is included in more than one translation unit (C++17).
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
-
+/*
     // Core search
-    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    64,  "32"}},
-    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.25"}}, // DOUBLE ignores min/max
-    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.79"}}, // DOUBLE ignores min/max
-    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    40,   160,  "84"}},
-    {"FP_Base",             {&fp_base,                TuningOption::INT,   100,   330,  "195"}},
-    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   350,   950,  "653"}},
+    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    64,  "35"}},
+    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.17017"}}, // DOUBLE ignores min/max
+    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.77385"}}, // DOUBLE ignores min/max
+    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    40,   160,  "62"}},
+    {"FP_Base",             {&fp_base,                TuningOption::INT,   100,   330,  "215"}},
+    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   350,   950,  "672"}},
     {"LMP_Base",            {&lmp_base,               TuningOption::INT,     2,     7,   "3"}},
     {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     6,   "1"}},   // Skipped pass 2
-    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -480,  -80, "-281"}},
+    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -480,  -80, "-259"}},
     {"SE_Min_Depth",        {&se_min_depth,           TuningOption::INT,     5,    16,   "9"}},
     {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     5,   "2"}},
-    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "55"}},
-    {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     1,     6,   "3"}},
+    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "56"}},
+    {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     1,     6,   "4"}},
 
     // History
-    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "463"}},
-    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "164"}},
-    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "2967"}},
-    {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "79"}},
-    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "83"}},
-    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "36"}},
+    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "460"}},
+    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "170"}},
+    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "3063"}},
+    {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "85"}},
+    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "74"}},
+    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "35"}},
 
     // Eval – misc
     {"Tempo_Bonus_MG",      {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
@@ -550,6 +550,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Semi_Open_File_Mult",    {&SEMI_OPEN_FILE_MULTIPLIER,     TuningOption::INT, 100,  140, "117"}},
     {"Bishop_Openness_Max",    {&BISHOP_OPENNESS_MAX_BONUS,     TuningOption::INT,   5,   80,  "34"}},
     {"Bishop_Openness_SqWt",   {&BISHOP_OPENNESS_SQUARE_WEIGHT, TuningOption::INT,   0,    8,   "2"}},
+*/
 };
 
 // Applies a value string received from "setoption name X value Y".
