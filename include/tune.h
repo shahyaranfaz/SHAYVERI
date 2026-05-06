@@ -70,25 +70,25 @@ static constexpr int lmr_scale = 1.82857;
 
 // Per-piece (indexed by Piece enum), MG and EG
 static constexpr int PIECE_VALUES_MG[PIECE_COUNT] = {
-    0,   100, 353, 391, 510, 935, 0,
-         100, 353, 391, 510, 935, 0,
+    0, 100, 353, 391, 510, 935, 0,
+       100, 353, 391, 510, 935, 0,
 };
 static constexpr int PIECE_VALUES_EG[PIECE_COUNT] = {
-    0,   100, 290, 294, 539, 855, 0,
-         100, 290, 294, 539, 855, 0,
+    0, 100, 290, 294, 539, 855, 0,
+       100, 290, 294, 539, 855, 0,
 };
 
 // Indexed by PieceType (0-6).  King = 20000 for SEE termination.
-static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330,  500,  900, 20000 }; //
+static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330, 500, 900, 20000 };
 // Indexed by PieceType (0-6).  King = 0 for MVV-LVA / capture ordering.
-static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330,  500,  900,     0 }; //
+static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
 
 // ================================================================
 // Phase (tapered eval)
 // ================================================================
 
-static constexpr int MAX_PHASE = 24; //
-static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = { //
+static constexpr int MAX_PHASE = 24;
+static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = {
     0, 0, 1, 1, 2, 4, 0,
        0, 1, 1, 2, 4, 0,
 };
@@ -246,13 +246,13 @@ static constexpr int BISHOP_PAIR_BONUS_MG = 19;
 static constexpr int BISHOP_PAIR_BONUS_EG =  9;
 
 // Passed pawns (indexed by relative rank 0-7)
-static constexpr int PASSED_PAWN_BONUS_MG[8] = { 0, 5, 7, 8, 32, 69, 103, 0 };
+static constexpr int PASSED_PAWN_BONUS_MG[8] = { 0, 5, 7,  8, 32, 69, 103, 0 };
 static constexpr int PASSED_PAWN_BONUS_EG[8] = { 0, 7, 9, 34, 60, 98, 128, 0 };
 
 // Candidate / connected / outside passed
 static constexpr int CANDIDATE_PAWN_BONUS_MG   =  8;
-static constexpr int CANDIDATE_PAWN_BONUS_EG   = 9;
-static constexpr int CONNECTED_PASSED_BONUS_MG = 7;
+static constexpr int CANDIDATE_PAWN_BONUS_EG   =  9;
+static constexpr int CONNECTED_PASSED_BONUS_MG =  7;
 static constexpr int CONNECTED_PASSED_BONUS_EG = 18;
 static constexpr int OUTSIDE_PASSED_BONUS_MG   = 15;
 static constexpr int OUTSIDE_PASSED_BONUS_EG   =  6;
@@ -267,7 +267,7 @@ static constexpr int BACKWARD_PAWN_PENALTY_EG =  -2;
 static constexpr int SUPPORTED_PAWN_BONUS_MG  =  13;
 static constexpr int SUPPORTED_PAWN_BONUS_EG  =   6;
 static constexpr int WEAK_PAWN_PENALTY_MG     = -18;
-static constexpr int WEAK_PAWN_PENALTY_EG     = -8;
+static constexpr int WEAK_PAWN_PENALTY_EG     =  -8;
 static constexpr int PAWN_ISLAND_PENALTY_MG   = -22;
 static constexpr int PAWN_ISLAND_PENALTY_EG   = -10;
 
@@ -280,7 +280,7 @@ static constexpr int KING_SHIELD_MISSING_PENALTY = -18;
 static constexpr int KING_OPEN_FILE_PENALTY      = -18;
 static constexpr int KING_SEMI_OPEN_FILE_PENALTY = -10;
 static constexpr int KING_ESCAPE_BONUS           =   4;
-static constexpr int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11, 0 };
+static constexpr int KING_ATTACKER_WEIGHT[7]     = { 0, 0, 2,  3,  4, 11,  0 };
 static constexpr int KING_ATTACK_COUNT_BONUS[8]  = { 0, 0, 7, 25, 33, 44, 27, 16 };
 static constexpr int KING_DANGER_DIVISOR         =  10;
 static constexpr int KING_DANGER_MAX             = 641;
@@ -296,12 +296,12 @@ static constexpr int MOBILITY_QUEEN_MG  =  1;
 static constexpr int MOBILITY_QUEEN_EG  = 11;
 
 // File/diagonal openness multipliers (percent)
-static constexpr int OPEN_FILE_MULTIPLIER             = 121;
-static constexpr int SEMI_OPEN_FILE_MULTIPLIER        = 117;
-static constexpr int CLOSED_FILE_MULTIPLIER = 100; //
-static constexpr int BISHOP_OPENNESS_BASE   = 100; //
-static constexpr int BISHOP_OPENNESS_MAX_BONUS        =  34;
-static constexpr int BISHOP_OPENNESS_SQUARE_WEIGHT    =   2;
+static constexpr int OPEN_FILE_MULTIPLIER          = 121;
+static constexpr int SEMI_OPEN_FILE_MULTIPLIER     = 117;
+static constexpr int CLOSED_FILE_MULTIPLIER        = 100;
+static constexpr int BISHOP_OPENNESS_BASE          = 100;
+static constexpr int BISHOP_OPENNESS_MAX_BONUS     =  34;
+static constexpr int BISHOP_OPENNESS_SQUARE_WEIGHT =   2;
 
 // Territory
 static constexpr int SEVENTH_RANK_BONUS_MG =       12;
@@ -333,10 +333,10 @@ static constexpr int UNDEFENDED_VALUE_DIVISOR         = 66;
 
 // Threats – bonus when a pawn attacks an enemy piece of the given type
 static constexpr int THREAT_BY_PAWN_MG[7] = { 0, 0, 42, 39, 52, 23, 0 };
-static constexpr int THREAT_BY_PAWN_EG[7] = { 0, 0, 20, 40, 0, 14, 0 };
+static constexpr int THREAT_BY_PAWN_EG[7] = { 0, 0, 20, 40,  0, 14, 0 };
 // Bonus when a minor attacks an enemy piece of higher value
 static constexpr int THREAT_BY_MINOR_MG[7] = { 0, 0, 0, 0, 40, 13, 0 };
-static constexpr int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0, 0, 6, 0 };
+static constexpr int THREAT_BY_MINOR_EG[7] = { 0, 0, 0, 0,  0,  6, 0 };
 // Bonus when a rook attacks an enemy queen
 static constexpr int THREAT_BY_ROOK_MG = 25;
 static constexpr int THREAT_BY_ROOK_EG =  0;

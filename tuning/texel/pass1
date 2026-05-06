@@ -275,7 +275,7 @@ No elo difference between texel4 and 5
 ================================================================
 POST-TEXEL: FINAL CMA-ES (SEARCH ONLY)
 ================================================================
-games: dh2010pc20,21
+games: dh2010pc20,21,22
 
 python3.10 lakas.py \
   --distributed-role master \
