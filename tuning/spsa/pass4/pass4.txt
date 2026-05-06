@@ -17,7 +17,7 @@ python3.10 lakas.py \
 }"
 
 ================================================================
-  SHAYBOT  –  SPSA TUNING TRACKER  (ParametrizedCMA)
+  SHAYVERI  –  SPSA TUNING TRACKER  (ParametrizedCMA)
                          PASS 4
 ================================================================
 Format per row:

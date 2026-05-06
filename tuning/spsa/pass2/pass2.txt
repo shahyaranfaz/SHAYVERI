@@ -5,7 +5,7 @@ OVRL: 488-139-173
 ~2750 elo at 30+0.3
 
 ================================================================
-  SHAYBOT  –  SPSA TUNING TRACKER  (Lakas)  PASS 2 (CORRECTED)
+  SHAYVERI  –  SPSA TUNING TRACKER  (Lakas)  PASS 2 (CORRECTED)
 ================================================================
 Format per row:
   [STATUS] Name | Initial | Min | Max | Tuned | Notes

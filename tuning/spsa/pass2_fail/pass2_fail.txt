@@ -10,7 +10,7 @@ python3.10 lakas.py \
   --inc-time-sec 0.05 \
   --budget 47 \
   --games-per-budget 200 \
-  --engine ./shaybot \
+  --engine ./SHAYVERI \
 --opening-file ./start_opening/ogpt_chess_startpos.epd \
 --input-param "{ \
 'Knight_Outpost_MG':    {'init':   14, 'lower':    0, 'upper':   40}, \
@@ -38,7 +38,7 @@ python3.10 lakas.py \
 }"
 
 ================================================================
-  SHAYBOT  –  SPSA TUNING TRACKER  (Lakas)  PASS 2
+  SHAYVERI  –  SPSA TUNING TRACKER  (Lakas)  PASS 2
 ================================================================
 Format per row:
   [STATUS] Name | Initial | Min | Max | Tuned | Notes

@@ -1,5 +1,5 @@
 ================================================================
-  SHAYBOT  –  SPSA TUNING TRACKER  (Lakas / ParametrizedCMA)
+  SHAYVERI  –  SPSA TUNING TRACKER  (Lakas / ParametrizedCMA)
                          PASS 3
 ================================================================
 Format per row:

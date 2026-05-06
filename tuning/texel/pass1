@@ -6,10 +6,10 @@
 
 grep -c '^\[Event ' output_*.pgn | awk -F: '{s+=$2} END {print s}'
 
-mkcd ~/texel/texel_tuner/build  && cmake ../src -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-DSHAYBOT_TEXEL_PHASE=4" && cmake --build . -j23 && install -m 755 tuner ~/texel/tuner && cd ~/texel && ./tuner sources.csv
+mkcd ~/texel/texel_tuner/build  && cmake ../src -DCMAKE_BUILD_TYPE=Release && cmake --build . -j23 && install -m 755 tuner ~/texel/tuner && cd ~/texel && ./tuner sources.csv
 
 ================================================================
-  SHAYBOT  –  TEXEL TUNING TRACKER
+  SHAYVERII  –  TEXEL TUNING TRACKER
 ================================================================
 Format per row:
   [STATUS] Name | Initial | Notes
@@ -277,7 +277,7 @@ POST-TEXEL: FINAL CMA-ES (SEARCH ONLY)
 ================================================================
  master: dh2010pc12
 workers: dh2010pc12,15,17,20,21,22,24,25 // dh2020pc04,06,08,10
-  games: dh2020pc18
+lichess: dh2010pc04
 
 python3.10 lakas.py \
   --distributed-role master \
