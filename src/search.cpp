@@ -56,9 +56,9 @@ struct SearchHeuristics {
     Move killers[MAX_PLY][2];
     int history[2][64][64]; // [side_to_move][from][to]
 
-    // Continuation Histories
-    int counter_move_history[16][64][16][64]; // [prev_pc][prev_to][curr_pc][curr_to]
-    int follow_up_history[16][64][16][64];    // [prev2_pc][prev2_to][curr_pc][curr_to]
+    // Continuation Histories — indexed by PieceType (1=PAWN..6=KING) to keep tables small
+    int counter_move_history[7][64][7][64]; // [prev_pt][prev_to][curr_pt][curr_to]
+    int follow_up_history[7][64][7][64];    // [prev2_pt][prev2_to][curr_pt][curr_to]
 
     SearchHeuristics() {
         std::memset(killers, 0, sizeof(killers));
@@ -74,9 +74,10 @@ struct SearchHeuristics {
         killers[ply][0] = m;
     }
 
-    // Gravity-based, SPSA-friendly history update
+    // Gravity-based, SPSA-friendly history update (branchless abs)
     inline void update_history(int& entry, int bonus) {
-        entry += bonus - entry * std::abs(bonus) / Tune::history_max;
+        int abs_bonus = bonus < 0 ? -bonus : bonus;
+        entry += bonus - entry * abs_bonus / Tune::history_max;
     }
 };
 
@@ -163,25 +164,12 @@ void unmake_null_move(Board &b, const Undo &u) {
     b.hash         = u.hash;
 }
 
-static inline bool is_ep_capture(const Board& b, Move m) {
-    if (b.en_passant == SQ_NONE) return false;
-    if (move_to(m) != b.en_passant) return false;
-    Piece p = b.get_piece(move_from(m));
-    if (p != WP && p != BP) return false;
-    int df = int(get_file(move_to(m))) - int(get_file(move_from(m)));
-    if (df != 1 && df != -1) return false;
-    int dr = int(get_rank(move_to(m))) - int(get_rank(move_from(m)));
-    if (p == WP && dr != 1)  return false;
-    if (p == BP && dr != -1) return false;
-    return true;
-}
-
 static inline int capture_order_score(const Board& b, Move m) {
     if (move_promo(m) != NONE_PTYPE)
         return 1000000;
 
     PieceType victim = NONE_PTYPE;
-    if (is_ep_capture(b, m)) {
+    if (is_ep_move(m)) {
         victim = PAWN;
     } else {
         Piece vp = b.get_piece(move_to(m));
@@ -195,7 +183,7 @@ static inline int capture_order_score(const Board& b, Move m) {
 
 static inline bool is_capture_or_promo(const Board& b, Move m) {
     if (move_promo(m) != NONE_PTYPE) return true;
-    if (is_ep_capture(b, m)) return true;
+    if (is_ep_move(m)) return true;
     return b.get_piece(move_to(m)) != NONE_PIECE;
 }
 
@@ -212,36 +200,39 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
         if (m == H.killers[ply][1]) return 890000;
     }
 
-    int pc = static_cast<int>(b.get_piece(move_from(m))) & 15;
-    int to = static_cast<int>(move_to(m)) & 63;
+    int pt  = static_cast<int>(get_type(b.get_piece(move_from(m))));
+    int to  = static_cast<int>(move_to(m)) & 63;
     int stm = static_cast<int>(b.side_to_move) & 1;
 
     int history_score = H.history[stm][int(move_from(m))][to] * Tune::main_history_weight;
 
     // Check bounds for previous plies
     if (ply >= 1 && ss[-1].move != MOVE_NONE) {
-        int prev_pc = static_cast<int>(ss[-1].piece) & 15;
+        int prev_pt = static_cast<int>(get_type(ss[-1].piece));
         int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
-        history_score += H.counter_move_history[prev_pc][prev_to][pc][to] * Tune::cmh_weight;
+        history_score += H.counter_move_history[prev_pt][prev_to][pt][to] * Tune::cmh_weight;
     }
     if (ply >= 2 && ss[-2].move != MOVE_NONE) {
-        int prev2_pc = static_cast<int>(ss[-2].piece) & 15;
+        int prev2_pt = static_cast<int>(get_type(ss[-2].piece));
         int prev2_to = static_cast<int>(move_to(ss[-2].move)) & 63;
-        history_score += H.follow_up_history[prev2_pc][prev2_to][pc][to] * Tune::fmh_weight;
+        history_score += H.follow_up_history[prev2_pt][prev2_to][pt][to] * Tune::fmh_weight;
     }
 
     return history_score / 100;
 }
 
-static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len) {
-    for (int i = rep_len - 1; i >= 0; --i)
+// Step by 2 (same side to move), limit search to last half_move plies.
+static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len, int half_move) {
+    int limit = rep_len - half_move;
+    if (limit < 0) limit = 0;
+    for (int i = rep_len - 2; i >= limit; i -= 2)
         if (rep_stack[i] == key) return true;
     return false;
 }
 
 static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
     if (g_stop) return 0;
-    node_count++;
+    node_count.fetch_add(1, std::memory_order_relaxed);
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
@@ -256,22 +247,31 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
         if (depth < -6) return evaluate(b);
     }
 
-    MoveList moves = generate_pseudo_legal_moves(b);
+    MoveList moves;
     ScoredMove noisy[256];
     int noisy_count = 0;
 
-    for (int i = 0; i < moves.count; ++i) {
-        Move m = moves.moves[i];
-        int s  = capture_order_score(b, m);
-        if (!in_check && s == 0) continue;
-        noisy[noisy_count++] = {m, s};
+    if (in_check) {
+        // In check: search all pseudo-legal moves
+        moves = generate_pseudo_legal_moves(b);
+        for (int i = 0; i < moves.count; ++i) {
+            Move m = moves.moves[i];
+            int s  = capture_order_score(b, m);
+            noisy[noisy_count++] = {m, s};
+        }
+    } else {
+        // Not in check: only captures and promotions
+        moves = generate_pseudo_legal_captures(b);
+        for (int i = 0; i < moves.count; ++i)
+            noisy[noisy_count++] = {moves.moves[i], capture_order_score(b, moves.moves[i])};
     }
-
-    std::sort(noisy, noisy + noisy_count, [](const ScoredMove& a, const ScoredMove& b) { return a.score > b.score; });
 
     int legal_count = 0;
 
     for (int i = 0; i < noisy_count; ++i) {
+        // Lazy selection sort: pick the best remaining move
+        for (int j = i + 1; j < noisy_count; ++j)
+            if (noisy[j].score > noisy[i].score) std::swap(noisy[i], noisy[j]);
         Move m = noisy[i].m;
 
         if (!in_check) {
@@ -279,7 +279,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
                 continue;
 
             Piece vp = b.get_piece(move_to(m));
-            int victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_capture(b, m) ? PTYPE_VALUES[PAWN] : 0);
+            int victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_move(m) ? PTYPE_VALUES[PAWN] : 0);
             if (move_promo(m) != NONE_PTYPE) victim_val += PTYPE_VALUES[move_promo(m)];
 
             if (stand_pat + victim_val + 150 < alpha)
@@ -307,13 +307,13 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                    SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss) {
     if (g_stop) return 0;
-    node_count++;
+    node_count.fetch_add(1, std::memory_order_relaxed);
 
     const U64 key = b.hash;
 
     // Basic Draw Detection
     if (b.half_move >= 100) return 0;
-    if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1)) return 0;
+    if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1, b.half_move)) return 0;
 
     const int original_alpha = alpha;
     Move tt_move = MOVE_NONE;
@@ -394,14 +394,18 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (tt_move != MOVE_NONE && m == tt_move) s += 2000000;
         ordered[i] = {m, s};
     }
-    std::sort(ordered, ordered + pseudo.count, [](const ScoredMove& a, const ScoredMove& b) { return a.score > b.score; });
+    int ordered_count = pseudo.count;
 
     Move best_move = MOVE_NONE;
     int legal_count = 0;
     int quiet_count = 0;
     Move quiets_played[256];
 
-    for (int i = 0; i < pseudo.count; ++i) {
+    for (int i = 0; i < ordered_count; ++i) {
+        // Lazy selection sort: swap best remaining move to position i
+        for (int j = i + 1; j < ordered_count; ++j)
+            if (ordered[j].score > ordered[i].score) std::swap(ordered[i], ordered[j]);
+
         Move m = ordered[i].m;
         if (m == ss->excluded_move) continue;
 
@@ -456,27 +460,27 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 H.store_killer(ply, m);
                 int bonus = std::min(Tune::history_bonus_limit, Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
 
-                auto update_all = [&](Move move, int p_idx, int bns) {
+                auto update_all = [&](Move move, int pt_idx, int bns) {
                     int f = move_from(move);
                     int t = move_to(move);
                     H.update_history(H.history[int(b.side_to_move)][f][t], bns);
 
                     if (ss[-1].move != MOVE_NONE) {
-                        int p1 = static_cast<int>(ss[-1].piece) & 15;
+                        int p1 = static_cast<int>(get_type(ss[-1].piece));
                         int t1 = static_cast<int>(move_to(ss[-1].move)) & 63;
-                        H.update_history(H.counter_move_history[p1][t1][p_idx][t], bns);
+                        H.update_history(H.counter_move_history[p1][t1][pt_idx][t], bns);
                     }
                     if (ss[-2].move != MOVE_NONE) {
-                        int p2 = static_cast<int>(ss[-2].piece) & 15;
+                        int p2 = static_cast<int>(get_type(ss[-2].piece));
                         int t2 = static_cast<int>(move_to(ss[-2].move)) & 63;
-                        H.update_history(H.follow_up_history[p2][t2][p_idx][t], bns);
+                        H.update_history(H.follow_up_history[p2][t2][pt_idx][t], bns);
                     }
                 };
 
-                int moved_pc_idx = static_cast<int>(moved_piece) & 15;
+                int moved_pc_idx = static_cast<int>(get_type(moved_piece));
                 update_all(m, moved_pc_idx, bonus);
                 for (int j = 0; j < quiet_count - 1; ++j) {
-                    int q_pc_idx = static_cast<int>(b.get_piece(move_from(quiets_played[j]))) & 15;
+                    int q_pc_idx = static_cast<int>(get_type(b.get_piece(move_from(quiets_played[j]))));
                     update_all(quiets_played[j], q_pc_idx, -bonus);
                 }
             }
@@ -539,6 +543,19 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             window_beta  = std::min(INF, final_best_score + delta);
         }
 
+        // Generate and order root moves once per depth (outside aspiration retry loop).
+        MoveList pseudo = generate_pseudo_legal_moves(b);
+        Move tt_root = MOVE_NONE;
+        if (const TTEntry* e = TT.probe(b.hash)) tt_root = e->best;
+        ScoredMove ordered[256];
+        for (int i = 0; i < pseudo.count; ++i) {
+            Move m = pseudo.moves[i];
+            int  s = order_score(b, m, 0, H, ss);
+            if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
+            ordered[i] = {m, s};
+        }
+        int root_count = pseudo.count;
+
         while (true) {
             int current_alpha = window_alpha;
             int current_beta  = window_beta;
@@ -546,23 +563,12 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             int best_score_this_depth = -INF;
             Move best_move_this_depth = MOVE_NONE;
 
-            MoveList pseudo = generate_pseudo_legal_moves(b);
-
-            Move tt_root = MOVE_NONE;
-            if (const TTEntry* e = TT.probe(b.hash)) tt_root = e->best;
-
-            ScoredMove ordered[256];
-            for (int i = 0; i < pseudo.count; ++i) {
-                Move m = pseudo.moves[i];
-                int  s = order_score(b, m, 0, H, ss);
-                if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
-                ordered[i] = {m, s};
-            }
-            std::sort(ordered, ordered + pseudo.count, [](const ScoredMove& a, const ScoredMove& b) { return a.score > b.score; });
-
             int legal_root_count = 0;
 
-            for (int i = 0; i < pseudo.count; ++i) {
+            for (int i = 0; i < root_count; ++i) {
+                for (int j = i + 1; j < root_count; ++j)
+                    if (ordered[j].score > ordered[i].score) std::swap(ordered[i], ordered[j]);
+
                 Move m = ordered[i].m;
 
                 if (!search_moves.empty()) {
@@ -572,12 +578,13 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                 }
 
                 Undo u;
+                Piece root_piece = b.get_piece(move_from(m));
                 if (!make_move(b, m, u)) continue;
                 legal_root_count++;
                 rep_stack[rep_len] = b.hash;
 
                 ss->move = m;
-                ss->piece = b.get_piece(move_from(m));
+                ss->piece = root_piece;
 
                 int score;
                 if (legal_root_count == 1) {
@@ -630,7 +637,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         auto now = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
         if (ms == 0) ms = 1;
-        U64 nps = (node_count * 1000ULL) / ms;
+        U64 nodes = node_count.load(std::memory_order_relaxed);
+        U64 nps = (nodes * 1000ULL) / ms;
 
         std::string pv_line = move_to_uci(final_best_move);
         Board b_pv = b;
@@ -660,19 +668,19 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             std::cout << "info depth " << depth
                       << " score " << score_str
                       << " time " << ms
-                      << " nodes " << node_count
+                      << " nodes " << nodes
                       << " nps " << nps
                       << " pv " << pv_line << "\n";
             std::cout.flush();
 
             if (on_iter && !g_stop)
-                on_iter(depth, final_best_move, final_best_score, node_count, ms);
+                on_iter(depth, final_best_move, final_best_score, nodes, ms);
         }
 
         if (g_stop) break;
     }
 
-    return {final_best_move, MOVE_NONE, final_best_score, completed_depth, static_cast<U64>(node_count.load())};
+    return {final_best_move, MOVE_NONE, final_best_score, completed_depth, node_count.load(std::memory_order_relaxed)};
 }
 
 } // namespace SHAYVERI

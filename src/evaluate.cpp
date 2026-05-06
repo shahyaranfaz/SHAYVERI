@@ -74,28 +74,19 @@ static const U64 CENTER_MASK =
 // attackers by piece type without re-iterating pieces.
 // ============================================================
 struct AttackInfo {
-    U64 by_type[7] = {};          // indexed by PieceType (1=PAWN..6=KING)
-    U64 all        = 0;
-    U64 pawn       = 0;
-    U64 non_pawn   = 0;
-    std::array<int, 64> counts{};
-    std::array<int, 64> non_pawn_counts{};
+    U64 by_type[7]      = {};  // indexed by PieceType (1=PAWN..6=KING)
+    U64 all             = 0;
+    U64 pawn            = 0;
+    U64 non_pawn        = 0;
+    U64 double_attacked = 0;
 };
 
 static void add_attacks(AttackInfo &info, U64 attacks, PieceType pt) {
-    info.all         |= attacks;
-    info.by_type[pt] |= attacks;
-    if (pt == PAWN) {
-        info.pawn |= attacks;
-    } else {
-        info.non_pawn |= attacks;
-    }
-    U64 tmp = attacks;
-    while (tmp) {
-        Square sq = pop_lsb(tmp);
-        info.counts[sq]++;
-        if (pt != PAWN) info.non_pawn_counts[sq]++;
-    }
+    info.double_attacked |= info.all & attacks;
+    info.all             |= attacks;
+    info.by_type[pt]     |= attacks;
+    if (pt == PAWN) info.pawn     |= attacks;
+    else            info.non_pawn |= attacks;
 }
 
 static AttackInfo build_attack_info(const Board &b, Colour c) {
@@ -464,28 +455,18 @@ static void evaluate_coordination(const Board &b, Colour c,
     U64 pieces = b.occupancies[c];
     U64 enemy  = b.occupancies[flip(c)];
 
-    // Defended pieces
-    U64 temp = pieces;
-    while (temp) {
-        Square sq = pop_lsb(temp);
-        if (attacks.counts[sq] > 0)
-            add_score(mg, eg, DEFENDED_PIECE_BONUS_MG, DEFENDED_PIECE_BONUS_EG, c);
-    }
+    int defended = popcount(pieces & attacks.all);
+    add_score(mg, eg, defended * DEFENDED_PIECE_BONUS_MG, defended * DEFENDED_PIECE_BONUS_EG, c);
 
-    // Shared attack targets
-    temp = enemy;
-    while (temp) {
-        Square sq = pop_lsb(temp);
-        if (attacks.counts[sq] >= 2)
-            add_score(mg, eg, SHARED_TARGET_BONUS_MG, SHARED_TARGET_BONUS_EG, c);
-    }
+    int shared = popcount(enemy & attacks.double_attacked);
+    add_score(mg, eg, shared * SHARED_TARGET_BONUS_MG, shared * SHARED_TARGET_BONUS_EG, c);
 
     // Batteries
     U64 rooks   = (c == WHITE) ? b.bit_boards[WR] : b.bit_boards[BR];
     U64 bishops = (c == WHITE) ? b.bit_boards[WB] : b.bit_boards[BB];
     U64 queens  = (c == WHITE) ? b.bit_boards[WQ] : b.bit_boards[BQ];
 
-    temp = rooks;
+    U64 temp = rooks;
     while (temp) {
         Square sq = pop_lsb(temp);
         if (rook_attacks(sq, b.occupied) & queens)
@@ -498,13 +479,8 @@ static void evaluate_coordination(const Board &b, Colour c,
             add_score(mg, eg, BATTERY_BISHOP_QUEEN_BONUS_MG, BATTERY_BISHOP_QUEEN_BONUS_EG, c);
     }
 
-    // Support chains (non-pawn pieces protecting each other)
-    temp = pieces;
-    while (temp) {
-        Square sq = pop_lsb(temp);
-        if (attacks.non_pawn_counts[sq] > 0)
-            add_score(mg, eg, SUPPORT_CHAIN_BONUS_MG, SUPPORT_CHAIN_BONUS_EG, c);
-    }
+    int support = popcount(pieces & attacks.non_pawn);
+    add_score(mg, eg, support * SUPPORT_CHAIN_BONUS_MG, support * SUPPORT_CHAIN_BONUS_EG, c);
 }
 
 // ============================================================
@@ -581,12 +557,7 @@ static int count_overloaded_defenders(const Board &b, Colour defender,
         Square sq = pop_lsb(pieces);
         Piece p   = b.mailbox[sq];
         U64 defended = piece_attacks_bb(p, sq, b.occupied) & b.occupancies[defender];
-        int n = 0;
-        U64 tmp = defended;
-        while (tmp) {
-            Square dsq = pop_lsb(tmp);
-            if (attacker_info.counts[dsq] > 0) n++;
-        }
+        int n = popcount(defended & attacker_info.all);
         if (n >= 2) count++;
     }
     return count;
@@ -599,16 +570,15 @@ static void evaluate_tactical_pressure(const Board &b, Colour c,
     U64 enemy = b.occupancies[flip(c)];
     Piece enemy_king_piece = (flip(c) == WHITE) ? WK : BK;
 
-    U64 temp = enemy;
+    U64 undefended = enemy & attacks.all & ~enemy_attacks.all;
+    U64 temp = undefended;
     while (temp) {
         Square sq = pop_lsb(temp);
         Piece p = b.mailbox[sq];
         if (p == enemy_king_piece) continue;
-        if (attacks.counts[sq] > 0 && enemy_attacks.counts[sq] == 0) {
-            int val = std::max(UNDEFENDED_ATTACK_BONUS,
-                               std::abs(PIECE_VALUES_MG[p]) / UNDEFENDED_VALUE_DIVISOR);
-            add_score(mg, eg, val, val, c);
-        }
+        int val = std::max(UNDEFENDED_ATTACK_BONUS,
+                           std::abs(PIECE_VALUES_MG[p]) / UNDEFENDED_VALUE_DIVISOR);
+        add_score(mg, eg, val, val, c);
     }
 
     int pins       = count_pins(b, c);

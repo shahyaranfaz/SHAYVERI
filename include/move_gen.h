@@ -13,6 +13,7 @@ struct MoveList {
 };
 
 MoveList generate_pseudo_legal_moves(Board &b);
+MoveList generate_pseudo_legal_captures(Board &b);
 MoveList generate_legal_moves(Board &b);
 
 } // namespace SHAYVERI

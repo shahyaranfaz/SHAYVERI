@@ -60,7 +60,7 @@ MoveList generate_pseudo_legal_moves(Board &b) {
 
             if (b.en_passant != SQ_NONE) {
                 U64 ep_mask = pawn_attacks(WHITE, from) & bb_square(b.en_passant);
-                if (ep_mask) moves.add(create_move(from, b.en_passant));
+                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
             }
         }
     } else {
@@ -102,7 +102,7 @@ MoveList generate_pseudo_legal_moves(Board &b) {
 
             if (b.en_passant != SQ_NONE) {
                 U64 ep_mask = pawn_attacks(BLACK, from) & bb_square(b.en_passant);
-                if (ep_mask) moves.add(create_move(from, b.en_passant));
+                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
             }
         }
     }
@@ -179,6 +179,128 @@ MoveList generate_pseudo_legal_moves(Board &b) {
             && !is_square_attacked(b, C8, other))
             moves.add(create_move(E8, C8));
     }
+
+    return moves;
+}
+
+// Generates pseudo-legal captures and promotions only (used by qsearch when not in check).
+MoveList generate_pseudo_legal_captures(Board &b) {
+    MoveList moves;
+    Colour curr  = b.side_to_move;
+    Colour other = flip(curr);
+
+    U64 other_occupied = b.occupancies[other];
+
+    if (curr == WHITE) {
+        U64 pawns = b.bit_boards[WP];
+        while (pawns) {
+            Square from = __builtin_ctzll(pawns);
+            pawns &= pawns - 1;
+            int r = get_rank(from);
+
+            // Promotions (push to 8th rank)
+            if (r == RANK_7) {
+                Square to_one = from + 8;
+                if (bb_square(to_one) & ~b.occupied) {
+                    moves.add(create_move(from, to_one, QUEEN));
+                    moves.add(create_move(from, to_one, ROOK));
+                    moves.add(create_move(from, to_one, BISHOP));
+                    moves.add(create_move(from, to_one, KNIGHT));
+                }
+            }
+
+            // Pawn captures (including promotion captures)
+            U64 captures = pawn_attacks(WHITE, from) & other_occupied;
+            while (captures) {
+                Square to = __builtin_ctzll(captures);
+                captures &= captures - 1;
+                if (r == RANK_7) {
+                    moves.add(create_move(from, to, QUEEN));
+                    moves.add(create_move(from, to, ROOK));
+                    moves.add(create_move(from, to, BISHOP));
+                    moves.add(create_move(from, to, KNIGHT));
+                } else {
+                    moves.add(create_move(from, to));
+                }
+            }
+
+            // En-passant
+            if (b.en_passant != SQ_NONE) {
+                U64 ep_mask = pawn_attacks(WHITE, from) & bb_square(b.en_passant);
+                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
+            }
+        }
+    } else {
+        U64 pawns = b.bit_boards[BP];
+        while (pawns) {
+            Square from = __builtin_ctzll(pawns);
+            pawns &= pawns - 1;
+            int r = get_rank(from);
+
+            // Promotions
+            if (r == RANK_2) {
+                Square to_one = from - 8;
+                if (bb_square(to_one) & ~b.occupied) {
+                    moves.add(create_move(from, to_one, QUEEN));
+                    moves.add(create_move(from, to_one, ROOK));
+                    moves.add(create_move(from, to_one, BISHOP));
+                    moves.add(create_move(from, to_one, KNIGHT));
+                }
+            }
+
+            // Pawn captures
+            U64 captures = pawn_attacks(BLACK, from) & other_occupied;
+            while (captures) {
+                Square to = __builtin_ctzll(captures);
+                captures &= captures - 1;
+                if (r == RANK_2) {
+                    moves.add(create_move(from, to, QUEEN));
+                    moves.add(create_move(from, to, ROOK));
+                    moves.add(create_move(from, to, BISHOP));
+                    moves.add(create_move(from, to, KNIGHT));
+                } else {
+                    moves.add(create_move(from, to));
+                }
+            }
+
+            // En-passant
+            if (b.en_passant != SQ_NONE) {
+                U64 ep_mask = pawn_attacks(BLACK, from) & bb_square(b.en_passant);
+                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
+            }
+        }
+    }
+
+    U64 knights = (curr == WHITE) ? b.bit_boards[WN] : b.bit_boards[BN];
+    while (knights) {
+        Square from = __builtin_ctzll(knights);
+        knights &= knights - 1;
+        push_moves_from_mask(moves, from, knight_attacks(from) & other_occupied);
+    }
+
+    U64 bishops = (curr == WHITE) ? b.bit_boards[WB] : b.bit_boards[BB];
+    while (bishops) {
+        Square from = __builtin_ctzll(bishops);
+        bishops &= bishops - 1;
+        push_moves_from_mask(moves, from, bishop_attacks(from, b.occupied) & other_occupied);
+    }
+
+    U64 rooks = (curr == WHITE) ? b.bit_boards[WR] : b.bit_boards[BR];
+    while (rooks) {
+        Square from = __builtin_ctzll(rooks);
+        rooks &= rooks - 1;
+        push_moves_from_mask(moves, from, rook_attacks(from, b.occupied) & other_occupied);
+    }
+
+    U64 queens = (curr == WHITE) ? b.bit_boards[WQ] : b.bit_boards[BQ];
+    while (queens) {
+        Square from = __builtin_ctzll(queens);
+        queens &= queens - 1;
+        push_moves_from_mask(moves, from, queen_attacks(from, b.occupied) & other_occupied);
+    }
+
+    Square ksq = king_square(b, curr);
+    push_moves_from_mask(moves, ksq, king_attacks(ksq) & other_occupied);
 
     return moves;
 }

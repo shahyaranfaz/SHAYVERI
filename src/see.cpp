@@ -76,9 +76,8 @@ int see(const Board &b, Move m) {
     Piece  captured_orig = b.get_piece(to);
     Square ep_cap_sq     = SQ_NONE;
     if (captured_orig == NONE_PIECE) {
-        Piece p = attacker_orig;
-        if ((p == WP || p == BP) && to == b.en_passant) {
-            ep_cap_sq    = (get_colour(p) == WHITE) ? to - 8 : to + 8;
+        if (is_ep_move(m)) {
+            ep_cap_sq    = (get_colour(attacker_orig) == WHITE) ? to - 8 : to + 8;
             captured_orig = b.get_piece(ep_cap_sq);
         }
         if (captured_orig == NONE_PIECE) return 0;

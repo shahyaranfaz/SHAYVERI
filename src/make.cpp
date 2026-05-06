@@ -77,7 +77,7 @@ bool make_move(Board &b, Move m, Undo &u) {
     if (captured != NONE_PIECE) {
         remove_piece(b, captured, to);
         b.half_move = 0;
-    } else if (get_type(moved) == PAWN && to == b.en_passant) {
+    } else if (is_ep_move(m)) {
         u.was_ep = true;
         Square cap_sq = (b.side_to_move == WHITE) ? to - 8 : to + 8;
         u.captured = b.get_piece(cap_sq);

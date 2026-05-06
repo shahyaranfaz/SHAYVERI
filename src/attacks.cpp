@@ -1,27 +1,32 @@
 #include "attacks.h"
+
 #include <cassert>
 #include <immintrin.h>
 
 namespace SHAYVERI {
 
+U64 PAWN_ATTACKS[2][64];
+U64 KNIGHT_ATTACKS[64];
+U64 KING_ATTACKS[64];
+
 static bool is_valid_square(int f, int r) {
     return f >= 0 && f < 8 && r >= 0 && r < 8;
 }
 
-U64 pawn_attacks(Colour c, Square from) {
+static U64 compute_pawn_attacks(Colour c, Square from) {
     int f = get_file(from), r = get_rank(from);
     U64 bb = 0;
     if (c == WHITE) {
-        if (is_valid_square(f - 1, r + 1)) bb |= bb_square(make_square(File(f-1), Rank(r+1)));
-        if (is_valid_square(f + 1, r + 1)) bb |= bb_square(make_square(File(f+1), Rank(r+1)));
+        if (is_valid_square(f - 1, r + 1)) bb |= bb_square(make_square(File(f - 1), Rank(r + 1)));
+        if (is_valid_square(f + 1, r + 1)) bb |= bb_square(make_square(File(f + 1), Rank(r + 1)));
     } else {
-        if (is_valid_square(f - 1, r - 1)) bb |= bb_square(make_square(File(f-1), Rank(r-1)));
-        if (is_valid_square(f + 1, r - 1)) bb |= bb_square(make_square(File(f+1), Rank(r-1)));
+        if (is_valid_square(f - 1, r - 1)) bb |= bb_square(make_square(File(f - 1), Rank(r - 1)));
+        if (is_valid_square(f + 1, r - 1)) bb |= bb_square(make_square(File(f + 1), Rank(r - 1)));
     }
     return bb;
 }
 
-U64 knight_attacks(Square from) {
+static U64 compute_knight_attacks(Square from) {
     static const int df[8] = { 1,  2,  2,  1, -1, -2, -2, -1 };
     static const int dr[8] = { 2,  1, -1, -2, -2, -1,  1,  2 };
     int f = get_file(from), r = get_rank(from);
@@ -34,7 +39,7 @@ U64 knight_attacks(Square from) {
     return bb;
 }
 
-U64 king_attacks(Square from) {
+static U64 compute_king_attacks(Square from) {
     int f = get_file(from), r = get_rank(from);
     U64 bb = 0;
     for (int df = -1; df <= 1; ++df) {
@@ -48,8 +53,6 @@ U64 king_attacks(Square from) {
     return bb;
 }
 
-// Ray system (precomputed sliding geometry)
-
 U64 Ray[64][8];
 
 enum Dir { N, S, E, W, NE, NW, SE, SW };
@@ -58,12 +61,15 @@ static void init_rays() {
     const int df[8] = { 0,  0, 1, -1,  1, -1,  1, -1 };
     const int dr[8] = { 1, -1, 0,  0,  1,  1, -1, -1 };
     for (int sq = 0; sq < 64; ++sq) {
+        for (int d = 0; d < 8; ++d) Ray[sq][d] = 0;
+
         int f = sq % 8, r = sq / 8;
         for (int d = 0; d < 8; ++d) {
             int nf = f + df[d], nr = r + dr[d];
             while (is_valid_square(nf, nr)) {
                 Ray[sq][d] |= bb_square(make_square(File(nf), Rank(nr)));
-                nf += df[d]; nr += dr[d];
+                nf += df[d];
+                nr += dr[d];
             }
         }
     }
@@ -77,9 +83,10 @@ static U64 rook_mask(Square sq) {
     return Ray[sq][N] | Ray[sq][S] | Ray[sq][E] | Ray[sq][W];
 }
 
-// PEXT sliding attack tables
-
-struct PextSlider { U64 mask; U64 *attacks; };
+struct PextSlider {
+    U64 mask;
+    U64 *attacks;
+};
 
 static PextSlider Bishop[64];
 static PextSlider Rook[64];
@@ -100,13 +107,21 @@ static U64 sliding_attacks(Square sq, U64 occ, bool bishop) {
             U64 bb = bb_square(make_square(File(nf), Rank(nr)));
             attacks |= bb;
             if (occ & bb) break;
-            nf += df[d]; nr += dr[d];
+            nf += df[d];
+            nr += dr[d];
         }
     }
     return attacks;
 }
 
 void init_attacks() {
+    for (int sq = 0; sq < 64; ++sq) {
+        PAWN_ATTACKS[WHITE][sq] = compute_pawn_attacks(WHITE, Square(sq));
+        PAWN_ATTACKS[BLACK][sq] = compute_pawn_attacks(BLACK, Square(sq));
+        KNIGHT_ATTACKS[sq]      = compute_knight_attacks(Square(sq));
+        KING_ATTACKS[sq]        = compute_king_attacks(Square(sq));
+    }
+
     init_rays();
 
     U64 *b_ptr = BishopTable;
@@ -154,25 +169,14 @@ Square king_square(const Board &b, Colour c) {
 }
 
 bool is_square_attacked(const Board &b, Square sq, Colour attacker) {
-    int f = get_file(sq), r = get_rank(sq);
+    U64 pawns = (attacker == WHITE) ? b.bit_boards[WP] : b.bit_boards[BP];
+    if (PAWN_ATTACKS[flip(attacker)][sq] & pawns) return true;
 
-    if (attacker == WHITE) {
-        if (r > 0) {
-            if (f > 0 && (b.bit_boards[WP] & bb_square(make_square(File(f-1), Rank(r-1))))) return true;
-            if (f < 7 && (b.bit_boards[WP] & bb_square(make_square(File(f+1), Rank(r-1))))) return true;
-        }
-    } else {
-        if (r < 7) {
-            if (f > 0 && (b.bit_boards[BP] & bb_square(make_square(File(f-1), Rank(r+1))))) return true;
-            if (f < 7 && (b.bit_boards[BP] & bb_square(make_square(File(f+1), Rank(r+1))))) return true;
-        }
-    }
+    U64 knights = (attacker == WHITE) ? b.bit_boards[WN] : b.bit_boards[BN];
+    if (KNIGHT_ATTACKS[sq] & knights) return true;
 
-    U64 kn = knight_attacks(sq);
-    if (attacker == WHITE ? (kn & b.bit_boards[WN]) : (kn & b.bit_boards[BN])) return true;
-
-    U64 k = king_attacks(sq);
-    if (attacker == WHITE ? (k & b.bit_boards[WK]) : (k & b.bit_boards[BK])) return true;
+    U64 king = (attacker == WHITE) ? b.bit_boards[WK] : b.bit_boards[BK];
+    if (KING_ATTACKS[sq] & king) return true;
 
     U64 ba = bishop_attacks(sq, b.occupied);
     if (attacker == WHITE ? (ba & (b.bit_boards[WB] | b.bit_boards[WQ]))
