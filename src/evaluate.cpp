@@ -90,13 +90,26 @@ static void add_attacks(AttackInfo &info, U64 attacks, PieceType pt) {
     else            info.non_pawn |= attacks;
 }
 
+static U64 build_pawn_attack_bb(U64 pawns, Colour c) {
+    // file A = squares 0,8,16,...,56 -> mask 0x0101010101010101
+    // file H = squares 7,15,23,...,63 -> mask 0x8080808080808080
+    constexpr U64 NOT_FILE_A = ~0x0101010101010101ULL;
+    constexpr U64 NOT_FILE_H = ~0x8080808080808080ULL;
+    if (c == WHITE)
+        // +7 = up-left (exclude file A), +9 = up-right (exclude file H)
+        return ((pawns & NOT_FILE_A) << 7) | ((pawns & NOT_FILE_H) << 9);
+    else
+        // -7 = down-right (exclude file H), -9 = down-left (exclude file A)
+        return ((pawns & NOT_FILE_H) >> 7) | ((pawns & NOT_FILE_A) >> 9);
+}
+
 static AttackInfo build_attack_info(const Board &b, Colour c) {
     AttackInfo info;
 
     U64 tmp;
 
     tmp = (c == WHITE) ? b.bit_boards[WP] : b.bit_boards[BP];
-    while (tmp) { Square s = pop_lsb(tmp); add_attacks(info, pawn_attacks(c, s), PAWN); }
+    add_attacks(info, build_pawn_attack_bb(tmp, c), PAWN);
 
     tmp = (c == WHITE) ? b.bit_boards[WN] : b.bit_boards[BN];
     while (tmp) { Square s = pop_lsb(tmp); add_attacks(info, knight_attacks(s), KNIGHT); }
@@ -113,15 +126,6 @@ static AttackInfo build_attack_info(const Board &b, Colour c) {
     add_attacks(info, king_attacks(king_square(b, c)), KING);
 
     return info;
-}
-
-static U64 build_pawn_attack_bb(U64 pawns, Colour c) {
-    U64 attacks = 0;
-    while (pawns) {
-        Square sq = pop_lsb(pawns);
-        attacks |= pawn_attacks(c, sq);
-    }
-    return attacks;
 }
 
 // ============================================================
@@ -168,31 +172,13 @@ static bool has_clear_wing(int file, U64 enemy_pawns) {
     return false;
 }
 
-static bool is_supported_pawn(Colour c, Square sq, U64 friendly_pawns) {
-    int f = get_file(sq), r = get_rank(sq);
-    if (c == WHITE) {
-        if (r == 0) return false;
-        if (f > 0 && (friendly_pawns & bb_square(make_square(File(f-1), Rank(r-1))))) return true;
-        if (f < 7 && (friendly_pawns & bb_square(make_square(File(f+1), Rank(r-1))))) return true;
-    } else {
-        if (r == 7) return false;
-        if (f > 0 && (friendly_pawns & bb_square(make_square(File(f-1), Rank(r+1))))) return true;
-        if (f < 7 && (friendly_pawns & bb_square(make_square(File(f+1), Rank(r+1))))) return true;
-    }
-    return false;
-}
-
 static bool is_backward_pawn(Colour c, Square sq, U64 friendly_pawns,
                               U64 enemy_pawn_attacks, U64 occupied) {
     int f = get_file(sq), r = get_rank(sq);
     U64 adjacent      = ADJ_FILE_MASKS[f];
-    U64 same_or_fwd   = 0;
-    if (c == WHITE) {
-        for (int rr = r; rr < 8; ++rr) same_or_fwd |= RANK_MASKS[rr];
-    } else {
-        for (int rr = 0; rr <= r; ++rr) same_or_fwd |= RANK_MASKS[rr];
-    }
-    bool has_support = (friendly_pawns & adjacent & same_or_fwd) != 0;
+    // "same rank or forward" = current rank | all ranks further ahead for colour c
+    U64 same_or_fwd   = RANK_MASKS[r] | FORWARD_RANK_MASKS[c][r];
+    bool has_support  = (friendly_pawns & adjacent & same_or_fwd) != 0;
     Square fwd        = SQ_NONE;
     if (c == WHITE && r < 7) fwd = sq + 8;
     if (c == BLACK && r > 0) fwd = sq - 8;
@@ -209,9 +195,9 @@ static void evaluate_pawns(const Board &b, Colour c,
                             int &mg, int &eg) {
     U64 pawns       = (c == WHITE) ? b.bit_boards[WP] : b.bit_boards[BP];
     U64 enemy_pawns = (c == WHITE) ? b.bit_boards[BP] : b.bit_boards[WP];
+    U64 friendly_pawn_attacks = build_pawn_attack_bb(pawns, c);
 
     std::array<int,  8> file_counts{};
-    std::array<bool, 64> passed{};
     U64 passed_bb = 0;
 
     U64 temp = pawns;
@@ -219,7 +205,6 @@ static void evaluate_pawns(const Board &b, Colour c,
         Square sq = pop_lsb(temp);
         file_counts[get_file(sq)]++;
         if (is_passed_pawn(c, sq, enemy_pawns)) {
-            passed[sq]  = true;
             passed_bb  |= bb_square(sq);
         }
     }
@@ -259,13 +244,13 @@ static void evaluate_pawns(const Board &b, Colour c,
         if (isolated) add_score(mg, eg, ISOLATED_PAWN_PENALTY_MG,
                                         ISOLATED_PAWN_PENALTY_EG, c);
 
-        bool supported = is_supported_pawn(c, sq, pawns);
+        bool supported = friendly_pawn_attacks & sq_bb;
         if (supported) add_score(mg, eg, SUPPORTED_PAWN_BONUS_MG, SUPPORTED_PAWN_BONUS_EG, c);
 
         bool weak = (enemy_pawn_attacks & sq_bb) && !supported;
         if (weak) add_score(mg, eg, WEAK_PAWN_PENALTY_MG, WEAK_PAWN_PENALTY_EG, c);
 
-        if (passed[sq]) {
+        if (passed_bb & sq_bb) {
             add_score(mg, eg, PASSED_PAWN_BONUS_MG[rel_rank],
                               PASSED_PAWN_BONUS_EG[rel_rank], c);
             if (has_clear_wing(f, enemy_pawns))

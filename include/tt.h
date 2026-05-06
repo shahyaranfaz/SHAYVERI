@@ -20,6 +20,8 @@ struct TTEntry {
     I8   depth = -1;
     U8   flag  = TT_EXACT;
     U8   age   = 0;
+    bool has_eval = false;
+    int  eval  = 0;
     Move best  = MOVE_NONE;
 };
 
@@ -39,6 +41,7 @@ public:
     TTEntry       *probe(U64 key);
 
     void store(U64 key, int depth, int score, TTFlag flag, Move best);
+    void store_eval(U64 key, int eval);
 
 private:
     std::vector<TTBucket> table;

@@ -84,6 +84,36 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
     replace->flag  = U8(flag);
     replace->age   = generation;
     replace->best  = best;
+    replace->has_eval = false;
+    replace->eval = 0;
+}
+
+void TranspositionTable::store_eval(U64 key, int eval) {
+    if (table.empty()) return;
+    TTBucket &bucket = table[SIZE_T(key) & mask];
+
+    for (TTEntry &e : bucket.entries) {
+        if (e.key == key) {
+            e.eval = eval;
+            e.has_eval = true;
+            e.age = generation;
+            return;
+        }
+    }
+
+    for (TTEntry &e : bucket.entries) {
+        if (e.key == 0) {
+            e.key = key;
+            e.depth = -1;
+            e.score = 0;
+            e.flag = TT_EXACT;
+            e.age = generation;
+            e.best = MOVE_NONE;
+            e.eval = eval;
+            e.has_eval = true;
+            return;
+        }
+    }
 }
 
 } // namespace SHAYVERI

@@ -55,17 +55,23 @@ struct StackInfo {
 
 struct SearchHeuristics {
     Move killers[MAX_PLY][2];
+    Move counter_moves[7][64];
     int history[2][64][64]; // [side_to_move][from][to]
 
     // Continuation Histories — indexed by PieceType (1=PAWN..6=KING) to keep tables small
     int counter_move_history[7][64][7][64]; // [prev_pt][prev_to][curr_pt][curr_to]
     int follow_up_history[7][64][7][64];    // [prev2_pt][prev2_to][curr_pt][curr_to]
 
+    // Capture history, indexed by [attacker_pt][to_sq][captured_pt].
+    int capture_history[7][64][7];
+
     SearchHeuristics() {
         std::memset(killers, 0, sizeof(killers));
+        std::memset(counter_moves, 0, sizeof(counter_moves));
         std::memset(history, 0, sizeof(history));
         std::memset(counter_move_history, 0, sizeof(counter_move_history));
         std::memset(follow_up_history, 0, sizeof(follow_up_history));
+        std::memset(capture_history, 0, sizeof(capture_history));
     }
 
     inline void store_killer(int ply, Move m) {
@@ -194,13 +200,28 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
     int cap = capture_order_score(b, m);
     if (cap != 0) {
         int see_val = see(b, m);
-        if (see_val >= 0) return 1000000 + (see_val * 100) + cap;
-        return 700000 + (see_val * 100) + cap;
+        // Add capture history bonus for non-promotion captures to fine-tune ordering
+        int ch = 0;
+        if (move_promo(m) == NONE_PTYPE) {
+            int to = static_cast<int>(move_to(m)) & 63;
+            int attacker_pt = static_cast<int>(get_type(b.get_piece(move_from(m))));
+            PieceType victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(to));
+            if (victim_pt != NONE_PTYPE)
+                ch = H.capture_history[attacker_pt][to][static_cast<int>(victim_pt)] / 100;
+        }
+        if (see_val >= 0) return 1000000 + (see_val * 100) + cap + ch;
+        return 700000 + (see_val * 100) + cap + ch;
     }
 
     if (ply >= 0 && ply < MAX_PLY) {
         if (m == H.killers[ply][0]) return 900000;
         if (m == H.killers[ply][1]) return 890000;
+    }
+
+    if (ply >= 1 && ss[-1].move != MOVE_NONE && ss[-1].piece != NONE_PIECE) {
+        int prev_pt = static_cast<int>(get_type(ss[-1].piece));
+        int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
+        if (m == H.counter_moves[prev_pt][prev_to]) return 880000;
     }
 
     int pt  = static_cast<int>(get_type(b.get_piece(move_from(m))));
@@ -237,12 +258,34 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
     if (g_stop) return 0;
     node_count.fetch_add(1, std::memory_order_relaxed);
 
+    alpha = std::max(alpha, -MATE_SCORE + ply);
+    beta = std::min(beta, MATE_SCORE - ply - 1);
+    if (alpha >= beta) return alpha;
+
+    const TTEntry *tte = TT.probe(b.hash);
+
+    // TT probe: use any stored result for immediate cutoffs
+    if (tte && tte->depth >= 0) {
+        const TTEntry *e = tte;
+        int s = e->score;
+        if (s > MATE_SCORE - MAX_PLY) s -= ply;
+        else if (s < -MATE_SCORE + MAX_PLY) s += ply;
+        if (e->flag == TT_EXACT)               return s;
+        if (e->flag == TT_LOWER && s >= beta)  return s;
+        if (e->flag == TT_UPPER && s <= alpha) return s;
+    }
+
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
 
     int stand_pat = 0;
     if (!in_check) {
-        stand_pat = evaluate(b);
+        if (tte && tte->has_eval) {
+            stand_pat = tte->eval;
+        } else {
+            stand_pat = evaluate(b);
+            TT.store_eval(b.hash, stand_pat);
+        }
         if (stand_pat >= beta) return stand_pat;
         if (stand_pat > alpha) alpha = stand_pat;
         if (depth <= 0) return alpha;
@@ -318,17 +361,25 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     if (b.half_move >= 100) return 0;
     if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1, b.half_move)) return 0;
 
+    alpha = std::max(alpha, -MATE_SCORE + ply);
+    beta = std::min(beta, MATE_SCORE - ply - 1);
+    if (alpha >= beta) return alpha;
+
     const int original_alpha = alpha;
     Move tt_move = MOVE_NONE;
     int tt_score = 0;
     int tt_depth = -1;
     int tt_bound = -1; // -1 represents "No entry found"
+    bool tt_has_eval = false;
+    int tt_eval = 0;
 
     if (const TTEntry *e = TT.probe(key)) {
         tt_move  = e->best;
         tt_score = e->score;
         tt_depth = e->depth;
         tt_bound = e->flag;
+        tt_has_eval = e->has_eval;
+        tt_eval = e->eval;
 
         if (tt_depth >= depth) {
             int s = tt_score;
@@ -352,8 +403,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     if (in_check && ply < MAX_PLY - 1) depth++;
 
     int static_eval = 0;
-    if (!in_check)
-        static_eval = evaluate(b);
+    if (!in_check) {
+        if (tt_has_eval) {
+            static_eval = tt_eval;
+        } else {
+            static_eval = evaluate(b);
+            TT.store_eval(key, static_eval);
+        }
+    }
 
     // Reverse Futility Pruning
     if (!pv_node && !in_check && depth <= 5 && ss->excluded_move == MOVE_NONE) {
@@ -391,6 +448,13 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (score < r_beta) extension = 1;
     }
 
+    // IIR: when no TT move exists, do a cheaper search by reducing depth by 1.
+    // This encourages us to search a reduced-depth iteration first, which then
+    // populates the TT for a subsequent re-search at full depth.
+    if (depth >= 4 && tt_move == MOVE_NONE && ss->excluded_move == MOVE_NONE) {
+        depth--;
+    }
+
     MoveList pseudo = generate_pseudo_legal_moves(b);
     ScoredMove ordered[256];
     for (int i = 0; i < pseudo.count; ++i) {
@@ -405,6 +469,11 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     int legal_count = 0;
     int quiet_count = 0;
     Move quiets_played[256];
+
+    // Track non-promotion captures tried, for capture history updates
+    struct CaptureEntry { Move m; PieceType captured_pt; PieceType attacker_pt; };
+    CaptureEntry captures_tried[256];
+    int capture_tried_count = 0;
 
     for (int i = 0; i < ordered_count; ++i) {
         // Lazy selection sort: swap best remaining move to position i
@@ -426,11 +495,19 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
 
         Piece moved_piece = b.get_piece(move_from(m));
+
+        // Pre-compute victim piece type for capture history (before make_move modifies the board)
+        PieceType cap_victim_pt = NONE_PTYPE;
+        if (!is_quiet && move_promo(m) == NONE_PTYPE) {
+            cap_victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(move_to(m)));
+        }
+
         Undo u;
         if (!make_move(b, m, u)) continue;
 
         legal_count++;
         if (is_quiet) quiets_played[quiet_count++] = m;
+        else if (cap_victim_pt != NONE_PTYPE) captures_tried[capture_tried_count++] = {m, cap_victim_pt, get_type(moved_piece)};
         rep_stack[rep_len] = b.hash;
         ss->move = m;
         ss->piece = moved_piece;
@@ -486,10 +563,25 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 };
 
                 int moved_pc_idx = static_cast<int>(get_type(moved_piece));
+                if (ss[-1].move != MOVE_NONE && ss[-1].piece != NONE_PIECE) {
+                    int prev_pt = static_cast<int>(get_type(ss[-1].piece));
+                    int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
+                    H.counter_moves[prev_pt][prev_to] = m;
+                }
                 update_all(m, moved_pc_idx, bonus);
                 for (int j = 0; j < quiet_count - 1; ++j) {
                     int q_pc_idx = static_cast<int>(get_type(b.get_piece(move_from(quiets_played[j]))));
                     update_all(quiets_played[j], q_pc_idx, -bonus);
+                }
+            } else if (cap_victim_pt != NONE_PTYPE) {
+                // Update capture history: reward the cutting capture, penalise prior ones
+                int bonus = std::min(Tune::history_bonus_limit, Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
+                int attacker_pt = static_cast<int>(get_type(moved_piece));
+                int to = static_cast<int>(move_to(m)) & 63;
+                H.update_history(H.capture_history[attacker_pt][to][cap_victim_pt], bonus);
+                for (int j = 0; j < capture_tried_count - 1; ++j) {
+                    int t2 = static_cast<int>(move_to(captures_tried[j].m)) & 63;
+                    H.update_history(H.capture_history[captures_tried[j].attacker_pt][t2][captures_tried[j].captured_pt], -bonus);
                 }
             }
             return score;
