@@ -13,9 +13,10 @@
 
 #include <atomic>
 #include <chrono>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <memory>
-#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -29,18 +30,12 @@ namespace SHAYVERI {
 static int  g_num_threads   = 1;
 static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
-static int  g_multi_pv      = 1;
+static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
-static int  g_nodes_time    = 0;    // 0 = disabled
-static bool g_show_wdl      = false;
-static bool g_analyse_mode  = false;
-static bool g_chess960      = false;
-static std::string g_opponent;
 
 // Ponder state
 static Move g_ponder_move      = MOVE_NONE;  // move we are pondering on
-static bool g_pondering        = false;       // currently in ponder search
-static std::mutex g_ponder_mtx;
+static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // All active search threads (index 0 = main thread)
 static std::vector<std::thread> smp_threads;
@@ -59,6 +54,28 @@ static const BookEntry *probe_book(U64 zobrist_key) {
     if (it != OPENING_BOOK + OPENING_BOOK_SIZE && it->key == zobrist_key)
         return it;
     return nullptr;
+}
+
+static bool parse_bool(const std::string &value) {
+    std::string v = value;
+    std::transform(v.begin(), v.end(), v.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return v == "true" || v == "1" || v == "yes" || v == "on";
+}
+
+static std::string ponder_suffix(Board b, Move best) {
+    if (!g_ponder || best == MOVE_NONE) return "";
+
+    Undo u;
+    if (!make_move(b, best, u)) return "";
+
+    if (const TTEntry *pe = TT.probe(b.hash)) {
+        if (pe->best != MOVE_NONE) {
+            g_ponder_move = pe->best;
+            return " ponder " + move_to_uci(pe->best);
+        }
+    }
+    return "";
 }
 
 } // namespace SHAYVERI
@@ -96,14 +113,9 @@ int main() {
                 << "option name Clear Hash type button\n"
                 << "option name Threads type spin default 1 min 1 max 512\n"
                 << "option name Ponder type check default false\n"
-                << "option name MultiPV type spin default 1 min 1 max 500\n"
+                << "option name OwnBook type check default true\n"
                 << "option name Minimum Thinking Time type spin default 0 min 0 max 5000\n"
-                << "option name nodestime type spin default 0 min 0 max 10000\n"
-                << "option name Move Overhead type spin default 10 min 0 max 5000\n"
-                << "option name UCI_ShowWDL type check default false\n"
-                << "option name UCI_AnalyseMode type check default false\n"
-                << "option name UCI_Chess960 type check default false\n"
-                << "option name UCI_Opponent type string default \"\"\n";
+                << "option name Move Overhead type spin default 10 min 0 max 5000\n";
 
             for (auto const& [name, opt] : Tune::tuning_registry) {
                 if (opt.type == Tune::TuningOption::INT)
@@ -140,23 +152,13 @@ int main() {
             else if (opt_name == "Threads")
                 g_num_threads = std::max(1, std::stoi(value));
             else if (opt_name == "Ponder")
-                g_ponder = (value == "true");
-            else if (opt_name == "MultiPV")
-                g_multi_pv = std::max(1, std::stoi(value));
+                g_ponder = parse_bool(value);
+            else if (opt_name == "OwnBook")
+                g_own_book = parse_bool(value);
             else if (opt_name == "Minimum Thinking Time")
                 g_min_think_ms = std::max(0, std::stoi(value));
-            else if (opt_name == "nodestime")
-                g_nodes_time = std::max(0, std::stoi(value));
             else if (opt_name == "Move Overhead")
                 g_move_overhead = std::max(0, std::stoi(value));
-            else if (opt_name == "UCI_ShowWDL")
-                g_show_wdl = (value == "true");
-            else if (opt_name == "UCI_AnalyseMode")
-                g_analyse_mode = (value == "true");
-            else if (opt_name == "UCI_Chess960")
-                g_chess960 = (value == "true");
-            else if (opt_name == "UCI_Opponent")
-                g_opponent = value;
             else
                 Tune::handle_setoption(opt_name, value);
         }
@@ -175,7 +177,7 @@ int main() {
             move_history.clear();
             TT.clear();
             g_ponder_move = MOVE_NONE;
-            g_pondering   = false;
+            g_pondering.store(false);
         }
 
         // --------------------------------------------------------
@@ -224,7 +226,7 @@ int main() {
                     if (t == "ponder") { is_ponder_search = true; break; }
             }
 
-            if (!is_ponder_search) {
+            if (!is_ponder_search && g_own_book) {
                 const BookEntry *entry = probe_book(b.hash);
                 if (entry) {
                     Move m = uci_to_move(b, entry->move);
@@ -236,23 +238,10 @@ int main() {
                         int book_eval_cp = static_cast<int>(entry->evaluation * 100.0f);
                         if (b.side_to_move == BLACK) book_eval_cp = -book_eval_cp;
 
-                        // Try to find a ponder move from TT
-                        std::string ponder_str;
-                        {
-                            Board tmp = b;
-                            Undo u;
-                            if (make_move(tmp, m, u)) {
-                                if (const TTEntry *pe = TT.probe(tmp.hash)) {
-                                    if (pe->best != MOVE_NONE)
-                                        ponder_str = " ponder " + move_to_uci(pe->best);
-                                }
-                            }
-                        }
-
                         std::cout << "info depth 8 score cp " << book_eval_cp
                                   << " pv " << entry->move << " \n"
                                   << "bestmove " << entry->move
-                                  << ponder_str << "\n";
+                                  << ponder_suffix(b, m) << "\n";
                         std::cout.flush();
                         continue;
                     }
@@ -296,12 +285,13 @@ int main() {
 
             // Ponder: run with infinite time; ponderhit will restart with real tc
             if (is_ponder_search) {
-                tc.infinite   = true;
-                g_pondering   = true;
+                g_pondering.store(true);
             } else {
-                g_pondering = false;
+                g_pondering.store(false);
             }
 
+            TimeControl real_tc = tc;
+            if (is_ponder_search) tc.infinite = true;
             g_time_manager.init(tc);
 
             int   start = static_cast<int>(hash_history.size()) - 1 - b.half_move;
@@ -329,17 +319,28 @@ int main() {
             // Main search thread
             smp_threads.insert(
                 smp_threads.begin(),
-                std::thread([b_copy, rep, searchmoves, hard_ms, pondering]() mutable {
+                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering]() mutable {
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
 
-                    // Hard-limit timer (fires only for non-ponder searches)
-                    std::thread timer([hard_ms, pondering, timer_active]() {
+                    std::thread timer([hard_ms, real_tc, pondering, timer_active]() {
                         if (pondering) {
-                            // Block until timer_active is cleared (ponderhit sets g_stop)
-                            while (*timer_active)
+                            while (*timer_active && g_pondering.load() && !g_stop.load())
                                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                            if (!*timer_active || g_stop.load())
+                                return;
+
+                            g_time_manager.init(real_tc);
+                            const I64 ponderhit_hard_ms = g_time_manager.hard_ms();
+                            const I64 slice = 5;
+                            I64 slept = 0;
+                            while (*timer_active && slept < ponderhit_hard_ms) {
+                                std::this_thread::sleep_for(std::chrono::milliseconds(slice));
+                                slept += slice;
+                            }
+                            if (*timer_active) g_stop = true;
                             return;
                         }
+
                         const I64 slice = 5;
                         I64 slept = 0;
                         while (*timer_active && slept < hard_ms) {
@@ -349,9 +350,8 @@ int main() {
                         if (*timer_active) g_stop = true;
                     });
 
-                    IterCallback on_iter = [pondering](int depth, Move best, int score,
-                                                        U64, I64) {
-                        if (!pondering && g_time_manager.on_iter(depth, best, score))
+                    IterCallback on_iter = [](int depth, Move best, int score, U64, I64) {
+                        if (!g_pondering.load() && g_time_manager.on_iter(depth, best, score))
                             g_stop = true;
                     };
 
@@ -371,20 +371,10 @@ int main() {
                             result.best_move = legal.moves[0];
                     }
 
-                    // Determine ponder move from TT
-                    std::string ponder_str;
-                    if (result.best_move != MOVE_NONE) {
-                        Board tmp = b_copy;
-                        Undo u;
-                        if (make_move(tmp, result.best_move, u)) {
-                            if (const TTEntry *pe = TT.probe(tmp.hash)) {
-                                if (pe->best != MOVE_NONE) {
-                                    g_ponder_move = pe->best;
-                                    ponder_str = " ponder " + move_to_uci(pe->best);
-                                }
-                            }
-                        }
-                    }
+                    while (pondering && g_pondering.load() && !g_stop.load())
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    std::string ponder_str = ponder_suffix(b_copy, result.best_move);
 
                     std::cout << "bestmove " << move_to_uci(result.best_move)
                               << ponder_str << "\n";
@@ -395,14 +385,7 @@ int main() {
 
         // --------------------------------------------------------
         else if (token == "ponderhit") {
-            // GUI accepted the ponder move; restart time management with real clock
-            {
-                std::lock_guard<std::mutex> lk(g_ponder_mtx);
-                g_pondering = false;
-            }
-            // Signal the running ponder search to stop; it will output bestmove.
-            // The GUI will then send a new "go" with real time limits.
-            g_stop = true;
+            g_pondering.store(false);
         }
 
         // --------------------------------------------------------
