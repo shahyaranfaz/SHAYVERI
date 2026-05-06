@@ -290,7 +290,7 @@ python3.10 lakas.py \
 'ASP_Delta':           {'init':   35,      'lower':   16,    'upper':   80}, \
 'LMR_Base':            {'init': 1.17017,   'lower': 0.50,    'upper': 2.20}, \
 'LMR_Scale':           {'init': 1.77385,   'lower': 1.00,    'upper': 3.50}, \
-'RFP_Margin_Mult':     {'init':   62,      'lower':   30,    'upper':  120}, \
+'RFP_Margin':     {'init':   62,      'lower':   30,    'upper':  120}, \
 'FP_Base':             {'init':  215,      'lower':   80,    'upper':  350}, \
 'FP_Mult':             {'init':  672,      'lower':  300,    'upper': 1000}, \
 'LMP_Base':            {'init':    3,      'lower':    1,    'upper':    8}, \
@@ -307,6 +307,8 @@ python3.10 lakas.py \
 'CMH_Weight':          {'init':   74,      'lower':   15,    'upper':  160}, \
 'FMH_Weight':          {'init':   35,      'lower':    0,    'upper':  130} \
 }"
+
+python3.10 lakas.py --distributed-role worker --input-param={}
 
 After texelpass1 converges and the final binary is validated,
 run one CMA-ES pass on the batch 1 + batch 2 search parameters.
