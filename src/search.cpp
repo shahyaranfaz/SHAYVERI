@@ -34,7 +34,8 @@ struct InitLMR {
         for (int d = 0; d < 64; ++d) {
             for (int moves = 0; moves < 256; ++moves) {
                 if (d < 2 || moves < 2) LMR_TABLE[d][moves] = 0;
-                else LMR_TABLE[d][moves] = static_cast<int>(0.75 + std::log((double)d) * std::log((double)moves) / 2.25);
+                else LMR_TABLE[d][moves] = static_cast<int>(
+                    Tune::lmr_base + std::log((double)d) * std::log((double)moves) / Tune::lmr_scale);
             }
         }
     }
@@ -82,6 +83,8 @@ struct SearchHeuristics {
 };
 
 std::string move_to_uci(Move m) {
+    if (m == MOVE_NONE) return "0000";
+
     auto sq_to_str = [](Square s) -> std::string {
         std::string r;
         r += char('a' + get_file(s));
@@ -348,7 +351,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
     if (in_check && ply < MAX_PLY - 1) depth++;
 
-    const int static_eval = evaluate(b);
+    int static_eval = 0;
+    if (!in_check)
+        static_eval = evaluate(b);
 
     // Reverse Futility Pruning
     if (!pv_node && !in_check && depth <= 5 && ss->excluded_move == MOVE_NONE) {
@@ -415,6 +420,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
             if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
             if (is_quiet && depth <= 4 && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
+            if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= 8 &&
+                see(b, m) < Tune::see_pruning_margin * depth)
+                continue;
         }
 
         Piece moved_piece = b.get_piece(move_from(m));
@@ -505,7 +513,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
 SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len,
                     const std::vector<Move> &search_moves, IterCallback on_iter,
-                    bool silent) {
+                    bool silent, int root_bias) {
 
     auto H_ptr = std::make_unique<SearchHeuristics>();
     SearchHeuristics &H = *H_ptr;
@@ -536,7 +544,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     for (int depth = 1; depth <= max_depth; ++depth) {
         int window_alpha = -INF;
         int window_beta  = INF;
-        int delta = 25;
+        int delta = Tune::ASP_DELTA;
 
         if (depth >= 4 && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
             window_alpha = std::max(-INF, final_best_score - delta);
@@ -552,6 +560,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             Move m = pseudo.moves[i];
             int  s = order_score(b, m, 0, H, ss);
             if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
+            if (root_bias != 0) s += ((i + root_bias) & 7) * 2;
             ordered[i] = {m, s};
         }
         int root_count = pseudo.count;

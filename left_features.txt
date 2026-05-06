@@ -19,7 +19,6 @@ UCI Protocol:
     * EvalFile
 
     * Contempt
-    * OwnBook
     * BestBookMove
     * BookPath
 

@@ -33,8 +33,10 @@ void TimeManager::init(const TimeControl &tc) {
         return;
     }
 
-    // Base: assume ~20 moves remaining, spend 1/20 of clock plus half increment
-    I64 base    = my_time / 20 + my_inc / 2;
+    int moves_to_go = (tc.moves_to_go > 0) ? std::clamp(tc.moves_to_go, 1, 80) : 20;
+
+    // Base: spend one time-control slice plus half increment.
+    I64 base    = my_time / moves_to_go + my_inc / 2;
     I64 ceiling = I64(my_time * 0.80) - tc.move_overhead;
     if (ceiling < 1) ceiling = 1;
 

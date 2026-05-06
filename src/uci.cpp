@@ -251,6 +251,7 @@ int main() {
             stop_search();
             g_stop     = false;
             node_count = 0;
+            TT.new_search();
 
             // Parse go parameters
             TimeControl tc;
@@ -272,7 +273,7 @@ int main() {
                     else if (tok == "binc")      go_iss >> tc.binc;
                     else if (tok == "movetime")  go_iss >> tc.movetime;
                     else if (tok == "nodes")     { I64 n; go_iss >> n; /* future: node limit */ }
-                    else if (tok == "movestogo") { int m; go_iss >> m; }
+                    else if (tok == "movestogo") go_iss >> tc.moves_to_go;
                     else if (tok == "searchmoves") {
                         std::string sm_str;
                         while (go_iss >> sm_str) {
@@ -307,11 +308,11 @@ int main() {
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves]() mutable {
-                        int helper_depth = 64 + (t % 2 == 0 ? 1 : -1);
-                        std::vector<Move> no_sm;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
+                        int helper_depth = 64 - (t % 4);
                         search(b_copy, helper_depth,
                                rep.data(), static_cast<int>(rep.size()),
-                               no_sm, nullptr, true);
+                               searchmoves, nullptr, true, t);
                     })
                 );
             }

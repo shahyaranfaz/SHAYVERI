@@ -14,38 +14,76 @@ static SIZE_T round_down_power2(SIZE_T n) {
 
 void TranspositionTable::resize(SIZE_T mb) {
     SIZE_T bytes = mb * 1024ULL * 1024ULL;
-    SIZE_T n = round_down_power2(bytes / sizeof(TTEntry));
+    SIZE_T n = round_down_power2(bytes / sizeof(TTBucket));
     if (n < 1024) n = 1024;
-    table.assign(n, TTEntry{});
+    table.assign(n, TTBucket{});
     mask = n - 1;
+    generation = 0;
 }
 
 void TranspositionTable::clear() {
-    std::fill(table.begin(), table.end(), TTEntry{});
+    std::fill(table.begin(), table.end(), TTBucket{});
+    generation = 0;
+}
+
+void TranspositionTable::new_search() {
+    ++generation;
 }
 
 const TTEntry *TranspositionTable::probe(U64 key) const {
     if (table.empty()) return nullptr;
-    const TTEntry &e = table[SIZE_T(key) & mask];
-    return (e.key == key) ? &e : nullptr;
+    const TTBucket &bucket = table[SIZE_T(key) & mask];
+    for (const TTEntry &e : bucket.entries)
+        if (e.key == key) return &e;
+    return nullptr;
 }
 
 TTEntry *TranspositionTable::probe(U64 key) {
     if (table.empty()) return nullptr;
-    TTEntry &e = table[SIZE_T(key) & mask];
-    return (e.key == key) ? &e : nullptr;
+    TTBucket &bucket = table[SIZE_T(key) & mask];
+    for (TTEntry &e : bucket.entries)
+        if (e.key == key) return &e;
+    return nullptr;
 }
 
 void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move best) {
     if (table.empty()) return;
-    TTEntry &e = table[SIZE_T(key) & mask];
-    if (e.key != key || depth >= int(e.depth)) {
-        e.key   = key;
-        e.depth = I8(depth);
-        e.score = score;
-        e.flag  = U8(flag);
-        e.best  = best;
+    TTBucket &bucket = table[SIZE_T(key) & mask];
+
+    for (TTEntry &e : bucket.entries) {
+        if (e.key == key) {
+            if (depth >= int(e.depth) || flag == TT_EXACT) {
+                e.depth = I8(depth);
+                e.score = score;
+                e.flag  = U8(flag);
+                e.age   = generation;
+                if (best != MOVE_NONE) e.best = best;
+            } else if (best != MOVE_NONE && e.best == MOVE_NONE) {
+                e.best = best;
+                e.age = generation;
+            }
+            return;
+        }
     }
+
+    TTEntry *replace = &bucket.entries[0];
+    for (TTEntry &e : bucket.entries) {
+        if (e.key == 0) {
+            replace = &e;
+            break;
+        }
+        bool e_old = e.age != generation;
+        bool r_old = replace->age != generation;
+        if ((e_old && !r_old) || (e_old == r_old && e.depth < replace->depth))
+            replace = &e;
+    }
+
+    replace->key   = key;
+    replace->depth = I8(depth);
+    replace->score = score;
+    replace->flag  = U8(flag);
+    replace->age   = generation;
+    replace->best  = best;
 }
 
 } // namespace SHAYVERI

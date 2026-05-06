@@ -15,6 +15,7 @@ struct TimeControl {
     int    winc          = 0;
     int    binc          = 0;
     int    movetime      = 0;   // fixed ms per move; 0 = not set
+    int    moves_to_go   = 0;   // x moves to next control; 0 = sudden death/unknown
     int    min_think_ms  = 0;   // minimum thinking time (UCI option)
     bool   infinite      = false;
     Colour side          = WHITE;

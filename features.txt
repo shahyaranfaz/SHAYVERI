@@ -96,9 +96,6 @@ UCI Protocol:
 
     * UCI_LimitStrength
     * UCI_Elo
-    * UCI_ShowWDL ✅
-    * UCI_AnalyseMode ✅
-    * UCI_chess960 ✅
     * UCI_opponent ✅
 
     * SyzygyPath

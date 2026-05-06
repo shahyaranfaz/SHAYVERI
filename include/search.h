@@ -30,7 +30,8 @@ SearchResult search(Board &b, int max_depth,
                     const U64 *rep_init, int rep_init_len,
                     const std::vector<Move> &search_moves,
                     IterCallback on_iter = nullptr,
-                    bool silent = false);
+                    bool silent = false,
+                    int root_bias = 0);
 
 } // namespace SHAYVERI
 

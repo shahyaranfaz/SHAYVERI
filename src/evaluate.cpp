@@ -2,6 +2,7 @@
 #include "attacks.h"
 #include "types.h"
 #include "tune.h"
+#include "zobrist.h"
 
 #include <array>
 #include <algorithm>
@@ -114,6 +115,15 @@ static AttackInfo build_attack_info(const Board &b, Colour c) {
     return info;
 }
 
+static U64 build_pawn_attack_bb(U64 pawns, Colour c) {
+    U64 attacks = 0;
+    while (pawns) {
+        Square sq = pop_lsb(pawns);
+        attacks |= pawn_attacks(c, sq);
+    }
+    return attacks;
+}
+
 // ============================================================
 // Phase
 // ============================================================
@@ -195,7 +205,7 @@ static bool is_backward_pawn(Colour c, Square sq, U64 friendly_pawns,
 // Pawn evaluation
 // ============================================================
 static void evaluate_pawns(const Board &b, Colour c,
-                            const AttackInfo &enemy_attacks,
+                            U64 enemy_pawn_attacks,
                             int &mg, int &eg) {
     U64 pawns       = (c == WHITE) ? b.bit_boards[WP] : b.bit_boards[BP];
     U64 enemy_pawns = (c == WHITE) ? b.bit_boards[BP] : b.bit_boards[WP];
@@ -252,7 +262,7 @@ static void evaluate_pawns(const Board &b, Colour c,
         bool supported = is_supported_pawn(c, sq, pawns);
         if (supported) add_score(mg, eg, SUPPORTED_PAWN_BONUS_MG, SUPPORTED_PAWN_BONUS_EG, c);
 
-        bool weak = (enemy_attacks.pawn & sq_bb) && !supported;
+        bool weak = (enemy_pawn_attacks & sq_bb) && !supported;
         if (weak) add_score(mg, eg, WEAK_PAWN_PENALTY_MG, WEAK_PAWN_PENALTY_EG, c);
 
         if (passed[sq]) {
@@ -277,7 +287,7 @@ static void evaluate_pawns(const Board &b, Colour c,
                     add_score(mg, eg, CANDIDATE_PAWN_BONUS_MG,
                                       CANDIDATE_PAWN_BONUS_EG, c);
             }
-            if (is_backward_pawn(c, sq, pawns, enemy_attacks.pawn, b.occupied))
+            if (is_backward_pawn(c, sq, pawns, enemy_pawn_attacks, b.occupied))
                 add_score(mg, eg, BACKWARD_PAWN_PENALTY_MG,
                                   BACKWARD_PAWN_PENALTY_EG, c);
         }
@@ -299,6 +309,56 @@ static void evaluate_pawns(const Board &b, Colour c,
             }
         }
     }
+}
+
+struct PawnHashEntry {
+    U64 key = 0;
+    int mg  = 0;
+    int eg  = 0;
+    bool valid = false;
+};
+
+static U64 pawn_hash_key(const Board &b) {
+    U64 key = 0;
+    U64 white = b.bit_boards[WP];
+    U64 black = b.bit_boards[BP];
+    while (white) {
+        Square sq = pop_lsb(white);
+        key ^= Zobrist::pieces[WP][sq];
+    }
+    while (black) {
+        Square sq = pop_lsb(black);
+        key ^= Zobrist::pieces[BP][sq];
+    }
+    return key;
+}
+
+static void evaluate_pawn_hash(const Board &b, int &mg, int &eg) {
+    static constexpr std::size_t PAWN_HASH_SIZE = 1 << 16;
+    thread_local std::array<PawnHashEntry, PAWN_HASH_SIZE> pawn_hash{};
+
+    U64 key = pawn_hash_key(b);
+    PawnHashEntry &entry = pawn_hash[static_cast<std::size_t>(key) & (PAWN_HASH_SIZE - 1)];
+    if (entry.valid && entry.key == key) {
+        mg += entry.mg;
+        eg += entry.eg;
+        return;
+    }
+
+    int pawn_mg = 0;
+    int pawn_eg = 0;
+    U64 white_pawn_attacks = build_pawn_attack_bb(b.bit_boards[WP], WHITE);
+    U64 black_pawn_attacks = build_pawn_attack_bb(b.bit_boards[BP], BLACK);
+
+    evaluate_pawns(b, WHITE, black_pawn_attacks, pawn_mg, pawn_eg);
+    evaluate_pawns(b, BLACK, white_pawn_attacks, pawn_mg, pawn_eg);
+
+    entry.key = key;
+    entry.mg  = pawn_mg;
+    entry.eg  = pawn_eg;
+    entry.valid = true;
+    mg += pawn_mg;
+    eg += pawn_eg;
 }
 
 // ============================================================
@@ -792,8 +852,7 @@ int evaluate(const Board &b) {
     if (bb_cnt >= 2) { mg -= BISHOP_PAIR_BONUS_MG; eg -= BISHOP_PAIR_BONUS_EG; }
 
     // ---- Pawn structure ----
-    evaluate_pawns(b, WHITE, black_attacks, mg, eg);
-    evaluate_pawns(b, BLACK, white_attacks, mg, eg);
+    evaluate_pawn_hash(b, mg, eg);
 
     // ---- King safety ----
     evaluate_king_safety(b, WHITE, black_attacks, phase, mg, eg);

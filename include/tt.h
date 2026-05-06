@@ -19,13 +19,21 @@ struct TTEntry {
     int  score = 0;
     I8   depth = -1;
     U8   flag  = TT_EXACT;
+    U8   age   = 0;
     Move best  = MOVE_NONE;
+};
+
+static constexpr int TT_BUCKET_SIZE = 4;
+
+struct TTBucket {
+    TTEntry entries[TT_BUCKET_SIZE];
 };
 
 class TranspositionTable {
 public:
     void resize(SIZE_T mb);
     void clear();
+    void new_search();
 
     const TTEntry *probe(U64 key) const;
     TTEntry       *probe(U64 key);
@@ -33,8 +41,9 @@ public:
     void store(U64 key, int depth, int score, TTFlag flag, Move best);
 
 private:
-    std::vector<TTEntry> table;
+    std::vector<TTBucket> table;
     SIZE_T               mask = 0;
+    U8                   generation = 0;
 };
 
 extern TranspositionTable TT;
