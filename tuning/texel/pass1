@@ -280,28 +280,32 @@ lichess: dh2010pc04
 
 python3.10 lakas.py \
   --distributed-role master \
-  --budget 600 \
+  --budget 800 \
   --num_workers 12 \
   --concurrency 23 \
-  --output-data-file "batch_final.dat" \
-  --input-data-file  "batch_final.dat" \
-  --optimizer-log-file "batch_final.log" \
+  --output-data-file "batch_repair.dat" \
+  --input-data-file  "batch_repair.dat" \
+  --optimizer-log-file "batch_repair.log" \
   --input-param "{ \
-'ASP_Delta':             {'init':   32,   'lower':   16,   'upper':   64}, \
-'LMR_Base':              {'init': 1.25,   'lower': 0.85,   'upper': 1.75}, \
-'LMR_Scale':             {'init': 1.79,   'lower': 1.20,   'upper': 2.60}, \
-'RFP_Margin':            {'init':   84,   'lower':   40,   'upper':  160}, \
-'FP_Base':               {'init':  195,   'lower':  100,   'upper':  330}, \
-'FP_Mult':               {'init':  653,   'lower':  350,   'upper':  950}, \
-'SEE_Pruning_Margin':    {'init': -281,   'lower': -480,   'upper':  -80}, \
-'SE_Margin':             {'init':   55,   'lower':   25,   'upper':  100}, \
-'SE_Reduction_Denom':    {'init':    3,   'lower':    1,   'upper':    6}, \
-'History_Bonus_Mult':    {'init':  463,   'lower':  280,   'upper':  720}, \
-'History_Bonus_Sub':     {'init':  164,   'lower':   60,   'upper':  340}, \
-'History_Bonus_Limit':   {'init': 2967,   'lower': 1500,   'upper': 4500}, \
-'Main_History_Weight':   {'init':   79,   'lower':   25,   'upper':  160}, \
-'CMH_Weight':            {'init':   83,   'lower':   15,   'upper':  160}, \
-'FMH_Weight':            {'init':   36,   'lower':    0,   'upper':  130} \
+'ASP_Delta':           {'init':   35,      'lower':   16,    'upper':   80}, \
+'LMR_Base':            {'init': 1.17017,   'lower': 0.50,    'upper': 2.20}, \
+'LMR_Scale':           {'init': 1.77385,   'lower': 1.00,    'upper': 3.50}, \
+'RFP_Margin_Mult':     {'init':   62,      'lower':   30,    'upper':  120}, \
+'FP_Base':             {'init':  215,      'lower':   80,    'upper':  350}, \
+'FP_Mult':             {'init':  672,      'lower':  300,    'upper': 1000}, \
+'LMP_Base':            {'init':    3,      'lower':    1,    'upper':    8}, \
+'LMP_Mult':            {'init':    1,      'lower':    1,    'upper':    3}, \
+'SEE_Pruning_Margin':  {'init': -259,      'lower': -600,    'upper':  -40}, \
+'SE_Min_Depth':        {'init':    9,      'lower':    1,    'upper':   16}, \
+'SE_Depth_Margin':     {'init':    2,      'lower':    1,    'upper':   20}, \
+'SE_Margin':           {'init':   56,      'lower':   25,    'upper':  100}, \
+'SE_Reduction_Denom':  {'init':    4,      'lower':    2,    'upper':    6}, \
+'History_Bonus_Mult':  {'init':  460,      'lower':  280,    'upper':  720}, \
+'History_Bonus_Sub':   {'init':  170,      'lower':   60,    'upper':  340}, \
+'History_Bonus_Limit': {'init': 3063,      'lower': 1500,    'upper': 4500}, \
+'Main_History_Weight': {'init':   85,      'lower':   25,    'upper':  160}, \
+'CMH_Weight':          {'init':   74,      'lower':   15,    'upper':  160}, \
+'FMH_Weight':          {'init':   35,      'lower':    0,    'upper':  130} \
 }"
 
 After texelpass1 converges and the final binary is validated,
