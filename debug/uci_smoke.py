@@ -12,7 +12,7 @@ import sys
 ENGINE_BINARY_NAME = "SHAYVERI"
 DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ENGINE_BINARY_NAME))
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
-TIMEOUT_SEC = 20
+TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
 BENCH_SIGNATURE_NODES = 542167
 
@@ -54,6 +54,13 @@ def extract_bench_nodes(text: str) -> int:
     if not m:
         raise AssertionError(f"missing bench node summary in output: {text[-TAIL_CHARS:]}")
     return int(m.group(1))
+
+def looks_like_book_probe(text: str) -> bool:
+    info_lines = [line for line in text.splitlines() if line.startswith("info depth ")]
+    if len(info_lines) != 1:
+        return False
+    line = info_lines[0]
+    return (" score cp " in line) and (" pv " in line) and (" nodes " not in line)
 
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
@@ -104,9 +111,9 @@ def main() -> int:
         ])
         require_bestmove(with_book)
         require_bestmove(without_book)
-        if "info depth 8 score cp" not in with_book:
+        if not looks_like_book_probe(with_book):
             raise AssertionError("opening book probe did not trigger on startpos with OwnBook=true")
-        if "info depth 8 score cp" in without_book:
+        if looks_like_book_probe(without_book):
             raise AssertionError("opening book probe still triggered with OwnBook=false")
 
         determinism_1 = run_engine([

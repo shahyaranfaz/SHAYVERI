@@ -102,10 +102,8 @@ int main(int argc, char **argv) {
     int depth = 0;
     init_attacks();
 
-    if (mode == "suite") {
-        if (argc != 2) { usage(); return 1; }
-        return run_suite();
-    }
+    if (mode == "suite") return (argc == 2) ? run_suite() : (usage(), 1);
+    if (argc < 3) { usage(); return 1; }
 
     if (mode == "startpos") {
         if (argc != 3) { usage(); return 1; }

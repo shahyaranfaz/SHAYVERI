@@ -12,7 +12,20 @@ import sys
 ENGINE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "SHAYVERI"))
 GAMES = int(os.environ.get("SHAYVERI_SELFPLAY_GAMES", "20"))
 TC = os.environ.get("SHAYVERI_SELFPLAY_TC", "10+0.1")
-TIMEOUT_SEC = int(os.environ.get("SHAYVERI_SELFPLAY_TIMEOUT_SEC", "3600"))
+
+
+def default_timeout_seconds(tc: str, games: int) -> int:
+    try:
+        base, inc = tc.split("+", 1)
+        base_s = float(base)
+        inc_s = float(inc)
+        expected_per_game = 2.0 * (base_s + 40.0 * inc_s)
+        return int(expected_per_game * games * 2.5 + 120.0)  # safety margin
+    except Exception:
+        return 3600
+
+
+TIMEOUT_SEC = int(os.environ.get("SHAYVERI_SELFPLAY_TIMEOUT_SEC", str(default_timeout_seconds(TC, GAMES))))
 
 
 def main() -> int:

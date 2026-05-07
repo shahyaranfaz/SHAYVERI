@@ -73,6 +73,8 @@ int main() {
         {"Pawn takes queen (free)", "4k3/8/3q4/4P3/8/8/8/4K3 w - - 0 1", "e5d6", 900},
         {"Queen takes pawn, gets recaptured", "4k3/8/3p4/4Q3/8/8/3r4/4K3 w - - 0 1", "e5d6", -800},
         {"Pawn trade sequence", "4k3/2p5/3p4/4P3/8/8/8/4K3 w - - 0 1", "e5d6", 0},
+        {"Rook takes rook (free)", "4k3/8/8/3rR3/8/8/8/4K3 w - - 0 1", "e5d5", 500},
+        {"Rook exchange with queen recapture", "3qk3/8/8/3rR3/8/8/8/4K3 w - - 0 1", "e5d5", 0},
     };
 
     int failures = 0;

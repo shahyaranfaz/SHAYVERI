@@ -12,6 +12,7 @@ import sys
 ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "SHAYVERI"))
 DEPTH = int(os.environ.get("SHAYVERI_TACTICAL_DEPTH", "4"))
 MIN_SOLVED = int(os.environ.get("SHAYVERI_TACTICAL_MIN_SOLVED", "0"))
+TIMEOUT_SEC = int(os.environ.get("SHAYVERI_TACTICAL_TIMEOUT_SEC", "15"))
 
 TACTICAL_CASES = [
     ("mate-in-1-1", "5rk1/ppp3pp/8/3pQ3/3P2b1/6P1/PP1P2K1/R1BB1r2 b - - 51 53", "f8f2"),
@@ -44,7 +45,7 @@ def run_engine(commands: list[str]) -> str:
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=60,
+        timeout=TIMEOUT_SEC,
         check=False,
     )
     return out.stdout

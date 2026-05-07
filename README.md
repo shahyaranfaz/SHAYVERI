@@ -111,6 +111,6 @@ Additional debug checks now include:
 - Make/unmake restoration checks (board arrays + hash + side/castling/EP/counters roundtrip consistency).
 - Search determinism check under `Threads=1` (same position/depth must return identical bestmove and final PV).
 - SEE value/sign regression checks.
-- Evaluation symmetry checks on mirrored color-swapped positions.
+- Evaluation symmetry checks on mirrored color-swapped positions (set `SHAYVERI_STRICT_EVAL_SYMMETRY=1` to make mismatches fail hard).
 - TT safety checks for store/probe, exact replacement, generation aging, and eval-cache behavior.
 - Bench signature check (fixed node count), opening-book on/off probe checks, tactical regression harness, and optional cutechess self-play smoke.
