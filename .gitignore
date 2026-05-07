@@ -2,6 +2,7 @@
 SHAYVERI.exe
 SHAYVERI
 debug/perft
+debug/legality
 tuning/*/pass*/batch*/
 
 # Prerequisites
