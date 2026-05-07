@@ -15,7 +15,11 @@
 #include <chrono>
 #include <algorithm>
 #include <cctype>
+#include <cerrno>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -61,6 +65,49 @@ static bool parse_bool(const std::string &value) {
     std::transform(v.begin(), v.end(), v.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return v == "true" || v == "1" || v == "yes" || v == "on";
+}
+
+static std::string trim(std::string value) {
+    auto first = std::find_if_not(value.begin(), value.end(),
+                                  [](unsigned char c) { return std::isspace(c); });
+    auto last = std::find_if_not(value.rbegin(), value.rend(),
+                                 [](unsigned char c) { return std::isspace(c); }).base();
+    if (first >= last) return "";
+    return std::string(first, last);
+}
+
+static bool parse_int(const std::string &value, int &out) {
+    std::string v = trim(value);
+    if (v.empty()) return false;
+
+    char *end = nullptr;
+    errno = 0;
+    long parsed = std::strtol(v.c_str(), &end, 10);
+    if (end == v.c_str() || *end != '\0' || errno == ERANGE)
+        return false;
+    if (parsed < std::numeric_limits<int>::min() ||
+        parsed > std::numeric_limits<int>::max())
+        return false;
+
+    out = static_cast<int>(parsed);
+    return true;
+}
+
+static bool parse_spin(const std::string &value, int min_value, int max_value, int &out) {
+    int parsed = 0;
+    if (!parse_int(value, parsed)) return false;
+    out = std::clamp(parsed, min_value, max_value);
+    return true;
+}
+
+static void resize_hash_option(const std::string &value) {
+    int hash_mb = 0;
+    if (!parse_spin(value, 1, 32768, hash_mb)) return;
+    try {
+        TT.resize(static_cast<SIZE_T>(hash_mb));
+    } catch (const std::exception &) {
+        // Keep the existing table if the requested size cannot be allocated.
+    }
 }
 
 static std::string ponder_suffix(Board b, Move best) {
@@ -146,19 +193,28 @@ int main() {
                 value.erase(value.begin());
 
             if      (opt_name == "Hash")
-                TT.resize(std::stoi(value));
+                resize_hash_option(value);
             else if (opt_name == "Clear Hash")
                 TT.clear();
-            else if (opt_name == "Threads")
-                g_num_threads = std::max(1, std::stoi(value));
+            else if (opt_name == "Threads") {
+                int threads = 0;
+                if (parse_spin(value, 1, 512, threads))
+                    g_num_threads = threads;
+            }
             else if (opt_name == "Ponder")
                 g_ponder = parse_bool(value);
             else if (opt_name == "OwnBook")
                 g_own_book = parse_bool(value);
-            else if (opt_name == "Minimum Thinking Time")
-                g_min_think_ms = std::max(0, std::stoi(value));
-            else if (opt_name == "Move Overhead")
-                g_move_overhead = std::max(0, std::stoi(value));
+            else if (opt_name == "Minimum Thinking Time") {
+                int min_think_ms = 0;
+                if (parse_spin(value, 0, 5000, min_think_ms))
+                    g_min_think_ms = min_think_ms;
+            }
+            else if (opt_name == "Move Overhead") {
+                int move_overhead = 0;
+                if (parse_spin(value, 0, 5000, move_overhead))
+                    g_move_overhead = move_overhead;
+            }
             else
                 Tune::handle_setoption(opt_name, value);
         }

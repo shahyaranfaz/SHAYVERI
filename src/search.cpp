@@ -13,6 +13,7 @@
 #include <atomic>
 #include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <climits>
 #include <iostream>
 #include <cstring>
@@ -113,8 +114,24 @@ std::string move_to_uci(Move m) {
     return s;
 }
 
+static bool is_uci_square_text(const std::string& uci, int offset) {
+    return uci.size() > static_cast<size_t>(offset + 1) &&
+           uci[offset] >= 'a' && uci[offset] <= 'h' &&
+           uci[offset + 1] >= '1' && uci[offset + 1] <= '8';
+}
+
+static bool is_uci_move_text(const std::string& uci) {
+    if (uci.size() != 4 && uci.size() != 5) return false;
+    if (!is_uci_square_text(uci, 0) || !is_uci_square_text(uci, 2)) return false;
+    if (uci.size() == 5) {
+        char promo = static_cast<char>(std::tolower(static_cast<unsigned char>(uci[4])));
+        return promo == 'n' || promo == 'b' || promo == 'r' || promo == 'q';
+    }
+    return true;
+}
+
 Move uci_to_move(Board& b, const std::string& uci) {
-    if (uci.size() < 4) return MOVE_NONE;
+    if (!is_uci_move_text(uci)) return MOVE_NONE;
     File ff = File(uci[0] - 'a');
     Rank fr = Rank(uci[1] - '1');
     File tf = File(uci[2] - 'a');
@@ -124,7 +141,7 @@ Move uci_to_move(Board& b, const std::string& uci) {
 
     PieceType promo = NONE_PTYPE;
     if (uci.size() == 5) {
-        switch (uci[4]) {
+        switch (std::tolower(static_cast<unsigned char>(uci[4]))) {
             case 'n': promo = KNIGHT; break;
             case 'b': promo = BISHOP; break;
             case 'r': promo = ROOK; break;
