@@ -32,7 +32,15 @@ TT_SAFETY_BIN := tt_safety
 
 all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN)
 
-test: perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite uci_smoke tactical_regression
+test: perft_suite \
+	fen_state_suite \
+	make_unmake_suite \
+	legality_suite \
+	see_suite \
+	eval_symmetry_suite \
+	tt_safety_suite \
+	uci_smoke \
+	tactical_regression
 
 release_test: test selfplay_smoke
 

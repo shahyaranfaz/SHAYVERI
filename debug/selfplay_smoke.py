@@ -12,6 +12,7 @@ import sys
 ENGINE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "SHAYVERI"))
 GAMES = int(os.environ.get("SHAYVERI_SELFPLAY_GAMES", "20"))
 TC = os.environ.get("SHAYVERI_SELFPLAY_TC", "10+0.1")
+TIMEOUT_SEC = int(os.environ.get("SHAYVERI_SELFPLAY_TIMEOUT_SEC", "3600"))
 
 
 def main() -> int:
@@ -34,7 +35,13 @@ def main() -> int:
         "-recover",
     ]
 
-    proc = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=3600)
+    proc = subprocess.run(
+        cmd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=TIMEOUT_SEC,
+    )
     out = proc.stdout
     print(out)
     if proc.returncode != 0:
