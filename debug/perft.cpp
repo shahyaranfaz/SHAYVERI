@@ -51,9 +51,21 @@ struct PerftCase {
 static int run_suite() {
     // Source: Chessprogramming Wiki perft results (includes Kiwipete and standard regression set).
     const std::vector<PerftCase> cases = {
+        {"Start Position depth 1", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 1, 20ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Start Position depth 2", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 2, 400ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Start Position depth 3", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 3, 8902ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Start Position depth 4", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 4, 197281ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Start Position depth 5", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 5, 4865609ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Start Position depth 6", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 6, 119060324ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Kiwipete depth 1", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 1, 48ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Kiwipete depth 2", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 2, 2039ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Kiwipete depth 3", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 3, 97862ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Kiwipete depth 4", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 4, 4085603ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Position 3 depth 1", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 1, 14ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Position 3 depth 2", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 2, 191ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Position 3 depth 3", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 3, 2812ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Position 3 depth 4", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 4, 43238ULL, "https://www.chessprogramming.org/Perft_Results"},
+        {"Position 3 depth 5", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 5, 674624ULL, "https://www.chessprogramming.org/Perft_Results"},
     };
 
     int failures = 0;

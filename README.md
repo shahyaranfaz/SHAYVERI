@@ -96,3 +96,9 @@ Included borrowed suites:
 - Perft regression positions from Chessprogramming Wiki (`Perft_Results`).
 - UCI smoke flow adapted from `official-stockfish/Stockfish/tests/instrumented.py`.
 - En-passant legality edge cases adapted from `niklasf/python-chess/test.py`.
+
+Additional debug checks now include:
+
+- FEN state validation (side-to-move, castling rights, en-passant square, halfmove/fullmove counters, key piece placement).
+- Make/unmake restoration checks (board arrays + hash + side/castling/EP/counters roundtrip consistency).
+- Search determinism check under `Threads=1` (same position/depth must return identical bestmove and final PV).

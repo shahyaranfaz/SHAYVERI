@@ -3,6 +3,8 @@ SHAYVERI.exe
 SHAYVERI
 debug/perft
 debug/legality
+debug/fen_state
+debug/make_unmake
 tuning/*/pass*/batch*/
 
 # Prerequisites
