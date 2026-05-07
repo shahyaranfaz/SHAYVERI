@@ -1,4 +1,4 @@
-CXX := clang++
+CXX := g++
 PYTHON ?= python
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
@@ -100,6 +100,6 @@ selfplay_smoke: ensure_engine
 	$(PYTHON) selfplay_smoke.py
 
 clean:
-	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN)
+	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) --rec __pycache__
 
 .PHONY: all test release_test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite ensure_engine uci_smoke tactical_regression selfplay_smoke clean
