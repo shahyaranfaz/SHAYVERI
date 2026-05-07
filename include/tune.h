@@ -61,8 +61,8 @@ static constexpr int lmp_mult           =    1;
 static constexpr int see_pruning_margin = -252;
 
 // LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
-static constexpr int lmr_base  = 1.18093;
-static constexpr int lmr_scale = 1.82857;
+static constexpr double lmr_base  = 1.18093;
+static constexpr double lmr_scale = 1.82857;
 
 // ================================================================
 // Piece values

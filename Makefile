@@ -2,6 +2,7 @@ MAKEFLAGS += -j$(shell nproc)
 
 CXX := g++
 CXX_WIN := x86_64-w64-mingw32-g++
+CXX_MACOS := clang++
 
 LTO := -flto=auto
 
@@ -26,6 +27,16 @@ CXXFLAGS_WIN := \
 
 LDFLAGS_WIN := -lpthread -static $(LTO)
 
+CXXFLAGS_MACOS := \
+	-std=c++20 \
+	-O3 \
+	-march=native \
+	-Wall \
+	-Wextra \
+	-Wpedantic
+
+LDFLAGS_MACOS :=
+
 INCLUDES := -Iinclude
 
 SRC := \
@@ -43,21 +54,29 @@ SRC := \
 	src/time_manager.cpp \
 	src/texel.cpp
 
+HEADERS := $(wildcard include/*.h)
+
 BIN := SHAYVERI
 BIN_WIN := SHAYVERI.exe
+BIN_MACOS := SHAYVERI
 
 all: $(BIN)
 
 windows: $(BIN_WIN)
 
-$(BIN): $(SRC)
+macos: $(BIN_MACOS)
+
+$(BIN): $(SRC) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS)
 
-$(BIN_WIN): $(SRC)
+$(BIN_WIN): $(SRC) $(HEADERS)
 	$(CXX_WIN) $(CXXFLAGS_WIN) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS_WIN)
 
+$(BIN_MACOS): $(SRC) $(HEADERS)
+	$(CXX_MACOS) $(CXXFLAGS_MACOS) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS_MACOS)
+
 clean:
-	rm -f $(BIN) $(BIN_WIN) dump_keys
+	rm -f $(BIN) $(BIN_WIN) $(BIN_MACOS) dump_keys
 
 dump_keys: \
 	opening_stuff/dump_zobrist_keys.cpp \
@@ -74,4 +93,4 @@ dump_keys: \
 	src/time_manager.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS)
 
-.PHONY: all windows clean
+.PHONY: all windows macos clean
