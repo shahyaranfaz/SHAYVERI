@@ -40,7 +40,11 @@ def require_bestmove(text: str) -> None:
 
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
-        print(f"engine binary not found: {ENGINE_PATH}", file=sys.stderr)
+        print(
+            f"engine binary not found: {ENGINE_PATH} "
+            "(run `make` in repo root or set SHAYVERI_ENGINE)",
+            file=sys.stderr,
+        )
         return 1
 
     try:
@@ -68,4 +72,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

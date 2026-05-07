@@ -91,4 +91,8 @@ cd debug
 make test
 ```
 
-The UCI smoke flow is adapted from the public Stockfish test style (`official-stockfish/Stockfish/tests/instrumented.py`) and checks protocol handshake plus `bestmove` responses on standard positions.
+Included borrowed suites:
+
+- Perft regression positions from Chessprogramming Wiki (`Perft_Results`).
+- UCI smoke flow adapted from `official-stockfish/Stockfish/tests/instrumented.py`.
+- En-passant legality edge cases adapted from `niklasf/python-chess/test.py`.
