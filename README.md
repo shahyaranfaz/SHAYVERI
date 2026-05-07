@@ -79,8 +79,6 @@ Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluat
 
 The engine supports normal chess only. Chess960 is not advertised.
 
-If tuning support is enabled in `include/tune.h`, additional SPSA tuning options may also be advertised by UCI. The release values are frozen in the source.
-
 ## Verification
 
 ## Tests
