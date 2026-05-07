@@ -5,37 +5,55 @@ CXX_WIN := x86_64-w64-mingw32-g++
 CXX_MACOS := clang++
 
 LTO := -flto=auto
+LTO_MACOS := -flto
+
+OPT_FLAGS := \
+	-Ofast \
+	-DNDEBUG \
+	-march=native \
+	-mbmi \
+	-mbmi2 \
+	-mlzcnt \
+	-mpopcnt \
+	-fomit-frame-pointer \
+	-funroll-loops \
+	-fno-rtti \
+	$(LTO)
+
+WARN_FLAGS := \
+	-Wall \
+	-Wextra \
+	-Wpedantic
 
 CXXFLAGS := \
 	-std=c++20 \
-	-O3 \
-	-mbmi2 \
-	-march=native \
-	-Wall \
-	-Wextra \
-	-Wpedantic \
-	$(LTO)
+	$(OPT_FLAGS) \
+	$(WARN_FLAGS)
 
 LDFLAGS := -lpthread $(LTO)
 
 CXXFLAGS_WIN := \
 	-std=c++20 \
-	-O3 \
-	-mbmi2 \
-	-march=native \
-	$(LTO)
+	$(OPT_FLAGS)
 
 LDFLAGS_WIN := -lpthread -static $(LTO)
 
 CXXFLAGS_MACOS := \
 	-std=c++20 \
-	-O3 \
+	-Ofast \
+	-DNDEBUG \
 	-march=native \
-	-Wall \
-	-Wextra \
-	-Wpedantic
+	-mbmi \
+	-mbmi2 \
+	-mlzcnt \
+	-mpopcnt \
+	-fomit-frame-pointer \
+	-funroll-loops \
+	-fno-rtti \
+	$(LTO_MACOS) \
+	$(WARN_FLAGS)
 
-LDFLAGS_MACOS :=
+LDFLAGS_MACOS := $(LTO_MACOS)
 
 INCLUDES := -Iinclude
 
