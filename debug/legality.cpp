@@ -14,6 +14,7 @@ using SHAYVERI::MoveList;
 using SHAYVERI::PieceType;
 using SHAYVERI::Rank;
 using SHAYVERI::Square;
+using SHAYVERI::SQ_NONE;
 using SHAYVERI::generate_legal_moves;
 using SHAYVERI::init_attacks;
 using SHAYVERI::move_from;
@@ -56,8 +57,8 @@ static bool parse_uci_move(const std::string &uci, Square &from, Square &to, Pie
 }
 
 static bool contains_legal_move(Board &b, const std::string &uci) {
-    Square from = SHAYVERI::SQ_NONE;
-    Square to = SHAYVERI::SQ_NONE;
+    Square from = SQ_NONE;
+    Square to = SQ_NONE;
     PieceType promo = NONE_PTYPE;
     if (!parse_uci_move(uci, from, to, promo)) return false;
 
