@@ -39,16 +39,45 @@ TACTICAL_CASES = [
 
 
 def run_engine(commands: list[str]) -> str:
-    out = subprocess.run(
+    proc = subprocess.Popen(
         [ENGINE_PATH],
-        input="\n".join(commands) + "\n",
-        text=True,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=TIMEOUT_SEC,
-        check=False,
+        text=True,
+        bufsize=1,
     )
-    return out.stdout
+    assert proc.stdin is not None
+    assert proc.stdout is not None
+
+    out: list[str] = []
+    try:
+        for command in commands:
+            proc.stdin.write(command + "\n")
+            proc.stdin.flush()
+            if command.startswith("go "):
+                while True:
+                    line = proc.stdout.readline()
+                    if line == "":
+                        break
+                    out.append(line)
+                    if line.startswith("bestmove "):
+                        break
+        proc.stdin.write("quit\n")
+        proc.stdin.flush()
+        try:
+            rest, _ = proc.communicate(timeout=TIMEOUT_SEC)
+            out.append(rest)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            rest, _ = proc.communicate()
+            out.append(rest)
+            raise
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+
+    return "".join(out)
 
 
 def extract_bestmove(text: str) -> str:
@@ -70,7 +99,6 @@ def main() -> int:
             "ucinewgame",
             f"position fen {fen}",
             f"go depth {DEPTH}",
-            "quit",
         ])
         best = extract_bestmove(output)
         if not best:

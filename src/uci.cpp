@@ -258,6 +258,7 @@ int main() {
             tc.side          = b.side_to_move;
             tc.move_overhead = g_move_overhead;
             tc.min_think_ms  = g_min_think_ms;
+            int fixed_depth  = 0;
 
             std::vector<Move> searchmoves;
             {
@@ -272,6 +273,7 @@ int main() {
                     else if (tok == "winc")      go_iss >> tc.winc;
                     else if (tok == "binc")      go_iss >> tc.binc;
                     else if (tok == "movetime")  go_iss >> tc.movetime;
+                    else if (tok == "depth")     go_iss >> fixed_depth;
                     else if (tok == "nodes")     { I64 n; go_iss >> n; /* future: node limit */ }
                     else if (tok == "movestogo") go_iss >> tc.moves_to_go;
                     else if (tok == "searchmoves") {
@@ -292,6 +294,7 @@ int main() {
             }
 
             TimeControl real_tc = tc;
+            if (fixed_depth > 0) tc.infinite = true;
             if (is_ponder_search) tc.infinite = true;
             g_time_manager.init(tc);
 
@@ -303,13 +306,14 @@ int main() {
             int   num_thr   = g_num_threads;
             I64   hard_ms   = g_time_manager.hard_ms();
             bool  pondering = is_ponder_search;
+            int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
 
             // Helper threads (Lazy SMP)
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
-                    std::thread([b_copy, rep, t, searchmoves]() mutable {
+                    std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
                         std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
-                        int helper_depth = 64 - (t % 4);
+                        int helper_depth = std::max(1, root_depth - (t % 4));
                         search(b_copy, helper_depth,
                                rep.data(), static_cast<int>(rep.size()),
                                searchmoves, nullptr, true, t);
@@ -320,7 +324,7 @@ int main() {
             // Main search thread
             smp_threads.insert(
                 smp_threads.begin(),
-                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering]() mutable {
+                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth]() mutable {
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
 
                     std::thread timer([hard_ms, real_tc, pondering, timer_active]() {
@@ -357,7 +361,7 @@ int main() {
                     };
 
                     SearchResult result = search(
-                        b_copy, 64,
+                        b_copy, root_depth,
                         rep.data(), static_cast<int>(rep.size()),
                         searchmoves,
                         on_iter, false);

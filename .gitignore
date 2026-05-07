@@ -8,6 +8,7 @@ debug/make_unmake
 debug/see_tests
 debug/eval_symmetry
 debug/tt_safety
+debug/__pycache__
 tuning/*/pass*/batch*/
 
 # Prerequisites

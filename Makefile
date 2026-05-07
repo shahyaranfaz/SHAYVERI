@@ -97,7 +97,7 @@ clean:
 	rm -f $(BIN) $(BIN_WIN) $(BIN_MACOS) dump_keys
 
 dump_keys: \
-	opening_stuff/dump_zobrist_keys.cpp \
+	opening_book/dump_zobrist_keys.cpp \
 	src/board.cpp \
 	src/fen.cpp \
 	src/attacks.cpp \

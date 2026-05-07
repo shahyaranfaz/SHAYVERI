@@ -43,10 +43,10 @@ static Piece swap_colour(Piece p) {
     }
 }
 
-static Square mirror_square_180(Square s) {
+static Square mirror_square_vertical(Square s) {
     const int f = int(get_file(s));
     const int r = int(get_rank(s));
-    return make_square(File(7 - f), Rank(7 - r));
+    return make_square(File(f), Rank(7 - r));
 }
 
 static Board mirror_and_swap(const Board &src) {
@@ -55,7 +55,7 @@ static Board mirror_and_swap(const Board &src) {
     for (Square s = 0; s < 64; ++s) {
         const Piece p = src.mailbox[s];
         if (p == SHAYVERI::NONE_PIECE) continue;
-        const Square ms = mirror_square_180(s);
+        const Square ms = mirror_square_vertical(s);
         const Piece sp = swap_colour(p);
         out.bit_boards[sp] |= bb_square(ms);
     }
@@ -66,7 +66,7 @@ static Board mirror_and_swap(const Board &src) {
     if (src.castling & SHAYVERI::WHITE_QUEENSIDE) out.castling |= SHAYVERI::BLACK_QUEENSIDE;
     if (src.castling & SHAYVERI::BLACK_KINGSIDE)  out.castling |= SHAYVERI::WHITE_KINGSIDE;
     if (src.castling & SHAYVERI::BLACK_QUEENSIDE) out.castling |= SHAYVERI::WHITE_QUEENSIDE;
-    out.en_passant = src.en_passant == SQ_NONE ? SQ_NONE : mirror_square_180(src.en_passant);
+    out.en_passant = src.en_passant == SQ_NONE ? SQ_NONE : mirror_square_vertical(src.en_passant);
     out.half_move = src.half_move;
     out.full_move = src.full_move;
     out.recompute_all();
@@ -98,7 +98,7 @@ int main() {
         Board mirrored = mirror_and_swap(b);
         int s1 = evaluate(b);
         int s2 = evaluate(mirrored);
-        if (s1 != -s2) {
+        if (s1 != s2) {
             std::cerr << "[FAIL] symmetry mismatch for FEN: " << fen
                       << " | eval=" << s1 << " mirrored=" << s2 << "\n";
             ++failures;

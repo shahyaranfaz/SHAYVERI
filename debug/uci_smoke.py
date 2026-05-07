@@ -17,17 +17,46 @@ TAIL_CHARS = 500
 BENCH_SIGNATURE_NODES = 542167
 
 
-def run_engine(commands: list[str]) -> str:
-    proc = subprocess.run(
+def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
+    proc = subprocess.Popen(
         [ENGINE_PATH],
-        input="\n".join(commands) + "\n",
-        text=True,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=TIMEOUT_SEC,
-        check=False,
+        text=True,
+        bufsize=1,
     )
-    return proc.stdout
+    assert proc.stdin is not None
+    assert proc.stdout is not None
+
+    out: list[str] = []
+    try:
+        for command in commands:
+            proc.stdin.write(command + "\n")
+            proc.stdin.flush()
+            if wait_for_bestmove and command.startswith("go "):
+                while True:
+                    line = proc.stdout.readline()
+                    if line == "":
+                        break
+                    out.append(line)
+                    if line.startswith("bestmove "):
+                        break
+        proc.stdin.write("quit\n")
+        proc.stdin.flush()
+        try:
+            rest, _ = proc.communicate(timeout=TIMEOUT_SEC)
+            out.append(rest)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            rest, _ = proc.communicate()
+            out.append(rest)
+            raise
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+
+    return "".join(out)
 
 
 def require(text: str, needle: str) -> None:
@@ -72,17 +101,17 @@ def main() -> int:
         return 1
 
     try:
-        handshake = run_engine(["uci", "isready", "quit"])
+        handshake = run_engine(["uci", "isready"])
         require(handshake, "uciok")
         require(handshake, "readyok")
 
-        startpos = run_engine(["ucinewgame", "position startpos", "go nodes 1000", "quit"])
+        startpos = run_engine(["ucinewgame", "position startpos", "go nodes 1000"], wait_for_bestmove=True)
         require_bestmove(startpos)
 
-        depth1 = run_engine(["ucinewgame", "position startpos", "go depth 1", "quit"])
+        depth1 = run_engine(["ucinewgame", "position startpos", "go depth 1"], wait_for_bestmove=True)
         require_bestmove(depth1)
 
-        bench = run_engine(["bench 16 1 3 default depth", "quit"])
+        bench = run_engine(["bench 16 1 3 default depth"])
         if extract_bench_nodes(bench) != BENCH_SIGNATURE_NODES:
             raise AssertionError(f"bench signature changed, expected {BENCH_SIGNATURE_NODES}")
 
@@ -91,8 +120,7 @@ def main() -> int:
             "ucinewgame",
             "position fen 5rk1/1K4p1/8/8/3B4/8/8/8 b - - 0 1",
             "go nodes 1000",
-            "quit",
-        ])
+        ], wait_for_bestmove=True)
         require_bestmove(fen_case)
 
         with_book = run_engine([
@@ -100,15 +128,13 @@ def main() -> int:
             "ucinewgame",
             "position startpos",
             "go movetime 10",
-            "quit",
-        ])
+        ], wait_for_bestmove=True)
         without_book = run_engine([
             "setoption name OwnBook value false",
             "ucinewgame",
             "position startpos",
             "go movetime 10",
-            "quit",
-        ])
+        ], wait_for_bestmove=True)
         require_bestmove(with_book)
         require_bestmove(without_book)
         if not looks_like_book_probe(with_book):
@@ -122,16 +148,14 @@ def main() -> int:
             "ucinewgame",
             "position fen 5K2/8/2qk4/2nPp3/3r4/6B1/B7/3R4 w - e6 0 1",
             "go depth 4",
-            "quit",
-        ])
+        ], wait_for_bestmove=True)
         determinism_2 = run_engine([
             "setoption name Threads value 1",
             "setoption name OwnBook value false",
             "ucinewgame",
             "position fen 5K2/8/2qk4/2nPp3/3r4/6B1/B7/3R4 w - e6 0 1",
             "go depth 4",
-            "quit",
-        ])
+        ], wait_for_bestmove=True)
         bm1, bm2 = extract_bestmove(determinism_1), extract_bestmove(determinism_2)
         pv1, pv2 = extract_last_pv(determinism_1), extract_last_pv(determinism_2)
         if bm1 != bm2 or pv1 != pv2:

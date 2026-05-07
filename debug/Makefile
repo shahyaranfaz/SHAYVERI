@@ -1,4 +1,5 @@
 CXX := clang++
+PYTHON ?= python
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
 
@@ -86,18 +87,17 @@ eval_symmetry_suite: $(EVAL_SYM_BIN)
 tt_safety_suite: $(TT_SAFETY_BIN)
 	./$(TT_SAFETY_BIN)
 
-uci_smoke:
 ensure_engine:
 	@if [ ! -x ../SHAYVERI ]; then $(MAKE) -C ..; fi
 
 uci_smoke: ensure_engine
-	python3 uci_smoke.py
+	$(PYTHON) uci_smoke.py
 
 tactical_regression: ensure_engine
-	python3 tactical_regression.py
+	$(PYTHON) tactical_regression.py
 
 selfplay_smoke: ensure_engine
-	python3 selfplay_smoke.py
+	$(PYTHON) selfplay_smoke.py
 
 clean:
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN)

@@ -6,12 +6,20 @@ SHAYVERI is a UCI-compliant chess engine written in C++ that achieved 2750 Elo o
 
 ## How to build
 
-```
-bash
+The default target builds a native Linux binary named `SHAYVERI`:
+
+```bash
 make
 ```
+Other targets:
 
-Requires a C++ compiler with C++17 support. The engine binary can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
+```bash
+make windows
+make macos
+make dump_keys
+make clean
+```
+Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support. The engine binary can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
 
 ## How to use
 
@@ -61,56 +69,46 @@ Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluat
 
 ## UCI options
 
-`Hash` — transposition table size in MB  
-`Threads` — number of search threads  
-`MultiPV` — number of principal variations  
-`Move Overhead` — compensation for GUI latency  
-`UCI_ShowWDL` — display win/draw/loss percentages  
-`UCI_AnalyseMode` — disable draw contempt for analysis  
-`UCI_chess960` — Fischer Random Chess support  
-`Ponder` — think on opponent's time  
+- `Hash`: transposition table size in MB.
+- `Clear Hash`: clears the transposition table.
+- `Threads`: number of search threads.
+- `Ponder`: enable ponder output/search support.
+- `OwnBook`: enable the embedded opening book.
+- `Minimum Thinking Time`: lower bound for allocated move time, in milliseconds.
+- `Move Overhead`: GUI/network delay reserve, in milliseconds.
+
+The engine supports normal chess only. Chess960 is not advertised.
+
+If tuning support is enabled in `include/tune.h`, additional SPSA tuning options may also be advertised by UCI. The release values are frozen in the source.
 
 ## Verification
 
-Move generation is verified via perft testing with correct node counts at every depth. Search correctness is validated against a testing suite.
+## Tests
 
-Run the debug perft regression suite:
-
-```bash
-cd debug
-make
-./perft suite
-```
-
-The suite includes standard public perft regression positions and expected node counts from Chessprogramming Wiki (including Kiwipete) with attribution printed in failure output.
-
-Run all debug regressions (perft + UCI smoke):
+The debug harness lives in `debug/`.
 
 ```bash
 cd debug
 make test
 ```
 
-Extended release-oriented checks:
+`make test` runs:
+
+- Perft regression positions from Chessprogramming Wiki, including startpos, Kiwipete, and Position 3.
+- FEN state validation for side to move, castling rights, en-passant square, counters, and key piece placement.
+- Make/unmake roundtrip checks for board state, hash, castling, en-passant, side, and counters.
+- En-passant legality edge cases adapted from `niklasf/python-chess`.
+- SEE regression checks.
+- Evaluation symmetry checks on vertically mirrored, color-swapped positions.
+- Transposition-table safety checks.
+- UCI smoke tests covering handshake, fixed-depth search, bench node signature, opening-book on/off behavior, and deterministic `Threads=1` search.
+- Tactical mate-in-1 regression positions adapted from `StuartRiffle/JaglavakTestData`.
+
+Optional release smoke:
 
 ```bash
 cd debug
 make release_test
 ```
 
-Included borrowed suites:
-
-- Perft regression positions from Chessprogramming Wiki (`Perft_Results`).
-- UCI smoke flow adapted from `official-stockfish/Stockfish/tests/instrumented.py`.
-- En-passant legality edge cases adapted from `niklasf/python-chess/test.py`.
-- Tactical mate-in-1 set adapted from `StuartRiffle/JaglavakTestData` (`Suites/mate-in-1.epd.json`).
-
-Additional debug checks now include:
-
-- FEN state validation (side-to-move, castling rights, en-passant square, halfmove/fullmove counters, key piece placement).
-- Make/unmake restoration checks (board arrays + hash + side/castling/EP/counters roundtrip consistency).
-- Search determinism check under `Threads=1` (same position/depth must return identical bestmove and final PV).
-- SEE value/sign regression checks.
-- Evaluation symmetry checks on mirrored color-swapped positions (set `SHAYVERI_STRICT_EVAL_SYMMETRY=1` to make mismatches fail hard).
-- TT safety checks for store/probe, exact replacement, generation aging, and eval-cache behavior.
-- Bench signature check (fixed node count), opening-book on/off probe checks, tactical regression harness, and optional cutechess self-play smoke.
+This runs `make test` and then a short Cute Chess self-play smoke if `cutechess-cli` is installed. The self-play smoke is meant to catch crashes, illegal moves, disconnects, time forfeits, and protocol regressions; it is not an Elo test.
