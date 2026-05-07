@@ -73,3 +73,13 @@ Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluat
 ## Verification
 
 Move generation is verified via perft testing with correct node counts at every depth. Search correctness is validated against a testing suite.
+
+Run the debug perft regression suite:
+
+```bash
+cd debug
+make
+./perft suite
+```
+
+The suite includes standard public perft regression positions and expected node counts from Chessprogramming Wiki (including Kiwipete) with attribution printed in failure output.
