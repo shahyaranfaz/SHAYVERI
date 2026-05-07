@@ -8,7 +8,16 @@
 #include <string>
 #include <vector>
 
-using namespace SHAYVERI;
+using SHAYVERI::Board;
+using SHAYVERI::MoveList;
+using SHAYVERI::Undo;
+using SHAYVERI::U64;
+using SHAYVERI::generate_legal_moves;
+using SHAYVERI::init_attacks;
+using SHAYVERI::make_move;
+using SHAYVERI::set_from_fen;
+using SHAYVERI::set_startpos;
+using SHAYVERI::unmake_move;
 
 U64 perft(Board &b, int depth) {
     if (depth == 0) return 1;

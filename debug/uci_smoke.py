@@ -9,9 +9,10 @@ import re
 import subprocess
 import sys
 
-
-ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "SHAYVERI"))
+DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "SHAYVERI"))
+ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = 20
+TAIL_CHARS = 500
 
 
 def run_engine(commands: list[str]) -> str:
@@ -29,12 +30,12 @@ def run_engine(commands: list[str]) -> str:
 
 def require(text: str, needle: str) -> None:
     if needle not in text:
-        raise AssertionError(f"missing '{needle}' in output: {text[-500:]}")
+        raise AssertionError(f"missing '{needle}' in output: {text[-TAIL_CHARS:]}")
 
 
 def require_bestmove(text: str) -> None:
     if not re.search(r"^bestmove\s+\S+", text, flags=re.MULTILINE):
-        raise AssertionError(f"missing bestmove in output: {text[-500:]}")
+        raise AssertionError(f"missing bestmove in output: {text[-TAIL_CHARS:]}")
 
 
 def main() -> int:
