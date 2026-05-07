@@ -83,3 +83,12 @@ make
 ```
 
 The suite includes standard public perft regression positions and expected node counts from Chessprogramming Wiki (including Kiwipete) with attribution printed in failure output.
+
+Run all debug regressions (perft + UCI smoke):
+
+```bash
+cd debug
+make test
+```
+
+The UCI smoke flow is adapted from the public Stockfish test style (`official-stockfish/Stockfish/tests/instrumented.py`) and checks protocol handshake plus `bestmove` responses on standard positions.

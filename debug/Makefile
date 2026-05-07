@@ -19,10 +19,19 @@ BIN := perft
 
 all: $(BIN)
 
+test: perft_suite uci_smoke
+
 $(BIN): $(SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SRC)
+
+perft_suite: $(BIN)
+	./$(BIN) suite
+
+uci_smoke:
+	@if [ ! -x ../SHAYVERI ]; then $(MAKE) -C ..; fi
+	python3 uci_smoke.py
 
 clean:
 	rm -f $(BIN)
 
-.PHONY: all clean
+.PHONY: all test perft_suite uci_smoke clean
