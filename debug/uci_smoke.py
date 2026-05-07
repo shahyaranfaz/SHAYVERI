@@ -9,10 +9,12 @@ import re
 import subprocess
 import sys
 
-DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "SHAYVERI"))
+ENGINE_BINARY_NAME = "SHAYVERI"
+DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ENGINE_BINARY_NAME))
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = 20
 TAIL_CHARS = 500
+BENCH_SIGNATURE_NODES = 542167
 
 
 def run_engine(commands: list[str]) -> str:
@@ -47,6 +49,11 @@ def extract_last_pv(text: str) -> str:
     pvs = re.findall(r"^info .*?\spv\s+(.+)$", text, flags=re.MULTILINE)
     return pvs[-1].strip() if pvs else ""
 
+def extract_bench_nodes(text: str) -> int:
+    m = re.search(r"^Nodes:\s+(\d+)", text, flags=re.MULTILINE)
+    if not m:
+        raise AssertionError(f"missing bench node summary in output: {text[-TAIL_CHARS:]}")
+    return int(m.group(1))
 
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
@@ -69,8 +76,8 @@ def main() -> int:
         require_bestmove(depth1)
 
         bench = run_engine(["bench 16 1 3 default depth", "quit"])
-        if not re.search(r"^Nodes:\s+\d+", bench, flags=re.MULTILINE):
-            raise AssertionError(f"missing bench node summary in output: {bench[-TAIL_CHARS:]}")
+        if extract_bench_nodes(bench) != BENCH_SIGNATURE_NODES:
+            raise AssertionError(f"bench signature changed, expected {BENCH_SIGNATURE_NODES}")
 
         # Position borrowed from official Stockfish UCI smoke tests.
         fen_case = run_engine([
@@ -80,6 +87,27 @@ def main() -> int:
             "quit",
         ])
         require_bestmove(fen_case)
+
+        with_book = run_engine([
+            "setoption name OwnBook value true",
+            "ucinewgame",
+            "position startpos",
+            "go movetime 10",
+            "quit",
+        ])
+        without_book = run_engine([
+            "setoption name OwnBook value false",
+            "ucinewgame",
+            "position startpos",
+            "go movetime 10",
+            "quit",
+        ])
+        require_bestmove(with_book)
+        require_bestmove(without_book)
+        if "info depth 8 score cp" not in with_book:
+            raise AssertionError("opening book probe did not trigger on startpos with OwnBook=true")
+        if "info depth 8 score cp" in without_book:
+            raise AssertionError("opening book probe still triggered with OwnBook=false")
 
         determinism_1 = run_engine([
             "setoption name Threads value 1",
@@ -104,7 +132,7 @@ def main() -> int:
                 f"determinism failure: run1 bestmove={bm1} pv={pv1!r}, run2 bestmove={bm2} pv={pv2!r}"
             )
 
-        print("UCI smoke tests passed (Stockfish-inspired flow + depth1 + bench + determinism).")
+        print("UCI smoke tests passed (flow + bench signature + book probe + determinism).")
         return 0
     except Exception as exc:
         print(f"UCI smoke tests failed: {exc}", file=sys.stderr)

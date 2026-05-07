@@ -5,6 +5,9 @@ debug/perft
 debug/legality
 debug/fen_state
 debug/make_unmake
+debug/see_tests
+debug/eval_symmetry
+debug/tt_safety
 tuning/*/pass*/batch*/
 
 # Prerequisites

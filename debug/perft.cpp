@@ -37,7 +37,7 @@ static void usage() {
         << "Usage:\n"
         << "  perft startpos <depth>\n"
         << "  perft fen \"<fen>\" <depth>\n"
-        << "  perft suite\n";
+        << "  perft suite   # run built-in regression suite\n";
 }
 
 struct PerftCase {
