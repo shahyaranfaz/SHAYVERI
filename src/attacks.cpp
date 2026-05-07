@@ -1,7 +1,8 @@
 #include "attacks.h"
 
-#include <cassert>
 #include <immintrin.h>
+
+#include <cassert>
 
 namespace SHAYVERI {
 
@@ -9,8 +10,49 @@ U64 PAWN_ATTACKS[2][64];
 U64 KNIGHT_ATTACKS[64];
 U64 KING_ATTACKS[64];
 
+U64 Ray[64][8];
+
+enum Dir { N, S, E, W, NE, NW, SE, SW };
+
+struct PextSlider {
+    U64 mask;
+    U64 *attacks;
+};
+
+static PextSlider Bishop[64];
+static PextSlider Rook[64];
+
+static U64 BishopTable[524288];
+static U64 RookTable[4096000];
+
 static bool is_valid_square(int f, int r) {
     return f >= 0 && f < 8 && r >= 0 && r < 8;
+}
+
+static U64 bishop_mask(Square sq) {
+    return Ray[sq][NE] | Ray[sq][NW] | Ray[sq][SE] | Ray[sq][SW];
+}
+
+static U64 rook_mask(Square sq) {
+    return Ray[sq][N] | Ray[sq][S] | Ray[sq][E] | Ray[sq][W];
+}
+
+static void init_rays() {
+    const int df[8] = { 0,  0, 1, -1,  1, -1,  1, -1 };
+    const int dr[8] = { 1, -1, 0,  0,  1,  1, -1, -1 };
+    for (int sq = 0; sq < 64; ++sq) {
+        for (int d = 0; d < 8; ++d) Ray[sq][d] = 0;
+
+        int f = sq % 8, r = sq / 8;
+        for (int d = 0; d < 8; ++d) {
+            int nf = f + df[d], nr = r + dr[d];
+            while (is_valid_square(nf, nr)) {
+                Ray[sq][d] |= bb_square(make_square(File(nf), Rank(nr)));
+                nf += df[d];
+                nr += dr[d];
+            }
+        }
+    }
 }
 
 static U64 compute_pawn_attacks(Colour c, Square from) {
@@ -52,47 +94,6 @@ static U64 compute_king_attacks(Square from) {
     }
     return bb;
 }
-
-U64 Ray[64][8];
-
-enum Dir { N, S, E, W, NE, NW, SE, SW };
-
-static void init_rays() {
-    const int df[8] = { 0,  0, 1, -1,  1, -1,  1, -1 };
-    const int dr[8] = { 1, -1, 0,  0,  1,  1, -1, -1 };
-    for (int sq = 0; sq < 64; ++sq) {
-        for (int d = 0; d < 8; ++d) Ray[sq][d] = 0;
-
-        int f = sq % 8, r = sq / 8;
-        for (int d = 0; d < 8; ++d) {
-            int nf = f + df[d], nr = r + dr[d];
-            while (is_valid_square(nf, nr)) {
-                Ray[sq][d] |= bb_square(make_square(File(nf), Rank(nr)));
-                nf += df[d];
-                nr += dr[d];
-            }
-        }
-    }
-}
-
-static U64 bishop_mask(Square sq) {
-    return Ray[sq][NE] | Ray[sq][NW] | Ray[sq][SE] | Ray[sq][SW];
-}
-
-static U64 rook_mask(Square sq) {
-    return Ray[sq][N] | Ray[sq][S] | Ray[sq][E] | Ray[sq][W];
-}
-
-struct PextSlider {
-    U64 mask;
-    U64 *attacks;
-};
-
-static PextSlider Bishop[64];
-static PextSlider Rook[64];
-
-static U64 BishopTable[524288];
-static U64 RookTable[4096000];
 
 static U64 sliding_attacks(Square sq, U64 occ, bool bishop) {
     const int df[8] = { 0,  0, 1, -1,  1, -1,  1, -1 };

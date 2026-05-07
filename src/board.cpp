@@ -1,4 +1,5 @@
 #include "board.h"
+
 #include "zobrist.h"
 
 namespace SHAYVERI {

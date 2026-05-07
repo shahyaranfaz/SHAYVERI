@@ -1,21 +1,16 @@
 #ifndef TUNE_H
 #define TUNE_H
 
-// Centralized parameters for SPSA / Texel tuning.
-// All numeric values are intentionally non-const (inline variables, C++17) so
-// a tuner can modify them at runtime without recompilation.
-//
-// ODR-safety: tuning_registry and handle_setoption are marked `inline` so this
-// header can be safely included in multiple translation units (C++17 inline
-// variable / inline function rules guarantee a single definition).
+// SPSA and Texel tuning parameters.
 
 #include "types.h"
 
 #include <array>
-#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <cstdint>
 
 namespace chess { class Board; }
 
@@ -23,16 +18,14 @@ namespace SHAYVERI {
 
 namespace Tune {
 
-// ================================================================
-// Search constants
-// ================================================================
+// ===== SEARCH CONSTANTS =====
 
-// Compile-time limits (used in array sizes / constant expressions)
+// Compile-time limits.
 static constexpr int MAX_PLY    =     128;
 static constexpr int INF        = 1000000;
 static constexpr int MATE_SCORE =  900000;
 
-// Aspiration window initial delta
+// Aspiration window.
 static constexpr int ASP_DELTA = 36;
 
 // Singular extensions
@@ -47,7 +40,7 @@ static constexpr int history_bonus_mult    =   468;
 static constexpr int history_bonus_sub     =   165;
 static constexpr int history_bonus_limit   =  3090;
 
-// History blending weights (percent, divided by 100 before accumulation)
+// History blending weights, divided by 100 before accumulation.
 static constexpr int main_history_weight = 85;
 static constexpr int cmh_weight          = 75;
 static constexpr int fmh_weight          = 30;
@@ -60,15 +53,13 @@ static constexpr int lmp_base           =    3;
 static constexpr int lmp_mult           =    1;
 static constexpr int see_pruning_margin = -252;
 
-// LMR formula coefficients: reduction = lmr_base + log(d)*log(m)/lmr_scale
+// LMR reduction formula.
 static constexpr double lmr_base  = 1.18093;
 static constexpr double lmr_scale = 1.82857;
 
-// ================================================================
-// Piece values
-// ================================================================
+// ===== PIECE VALUES =====
 
-// Per-piece (indexed by Piece enum), MG and EG
+// Per-piece MG and EG values, indexed by Piece.
 static constexpr int PIECE_VALUES_MG[PIECE_COUNT] = {
     0, 100, 353, 391, 510, 935, 0,
        100, 353, 391, 510, 935, 0,
@@ -78,14 +69,12 @@ static constexpr int PIECE_VALUES_EG[PIECE_COUNT] = {
        100, 290, 294, 539, 855, 0,
 };
 
-// Indexed by PieceType (0-6).  King = 20000 for SEE termination.
+// King value is high for SEE termination.
 static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330, 500, 900, 20000 };
-// Indexed by PieceType (0-6).  King = 0 for MVV-LVA / capture ordering.
+// King value is zero for MVV-LVA and capture ordering.
 static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
 
-// ================================================================
-// Phase (tapered eval)
-// ================================================================
+// ===== PHASE =====
 
 static constexpr int MAX_PHASE = 24;
 static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = {
@@ -93,9 +82,7 @@ static constexpr int PHASE_WEIGHTS[PIECE_COUNT] = {
        0, 1, 1, 2, 4, 0,
 };
 
-// ================================================================
-// Piece-square tables  (white perspective, index 0 = a1)
-// ================================================================
+// ===== PIECE-SQUARE TABLES =====
 
 static constexpr int PST_PAWN_MG[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
@@ -235,9 +222,7 @@ static constexpr int PST_KING_EG[64] = {
 
 };
 
-// ================================================================
-// Evaluation parameters
-// ================================================================
+// ===== EVALUATION PARAMETERS =====
 
 // Misc
 static constexpr int TEMPO_BONUS_MG       = 21;
@@ -245,7 +230,7 @@ static constexpr int TEMPO_BONUS_EG       = 10;
 static constexpr int BISHOP_PAIR_BONUS_MG = 19;
 static constexpr int BISHOP_PAIR_BONUS_EG =  9;
 
-// Passed pawns (indexed by relative rank 0-7)
+// Passed pawns by relative rank.
 static constexpr int PASSED_PAWN_BONUS_MG[8] = { 0, 5, 7,  8, 32, 69, 103, 0 };
 static constexpr int PASSED_PAWN_BONUS_EG[8] = { 0, 7, 9, 34, 60, 98, 128, 0 };
 
@@ -331,7 +316,7 @@ static constexpr int UNRECIPROCATED_PRESSURE_BONUS_MG =  1;
 static constexpr int UNRECIPROCATED_PRESSURE_BONUS_EG = 10;
 static constexpr int UNDEFENDED_VALUE_DIVISOR         = 66;
 
-// Threats – bonus when a pawn attacks an enemy piece of the given type
+// Threats by pawns.
 static constexpr int THREAT_BY_PAWN_MG[7] = { 0, 0, 42, 39, 52, 23, 0 };
 static constexpr int THREAT_BY_PAWN_EG[7] = { 0, 0, 20, 40,  0, 14, 0 };
 // Bonus when a minor attacks an enemy piece of higher value
@@ -360,20 +345,16 @@ static constexpr int QUEEN_OUTPOST_EG  = 20;
 static constexpr int DEVELOPMENT_BONUS = 11;
 static constexpr int CASTLED_BONUS     =  4;
 
-// ================================================================
-// Tuning infrastructure
-// ================================================================
+// ===== TUNING INFRASTRUCTURE =====
 
 struct TuningOption {
     void*       ptr;
     enum Type { INT, DOUBLE } type;
-    int         min_val;     // used for UCI spin min  (ignored for DOUBLE)
-    int         max_val;     // used for UCI spin max  (ignored for DOUBLE)
-    std::string default_str; // actual default, output verbatim in UCI response
+    int         min_val;
+    int         max_val;
+    std::string default_str;
 };
 
-// `inline` on the map and the function body guarantees ODR-safety when this
-// header is included in more than one translation unit (C++17).
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 /*
     // Core search
@@ -399,7 +380,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "74"}},
     {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "35"}},
 
-    // Eval – misc
+    // Eval , misc
     {"Tempo_Bonus_MG",      {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
     {"Tempo_Bonus_EG",      {&TEMPO_BONUS_EG,         TuningOption::INT,     4,    48,   "22"}},
     {"Tempo_Bonus",         {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
@@ -463,12 +444,12 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"King_Escape_Bonus",      {&KING_ESCAPE_BONUS,           TuningOption::INT,   0,    20,    "4"}},
     {"King_Danger_Divisor",    {&KING_DANGER_DIVISOR,         TuningOption::INT,   2,    22,    "10"}},
     {"King_Danger_Max",        {&KING_DANGER_MAX,             TuningOption::INT, 250,  1100,  "641"}},
-    // Attacker weights – indices 2-5 (0,1,6 are always 0)
+    // Attacker weights, indices 2-5 (0,1,6 are always 0)
     {"King_Attacker_Knight",   {&KING_ATTACKER_WEIGHT[2],     TuningOption::INT,   0,    12,    "2"}},
     {"King_Attacker_Bishop",   {&KING_ATTACKER_WEIGHT[3],     TuningOption::INT,   0,    14,    "3"}},
     {"King_Attacker_Rook",     {&KING_ATTACKER_WEIGHT[4],     TuningOption::INT,   0,    14,    "4"}},
     {"King_Attacker_Queen",    {&KING_ATTACKER_WEIGHT[5],     TuningOption::INT,   4,    28,   "11"}},
-    // Attack count bonus – indices 2-7 (0,1 are always 0)
+    // Attack count bonus, indices 2-7 (0,1 are always 0)
     {"KingAtk_2",              {&KING_ATTACK_COUNT_BONUS[2],  TuningOption::INT,   0,    22,    "7"}},
     {"KingAtk_3",              {&KING_ATTACK_COUNT_BONUS[3],  TuningOption::INT,   4,    55,   "25"}},
     {"KingAtk_4",              {&KING_ATTACK_COUNT_BONUS[4],  TuningOption::INT,   8,    80,   "33"}},
@@ -553,8 +534,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 */
 };
 
-// Applies a value string received from "setoption name X value Y".
-// Marked inline so the definition is ODR-safe across translation units.
+// Applies a UCI setoption value.
 inline void handle_setoption(const std::string& name, const std::string& value) {
     auto it = tuning_registry.find(name);
     if (it == tuning_registry.end()) return;
@@ -589,13 +569,11 @@ struct EvalResult {
 
 enum class PhaseStages { Midgame = 0, Endgame = 1 };
 
-// Push an {mg, eg} pair from two separate ints.
 inline void push_pair(parameters_t& p, int mg, int eg) {
     p.push_back({static_cast<tune_t>(mg), static_cast<tune_t>(eg)});
 }
 
-// Each trace field is I32[2] where [0] = WHITE count, [1] = BLACK count.
-// The coefficient is white_count - black_count.
+// Convert white and black feature counts into one coefficient.
 inline void push_coeff(coefficients_t& c, const I32 f[2]) {
     c.push_back(static_cast<I16>(f[0] - f[1]));
 }
@@ -606,9 +584,7 @@ inline void push_coeff_arr(coefficients_t& c, const I32 (*arr)[2], int n) {
 
 class TexelTuner {
 public:
-    // src/texel.cpp can be built with -DSHAYVERI_TEXEL_PHASE=N:
-    // 0 all, 1 core eval, 2 pawn extras, 3 activity, 4 king/tactics, 5 narrow refinement
-    // Tuner configuration constants
+    // Texel tuner configuration.
     constexpr static bool    includes_additional_score      = true;
     constexpr static bool    supports_external_chess_eval   = false;
     constexpr static bool    retune_from_zero               = false;
@@ -621,22 +597,13 @@ public:
     constexpr static tune_t  learning_rate_drop_ratio       = 0.5;
     constexpr static I32     data_load_print_interval       = 100000;
 
-    // Returns the vector of initial {mg, eg} parameter pairs drawn from tune.h.
-    // Parameter ordering is documented inside the implementation file.
     static parameters_t get_initial_parameters();
 
-    // Parses a FEN string, runs the trace evaluation and returns an EvalResult
-    // whose coefficients represent linear feature counts and whose score field
-    // holds the full static evaluation expressed from White's perspective.
-    // The upstream tuner derives the residual itself when
-    // includes_additional_score is true.
+    // Returns trace coefficients and static eval from White's perspective.
     static EvalResult get_fen_eval_result(const std::string& fen);
 
-    // Converts a chess::Board (texel-tuner's chess.hpp Board) to a FEN string
-    // and delegates to get_fen_eval_result.
     static EvalResult get_external_eval_result(const chess::Board& board);
 
-    // Prints the tuned parameters in tune.h initialiser format to stdout.
     static void print_parameters(const parameters_t& parameters);
 };
 

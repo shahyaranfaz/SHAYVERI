@@ -1,8 +1,27 @@
 #include "move_gen.h"
+
 #include "attacks.h"
 #include "make.h"
 
 namespace SHAYVERI {
+
+static constexpr Square E1 = make_square(FILE_E, RANK_1);
+static constexpr Square E8 = make_square(FILE_E, RANK_8);
+static constexpr Square G1 = make_square(FILE_G, RANK_1);
+static constexpr Square C1 = make_square(FILE_C, RANK_1);
+static constexpr Square G8 = make_square(FILE_G, RANK_8);
+static constexpr Square C8 = make_square(FILE_C, RANK_8);
+
+static constexpr U64 WK_EMPTY =
+    bb_square(make_square(FILE_F, RANK_1)) | bb_square(make_square(FILE_G, RANK_1));
+static constexpr U64 WQ_EMPTY =
+    bb_square(make_square(FILE_B, RANK_1)) | bb_square(make_square(FILE_C, RANK_1)) |
+    bb_square(make_square(FILE_D, RANK_1));
+static constexpr U64 BK_EMPTY =
+    bb_square(make_square(FILE_F, RANK_8)) | bb_square(make_square(FILE_G, RANK_8));
+static constexpr U64 BQ_EMPTY =
+    bb_square(make_square(FILE_B, RANK_8)) | bb_square(make_square(FILE_C, RANK_8)) |
+    bb_square(make_square(FILE_D, RANK_8));
 
 static void push_moves_from_mask(MoveList &out, Square from, U64 mask) {
     while (mask) {
@@ -14,6 +33,7 @@ static void push_moves_from_mask(MoveList &out, Square from, U64 mask) {
 
 MoveList generate_pseudo_legal_moves(Board &b) {
     MoveList moves;
+
     Colour curr  = b.side_to_move;
     Colour other = flip(curr);
 
@@ -137,18 +157,6 @@ MoveList generate_pseudo_legal_moves(Board &b) {
 
     Square ksq = king_square(b, curr);
     push_moves_from_mask(moves, ksq, king_attacks(ksq) & ~curr_occupied);
-
-    static constexpr Square E1 = make_square(FILE_E, RANK_1);
-    static constexpr Square E8 = make_square(FILE_E, RANK_8);
-    static constexpr Square G1 = make_square(FILE_G, RANK_1);
-    static constexpr Square C1 = make_square(FILE_C, RANK_1);
-    static constexpr Square G8 = make_square(FILE_G, RANK_8);
-    static constexpr Square C8 = make_square(FILE_C, RANK_8);
-
-    static constexpr U64 WK_EMPTY = bb_square(make_square(FILE_F, RANK_1)) | bb_square(make_square(FILE_G, RANK_1));
-    static constexpr U64 WQ_EMPTY = bb_square(make_square(FILE_B, RANK_1)) | bb_square(make_square(FILE_C, RANK_1)) | bb_square(make_square(FILE_D, RANK_1));
-    static constexpr U64 BK_EMPTY = bb_square(make_square(FILE_F, RANK_8)) | bb_square(make_square(FILE_G, RANK_8));
-    static constexpr U64 BQ_EMPTY = bb_square(make_square(FILE_B, RANK_8)) | bb_square(make_square(FILE_C, RANK_8)) | bb_square(make_square(FILE_D, RANK_8));
 
     if (curr == WHITE) {
         if ((b.castling & WHITE_KINGSIDE) && !(b.occupied & WK_EMPTY)

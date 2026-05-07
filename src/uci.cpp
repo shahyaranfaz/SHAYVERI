@@ -11,12 +11,9 @@
 #include "tune.h"
 #include "zobrist.h"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <algorithm>
-#include <cctype>
-#include <cerrno>
-#include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <limits>
@@ -26,22 +23,26 @@
 #include <thread>
 #include <vector>
 
+#include <cerrno>
+#include <cctype>
+#include <cstdlib>
+
 namespace SHAYVERI {
 
-// ----------------------------------------------------------------
+// ======
 // UCI options (written by setoption, read by go / search)
-// ----------------------------------------------------------------
+// ======
 static int  g_num_threads   = 1;
 static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
 
-// Ponder state
+// Ponder state.
 static Move g_ponder_move      = MOVE_NONE;  // move we are pondering on
 static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
-// All active search threads (index 0 = main thread)
+// Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
 
 static void stop_search() {
@@ -127,7 +128,6 @@ static std::string ponder_suffix(Board b, Move best) {
 
 } // namespace SHAYVERI
 
-// main() must be at global scope (C++ entry point)
 int main() {
     using namespace SHAYVERI;
 
@@ -151,7 +151,7 @@ int main() {
         std::string token;
         iss >> token;
 
-        // --------------------------------------------------------
+        // ===== UCI =====
         if (token == "uci") {
             std::cout
                 << "id name SHAYVERI\n"
@@ -177,7 +177,7 @@ int main() {
             std::cout << "uciok\n";
         }
 
-        // --------------------------------------------------------
+        // ===== SETOPTION =====
         else if (token == "setoption") {
             std::string skip;
             iss >> skip; // "name"
@@ -219,12 +219,12 @@ int main() {
                 Tune::handle_setoption(opt_name, value);
         }
 
-        // --------------------------------------------------------
+        // ===== ISREADY =====
         else if (token == "isready") {
             std::cout << "readyok\n";
         }
 
-        // --------------------------------------------------------
+        // ===== UCINEWGAME =====
         else if (token == "ucinewgame") {
             stop_search();
             set_startpos(b);
@@ -236,7 +236,7 @@ int main() {
             g_pondering.store(false);
         }
 
-        // --------------------------------------------------------
+        // ===== POSITION =====
         else if (token == "position") {
             std::string pos;
             iss >> pos;
@@ -271,9 +271,9 @@ int main() {
             }
         }
 
-        // --------------------------------------------------------
+        // ===== GO =====
         else if (token == "go") {
-            // Book probe (only for normal searches, not ponder)
+            // Book probe for normal searches.
             bool is_ponder_search = false;
             {
                 std::istringstream check(line);
@@ -309,7 +309,7 @@ int main() {
             node_count = 0;
             TT.new_search();
 
-            // Parse go parameters
+            // Parse go parameters.
             TimeControl tc;
             tc.side          = b.side_to_move;
             tc.move_overhead = g_move_overhead;
@@ -323,14 +323,14 @@ int main() {
                 go_iss >> tok; // consume "go"
                 while (go_iss >> tok) {
                     if      (tok == "infinite")  tc.infinite  = true;
-                    else if (tok == "ponder")    { /* handled via is_ponder_search */ }
+                    else if (tok == "ponder")    { /* handled above */ }
                     else if (tok == "wtime")     go_iss >> tc.wtime;
                     else if (tok == "btime")     go_iss >> tc.btime;
                     else if (tok == "winc")      go_iss >> tc.winc;
                     else if (tok == "binc")      go_iss >> tc.binc;
                     else if (tok == "movetime")  go_iss >> tc.movetime;
                     else if (tok == "depth")     go_iss >> fixed_depth;
-                    else if (tok == "nodes")     { I64 n; go_iss >> n; /* future: node limit */ }
+                    else if (tok == "nodes")     { I64 n; go_iss >> n; }
                     else if (tok == "movestogo") go_iss >> tc.moves_to_go;
                     else if (tok == "searchmoves") {
                         std::string sm_str;
@@ -342,7 +342,7 @@ int main() {
                 }
             }
 
-            // Ponder: run with infinite time; ponderhit will restart with real tc
+            // Ponder searches run until ponderhit supplies the real clock.
             if (is_ponder_search) {
                 g_pondering.store(true);
             } else {
@@ -364,7 +364,7 @@ int main() {
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
 
-            // Helper threads (Lazy SMP)
+            // Lazy SMP helper threads.
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
@@ -377,7 +377,7 @@ int main() {
                 );
             }
 
-            // Main search thread
+            // Main search thread.
             smp_threads.insert(
                 smp_threads.begin(),
                 std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth]() mutable {
@@ -444,17 +444,17 @@ int main() {
             );
         }
 
-        // --------------------------------------------------------
+        // ===== PONDERHIT =====
         else if (token == "ponderhit") {
             g_pondering.store(false);
         }
 
-        // --------------------------------------------------------
+        // ===== STOP =====
         else if (token == "stop") {
             stop_search();
         }
 
-        // --------------------------------------------------------
+        // ===== BENCH =====
         else if (token == "bench") {
             std::vector<std::string> bench_fens = {
                 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -486,7 +486,7 @@ int main() {
                       << "===========================\n";
         }
 
-        // --------------------------------------------------------
+        // ===== QUIT =====
         else if (token == "quit") {
             stop_search();
             break;

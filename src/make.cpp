@@ -1,4 +1,5 @@
 #include "make.h"
+
 #include "attacks.h"
 #include "zobrist.h"
 
@@ -49,18 +50,18 @@ static void add_piece(Board &b, Piece p, Square sq) {
 }
 
 static void update_castling(Board &b, Square from, Square to) {
-    b.hash ^= Zobrist::castlings[b.castling];
+    b.hash     ^= Zobrist::castlings[b.castling];
     b.castling &= CASTLING_RIGHTS_MASK[from];
     b.castling &= CASTLING_RIGHTS_MASK[to];
-    b.hash ^= Zobrist::castlings[b.castling];
+    b.hash     ^= Zobrist::castlings[b.castling];
 }
 
 bool make_move(Board &b, Move m, Undo &u) {
-    Square   from     = move_from(m);
-    Square   to       = move_to(m);
-    PieceType promo   = move_promo(m);
-    Piece    moved    = b.get_piece(from);
-    Piece    captured = b.get_piece(to);
+    Square    from     = move_from(m);
+    Square    to       = move_to(m);
+    PieceType promo    = move_promo(m);
+    Piece     moved    = b.get_piece(from);
+    Piece     captured = b.get_piece(to);
 
     u.hash       = b.hash;
     u.castling   = b.castling;

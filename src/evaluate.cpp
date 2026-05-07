@@ -1,11 +1,12 @@
 #include "evaluate.h"
+
 #include "attacks.h"
-#include "types.h"
 #include "tune.h"
+#include "types.h"
 #include "zobrist.h"
 
-#include <array>
 #include <algorithm>
+#include <array>
 
 namespace SHAYVERI {
 
@@ -13,7 +14,7 @@ using namespace Tune;
 
 namespace {
 
-// PST dispatch tables — reference the inline arrays in tune.h.
+// PST dispatch tables for the inline arrays in tune.h.
 static const int* PST_MG_TABLE[7] = {
     nullptr,
     PST_PAWN_MG, PST_KNIGHT_MG, PST_BISHOP_MG,
@@ -25,12 +26,11 @@ static const int* PST_EG_TABLE[7] = {
     PST_ROOK_EG, PST_QUEEN_EG,  PST_KING_EG,
 };
 
-// Utilities
-// ============================================================
+// ===== UTILITIES =====
 static inline int popcount(U64 bb) { return __builtin_popcountll(bb); }
 static inline int mirror(int sq)   { return (7 - sq / 8) * 8 + (sq % 8); }
 
-// Pre-baked masks — computed once at static init.
+// Masks computed once during static initialization.
 static const std::array<U64, 8> FILE_MASKS = [] {
     std::array<U64, 8> m{};
     for (int f = 0; f < 8; ++f)
@@ -69,11 +69,11 @@ static const U64 CENTER_MASK =
     (1ULL << (3*8+3)) | (1ULL << (3*8+4)) |
     (1ULL << (4*8+3)) | (1ULL << (4*8+4));
 
-// ============================================================
+// ======
 // AttackInfo
 // Stores per-type attack bitboards so king danger can weight
 // attackers by piece type without re-iterating pieces.
-// ============================================================
+// ======
 struct AttackInfo {
     U64 by_type[7]      = {};  // indexed by PieceType (1=PAWN..6=KING)
     U64 all             = 0;
@@ -91,15 +91,12 @@ static void add_attacks(AttackInfo &info, U64 attacks, PieceType pt) {
 }
 
 static U64 build_pawn_attack_bb(U64 pawns, Colour c) {
-    // file A = squares 0,8,16,...,56 -> mask 0x0101010101010101
-    // file H = squares 7,15,23,...,63 -> mask 0x8080808080808080
+    // File masks exclude pawn wraparound.
     constexpr U64 NOT_FILE_A = ~0x0101010101010101ULL;
     constexpr U64 NOT_FILE_H = ~0x8080808080808080ULL;
     if (c == WHITE)
-        // +7 = up-left (exclude file A), +9 = up-right (exclude file H)
         return ((pawns & NOT_FILE_A) << 7) | ((pawns & NOT_FILE_H) << 9);
     else
-        // -7 = down-right (exclude file H), -9 = down-left (exclude file A)
         return ((pawns & NOT_FILE_H) >> 7) | ((pawns & NOT_FILE_A) >> 9);
 }
 
@@ -128,11 +125,9 @@ static AttackInfo build_attack_info(const Board &b, Colour c) {
     return info;
 }
 
-// ============================================================
-// Phase
-// ============================================================
+// ===== PHASE =====
 static int phase_score(const Board &b) {
-    // Unrolled — avoids the PHASE_WEIGHTS loop and is branch-free.
+    // Unrolled to avoid the PHASE_WEIGHTS loop.
     int phase =
           popcount(b.bit_boards[WN] | b.bit_boards[BN])
         + popcount(b.bit_boards[WB] | b.bit_boards[BB])
@@ -141,18 +136,14 @@ static int phase_score(const Board &b) {
     return std::min(phase, MAX_PHASE);
 }
 
-// ============================================================
-// Score accumulation helper
-// ============================================================
+// ===== SCORE ACCUMULATION =====
 static inline void add_score(int &mg, int &eg, int mg_d, int eg_d, Colour c) {
     int sign = (c == WHITE) ? 1 : -1;
     mg += sign * mg_d;
     eg += sign * eg_d;
 }
 
-// ============================================================
-// Pawn helpers
-// ============================================================
+// ===== PAWN HELPERS =====
 static bool is_passed_pawn(Colour c, Square sq, U64 enemy_pawns) {
     int f = get_file(sq), r = get_rank(sq);
     U64 forward = FORWARD_RANK_MASKS[c][r];
@@ -176,7 +167,7 @@ static bool is_backward_pawn(Colour c, Square sq, U64 friendly_pawns,
                               U64 enemy_pawn_attacks, U64 occupied) {
     int f = get_file(sq), r = get_rank(sq);
     U64 adjacent      = ADJ_FILE_MASKS[f];
-    // "same rank or forward" = current rank | all ranks further ahead for colour c
+    // Same rank plus all ranks further ahead for this colour.
     U64 same_or_fwd   = RANK_MASKS[r] | FORWARD_RANK_MASKS[c][r];
     bool has_support  = (friendly_pawns & adjacent & same_or_fwd) != 0;
     Square fwd        = SQ_NONE;
@@ -187,9 +178,7 @@ static bool is_backward_pawn(Colour c, Square sq, U64 friendly_pawns,
     return !has_support && (blocked || controlled);
 }
 
-// ============================================================
-// Pawn evaluation
-// ============================================================
+// ===== PAWN EVALUATION =====
 static void evaluate_pawns(const Board &b, Colour c,
                             U64 enemy_pawn_attacks,
                             int &mg, int &eg) {
@@ -209,7 +198,7 @@ static void evaluate_pawns(const Board &b, Colour c,
         }
     }
 
-    // Islands
+    // Pawn islands.
     int islands   = 0;
     bool in_island = false;
     for (int f = 0; f < 8; ++f) {
@@ -223,7 +212,7 @@ static void evaluate_pawns(const Board &b, Colour c,
         add_score(mg, eg, (islands-1)*PAWN_ISLAND_PENALTY_MG,
                           (islands-1)*PAWN_ISLAND_PENALTY_EG, c);
 
-    // Doubled pawns
+    // Doubled pawns.
     for (int f = 0; f < 8; ++f) {
         if (file_counts[f] > 1) {
             int d = file_counts[f] - 1;
@@ -280,7 +269,7 @@ static void evaluate_pawns(const Board &b, Colour c,
 
     }
 
-    // Pawn storm toward enemy king
+    // Pawn storm toward the enemy king.
     Square enemy_king  = king_square(b, flip(c));
     int    king_file   = get_file(enemy_king);
     temp = pawns;
@@ -346,9 +335,10 @@ static void evaluate_pawn_hash(const Board &b, int &mg, int &eg) {
     eg += pawn_eg;
 }
 
-// ============================================================
-// King safety — nonlinear danger model
-// ============================================================
+// ======
+// King safety
+// Nonlinear danger model.
+// ======
 static void evaluate_king_safety(const Board &b, Colour c,
                                   const AttackInfo &enemy_attacks,
                                   int phase, int &mg, int &eg) {
@@ -357,7 +347,7 @@ static void evaluate_king_safety(const Board &b, Colour c,
     U64 pawns      = (c == WHITE) ? b.bit_boards[WP] : b.bit_boards[BP];
     U64 all_pawns  = b.bit_boards[WP] | b.bit_boards[BP];
 
-    // ---- Pawn shield ----
+    // Pawn shield.
     int shield_rank = (c == WHITE) ? 1 : 6;
     for (int df = -1; df <= 1; ++df) {
         int file = f + df;
@@ -366,7 +356,7 @@ static void evaluate_king_safety(const Board &b, Colour c,
             add_score(mg, eg, KING_SHIELD_MISSING_PENALTY, 0, c);
     }
 
-    // ---- Open / semi-open files near king ----
+    // Open and semi-open files near the king.
     for (int df = -1; df <= 1; ++df) {
         int file = f + df;
         if (file < 0 || file > 7) continue;
@@ -377,7 +367,7 @@ static void evaluate_king_safety(const Board &b, Colour c,
         else if (!has_friend) add_score(mg, eg, KING_SEMI_OPEN_FILE_PENALTY, 0, c);
     }
 
-    // ---- Nonlinear danger accumulation ----
+    // Nonlinear danger accumulation.
     // King zone = king square + all adjacent squares.
     U64 king_zone = king_attacks(ksq) | bb_square(ksq);
 
@@ -387,7 +377,7 @@ static void evaluate_king_safety(const Board &b, Colour c,
         U64 zone_hits = enemy_attacks.by_type[pt] & king_zone;
         if (zone_hits) {
             // Weight by number of squares of the king zone this piece type covers.
-            // Two queens both covering the zone is more dangerous than one — intentional.
+            // Multiple pieces of the same type can add separate pressure.
             danger += KING_ATTACKER_WEIGHT[pt] * popcount(zone_hits);
             attacker_types++;
         }
@@ -402,16 +392,14 @@ static void evaluate_king_safety(const Board &b, Colour c,
     int eg_penalty  = raw_penalty / 4;   // residual EG component
     add_score(mg, eg, -mg_penalty, -eg_penalty, c);
 
-    // ---- Escape squares ----
+    // Escape squares.
     int escape    = popcount(king_attacks(ksq) & ~b.occupancies[c] & ~enemy_attacks.all);
     int mg_escape = escape * KING_ESCAPE_BONUS / 2;
     int eg_escape = escape * KING_ESCAPE_BONUS * (MAX_PHASE - phase) / MAX_PHASE;
     add_score(mg, eg, mg_escape, eg_escape, c);
 }
 
-// ============================================================
-// Mobility helpers
-// ============================================================
+// ===== MOBILITY HELPERS =====
 static int openness_multiplier_for_file(U64 friendly_pawns, U64 all_pawns, int file) {
     U64 mask        = FILE_MASKS[file];
     bool has_friend = (friendly_pawns & mask) != 0;
@@ -434,10 +422,10 @@ static inline void mobility_bonus(int count, int mg_w, int eg_w,
               count * eg_w * openness_pct / 100, c);
 }
 
-// ============================================================
+// ======
 // Piece activity (mobility + territory)
-// enemy_attacks is now passed in to avoid recomputing pawn attacks.
-// ============================================================
+// Uses precomputed enemy attacks.
+// ======
 static void evaluate_piece_activity(const Board &b, Colour c,
                                      const AttackInfo &enemy_attacks,
                                      int &mg, int &eg) {
@@ -445,7 +433,7 @@ static void evaluate_piece_activity(const Board &b, Colour c,
     U64 pawns      = (c == WHITE) ? b.bit_boards[WP] : b.bit_boards[BP];
     U64 all_pawns  = b.bit_boards[WP] | b.bit_boards[BP];
 
-    // Safe mobility: exclude own pieces and squares controlled by enemy pawns.
+    // Safe mobility excludes own pieces and enemy pawn control.
     U64 safe = ~friendly & ~enemy_attacks.pawn;
 
     U64 temp;
@@ -491,9 +479,7 @@ static void evaluate_piece_activity(const Board &b, Colour c,
     }
 }
 
-// ============================================================
-// Coordination / connectivity
-// ============================================================
+// ===== COORDINATION =====
 static void evaluate_coordination(const Board &b, Colour c,
                                    const AttackInfo &attacks,
                                    int &mg, int &eg) {
@@ -506,7 +492,7 @@ static void evaluate_coordination(const Board &b, Colour c,
     int shared = popcount(enemy & attacks.double_attacked);
     add_score(mg, eg, shared * SHARED_TARGET_BONUS_MG, shared * SHARED_TARGET_BONUS_EG, c);
 
-    // Batteries
+    // Batteries.
     U64 rooks   = (c == WHITE) ? b.bit_boards[WR] : b.bit_boards[BR];
     U64 bishops = (c == WHITE) ? b.bit_boards[WB] : b.bit_boards[BB];
     U64 queens  = (c == WHITE) ? b.bit_boards[WQ] : b.bit_boards[BQ];
@@ -528,9 +514,9 @@ static void evaluate_coordination(const Board &b, Colour c,
     add_score(mg, eg, support * SUPPORT_CHAIN_BONUS_MG, support * SUPPORT_CHAIN_BONUS_EG, c);
 }
 
-// ============================================================
+// ======
 // Tactical pressure (pins, overloads, unreciprocated attacks)
-// ============================================================
+// ======
 static U64 piece_attacks_bb(Piece p, Square sq, U64 occupied) {
     Colour col = get_colour(p);
     switch (get_type(p)) {
@@ -642,15 +628,10 @@ static void evaluate_tactical_pressure(const Board &b, Colour c,
                           pressure * UNRECIPROCATED_PRESSURE_BONUS_EG, c);
 }
 
-// ============================================================
-// Threats (new)
-//
-// Complements tactical_pressure with explicit piece-type-valued bonuses:
-//   • Pawn attacks on non-pawn enemy pieces
-//   • Minor piece attacks on rooks / queens
-//   • Rook attacks on queens
-//   • Hanging enemy pieces (attacked by us, zero defenders)
-// ============================================================
+// ======
+// Threats
+// Complements tactical pressure with piece-type-valued bonuses.
+// ======
 static void evaluate_threats(const Board &b, Colour c,
                               const AttackInfo &attacks,
                               const AttackInfo &enemy_attacks,
@@ -659,7 +640,7 @@ static void evaluate_threats(const Board &b, Colour c,
     U64    enemy       = b.occupancies[them];
     Piece  enemy_pawn  = (them == WHITE) ? WP : BP;
 
-    // 1. Pawn threats: our pawns attacking enemy non-pawns
+    // Pawn threats against enemy non-pawns.
     {
         U64 non_pawns = enemy & ~b.bit_boards[enemy_pawn];
         U64 tmp       = non_pawns & attacks.pawn;
@@ -670,7 +651,7 @@ static void evaluate_threats(const Board &b, Colour c,
         }
     }
 
-    // 2. Minor threats: our N/B attacking enemy rooks or queens
+    // Minor threats against enemy rooks or queens.
     {
         U64 minor_targets = enemy & (b.bit_boards[them == WHITE ? WR : BR] |
                                      b.bit_boards[them == WHITE ? WQ : BQ]);
@@ -683,7 +664,7 @@ static void evaluate_threats(const Board &b, Colour c,
         }
     }
 
-    // 3. Rook threats: our rooks attacking enemy queens
+    // Rook threats against enemy queens.
     {
         U64 enemy_queens = b.bit_boards[them == WHITE ? WQ : BQ];
         U64 tmp = enemy_queens & attacks.by_type[ROOK];
@@ -693,8 +674,7 @@ static void evaluate_threats(const Board &b, Colour c,
         }
     }
 
-    // 4. Hanging pieces: our pieces attacked by the enemy with no defence.
-    //    Value-weighted so a hanging queen hurts more than a hanging pawn.
+    // Hanging pieces, value-weighted by piece type.
     {
         Piece own_king = (c == WHITE) ? WK : BK;
         U64 hanging    = b.occupancies[c] & enemy_attacks.all & ~attacks.all;
@@ -706,15 +686,13 @@ static void evaluate_threats(const Board &b, Colour c,
             int val    = PTYPE_VALUE[get_type(p)];
             int mg_pen = HANGING_BASE_PENALTY_MG + val / HANGING_VALUE_DIVISOR;
             int eg_pen = HANGING_BASE_PENALTY_EG + val / HANGING_VALUE_DIVISOR;
-            // Negative delta for colour c (we are penalising ourselves)
+            // Penalise the side being evaluated.
             add_score(mg, eg, -mg_pen, -eg_pen, c);
         }
     }
 }
 
-// ============================================================
-// Outpost squares
-// ============================================================
+// ===== OUTPOSTS =====
 static void evaluate_outposts(const Board &b, Colour c,
                                const AttackInfo &attacks,
                                const AttackInfo &enemy_attacks,
@@ -768,9 +746,7 @@ static void evaluate_outposts(const Board &b, Colour c,
     }
 }
 
-// ============================================================
-// Development / initiative
-// ============================================================
+// ===== DEVELOPMENT =====
 static int development_score(const Board &b, Colour c, int phase) {
     if (phase <= MAX_PHASE / 2) return 0;
 
@@ -798,9 +774,7 @@ static int development_score(const Board &b, Colour c, int phase) {
 
 } // namespace
 
-// ============================================================
-// Public entry point
-// ============================================================
+// ===== PUBLIC ENTRY POINT =====
 int evaluate(const Board &b) {
     int mg = 0, eg = 0;
     int phase = phase_score(b);
@@ -808,8 +782,7 @@ int evaluate(const Board &b) {
     AttackInfo white_attacks = build_attack_info(b, WHITE);
     AttackInfo black_attacks = build_attack_info(b, BLACK);
 
-    // ---- Material + PST ----
-    // Combined into one loop; bishop pair detected here too.
+    // Material and PST.
     int wb = 0, bb_cnt = 0;
     for (int p = 1; p < PIECE_COUNT; ++p) {
         U64 bitboard = b.bit_boards[p];
@@ -836,43 +809,43 @@ int evaluate(const Board &b) {
     if (wb     >= 2) { mg += BISHOP_PAIR_BONUS_MG; eg += BISHOP_PAIR_BONUS_EG; }
     if (bb_cnt >= 2) { mg -= BISHOP_PAIR_BONUS_MG; eg -= BISHOP_PAIR_BONUS_EG; }
 
-    // ---- Pawn structure ----
+    // Pawn structure.
     evaluate_pawn_hash(b, mg, eg);
 
-    // ---- King safety ----
+    // King safety.
     evaluate_king_safety(b, WHITE, black_attacks, phase, mg, eg);
     evaluate_king_safety(b, BLACK, white_attacks, phase, mg, eg);
 
-    // ---- Piece activity (mobility + territory) ----
+    // Piece activity.
     evaluate_piece_activity(b, WHITE, black_attacks, mg, eg);
     evaluate_piece_activity(b, BLACK, white_attacks, mg, eg);
 
-    // ---- Coordination / connectivity ----
+    // Coordination.
     evaluate_coordination(b, WHITE, white_attacks, mg, eg);
     evaluate_coordination(b, BLACK, black_attacks, mg, eg);
 
-    // ---- Tactical pressure ----
+    // Tactical pressure.
     evaluate_tactical_pressure(b, WHITE, white_attacks, black_attacks, mg, eg);
     evaluate_tactical_pressure(b, BLACK, black_attacks, white_attacks, mg, eg);
 
-    // ---- Threats ----
+    // Threats.
     evaluate_threats(b, WHITE, white_attacks, black_attacks, mg, eg);
     evaluate_threats(b, BLACK, black_attacks, white_attacks, mg, eg);
 
-    // ---- Outposts ----
+    // Outposts.
     evaluate_outposts(b, WHITE, white_attacks, black_attacks, mg, eg);
     evaluate_outposts(b, BLACK, black_attacks, white_attacks, mg, eg);
 
-    // ---- Development / initiative ----
+    // Development.
     int dev_diff     = development_score(b, WHITE, phase) - development_score(b, BLACK, phase);
     int opening_scale = phase;
     mg += dev_diff * opening_scale / MAX_PHASE;
 
-    // ---- Tempo ----
+    // Tempo.
     if (b.side_to_move == WHITE) { mg += TEMPO_BONUS_MG; eg += TEMPO_BONUS_EG; }
     else                          { mg -= TEMPO_BONUS_MG; eg -= TEMPO_BONUS_EG; }
 
-    // ---- Tapered interpolation ----
+    // Tapered interpolation.
     int score = (mg * phase + eg * (MAX_PHASE - phase)) / MAX_PHASE;
     return b.side_to_move == WHITE ? score : -score;
 }

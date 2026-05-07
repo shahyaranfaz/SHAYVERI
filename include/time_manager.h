@@ -5,6 +5,7 @@
 #include "move.h"
 
 #include <chrono>
+
 #include <cstdint>
 
 namespace SHAYVERI {
@@ -24,10 +25,10 @@ struct TimeControl {
 
 // Computes a soft limit (target) and hard limit (absolute ceiling).
 //
-//  Soft limit — checked once per completed depth.  Scaled down when the best
+//  Soft limit: checked once per completed depth. Scaled down when the best
 //  move is stable across iterations, scaled up when the score drops.
 //
-//  Hard limit — absolute ceiling enforced by a timer thread in uci.cpp.
+//  Hard limit: absolute ceiling enforced by a timer thread in uci.cpp.
 class TimeManager {
 public:
     void init(const TimeControl &tc);

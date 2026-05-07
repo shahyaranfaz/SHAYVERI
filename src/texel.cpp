@@ -5,7 +5,7 @@
 //
 // Non-linear parts of the evaluation (king danger/escape,
 // piece-value-weighted hanging / undefended penalties, development scaling)
-// cannot be expressed as a simple coefficient × parameter product. They are
+// cannot be expressed as a simple coefficient times parameter product. They are
 // captured in the
 // EvalResult::score full-evaluation field:
 //
@@ -37,8 +37,8 @@
 #include <iomanip>
 #include <iostream>
 #include <mutex>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -47,7 +47,7 @@ namespace {
 using namespace SHAYVERI;
 using namespace SHAYVERI::Tune;
 
-// Convenience
+// ===== CONVENIENCE =====
 static inline int pcnt(U64 bb)  { return __builtin_popcountll(bb); }
 static inline int mirr(int sq)  { return (7 - sq / 8) * 8 + (sq % 8); }
 
@@ -96,7 +96,7 @@ static constexpr bool tune_outposts         = tune_all || TEXEL_PHASE == 3;
 static constexpr bool tune_tempo            = !tune_only_king_pst && (tune_all || tune_refine || TEXEL_PHASE == 1);
 
 
-// Pre-baked masks (copies of evaluate.cpp static data)
+// Masks copied from evaluate.cpp.
 static const std::array<U64, 8> FILE_MASKS = [] {
     std::array<U64, 8> m{};
     for (int f = 0; f < 8; ++f)
@@ -302,7 +302,7 @@ static int count_overloaded(const Board& b, Colour defender, const AInfo& atk_in
 // Every field is I32[2] with [0]=WHITE count, [1]=BLACK count.
 struct Trace {
     I32 material[5][2];        // piece types PAWN..QUEEN (0-indexed)
-    I32 pst[6][64][2];         // piece types PAWN..KING × square
+    I32 pst[6][64][2];         // piece types PAWN..KING by square
     I32 bishop_pair[2];
     // Pawn structure
     I32 isolated[2];
@@ -704,7 +704,7 @@ static coefficients_t get_coefficients(const Trace& tr) {
     if constexpr (tune_material)
         push_coeff_arr(c, tr.material + 1, 4);
 
-    // 2. PST (6 types × 64 squares, with anchor squares removed for N/B/R/Q)
+    // 2. PST (6 types by 64 squares, with anchor squares removed for N/B/R/Q)
     if constexpr (tune_pst) {
         for (int pt = 0; pt < 6; ++pt) {
             PieceType ptype = static_cast<PieceType>(pt + 1);
@@ -824,9 +824,7 @@ static const int* const EG_PTAB[7] = {nullptr, PST_PAWN_EG, PST_KNIGHT_EG,
 
 } // anonymous namespace
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TexelTuner public methods
-// ─────────────────────────────────────────────────────────────────────────────
+// ===== TEXELTUNER PUBLIC METHODS =====
 
 // Parameter ordering follows the enabled phase groups in the order below.
 // Disabled groups stay fixed inside EvalResult::score's additional residual.
@@ -842,7 +840,7 @@ parameters_t TexelTuner::get_initial_parameters() {
             push_pair(p, PIECE_VALUES_MG[pt], PIECE_VALUES_EG[pt]);
     }
 
-    // 2. PST (6 types × 64 squares, with anchor squares removed for N/B/R/Q)
+    // 2. PST (6 types by 64 squares, with anchor squares removed for N/B/R/Q)
     if constexpr (tune_pst) {
         for (int pt = 1; pt <= 6; ++pt) {
             if constexpr (tune_only_king_pst) {

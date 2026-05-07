@@ -1,9 +1,11 @@
 #include "board.h"
+
 #include "zobrist.h"
 
-#include <cctype>
 #include <sstream>
 #include <string>
+
+#include <cctype>
 
 namespace SHAYVERI {
 

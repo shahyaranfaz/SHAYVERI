@@ -5,12 +5,11 @@
 
 namespace SHAYVERI {
 
-// Precomputed lookup tables — populated by init_attacks().
+// Precomputed lookup tables populated by init_attacks().
 extern U64 PAWN_ATTACKS[2][64];
 extern U64 KNIGHT_ATTACKS[64];
 extern U64 KING_ATTACKS[64];
 
-// Inline wrappers: single array lookup, zero function-call overhead.
 inline U64 pawn_attacks(Colour c, Square from)  { return PAWN_ATTACKS[int(c)][from]; }
 inline U64 knight_attacks(Square from)          { return KNIGHT_ATTACKS[from]; }
 inline U64 king_attacks(Square from)            { return KING_ATTACKS[from]; }

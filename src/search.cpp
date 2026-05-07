@@ -1,5 +1,4 @@
 #include "search.h"
-#include "tune.h"
 
 #include "attacks.h"
 #include "evaluate.h"
@@ -8,17 +7,19 @@
 #include "move_gen.h"
 #include "see.h"
 #include "tt.h"
+#include "tune.h"
 #include "zobrist.h"
 
-#include <atomic>
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <iostream>
+#include <memory>
+
 #include <cctype>
 #include <climits>
-#include <iostream>
-#include <cstring>
 #include <cmath>
-#include <memory>
+#include <cstring>
 
 namespace SHAYVERI {
 
@@ -27,7 +28,7 @@ std::atomic<U64> node_count = 0;
 
 using namespace Tune;
 
-// Precomputed LMR table
+// Precomputed LMR table.
 static int LMR_TABLE[64][256];
 
 struct InitLMR {
@@ -47,7 +48,7 @@ struct ScoredMove {
     int score;
 };
 
-// Tracks state across plies for histories and extensions
+// Tracks per-ply state for histories and extensions.
 struct StackInfo {
     Move move;
     Piece piece;
@@ -59,7 +60,7 @@ struct SearchHeuristics {
     Move counter_moves[7][64];
     int history[2][64][64]; // [side_to_move][from][to]
 
-    // Continuation Histories — indexed by PieceType (1=PAWN..6=KING) to keep tables small
+    // Continuation histories use PieceType indices 1=PAWN..6=KING.
     int counter_move_history[7][64][7][64]; // [prev_pt][prev_to][curr_pt][curr_to]
     int follow_up_history[7][64][7][64];    // [prev2_pt][prev2_to][curr_pt][curr_to]
 
