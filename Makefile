@@ -58,7 +58,7 @@ HEADERS := $(wildcard include/*.h)
 
 BIN := SHAYVERI
 BIN_WIN := SHAYVERI.exe
-BIN_MACOS := SHAYVERI
+BIN_MACOS := SHAYVERI_mac
 
 all: $(BIN)
 
