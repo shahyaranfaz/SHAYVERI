@@ -119,53 +119,82 @@ PHASE 2 - DATA PIPELINE
 PHASE 3 - TRAINING
 ======================================
 
-14. Install Bullet on training machine
-    - git clone https://github.com/jnlt3/bullet
-    - cargo build --release
-    - confirm CUDA is available: nvidia-smi
+14. Use marlinflow trainer for v2.0
+    - do not switch to Bullet for this run
+    - marlinflow is good enough to bootstrap Chess768 NNUE
+    - Bullet can be evaluated later after SHAYVERI has working NNUE integration
 
-15. Write config.toml
-    - arch: SingleBucket
-    - inputs: Chess768
-    - output_buckets: 1
-    - hidden size: 256
-    - batch_size: 16384
+15. Patch marlinflow trainer for SHAYVERI
+    - add --resume PATH support
+    - load state_dict before creating the optimizer:
+      model.load_state_dict(torch.load(args.resume, map_location=DEVICE))
+    - use Chess768 model:
+      NnBoard768Cuda(256) if CUDA + cupy are available
+      NnBoard768(256) otherwise
+    - keep output JSON writing enabled
+
+16. Train in low-disk streamed chunks
+    - run 40 chunks of 25M positions each, or equivalent total of about 1B positions seen
+    - for each chunk:
+      a. datagen writes worker .plain files
+      b. convert each .plain to .bin
+      c. delete each .plain immediately after conversion
+      d. shuffle each .bin
+      e. delete each unshuffled .bin
+      f. train on the current shuffled chunk files
+      g. delete shuffled chunk files after successful training
+    - resume each chunk from the previous chunk checkpoint
+    - only checkpoints/logs/JSON persist between chunks
+
+17. Training command defaults
     - lr: 0.001
-    - wdl: 0.5
+    - epochs per chunk: 5
+    - batch_size: 16384
+    - wdl: 0.3
     - scale: 400
-    - save_rate: 10 (every 10M steps)
-    - data path: /nfs/data/raw/combined_shuffled.bin
+    - save_epochs: 5
+    - final checkpoint after 40 chunks:
+      nn/shayveri_v2_iter039_5
+    - final JSON after 40 chunks:
+      nn/shayveri_v2_iter039.json
 
-16. Run training
-    - target 800M-1B steps
-    - LR drops: 0.001 -> 0.0001 at 600M, -> 0.00001 at 800M
-    - full run estimate: ~8-10 hours on RTX 4080, verify with real throughput
-    - checkpoints saved automatically per save_rate
+18. Monitor training
+    - each chunk should print "loading checkpoint" except iter000
+    - data directory should be empty after each chunk cleanup
+    - loss should trend down or stabilize; stop if loss becomes nan/inf
+    - marlinflow conversion should not warn about i16 saturation after datagen score clamping
 
-17. Pick best net
-    - test last 3-4 checkpoints against each other in cutechess or fastchess
-    - use at least 100 games per pairing for quick selection
+19. Pick final net
+    - first integration target is the last streamed checkpoint/JSON
+    - after engine integration works, optionally test last 3-4 streamed checkpoints against each other
     - use the strongest checkpoint, not necessarily the last one
+
+20. Later trainer upgrade
+    - Bullet is a v2.1/v3 option, not part of v2.0
+    - consider Bullet after:
+      a. NNUE loader works
+      b. accumulator tests pass
+      c. marlinflow net gains Elo over HCE
 
 
 ======================================
 PHASE 4 - ENGINE INTEGRATION
 ======================================
 
-18. Define network constants
+21. Define network constants
     - INPUT_SIZE   = 768
     - HIDDEN_SIZE  = 256
     - OUTPUT_SIZE  = 1
     - L1_SCALE     = 255  (quantization scale)
     - OUTPUT_SCALE = 400  (cp scale)
 
-19. Define weight arrays
+22. Define weight arrays
     - int16_t feature_weights[INPUT_SIZE][HIDDEN_SIZE]
     - int16_t feature_bias[HIDDEN_SIZE]
     - int16_t output_weights[HIDDEN_SIZE * 2]
     - int32_t output_bias
 
-20. Implement .nnue file loader
+23. Implement .nnue file loader
     - open file, read magic header/version
     - read feature_weights, feature_bias, output_weights, output_bias in order
     - verify sizes match constants
@@ -173,37 +202,37 @@ PHASE 4 - ENGINE INTEGRATION
     - fail loudly if the net is missing or wrong-sized
     - add UCI option EvalFile
 
-21. Implement accumulator struct
+24. Implement accumulator struct
     - int16_t vals[2][HIDDEN_SIZE] (index 0 = white POV, 1 = black POV)
     - store one accumulator per search stack entry
 
-22. Implement Chess768 feature index function
+25. Implement Chess768 feature index function
     - use Chess768, not HalfKP, for v2.0
     - INPUT_SIZE = 12 piece/color types * 64 squares = 768
     - compute separate white-POV and black-POV indexes
     - mirror squares correctly for black's perspective
     - do not include king_square in the index for Chess768
 
-23. Implement accumulator refresh
+26. Implement accumulator refresh
     - on each new position (search root or after null move):
     - copy feature_bias into both accumulators
     - iterate all pieces on board
     - compute Chess768 feature index for both perspectives
     - add feature_weights[index] to the matching accumulator
 
-24. Implement incremental accumulator update (make_move)
+27. Implement incremental accumulator update (make_move)
     - child ply copies parent accumulator, then applies deltas
     - for each piece moved or captured:
     - subtract old feature from both perspectives
     - add new feature to both perspectives
     - handle castling (2 pieces move), en passant (captured pawn square), promotion (piece type changes)
 
-25. Implement accumulator undo (unmake_move)
+28. Implement accumulator undo (unmake_move)
     - previous ply accumulator remains intact
     - undo restores the previous search stack ply/pointer
     - do not recompute from scratch during ordinary undo
 
-26. Implement scalar forward pass first
+29. Implement scalar forward pass first
     - stm_acc  = accumulator[side_to_move]
     - nstm_acc = accumulator[1 - side_to_move]
     - for i in 0..HIDDEN_SIZE:
@@ -211,28 +240,28 @@ PHASE 4 - ENGINE INTEGRATION
         sum += SCReLU(nstm_acc[i]) * output_weights[HIDDEN_SIZE + i]
     - return (sum / L1_SCALE + output_bias) * OUTPUT_SCALE / (L1_SCALE * L1_SCALE)
 
-27. Implement SCReLU
+30. Implement SCReLU
     - clamp x to [0, L1_SCALE]
     - return x * x
     - use int32 or wider for intermediate products/accumulation as needed
 
-28. Add accumulator correctness tests
+31. Add accumulator correctness tests
     - after every make_move in random tests, compare incremental accumulator to full refresh
     - include quiet moves, captures, castling, en passant, promotion, checks, and undo chains
     - scalar output must be stable before AVX2 work starts
 
-29. Implement AVX2 forward pass
+32. Implement AVX2 forward pass
     - replace scalar loop with AVX2 intrinsics after scalar correctness is proven
     - process 16 int16 values per instruction with _mm256_* where appropriate
     - keep scalar fallback behind #ifdef for non-AVX2 builds
     - verify AVX2 output is bit-exact or intentionally equivalent to scalar output
 
-30. Replace HCE eval call
+33. Replace HCE eval call
     - find every call to HCE evaluate() in search/qsearch
     - replace with nnue.evaluate(board, accumulator)
     - keep HCE code in a separate file until v2.0 is stable
 
-31. Tune eval scale
+34. Tune eval scale
     - run a few games and inspect evals
     - opening should look roughly sane, not necessarily identical to HCE
     - winning positions should clearly separate from equal positions
@@ -244,20 +273,20 @@ PHASE 4 - ENGINE INTEGRATION
 PHASE 5 - TESTING
 ======================================
 
-32. Sanity check NNUE binary
+35. Sanity check NNUE binary
     - run bench and record NPS
     - NNUE may be slower than HCE; strength gain matters more than raw NPS
     - play a few games via UCI
     - confirm no crashes, no illegal moves, no broken time management
     - check eval outputs look sane from starting position and known tactical positions
 
-33. Run gauntlet vs HCE v1.0
+36. Run gauntlet vs HCE v1.0
     - use cutechess or fastchess
     - time control: 90+0.5 (target TC)
     - minimum 1000 games for statistical significance
     - hoped-for gain: +200 to +350 Elo, but treat real results as data
 
-34. If Elo gain < 100, debug pipeline
+37. If Elo gain < 100, debug pipeline
     - check WDL backfill is actually writing correct results
     - check score is from white's POV in plain files
     - sample and manually verify plain rows
@@ -265,7 +294,7 @@ PHASE 5 - TESTING
     - check Chess768 feature index for off-by-one and mirroring errors
     - check quantization scale matches Bullet output and engine inference
 
-35. If Elo gain looks good, run at fast TC too
+38. If Elo gain looks good, run at fast TC too
     - repeat gauntlet at 10+0.1 and 1+0.01
     - confirm gain holds at all time controls
 
@@ -274,18 +303,18 @@ PHASE 5 - TESTING
 PHASE 6 - MERGE + NEXT STEPS
 ======================================
 
-36. Merge nnue branch to main, tag v2.0
+39. Merge nnue branch to main, tag v2.0
 
-37. Delete HCE eval code only after NNUE is stable
+40. Delete HCE eval code only after NNUE is stable
 
-38. Iteration loop
+41. Iteration loop
     - generate new data with NNUE engine
     - rescore existing data at higher node count, e.g. 10K nodes
     - retrain with new data
     - test, confirm gain
     - repeat
 
-39. After v2.0 is stable, next architecture upgrades
+42. After v2.0 is stable, next architecture upgrades
     - king buckets (8 or 16): likely high value, more complexity
     - hidden size 512: possible gain, benchmark NPS first
     - multiple output buckets: possible gain after baseline is stable

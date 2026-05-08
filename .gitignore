@@ -72,3 +72,9 @@ dkms.conf
 .idea
 cmake-build-debug
 *.pgn
+
+# NNUE datagen/training artifacts
+*.plain
+*.bin
+raw/
+data/
