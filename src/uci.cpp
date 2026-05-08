@@ -17,6 +17,7 @@
 #include <atomic>
 #include <chrono>
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -39,7 +40,7 @@ static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
-static std::string g_eval_file;
+static std::string g_eval_file = "first_net.nnue";
 
 // Ponder state.
 static Move g_ponder_move =       MOVE_NONE;  // move we are pondering on
@@ -128,6 +129,11 @@ static void resize_hash_option(const std::string &value) {
     }
 }
 
+static bool file_exists(const std::string &path) {
+    std::ifstream f(path, std::ios::binary);
+    return f.good();
+}
+
 static std::string ponder_suffix(Board b, Move best) {
     if (!g_ponder || best == MOVE_NONE) return "";
 
@@ -154,6 +160,8 @@ int main(int argc, char **argv) {
     Zobrist::init();
     init_attacks();
     TT.resize(64);
+    if (file_exists(g_eval_file))
+        NNUE::load(g_eval_file);
 
     Board b;
     set_startpos(b);
@@ -193,7 +201,8 @@ int main(int argc, char **argv) {
                 << "option name Threads type spin default 1 min 1 max 512\n"
                 << "option name Ponder type check default false\n"
                 << "option name OwnBook type check default true\n"
-                << "option name " << NNUE::UCI_OPTION_NAME << " type string default <empty>\n"
+                << "option name " << NNUE::UCI_OPTION_NAME
+                << " type string default " << g_eval_file << "\n"
                 << "option name Minimum Thinking Time type spin default 0 min 0 max 5000\n"
                 << "option name Move Overhead type spin default 10 min 0 max 5000\n";
 
