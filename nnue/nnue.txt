@@ -6,7 +6,7 @@ SHAYVERI v2.0 NNUE ROADMAP
 PHASE 0 - SMOKE PATH
 ======================================
 
-0.  Prove the local datagen path before scaling
+[x].  Prove the local datagen path before scaling
     - add ./SHAYVERI datagen <threads> <target_positions> <output_prefix>
     - start with threads=1 and target_positions=1000
     - write one file named output_prefix + "_0.plain"
@@ -20,33 +20,33 @@ PHASE 0 - SMOKE PATH
 PHASE 1 - DATAGEN
 ======================================
 
-1.  Add datagen entry point to main()
+[x].  Add datagen entry point to main()
     - check argv[1] == "datagen"
     - parse args: threads, target positions, output path
     - reject invalid or zero thread/target values
     - call run_datagen() then exit
 
-2.  Implement run_datagen()
+[x].  Implement run_datagen()
     - spawn N std::threads (use 22 for i7-13700K)
     - each thread gets unique id and same output path prefix
     - all workers share atomic total_positions and total_games
     - join all threads before returning
 
-3.  Implement worker()
+[x].  Implement worker()
     - own Board, local TT (16MB), RNG (seed = base_seed + id * large_prime)
     - one output file per worker
     - optionally pin thread to core on Linux via pthread_setaffinity_np()
     - keep thread pinning behind platform guards; do not block Windows builds
     - loop until global atomic position counter >= target
 
-4.  Implement random opening
+[x].  Implement random opening
     - set board to startpos at the start of each attempt
     - get legal moves from current position
     - pick random move 8 times
     - if no legal moves at any point, restart from startpos
     - if position is terminal after 8 plies, restart from startpos
 
-5.  Implement game loop
+[x].  Implement game loop
     - call fixed-node search, e.g. search_nodes(board, 5000), for move + score
     - if only depth search exists at first, use a shallow fixed depth as a temporary smoke path
     - search score must be clearly documented as side-to-move POV or white POV
@@ -54,14 +54,14 @@ PHASE 1 - DATAGEN
     - check terminals: no legal moves, 50-move rule, repetition, insufficient material
     - if not in check and move is not a capture, save position to local game buffer
 
-6.  Implement WDL backfill
+[x].  Implement WDL backfill
     - after game ends determine result (0=black wins, 1=draw, 2=white wins)
     - for checkmate: side to move lost
     - for adjudication: use score converted to white POV to determine winner
     - for all other terminals: draw
     - stamp every buffered entry with this result
 
-7.  Implement plain writer
+[x].  Implement plain writer
     - one output file per worker: outpath + "_" + id + ".plain"
     - write each entry as: fen | score | wdl
     - score is always from white's POV
@@ -69,7 +69,7 @@ PHASE 1 - DATAGEN
     - write in batches; do not flush every row
     - do not buffer the entire generated dataset in memory
 
-8.  Add progress logging
+[x].  Add progress logging
     - use two atomics: total_positions, total_games
     - print both every 10,000 games from any worker
 
@@ -78,7 +78,7 @@ PHASE 1 - DATAGEN
 PHASE 2 - DATA PIPELINE
 ======================================
 
-9.  Install marlinflow on hub machine
+[x].  Install marlinflow on hub machine
     - git clone https://github.com/dsekercioglu/marlinflow
     - build parser:
       cd parse
@@ -88,7 +88,7 @@ PHASE 2 - DATA PIPELINE
       cd utils
       cargo rustc --release -- -C target-cpu=native
 
-10. Verify plain format before large generation
+[x]. Verify plain format before large generation
     - generate 10k-100k positions locally
     - legacy text rows must be: fen | eval | wdl
     - eval is centipawns from white's POV
@@ -97,17 +97,17 @@ PHASE 2 - DATA PIPELINE
     - confirm marlinflow trainer can read the converted data
     - only then start billion-position generation
 
-11. Deploy datagen binary to all 10 machines via SSH
+[x]. Deploy datagen binary to all 10 machines via SSH
     - scp SHAYVERI to each machine
     - launch: ./SHAYVERI datagen 22 1000000000 /nfs/data/raw/$(hostname)
     - verify each machine is writing to NFS correctly
     - monitor progress via ssh and tail logs
 
-12. Wait for the target position count
+[x]. Wait for the target position count
     - first real run target: about 1B positions total
     - expected time depends on fixed-node budget and hardware throughput
 
-13. Convert plain to binpack
+[x]. Convert plain to binpack
     - cat /nfs/data/raw/*.plain > /nfs/data/raw/combined.plain
     - target/release/marlinflow-utils txt-to-data /nfs/data/raw/combined.plain --output /nfs/data/raw/combined.bin
     - shuffle the data before training:
@@ -119,12 +119,12 @@ PHASE 2 - DATA PIPELINE
 PHASE 3 - TRAINING
 ======================================
 
-14. Use marlinflow trainer for v2.0
+[x]. Use marlinflow trainer for v2.0
     - do not switch to Bullet for this run
     - marlinflow is good enough to bootstrap Chess768 NNUE
     - Bullet can be evaluated later after SHAYVERI has working NNUE integration
 
-15. Patch marlinflow trainer for SHAYVERI
+[x]. Patch marlinflow trainer for SHAYVERI
     - add --resume PATH support
     - load state_dict before creating the optimizer:
       model.load_state_dict(torch.load(args.resume, map_location=DEVICE))
@@ -133,7 +133,7 @@ PHASE 3 - TRAINING
       NnBoard768(256) otherwise
     - keep output JSON writing enabled
 
-16. Train in low-disk streamed chunks
+[x]. Train in low-disk streamed chunks
     - run 40 chunks of 25M positions each, or equivalent total of about 1B positions seen
     - for each chunk:
       a. datagen writes worker .plain files
@@ -146,7 +146,7 @@ PHASE 3 - TRAINING
     - resume each chunk from the previous chunk checkpoint
     - only checkpoints/logs/JSON persist between chunks
 
-17. Training command defaults
+[x]. Training command defaults
     - lr: 0.001
     - epochs per chunk: 5
     - batch_size: 16384
@@ -158,7 +158,7 @@ PHASE 3 - TRAINING
     - final JSON after 40 chunks:
       nn/shayveri_v2_iter039.json
 
-18. Monitor training
+[x]. Monitor training
     - each chunk should print "loading checkpoint" except iter000
     - data directory should be empty after each chunk cleanup
     - loss should trend down or stabilize; stop if loss becomes nan/inf
@@ -181,20 +181,20 @@ PHASE 3 - TRAINING
 PHASE 4 - ENGINE INTEGRATION
 ======================================
 
-21. Define network constants
+[x]. Define network constants
     - INPUT_SIZE   = 768
     - HIDDEN_SIZE  = 256
     - OUTPUT_SIZE  = 1
     - L1_SCALE     = 255  (quantization scale)
     - OUTPUT_SCALE = 400  (cp scale)
 
-22. Define weight arrays
+[x]. Define weight arrays
     - int16_t feature_weights[INPUT_SIZE][HIDDEN_SIZE]
     - int16_t feature_bias[HIDDEN_SIZE]
     - int16_t output_weights[HIDDEN_SIZE * 2]
     - int32_t output_bias
 
-23. Implement .nnue file loader
+[x]. Implement .nnue file loader
     - open file, read magic header/version
     - read feature_weights, feature_bias, output_weights, output_bias in order
     - verify sizes match constants
@@ -202,18 +202,18 @@ PHASE 4 - ENGINE INTEGRATION
     - fail loudly if the net is missing or wrong-sized
     - add UCI option EvalFile
 
-24. Implement accumulator struct
+[x]. Implement accumulator struct
     - int16_t vals[2][HIDDEN_SIZE] (index 0 = white POV, 1 = black POV)
     - store one accumulator per search stack entry
 
-25. Implement Chess768 feature index function
+[x]. Implement Chess768 feature index function
     - use Chess768, not HalfKP, for v2.0
     - INPUT_SIZE = 12 piece/color types * 64 squares = 768
     - compute separate white-POV and black-POV indexes
     - mirror squares correctly for black's perspective
     - do not include king_square in the index for Chess768
 
-26. Implement accumulator refresh
+[x]. Implement accumulator refresh
     - on each new position (search root or after null move):
     - copy feature_bias into both accumulators
     - iterate all pieces on board
@@ -232,7 +232,7 @@ PHASE 4 - ENGINE INTEGRATION
     - undo restores the previous search stack ply/pointer
     - do not recompute from scratch during ordinary undo
 
-29. Implement scalar forward pass first
+[x]. Implement scalar forward pass first
     - stm_acc  = accumulator[side_to_move]
     - nstm_acc = accumulator[1 - side_to_move]
     - for i in 0..HIDDEN_SIZE:
@@ -240,12 +240,12 @@ PHASE 4 - ENGINE INTEGRATION
         sum += SCReLU(nstm_acc[i]) * output_weights[HIDDEN_SIZE + i]
     - return (sum / L1_SCALE + output_bias) * OUTPUT_SCALE / (L1_SCALE * L1_SCALE)
 
-30. Implement SCReLU
+[x]. Implement SCReLU
     - clamp x to [0, L1_SCALE]
     - return x * x
     - use int32 or wider for intermediate products/accumulation as needed
 
-31. Add accumulator correctness tests
+[x]. Add accumulator correctness tests
     - after every make_move in random tests, compare incremental accumulator to full refresh
     - include quiet moves, captures, castling, en passant, promotion, checks, and undo chains
     - scalar output must be stable before AVX2 work starts

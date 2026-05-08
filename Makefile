@@ -65,6 +65,9 @@ SRC := \
 	src/fen.cpp \
 	src/make.cpp \
 	src/move_gen.cpp \
+	src/nnue.cpp \
+	src/nnue_avx2.cpp \
+	src/nnue_update.cpp \
 	src/search.cpp \
 	src/see.cpp \
 	src/uci.cpp \

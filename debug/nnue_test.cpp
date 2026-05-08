@@ -1,0 +1,78 @@
+#include "attacks.h"
+#include "board.h"
+#include "make.h"
+#include "move_gen.h"
+#include "nnue.h"
+#include "nnue_update.h"
+#include "search.h"
+#include "zobrist.h"
+
+#include <cstring>
+#include <iostream>
+
+using namespace SHAYVERI;
+
+static bool same_acc(const NNUE::Accumulator &a, const NNUE::Accumulator &b) {
+    return std::memcmp(a.vals, b.vals, sizeof(a.vals)) == 0;
+}
+
+static int check_position(Board &b) {
+    NNUE::Accumulator parent;
+    parent.refresh(b);
+
+    MoveList legal = generate_legal_moves(b);
+    for (int i = 0; i < legal.count; ++i) {
+        Move m = legal.moves[i];
+        Board copy = b;
+
+        NNUE::Accumulator child;
+        NNUE::update_accumulator(child, parent, copy, m);
+
+        Undo u;
+        if (!make_move(copy, m, u))
+            continue;
+
+        NNUE::Accumulator refreshed;
+        refreshed.refresh(copy);
+        if (!same_acc(child, refreshed)) {
+            std::cerr << "NNUE accumulator mismatch after "
+                      << move_to_uci(m) << "\n";
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        std::cerr << "usage: nnue_test <net.nnue>\n";
+        return 1;
+    }
+
+    Zobrist::init();
+    init_attacks();
+    NNUE::load(argv[1]);
+
+    Board b;
+    set_startpos(b);
+    if (check_position(b) != 0)
+        return 1;
+
+    const char *fens[] = {
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+        "8/P6k/8/8/8/8/7p/K7 w - - 0 1",
+        "8/8/8/3pP3/8/8/8/4K2k w - d6 0 1",
+    };
+
+    for (const char *fen : fens) {
+        if (!set_from_fen(b, fen)) {
+            std::cerr << "failed to parse FEN: " << fen << "\n";
+            return 1;
+        }
+        if (check_position(b) != 0)
+            return 1;
+    }
+
+    std::cout << "NNUE accumulator tests passed\n";
+    return 0;
+}

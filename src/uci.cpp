@@ -5,6 +5,7 @@
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
+#include "nnue.h"
 #include "opening_book.h"
 #include "search.h"
 #include "time_manager.h"
@@ -38,6 +39,7 @@ static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
+static std::string g_eval_file;
 
 // Ponder state.
 static Move g_ponder_move =       MOVE_NONE;  // move we are pondering on
@@ -191,6 +193,7 @@ int main(int argc, char **argv) {
                 << "option name Threads type spin default 1 min 1 max 512\n"
                 << "option name Ponder type check default false\n"
                 << "option name OwnBook type check default true\n"
+                << "option name " << NNUE::UCI_OPTION_NAME << " type string default <empty>\n"
                 << "option name Minimum Thinking Time type spin default 0 min 0 max 5000\n"
                 << "option name Move Overhead type spin default 10 min 0 max 5000\n";
 
@@ -235,6 +238,13 @@ int main(int argc, char **argv) {
                 g_ponder = parse_bool(value);
             else if (opt_name == "OwnBook")
                 g_own_book = parse_bool(value);
+            else if (opt_name == NNUE::UCI_OPTION_NAME) {
+                g_eval_file = value;
+                if (!g_eval_file.empty() && g_eval_file != "<empty>") {
+                    NNUE::load(g_eval_file);
+                    NNUE::print_info();
+                }
+            }
             else if (opt_name == "Minimum Thinking Time") {
                 int min_think_ms = 0;
                 if (parse_spin(value, 0, 5000, min_think_ms))
