@@ -58,19 +58,20 @@ LDFLAGS_MACOS := $(LTO_MACOS)
 INCLUDES := -Iinclude
 
 SRC := \
-	src/board.cpp \
-	src/fen.cpp \
 	src/attacks.cpp \
+	src/board.cpp \
+	src/datagen.cpp \
+	src/evaluate.cpp \
+	src/fen.cpp \
 	src/make.cpp \
 	src/move_gen.cpp \
-	src/evaluate.cpp \
 	src/search.cpp \
-	src/uci.cpp \
-	src/zobrist.cpp \
-	src/tt.cpp \
 	src/see.cpp \
+	src/uci.cpp \
+	src/texel.cpp \
 	src/time_manager.cpp \
-	src/texel.cpp
+	src/tt.cpp \
+	src/zobrist.cpp
 
 HEADERS := $(wildcard include/*.h)
 

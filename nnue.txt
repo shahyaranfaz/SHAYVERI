@@ -1,0 +1,281 @@
+SHAYVERI v2.0 NNUE ROADMAP
+==========================
+
+
+======================================
+PHASE 0 - SMOKE PATH
+======================================
+
+0.  Prove the local datagen path before scaling
+    - add ./SHAYVERI datagen <threads> <target_positions> <output_prefix>
+    - start with threads=1 and target_positions=1000
+    - write one file named output_prefix + "_0.plain"
+    - generate random 8-ply opening positions
+    - write rows as: fen | 0 | 1
+    - verify FENs parse back into Board
+    - do not run large-scale generation until this works
+
+
+======================================
+PHASE 1 - DATAGEN
+======================================
+
+1.  Add datagen entry point to main()
+    - check argv[1] == "datagen"
+    - parse args: threads, target positions, output path
+    - reject invalid or zero thread/target values
+    - call run_datagen() then exit
+
+2.  Implement run_datagen()
+    - spawn N std::threads (use 22 for i7-13700K)
+    - each thread gets unique id and same output path prefix
+    - all workers share atomic total_positions and total_games
+    - join all threads before returning
+
+3.  Implement worker()
+    - own Board, local TT (16MB), RNG (seed = base_seed + id * large_prime)
+    - one output file per worker
+    - optionally pin thread to core on Linux via pthread_setaffinity_np()
+    - keep thread pinning behind platform guards; do not block Windows builds
+    - loop until global atomic position counter >= target
+
+4.  Implement random opening
+    - set board to startpos at the start of each attempt
+    - get legal moves from current position
+    - pick random move 8 times
+    - if no legal moves at any point, restart from startpos
+    - if position is terminal after 8 plies, restart from startpos
+
+5.  Implement game loop
+    - call fixed-node search, e.g. search_nodes(board, 5000), for move + score
+    - if only depth search exists at first, use a shallow fixed depth as a temporary smoke path
+    - search score must be clearly documented as side-to-move POV or white POV
+    - check adjudication: if abs(score_white_pov) >= 2000 for 4 consecutive plies, end game
+    - check terminals: no legal moves, 50-move rule, repetition, insufficient material
+    - if not in check and move is not a capture, save position to local game buffer
+
+6.  Implement WDL backfill
+    - after game ends determine result (0=black wins, 1=draw, 2=white wins)
+    - for checkmate: side to move lost
+    - for adjudication: use score converted to white POV to determine winner
+    - for all other terminals: draw
+    - stamp every buffered entry with this result
+
+7.  Implement plain writer
+    - one output file per worker: outpath + "_" + id + ".plain"
+    - write each entry as: fen | score | wdl
+    - score is always from white's POV
+    - if search returns side-to-move POV, flip score when side to move is black
+    - write in batches; do not flush every row
+    - do not buffer the entire generated dataset in memory
+
+8.  Add progress logging
+    - use two atomics: total_positions, total_games
+    - print both every 10,000 games from any worker
+
+
+======================================
+PHASE 2 - DATA PIPELINE
+======================================
+
+9.  Install marlinflow on hub machine
+    - git clone https://github.com/jnlt3/marlinflow
+    - cargo build --release
+
+10. Verify plain format before large generation
+    - generate 10k-100k positions locally
+    - confirm marlinflow accepts the exact delimiter/order/result encoding
+    - convert the sample to binpack
+    - confirm Bullet can read the binpack
+    - only then start billion-position generation
+
+11. Deploy datagen binary to all 10 machines via SSH
+    - scp SHAYVERI to each machine
+    - launch: ./SHAYVERI datagen 22 1000000000 /nfs/data/raw/$(hostname)
+    - verify each machine is writing to NFS correctly
+    - monitor progress via ssh and tail logs
+
+12. Wait for the target position count
+    - first real run target: about 1B positions total
+    - expected time depends on fixed-node budget and hardware throughput
+
+13. Convert plain to binpack
+    - cat /nfs/data/raw/*.plain > /nfs/data/raw/combined.plain
+    - ./marlinflow convert combined.plain combined.binpack
+    - verify output file size is reasonable for the converted format
+
+
+======================================
+PHASE 3 - TRAINING
+======================================
+
+14. Install Bullet on training machine
+    - git clone https://github.com/jnlt3/bullet
+    - cargo build --release
+    - confirm CUDA is available: nvidia-smi
+
+15. Write config.toml
+    - arch: SingleBucket
+    - inputs: Chess768
+    - output_buckets: 1
+    - hidden size: 256
+    - batch_size: 16384
+    - lr: 0.001
+    - wdl: 0.5
+    - scale: 400
+    - save_rate: 10 (every 10M steps)
+    - data path: /nfs/data/raw/combined.binpack
+
+16. Run training
+    - target 800M-1B steps
+    - LR drops: 0.001 -> 0.0001 at 600M, -> 0.00001 at 800M
+    - full run estimate: ~8-10 hours on RTX 4080, verify with real throughput
+    - checkpoints saved automatically per save_rate
+
+17. Pick best net
+    - test last 3-4 checkpoints against each other in cutechess or fastchess
+    - use at least 100 games per pairing for quick selection
+    - use the strongest checkpoint, not necessarily the last one
+
+
+======================================
+PHASE 4 - ENGINE INTEGRATION
+======================================
+
+18. Define network constants
+    - INPUT_SIZE   = 768
+    - HIDDEN_SIZE  = 256
+    - OUTPUT_SIZE  = 1
+    - L1_SCALE     = 255  (quantization scale)
+    - OUTPUT_SCALE = 400  (cp scale)
+
+19. Define weight arrays
+    - int16_t feature_weights[INPUT_SIZE][HIDDEN_SIZE]
+    - int16_t feature_bias[HIDDEN_SIZE]
+    - int16_t output_weights[HIDDEN_SIZE * 2]
+    - int32_t output_bias
+
+20. Implement .nnue file loader
+    - open file, read magic header/version
+    - read feature_weights, feature_bias, output_weights, output_bias in order
+    - verify sizes match constants
+    - print net path/hash or metadata at UCI startup
+    - fail loudly if the net is missing or wrong-sized
+    - add UCI option EvalFile
+
+21. Implement accumulator struct
+    - int16_t vals[2][HIDDEN_SIZE] (index 0 = white POV, 1 = black POV)
+    - store one accumulator per search stack entry
+
+22. Implement Chess768 feature index function
+    - use Chess768, not HalfKP, for v2.0
+    - INPUT_SIZE = 12 piece/color types * 64 squares = 768
+    - compute separate white-POV and black-POV indexes
+    - mirror squares correctly for black's perspective
+    - do not include king_square in the index for Chess768
+
+23. Implement accumulator refresh
+    - on each new position (search root or after null move):
+    - copy feature_bias into both accumulators
+    - iterate all pieces on board
+    - compute Chess768 feature index for both perspectives
+    - add feature_weights[index] to the matching accumulator
+
+24. Implement incremental accumulator update (make_move)
+    - child ply copies parent accumulator, then applies deltas
+    - for each piece moved or captured:
+    - subtract old feature from both perspectives
+    - add new feature to both perspectives
+    - handle castling (2 pieces move), en passant (captured pawn square), promotion (piece type changes)
+
+25. Implement accumulator undo (unmake_move)
+    - previous ply accumulator remains intact
+    - undo restores the previous search stack ply/pointer
+    - do not recompute from scratch during ordinary undo
+
+26. Implement scalar forward pass first
+    - stm_acc  = accumulator[side_to_move]
+    - nstm_acc = accumulator[1 - side_to_move]
+    - for i in 0..HIDDEN_SIZE:
+        sum += SCReLU(stm_acc[i])  * output_weights[i]
+        sum += SCReLU(nstm_acc[i]) * output_weights[HIDDEN_SIZE + i]
+    - return (sum / L1_SCALE + output_bias) * OUTPUT_SCALE / (L1_SCALE * L1_SCALE)
+
+27. Implement SCReLU
+    - clamp x to [0, L1_SCALE]
+    - return x * x
+    - use int32 or wider for intermediate products/accumulation as needed
+
+28. Add accumulator correctness tests
+    - after every make_move in random tests, compare incremental accumulator to full refresh
+    - include quiet moves, captures, castling, en passant, promotion, checks, and undo chains
+    - scalar output must be stable before AVX2 work starts
+
+29. Implement AVX2 forward pass
+    - replace scalar loop with AVX2 intrinsics after scalar correctness is proven
+    - process 16 int16 values per instruction with _mm256_* where appropriate
+    - keep scalar fallback behind #ifdef for non-AVX2 builds
+    - verify AVX2 output is bit-exact or intentionally equivalent to scalar output
+
+30. Replace HCE eval call
+    - find every call to HCE evaluate() in search/qsearch
+    - replace with nnue.evaluate(board, accumulator)
+    - keep HCE code in a separate file until v2.0 is stable
+
+31. Tune eval scale
+    - run a few games and inspect evals
+    - opening should look roughly sane, not necessarily identical to HCE
+    - winning positions should clearly separate from equal positions
+    - adjust OUTPUT_SCALE if evals are too high or too low
+    - typical range is 300-600
+
+
+======================================
+PHASE 5 - TESTING
+======================================
+
+32. Sanity check NNUE binary
+    - run bench and record NPS
+    - NNUE may be slower than HCE; strength gain matters more than raw NPS
+    - play a few games via UCI
+    - confirm no crashes, no illegal moves, no broken time management
+    - check eval outputs look sane from starting position and known tactical positions
+
+33. Run gauntlet vs HCE v1.0
+    - use cutechess or fastchess
+    - time control: 90+0.5 (target TC)
+    - minimum 1000 games for statistical significance
+    - hoped-for gain: +200 to +350 Elo, but treat real results as data
+
+34. If Elo gain < 100, debug pipeline
+    - check WDL backfill is actually writing correct results
+    - check score is from white's POV in plain files
+    - sample and manually verify plain rows
+    - check accumulator update handles all special moves
+    - check Chess768 feature index for off-by-one and mirroring errors
+    - check quantization scale matches Bullet output and engine inference
+
+35. If Elo gain looks good, run at fast TC too
+    - repeat gauntlet at 10+0.1 and 1+0.01
+    - confirm gain holds at all time controls
+
+
+======================================
+PHASE 6 - MERGE + NEXT STEPS
+======================================
+
+36. Merge nnue branch to main, tag v2.0
+
+37. Delete HCE eval code only after NNUE is stable
+
+38. Iteration loop
+    - generate new data with NNUE engine
+    - rescore existing data at higher node count, e.g. 10K nodes
+    - retrain with new data
+    - test, confirm gain
+    - repeat
+
+39. After v2.0 is stable, next architecture upgrades
+    - king buckets (8 or 16): likely high value, more complexity
+    - hidden size 512: possible gain, benchmark NPS first
+    - multiple output buckets: possible gain after baseline is stable

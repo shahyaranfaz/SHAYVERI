@@ -44,8 +44,8 @@ static Piece swap_colour(Piece p) {
 }
 
 static Square mirror_square_vertical(Square s) {
-    const int f = int(get_file(s));
-    const int r = int(get_rank(s));
+    const int f = static_cast<int>(get_file(s));
+    const int r = static_cast<int>(get_rank(s));
     return make_square(File(f), Rank(7 - r));
 }
 

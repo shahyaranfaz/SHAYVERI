@@ -36,8 +36,11 @@ struct InitLMR {
         for (int d = 0; d < 64; ++d) {
             for (int moves = 0; moves < 256; ++moves) {
                 if (d < 2 || moves < 2) LMR_TABLE[d][moves] = 0;
-                else LMR_TABLE[d][moves] = static_cast<int>(
-                    Tune::lmr_base + std::log((double)d) * std::log((double)moves) / Tune::lmr_scale);
+                else {
+                    double d_d = static_cast<double>(d), moves_d = static_cast<double>(moves);
+                    LMR_TABLE[d][moves] = static_cast<int>(
+                    Tune::lmr_base + std::log(d_d) * std::log(moves_d) / Tune::lmr_scale);
+                }
             }
         }
     }
@@ -95,8 +98,8 @@ std::string move_to_uci(Move m) {
 
     auto sq_to_str = [](Square s) -> std::string {
         std::string r;
-        r += char('a' + get_file(s));
-        r += char('1' + get_rank(s));
+        r += static_cast<char>('a' + get_file(s));
+        r += static_cast<char>('1' + get_rank(s));
         return r;
     };
     std::string s = sq_to_str(move_from(m)) + sq_to_str(move_to(m));
@@ -246,7 +249,7 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
     int to  = static_cast<int>(move_to(m)) & 63;
     int stm = static_cast<int>(b.side_to_move) & 1;
 
-    int history_score = H.history[stm][int(move_from(m))][to] * Tune::main_history_weight;
+    int history_score = H.history[stm][static_cast<int>(move_from(m))][to] * Tune::main_history_weight;
 
     // Check bounds for previous plies
     if (ply >= 1 && ss[-1].move != MOVE_NONE) {
@@ -566,7 +569,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 auto update_all = [&](Move move, int pt_idx, int bns) {
                     int f = move_from(move);
                     int t = move_to(move);
-                    H.update_history(H.history[int(b.side_to_move)][f][t], bns);
+                    H.update_history(H.history[static_cast<int>(b.side_to_move)][f][t], bns);
 
                     if (ss[-1].move != MOVE_NONE) {
                         int p1 = static_cast<int>(get_type(ss[-1].piece));

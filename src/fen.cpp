@@ -21,7 +21,7 @@ bool set_from_fen(Board &b, const std::string &fen) {
     int r = 7, f = 0;
     for (char c : board_str) {
         if (c == '/') { r--; f = 0; continue; }
-        if (std::isdigit((unsigned char)c)) { f += (c - '0'); continue; }
+        if (std::isdigit(static_cast<unsigned char>(c))) { f += (c - '0'); continue; }
 
         Piece p = piece_from_fen_char(c);
         if (p == NONE_PIECE) return false;

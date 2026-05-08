@@ -20,7 +20,7 @@ void TimeManager::init(const TimeControl &tc) {
     }
 
     if (tc.movetime > 0) {
-        I64 safe = I64(std::max(1, tc.movetime - tc.move_overhead));
+        I64 safe = static_cast<I64>(std::max(1, tc.movetime - tc.move_overhead));
         soft_ms_ = hard_ms_ = safe;
         return;
     }
@@ -37,7 +37,7 @@ void TimeManager::init(const TimeControl &tc) {
 
     // Base: spend one time-control slice plus half increment.
     I64 base    = my_time / moves_to_go + my_inc / 2;
-    I64 ceiling = I64(my_time * 0.80) - tc.move_overhead;
+    I64 ceiling = static_cast<I64>(my_time * 0.80) - tc.move_overhead;
     if (ceiling < 1) ceiling = 1;
 
     soft_ms_ = std::min(base,       ceiling);
@@ -47,8 +47,8 @@ void TimeManager::init(const TimeControl &tc) {
     if (hard_ms_ < 10) hard_ms_ = 10;
 
     if (min_think_ms_ > 0) {
-        soft_ms_ = std::max(soft_ms_, I64(min_think_ms_));
-        hard_ms_ = std::max(hard_ms_, I64(min_think_ms_));
+        soft_ms_ = std::max(soft_ms_, static_cast<I64>(min_think_ms_));
+        hard_ms_ = std::max(hard_ms_, static_cast<I64>(min_think_ms_));
     }
 }
 
@@ -85,11 +85,11 @@ bool TimeManager::on_iter(int depth, Move best_move, int score) {
         if (score_drop >= 60) scale *= 1.50;
     }
 
-    I64 adjusted = I64(double(soft_ms_) * scale);
-    adjusted = std::max(adjusted, I64(5));
+    I64 adjusted = static_cast<I64>(static_cast<double>(soft_ms_) * scale);
+    adjusted = std::max(adjusted, static_cast<I64>(5));
     adjusted = std::min(adjusted, hard_ms_);
     if (min_think_ms_ > 0)
-        adjusted = std::max(adjusted, I64(min_think_ms_));
+        adjusted = std::max(adjusted, static_cast<I64>(min_think_ms_));
 
     return elapsed >= adjusted;
 }

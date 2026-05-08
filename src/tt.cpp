@@ -32,7 +32,7 @@ void TranspositionTable::new_search() {
 
 const TTEntry *TranspositionTable::probe(U64 key) const {
     if (table.empty()) return nullptr;
-    const TTBucket &bucket = table[SIZE_T(key) & mask];
+    const TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
     for (const TTEntry &e : bucket.entries)
         if (e.key == key) return &e;
     return nullptr;
@@ -40,7 +40,7 @@ const TTEntry *TranspositionTable::probe(U64 key) const {
 
 TTEntry *TranspositionTable::probe(U64 key) {
     if (table.empty()) return nullptr;
-    TTBucket &bucket = table[SIZE_T(key) & mask];
+    TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
     for (TTEntry &e : bucket.entries)
         if (e.key == key) return &e;
     return nullptr;
@@ -48,11 +48,11 @@ TTEntry *TranspositionTable::probe(U64 key) {
 
 void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move best) {
     if (table.empty()) return;
-    TTBucket &bucket = table[SIZE_T(key) & mask];
+    TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
 
     for (TTEntry &e : bucket.entries) {
         if (e.key == key) {
-            if (depth >= int(e.depth) || flag == TT_EXACT) {
+            if (depth >= static_cast<int>(e.depth) || flag == TT_EXACT) {
                 e.depth = I8(depth);
                 e.score = score;
                 e.flag  = U8(flag);
@@ -90,7 +90,7 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
 
 void TranspositionTable::store_eval(U64 key, int eval) {
     if (table.empty()) return;
-    TTBucket &bucket = table[SIZE_T(key) & mask];
+    TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
 
     for (TTEntry &e : bucket.entries) {
         if (e.key == key) {

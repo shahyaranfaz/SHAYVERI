@@ -1,5 +1,6 @@
 #include "attacks.h"
 #include "board.h"
+#include "datagen.h"
 #include "evaluate.h"
 #include "make.h"
 #include "move.h"
@@ -39,7 +40,7 @@ static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
 
 // Ponder state.
-static Move g_ponder_move      = MOVE_NONE;  // move we are pondering on
+static Move g_ponder_move =       MOVE_NONE;  // move we are pondering on
 static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
@@ -94,6 +95,20 @@ static bool parse_int(const std::string &value, int &out) {
     return true;
 }
 
+static bool parse_int_64(const std::string &value, U64 &out) {
+    std::string v = trim(value);
+    if (v.empty()) return false;
+
+    char *end = nullptr;
+    errno = 0;
+    unsigned long long parsed = std::strtoull(v.c_str(), &end, 10);
+    if (end == v.c_str() || *end != '\0' || errno == ERANGE)
+        return false;
+
+    out = static_cast<U64>(parsed);
+    return true;
+}
+
 static bool parse_spin(const std::string &value, int min_value, int max_value, int &out) {
     int parsed = 0;
     if (!parse_int(value, parsed)) return false;
@@ -128,7 +143,7 @@ static std::string ponder_suffix(Board b, Move best) {
 
 } // namespace SHAYVERI
 
-int main() {
+int main(int argc, char **argv) {
     using namespace SHAYVERI;
 
     std::ios::sync_with_stdio(false);
@@ -144,6 +159,21 @@ int main() {
     std::vector<std::string> move_history;
     std::vector<U64>         hash_history;
     hash_history.push_back(b.hash);
+
+    if (argc > 1) {
+        if (argc == 5 && std::string(argv[1]) == "datagen") {
+            int threads = 0;
+            U64 start_pos = 0;
+            if (!parse_int(argv[2], threads) || threads <= 0 ||
+                !parse_int_64(argv[3], start_pos) || start_pos == 0) {
+                std::cerr << "usage: " << argv[0] << " datagen <threads> <positions> <output_prefix>\n";
+                return 1;
+            }
+            return generate_data(threads, start_pos, argv[4]);
+        }
+        std::cerr << "usage: " << argv[0] << " datagen <threads> <positions> <output_prefix>\n";
+        return 1;
+    }
 
     std::string line;
     while (std::getline(std::cin, line)) {

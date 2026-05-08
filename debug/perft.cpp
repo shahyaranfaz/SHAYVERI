@@ -2,6 +2,7 @@
 #include "make.h"
 #include "attacks.h"
 #include "move_gen.h"
+#include "types.h"
 
 #include <cstdint>
 #include <iostream>
@@ -44,7 +45,7 @@ struct PerftCase {
     const char *name;
     const char *fen;
     int depth;
-    std::uint64_t expected;
+    U64 expected;
     const char *source;
 };
 
@@ -76,7 +77,7 @@ static int run_suite() {
             ++failures;
             continue;
         }
-        const std::uint64_t actual = perft(b, tc.depth);
+        const U64 actual = perft(b, tc.depth);
         if (actual != tc.expected) {
             std::cerr << "[FAIL] " << tc.name << ": expected " << tc.expected << ", got " << actual
                       << " | source: " << tc.source << "\n";

@@ -39,6 +39,8 @@ inline bool set_startpos(Board &b) {
     return set_from_fen(b, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 }
 
+std::string get_board_fen(const Board &b);
+
 } // namespace SHAYVERI
 
 #endif // BOARD_H
