@@ -242,6 +242,7 @@ int main(int argc, char **argv) {
                 g_eval_file = value;
                 if (!g_eval_file.empty() && g_eval_file != "<empty>") {
                     NNUE::load(g_eval_file);
+                    TT.clear();
                     NNUE::print_info();
                 }
             }

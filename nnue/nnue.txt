@@ -220,14 +220,14 @@ PHASE 4 - ENGINE INTEGRATION
     - compute Chess768 feature index for both perspectives
     - add feature_weights[index] to the matching accumulator
 
-27. Implement incremental accumulator update (make_move)
+[x]. Implement incremental accumulator update (make_move)
     - child ply copies parent accumulator, then applies deltas
     - for each piece moved or captured:
     - subtract old feature from both perspectives
     - add new feature to both perspectives
     - handle castling (2 pieces move), en passant (captured pawn square), promotion (piece type changes)
 
-28. Implement accumulator undo (unmake_move)
+[x]. Implement accumulator undo (unmake_move)
     - previous ply accumulator remains intact
     - undo restores the previous search stack ply/pointer
     - do not recompute from scratch during ordinary undo
@@ -250,18 +250,18 @@ PHASE 4 - ENGINE INTEGRATION
     - include quiet moves, captures, castling, en passant, promotion, checks, and undo chains
     - scalar output must be stable before AVX2 work starts
 
-32. Implement AVX2 forward pass
+[x]. Implement AVX2 forward pass
     - replace scalar loop with AVX2 intrinsics after scalar correctness is proven
     - process 16 int16 values per instruction with _mm256_* where appropriate
     - keep scalar fallback behind #ifdef for non-AVX2 builds
     - verify AVX2 output is bit-exact or intentionally equivalent to scalar output
 
-33. Replace HCE eval call
+[x]. Replace HCE eval call
     - find every call to HCE evaluate() in search/qsearch
     - replace with nnue.evaluate(board, accumulator)
     - keep HCE code in a separate file until v2.0 is stable
 
-34. Tune eval scale
+[x]. Tune eval scale
     - run a few games and inspect evals
     - opening should look roughly sane, not necessarily identical to HCE
     - winning positions should clearly separate from equal positions

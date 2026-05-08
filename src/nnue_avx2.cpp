@@ -9,18 +9,21 @@ namespace NNUE {
 
 namespace {
 
-I64 hsum256_epi32(__m256i v) {
+I64 hsum256_epi64(__m256i v) {
     __m128i lo = _mm256_castsi256_si128(v);
     __m128i hi = _mm256_extracti128_si256(v, 1);
-    __m128i s4 = _mm_add_epi32(lo, hi);
-
-    __m128i lo64 = _mm_cvtepi32_epi64(s4);
-    __m128i hi64 = _mm_cvtepi32_epi64(_mm_srli_si128(s4, 8));
-    __m128i s2 = _mm_add_epi64(lo64, hi64);
+    __m128i s2 = _mm_add_epi64(lo, hi);
 
     I64 a = _mm_extract_epi64(s2, 0);
     I64 b = _mm_extract_epi64(s2, 1);
     return a + b;
+}
+
+__m256i mullo_epi32_to_epi64(__m256i a, __m256i b) {
+    __m256i even = _mm256_mul_epi32(a, b);
+    __m256i odd = _mm256_mul_epi32(_mm256_srli_epi64(a, 32),
+                                   _mm256_srli_epi64(b, 32));
+    return _mm256_add_epi64(even, odd);
 }
 
 } // namespace
@@ -42,7 +45,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
         __m256i stm32 = _mm256_cvtepi16_epi32(stm);
         __m256i stm_w32 = _mm256_cvtepi16_epi32(stm_w);
         __m256i stm_sq = _mm256_mullo_epi32(stm32, stm32);
-        sum_stm = _mm256_add_epi32(sum_stm, _mm256_mullo_epi32(stm_sq, stm_w32));
+        sum_stm = _mm256_add_epi64(sum_stm, mullo_epi32_to_epi64(stm_sq, stm_w32));
 
         __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(nstm_acc + i));
         __m128i nstm_w = _mm_loadu_si128(
@@ -52,10 +55,10 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
         __m256i nstm32 = _mm256_cvtepi16_epi32(nstm);
         __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
         __m256i nstm_sq = _mm256_mullo_epi32(nstm32, nstm32);
-        sum_nstm = _mm256_add_epi32(sum_nstm, _mm256_mullo_epi32(nstm_sq, nstm_w32));
+        sum_nstm = _mm256_add_epi64(sum_nstm, mullo_epi32_to_epi64(nstm_sq, nstm_w32));
     }
 
-    I64 total = hsum256_epi32(sum_stm) + hsum256_epi32(sum_nstm);
+    I64 total = hsum256_epi64(sum_stm) + hsum256_epi64(sum_nstm);
     total /= L1_SCALE;
     total += output_bias;
     return static_cast<int>(total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));

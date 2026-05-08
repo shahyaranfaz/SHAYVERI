@@ -5,6 +5,8 @@
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
+#include "nnue.h"
+#include "nnue_update.h"
 #include "see.h"
 #include "tt.h"
 #include "tune.h"
@@ -57,6 +59,7 @@ struct StackInfo {
     Move move;
     Piece piece;
     Move excluded_move;
+    NNUE::Accumulator acc;
 };
 
 struct SearchHeuristics {
@@ -283,7 +286,13 @@ static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len, int
     return false;
 }
 
-static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
+static inline int evaluate_position(const Board &b, const StackInfo *ss) {
+    if (NNUE::is_loaded())
+        return NNUE::evaluate(static_cast<int>(b.side_to_move), ss->acc);
+    return evaluate(b);
+}
+
+static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo *ss) {
     if (g_stop) return 0;
     count_node();
 
@@ -312,14 +321,14 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
         if (tte && tte->has_eval) {
             stand_pat = tte->eval;
         } else {
-            stand_pat = evaluate(b);
+            stand_pat = evaluate_position(b, ss);
             tt().store_eval(b.hash, stand_pat);
         }
         if (stand_pat >= beta) return stand_pat;
         if (stand_pat > alpha) alpha = stand_pat;
         if (depth <= 0) return alpha;
     } else {
-        if (depth < -6) return evaluate(b);
+        if (depth < -6) return evaluate_position(b, ss);
     }
 
     MoveList moves;
@@ -362,10 +371,11 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
         }
 
         Undo u;
+        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
         if (!make_move(b, m, u)) continue;
         legal_count++;
 
-        int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1);
+        int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1, ss + 1);
         unmake_move(b, m, u);
 
         if (g_stop) return 0;
@@ -425,7 +435,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    if (depth <= 0) return qsearch(b, alpha, beta, 8, ply);
+    if (depth <= 0) return qsearch(b, alpha, beta, 8, ply, ss);
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
@@ -436,7 +446,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (tt_has_eval) {
             static_eval = tt_eval;
         } else {
-            static_eval = evaluate(b);
+            static_eval = evaluate_position(b, ss);
             tt().store_eval(key, static_eval);
         }
     }
@@ -451,6 +461,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     if (!pv_node && !in_check && depth >= 3 && static_eval >= beta && !is_endgame(b) && ss->excluded_move == MOVE_NONE) {
         const int R = 3 + depth / 4;
         Undo u;
+        (ss + 1)->acc = ss->acc;
         make_null_move(b, u);
         ss->move = MOVE_NONE;
         ss->piece = NONE_PIECE;
@@ -532,6 +543,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
 
         Undo u;
+        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
         if (!make_move(b, m, u)) continue;
 
         legal_count++;
@@ -640,9 +652,9 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     SearchHeuristics &H = *H_ptr;
 
     // Stack setup to handle history states (allows up to ss[-2] safely at root)
-    StackInfo st[MAX_PLY + 5];
-    std::memset(st, 0, sizeof(st));
+    StackInfo st[MAX_PLY + 5]{};
     StackInfo* ss = st + 2;
+    ss->acc.refresh(b);
 
     Move final_best_move  = MOVE_NONE;
     int  final_best_score = -INF;
@@ -709,6 +721,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
                 Undo u;
                 Piece root_piece = b.get_piece(move_from(m));
+                NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
                 if (!make_move(b, m, u)) continue;
                 legal_root_count++;
                 rep_stack[rep_len] = b.hash;

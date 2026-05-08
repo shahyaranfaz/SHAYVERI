@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
 
 namespace SHAYVERI {
 namespace NNUE {
@@ -20,6 +22,7 @@ static constexpr U32 NNUE_VERSION = 2u;
 
 std::string g_net_path;
 U64         g_net_hash = 0;
+bool        g_loaded = false;
 
 U64 fnv1a_hash(const void *data, size_t bytes) {
     const U8 *p = static_cast<const U8 *>(data);
@@ -112,15 +115,23 @@ std::string load(const std::string &path) {
 
     g_net_path = path;
     g_net_hash = h;
+    g_loaded = true;
     return path;
 }
 
+bool is_loaded() {
+    return g_loaded;
+}
+
 void print_info() {
-    std::printf("info string NNUE path %s\n", g_net_path.c_str());
-    std::printf("info string NNUE hash %016llX\n",
-                static_cast<unsigned long long>(g_net_hash));
-    std::printf("info string NNUE arch Chess768 hidden=%d\n", HIDDEN_SIZE);
-    std::printf("info string NNUE scales L1=%d OUT=%d\n", L1_SCALE, OUTPUT_SCALE);
+    std::cout << "info string NNUE path " << g_net_path << "\n"
+              << "info string NNUE hash " << std::uppercase << std::hex
+              << std::setw(16) << std::setfill('0')
+              << static_cast<unsigned long long>(g_net_hash)
+              << std::dec << std::nouppercase << std::setfill(' ') << "\n"
+              << "info string NNUE arch Chess768 hidden=" << HIDDEN_SIZE << "\n"
+              << "info string NNUE scales L1=" << L1_SCALE
+              << " OUT=" << OUTPUT_SCALE << "\n";
 }
 
 void Accumulator::reset() {

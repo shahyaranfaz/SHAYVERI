@@ -8,8 +8,11 @@ debug/make_unmake
 debug/see_tests
 debug/eval_symmetry
 debug/tt_safety
+debug/nnue_test
 debug/__pycache__
+
 tuning/*/pass*/batch*/
+nnue/first_net/artifacts
 
 # Prerequisites
 *.d
