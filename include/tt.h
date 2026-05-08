@@ -51,6 +51,9 @@ private:
 };
 
 extern TranspositionTable TT;
+extern thread_local TranspositionTable *active_tt;
+
+TranspositionTable &tt();
 
 } // namespace SHAYVERI
 

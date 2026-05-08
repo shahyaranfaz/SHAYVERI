@@ -5,6 +5,11 @@
 namespace SHAYVERI {
 
 TranspositionTable TT;
+thread_local TranspositionTable *active_tt = &TT;
+
+TranspositionTable &tt() {
+    return *active_tt;
+}
 
 static SIZE_T round_down_power2(SIZE_T n) {
     SIZE_T p = 1;

@@ -12,6 +12,7 @@ namespace SHAYVERI {
 
 extern std::atomic<bool> g_stop;
 extern std::atomic<U64>  node_count;
+extern std::atomic<U64>  node_limit;
 
 using IterCallback = std::function<void(int, Move, int, U64, I64)>;
 
@@ -32,6 +33,12 @@ SearchResult search(Board &b, int max_depth,
                     IterCallback on_iter = nullptr,
                     bool silent = false,
                     int root_bias = 0);
+
+SearchResult search_nodes(Board &b, U64 max_nodes,
+                          const U64 *rep_init, int rep_init_len,
+                          const std::vector<Move> &search_moves,
+                          bool silent = true,
+                          int root_bias = 0);
 
 } // namespace SHAYVERI
 

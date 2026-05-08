@@ -79,14 +79,22 @@ PHASE 2 - DATA PIPELINE
 ======================================
 
 9.  Install marlinflow on hub machine
-    - git clone https://github.com/jnlt3/marlinflow
-    - cargo build --release
+    - git clone https://github.com/dsekercioglu/marlinflow
+    - build parser:
+      cd parse
+      cargo rustc --release -- -C target-cpu=native
+    - copy target/release/libparse.so or libparse.dll into trainer/ as libparse.so/libparse.dll
+    - build utils:
+      cd utils
+      cargo rustc --release -- -C target-cpu=native
 
 10. Verify plain format before large generation
     - generate 10k-100k positions locally
-    - confirm marlinflow accepts the exact delimiter/order/result encoding
-    - convert the sample to binpack
-    - confirm Bullet can read the binpack
+    - legacy text rows must be: fen | eval | wdl
+    - eval is centipawns from white's POV
+    - wdl must be 1.0 for white win, 0.5 for draw, 0.0 for black win
+    - convert the sample with marlinflow-utils txt-to-data
+    - confirm marlinflow trainer can read the converted data
     - only then start billion-position generation
 
 11. Deploy datagen binary to all 10 machines via SSH
@@ -101,7 +109,9 @@ PHASE 2 - DATA PIPELINE
 
 13. Convert plain to binpack
     - cat /nfs/data/raw/*.plain > /nfs/data/raw/combined.plain
-    - ./marlinflow convert combined.plain combined.binpack
+    - target/release/marlinflow-utils txt-to-data /nfs/data/raw/combined.plain --output /nfs/data/raw/combined.bin
+    - shuffle the data before training:
+      target/release/marlinflow-utils shuffle /nfs/data/raw/combined.bin --output /nfs/data/raw/combined_shuffled.bin
     - verify output file size is reasonable for the converted format
 
 
@@ -124,7 +134,7 @@ PHASE 3 - TRAINING
     - wdl: 0.5
     - scale: 400
     - save_rate: 10 (every 10M steps)
-    - data path: /nfs/data/raw/combined.binpack
+    - data path: /nfs/data/raw/combined_shuffled.bin
 
 16. Run training
     - target 800M-1B steps

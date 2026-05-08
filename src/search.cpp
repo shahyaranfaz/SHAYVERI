@@ -25,6 +25,7 @@ namespace SHAYVERI {
 
 std::atomic<bool> g_stop = false;
 std::atomic<U64> node_count = 0;
+std::atomic<U64> node_limit = 0;
 
 using namespace Tune;
 
@@ -92,6 +93,13 @@ struct SearchHeuristics {
         entry += bonus - entry * abs_bonus / Tune::history_max;
     }
 };
+
+static inline void count_node() {
+    U64 nodes = node_count.fetch_add(1, std::memory_order_relaxed) + 1;
+    U64 limit = node_limit.load(std::memory_order_relaxed);
+    if (limit != 0 && nodes >= limit)
+        g_stop = true;
+}
 
 std::string move_to_uci(Move m) {
     if (m == MOVE_NONE) return "0000";
@@ -277,13 +285,13 @@ static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len, int
 
 static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
     if (g_stop) return 0;
-    node_count.fetch_add(1, std::memory_order_relaxed);
+    count_node();
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
     if (alpha >= beta) return alpha;
 
-    const TTEntry *tte = TT.probe(b.hash);
+    const TTEntry *tte = tt().probe(b.hash);
 
     // TT probe: use any stored result for immediate cutoffs
     if (tte && tte->depth >= 0) {
@@ -305,7 +313,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
             stand_pat = tte->eval;
         } else {
             stand_pat = evaluate(b);
-            TT.store_eval(b.hash, stand_pat);
+            tt().store_eval(b.hash, stand_pat);
         }
         if (stand_pat >= beta) return stand_pat;
         if (stand_pat > alpha) alpha = stand_pat;
@@ -374,7 +382,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply) {
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                    SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss) {
     if (g_stop) return 0;
-    node_count.fetch_add(1, std::memory_order_relaxed);
+    count_node();
 
     const U64 key = b.hash;
 
@@ -394,7 +402,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     bool tt_has_eval = false;
     int tt_eval = 0;
 
-    if (const TTEntry *e = TT.probe(key)) {
+    if (const TTEntry *e = tt().probe(key)) {
         tt_move  = e->best;
         tt_score = e->score;
         tt_depth = e->depth;
@@ -429,7 +437,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
             static_eval = tt_eval;
         } else {
             static_eval = evaluate(b);
-            TT.store_eval(key, static_eval);
+            tt().store_eval(key, static_eval);
         }
     }
 
@@ -560,7 +568,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (score >= beta) {
             if (ss->excluded_move == MOVE_NONE) {
                 int tt_s = (score > MATE_SCORE - MAX_PLY) ? score + ply : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
-                TT.store(key, depth, tt_s, TT_LOWER, m);
+                tt().store(key, depth, tt_s, TT_LOWER, m);
             }
             if (is_quiet) {
                 H.store_killer(ply, m);
@@ -618,7 +626,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
     if (ss->excluded_move == MOVE_NONE) {
         int tt_s = (alpha > MATE_SCORE - MAX_PLY) ? alpha + ply : (alpha < -MATE_SCORE + MAX_PLY ? alpha - ply : alpha);
-        TT.store(key, depth, tt_s, (alpha <= original_alpha) ? TT_UPPER : TT_EXACT, best_move);
+        tt().store(key, depth, tt_s, (alpha <= original_alpha) ? TT_UPPER : TT_EXACT, best_move);
     }
 
     return alpha;
@@ -667,7 +675,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         // Generate and order root moves once per depth (outside aspiration retry loop).
         MoveList pseudo = generate_pseudo_legal_moves(b);
         Move tt_root = MOVE_NONE;
-        if (const TTEntry* e = TT.probe(b.hash)) tt_root = e->best;
+        if (const TTEntry* e = tt().probe(b.hash)) tt_root = e->best;
         ScoredMove ordered[256];
         for (int i = 0; i < pseudo.count; ++i) {
             Move m = pseudo.moves[i];
@@ -767,7 +775,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         Undo u_pv;
         if (make_move(b_pv, final_best_move, u_pv)) {
             for (int i = 0; i < depth - 1; ++i) {
-                if (const TTEntry* e = TT.probe(b_pv.hash)) {
+                if (const TTEntry* e = tt().probe(b_pv.hash)) {
                     if (e->best != MOVE_NONE) {
                         pv_line += " " + move_to_uci(e->best);
                         if (!make_move(b_pv, e->best, u_pv)) break;
@@ -803,6 +811,25 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     }
 
     return {final_best_move, MOVE_NONE, final_best_score, completed_depth, node_count.load(std::memory_order_relaxed)};
+}
+
+SearchResult search_nodes(Board &b, U64 max_nodes,
+                          const U64 *rep_init, int rep_init_len,
+                          const std::vector<Move> &search_moves,
+                          bool silent,
+                          int root_bias) {
+    U64 previous_limit = node_limit.exchange(max_nodes, std::memory_order_relaxed);
+    bool previous_stop = g_stop.exchange(false, std::memory_order_relaxed);
+    node_count = 0;
+
+    SearchResult result = search(b, MAX_PLY - 1,
+                                 rep_init, rep_init_len,
+                                 search_moves,
+                                 nullptr, silent, root_bias);
+
+    node_limit.store(previous_limit, std::memory_order_relaxed);
+    g_stop.store(previous_stop, std::memory_order_relaxed);
+    return result;
 }
 
 } // namespace SHAYVERI
