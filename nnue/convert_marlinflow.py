@@ -42,7 +42,7 @@ def main():
     parser.add_argument("output_nnue")
     parser.add_argument("--feature-scale", type=float, default=L1_SCALE)
     parser.add_argument("--output-scale", type=float, default=L1_SCALE)
-    parser.add_argument("--bias-scale", type=float, default=L1_SCALE)
+    parser.add_argument("--bias-scale", type=float, default=L1_SCALE * L1_SCALE)
     args = parser.parse_args()
 
     with open(args.input_json, "r", encoding="utf-8") as f:
