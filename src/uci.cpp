@@ -43,7 +43,7 @@ static int  g_min_think_ms  = 0;
 static std::string g_eval_file = "net3_final.nnue";
 
 // Ponder state.
-static Move g_ponder_move =       MOVE_NONE;  // move we are pondering on
+static Move g_ponder_move =         MOVE_NONE;  // move we are pondering on
 static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
@@ -161,6 +161,9 @@ int main(int argc, char **argv) {
     init_attacks();
     TT.resize(64);
 
+    if (file_exists(g_eval_file))
+        NNUE::load(g_eval_file);
+
     Board b;
     set_startpos(b);
 
@@ -190,9 +193,6 @@ int main(int argc, char **argv) {
                   << " datagen <threads> <positions> <output_prefix> [nodes]\n";
         return 1;
     }
-
-    if (file_exists(g_eval_file))
-        NNUE::load(g_eval_file);
 
     std::string line;
     while (std::getline(std::cin, line)) {

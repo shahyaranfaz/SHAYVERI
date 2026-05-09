@@ -31,6 +31,11 @@ std::atomic<U64> node_limit = 0;
 
 using namespace Tune;
 
+thread_local bool local_node_limited_search = false;
+thread_local bool local_stop = false;
+thread_local U64 local_node_count = 0;
+thread_local U64 local_node_limit = 0;
+
 // Precomputed LMR table.
 static int LMR_TABLE[64][256];
 
@@ -97,11 +102,33 @@ struct SearchHeuristics {
     }
 };
 
+static inline bool search_stopped() {
+    return local_node_limited_search ? local_stop : g_stop.load(std::memory_order_relaxed);
+}
+
+static inline void request_search_stop() {
+    if (local_node_limited_search)
+        local_stop = true;
+    else
+        g_stop.store(true, std::memory_order_relaxed);
+}
+
+static inline U64 searched_nodes() {
+    return local_node_limited_search ? local_node_count : node_count.load(std::memory_order_relaxed);
+}
+
 static inline void count_node() {
+    if (local_node_limited_search) {
+        ++local_node_count;
+        if (local_node_limit != 0 && local_node_count >= local_node_limit)
+            local_stop = true;
+        return;
+    }
+
     U64 nodes = node_count.fetch_add(1, std::memory_order_relaxed) + 1;
     U64 limit = node_limit.load(std::memory_order_relaxed);
     if (limit != 0 && nodes >= limit)
-        g_stop = true;
+        request_search_stop();
 }
 
 std::string move_to_uci(Move m) {
@@ -293,7 +320,7 @@ static inline int evaluate_position(const Board &b, const StackInfo *ss) {
 }
 
 static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo *ss) {
-    if (g_stop) return 0;
+    if (search_stopped()) return 0;
     count_node();
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
@@ -378,7 +405,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1, ss + 1);
         unmake_move(b, m, u);
 
-        if (g_stop) return 0;
+        if (search_stopped()) return 0;
 
         if (score >= beta) return score;
         if (score > alpha) alpha = score;
@@ -391,7 +418,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
 
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                    SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss) {
-    if (g_stop) return 0;
+    if (search_stopped()) return 0;
     count_node();
 
     const U64 key = b.hash;
@@ -468,7 +495,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1, H, rep_stack, rep_len, false, ss + 1);
         unmake_null_move(b, u);
 
-        if (g_stop) return 0;
+        if (search_stopped()) return 0;
         if (score >= beta) return score;
     }
 
@@ -575,7 +602,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
 
         unmake_move(b, m, u);
-        if (g_stop) return 0;
+        if (search_stopped()) return 0;
 
         if (score >= beta) {
             if (ss->excluded_move == MOVE_NONE) {
@@ -741,7 +768,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
                 unmake_move(b, m, u);
 
-                if (g_stop) break;
+                if (search_stopped()) break;
 
                 if (score > best_score_this_depth) {
                     best_score_this_depth = score;
@@ -751,7 +778,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                 if (score > current_alpha) current_alpha = score;
             }
 
-            if (g_stop) break;
+            if (search_stopped()) break;
 
             if (legal_root_count == 0) {
                 Square ksq = king_square(b, b.side_to_move);
@@ -775,12 +802,12 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             break;
         }
 
-        if (g_stop) break;
+        if (search_stopped()) break;
 
         auto now = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
         if (ms == 0) ms = 1;
-        U64 nodes = node_count.load(std::memory_order_relaxed);
+        U64 nodes = searched_nodes();
         U64 nps = (nodes * 1000ULL) / ms;
 
         std::string pv_line = move_to_uci(final_best_move);
@@ -816,14 +843,14 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                       << " pv " << pv_line << "\n";
             std::cout.flush();
 
-            if (on_iter && !g_stop)
+            if (on_iter && !search_stopped())
                 on_iter(depth, final_best_move, final_best_score, nodes, ms);
         }
 
-        if (g_stop) break;
+        if (search_stopped()) break;
     }
 
-    return {final_best_move, MOVE_NONE, final_best_score, completed_depth, node_count.load(std::memory_order_relaxed)};
+    return {final_best_move, MOVE_NONE, final_best_score, completed_depth, searched_nodes()};
 }
 
 SearchResult search_nodes(Board &b, U64 max_nodes,
@@ -831,17 +858,25 @@ SearchResult search_nodes(Board &b, U64 max_nodes,
                           const std::vector<Move> &search_moves,
                           bool silent,
                           int root_bias) {
-    U64 previous_limit = node_limit.exchange(max_nodes, std::memory_order_relaxed);
-    bool previous_stop = g_stop.exchange(false, std::memory_order_relaxed);
-    node_count = 0;
+    bool previous_local_search = local_node_limited_search;
+    bool previous_local_stop = local_stop;
+    U64 previous_local_count = local_node_count;
+    U64 previous_local_limit = local_node_limit;
+
+    local_node_limited_search = true;
+    local_stop = false;
+    local_node_count = 0;
+    local_node_limit = max_nodes;
 
     SearchResult result = search(b, MAX_PLY - 1,
                                  rep_init, rep_init_len,
                                  search_moves,
                                  nullptr, silent, root_bias);
 
-    node_limit.store(previous_limit, std::memory_order_relaxed);
-    g_stop.store(previous_stop, std::memory_order_relaxed);
+    local_node_limited_search = previous_local_search;
+    local_stop = previous_local_stop;
+    local_node_count = previous_local_count;
+    local_node_limit = previous_local_limit;
     return result;
 }
 

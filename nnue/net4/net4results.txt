@@ -1,0 +1,18 @@
+Net4 methodology
+================
+
+Goal: Extend on net3 wins, using better data, try and squeeze marlinflow dry of Elo (in however many runs).
+
+Data differences from net3:
+- Kept the shared-disk multi-worker setup.
+- 750M positions: 50 chunks per worker * 3 workers * 5M positions.
+- WDL signal with WDL=0.1 instead of effectively CP-only training.
+- 15k-node labels.
+- No changes to codebase, except use of much stronger net3's eval.
+
+Result:
+
+Measured Elo relative to HCE:
+
+Results
+=======
