@@ -9,7 +9,7 @@ mkdir -p "$OUT_DIR"
 
 for i in 000 005 010 015 020 025 030 035 039; do
   python3 "$CONVERTER" \
-    "$JSON_DIR/shayveri_v2_iter${i}.json" \
+    "$JSON_DIR/shayveri_v2.1_iter${i}.json" \
     "$OUT_DIR/iter${i}.nnue"
 done
 

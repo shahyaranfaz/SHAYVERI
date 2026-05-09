@@ -4,6 +4,7 @@
 #include "board.h"
 #include "make.h"
 #include "move_gen.h"
+#include "opening_book.h"
 #include "search.h"
 #include "tt.h"
 #include "tune.h"
@@ -28,10 +29,12 @@ namespace SHAYVERI {
 namespace {
 
 constexpr int DATAGEN_OPENING_PLIES = 8;
-constexpr U64 DATAGEN_SEARCH_NODES = 5000;
+constexpr int DATAGEN_OPENING_SAVE_STEP = 2;
+constexpr U64 DATAGEN_DEFAULT_SEARCH_NODES = 10000;
 constexpr int DATAGEN_WIN_SCORE = 2000;
 constexpr int DATAGEN_WIN_PLIES = 4;
 constexpr int DATAGEN_MAX_TRAINING_SCORE = 30000;
+constexpr double DATAGEN_BOOK_MOVE_PROB = 0.85;
 constexpr U64 DATAGEN_BASE_SEED = 0x9e3779b97f4a7c15ULL;
 constexpr U64 DATAGEN_THREAD_PRIME = 0xbf58476d1ce4e5b9ULL;
 
@@ -104,6 +107,15 @@ bool has_insufficient_material(const Board &b) {
     return minor_count <= 1;
 }
 
+const BookEntry *probe_book(U64 zobrist_key) {
+    auto it = std::lower_bound(
+        OPENING_BOOK, OPENING_BOOK + OPENING_BOOK_SIZE, zobrist_key,
+        [](const BookEntry &e, U64 k) { return e.key < k; });
+    if (it != OPENING_BOOK + OPENING_BOOK_SIZE && it->key == zobrist_key)
+        return it;
+    return nullptr;
+}
+
 GameResult terminal_result(Board &b, const std::vector<U64> &history) {
     MoveList legal = generate_legal_moves(b);
     if (legal.count == 0) {
@@ -116,32 +128,13 @@ GameResult terminal_result(Board &b, const std::vector<U64> &history) {
     return {};
 }
 
-bool play_random_opening(Board &b, std::mt19937_64 &rng, std::vector<U64> &history) {
-    set_startpos(b);
-    history.clear();
-    history.push_back(b.hash);
-
-    for (int ply = 0; ply < DATAGEN_OPENING_PLIES; ++ply) {
-        MoveList legal = generate_legal_moves(b);
-        if (legal.count == 0) return false;
-
-        std::uniform_int_distribution<int> dist(0, legal.count - 1);
-        Move chosen = legal.moves[dist(rng)];
-
-        Undo u;
-        if (!make_move(b, chosen, u)) return false;
-        history.push_back(b.hash);
-    }
-
-    return terminal_result(b, history).end == GameEnd::None;
-}
-
-SearchResult fixed_node_search(Board &b, const std::vector<U64> &history) {
+SearchResult fixed_node_search(Board &b, const std::vector<U64> &history, U64 node_budget) {
     std::vector<Move> search_moves;
     tt().new_search();
-    return search_nodes(b, DATAGEN_SEARCH_NODES,
-                        history.data(), static_cast<int>(history.size()),
-                        search_moves, true);
+    return search_nodes(
+        b, node_budget,
+        history.data(), static_cast<int>(history.size()),
+        search_moves, true);
 }
 
 int score_to_white_pov(const Board &b, int score_side_to_move_pov) {
@@ -170,6 +163,56 @@ const char *marlinflow_wdl(int wdl) {
     return "0.5";
 }
 
+Move choose_opening_move(Board &b, std::mt19937_64 &rng, const MoveList &legal) {
+    const BookEntry *entry = probe_book(b.hash);
+    if (entry != nullptr) {
+        std::uniform_real_distribution<double> coin(0.0, 1.0);
+        if (coin(rng) < DATAGEN_BOOK_MOVE_PROB) {
+            Move book_move = uci_to_move(b, entry->move);
+            if (book_move != MOVE_NONE) return book_move;
+        }
+    }
+
+    std::uniform_int_distribution<int> dist(0, legal.count - 1);
+    return legal.moves[dist(rng)];
+}
+
+bool play_opening(Board &b,
+                  std::mt19937_64 &rng,
+                  std::vector<U64> &history,
+                  std::vector<PlainEntry> &entries,
+                  U64 search_nodes) {
+    set_startpos(b);
+    history.clear();
+    history.push_back(b.hash);
+
+    for (int ply = 0; ply < DATAGEN_OPENING_PLIES; ++ply) {
+        MoveList legal = generate_legal_moves(b);
+        if (legal.count == 0) return false;
+
+        Move chosen = choose_opening_move(b, rng, legal);
+
+        if ((ply % DATAGEN_OPENING_SAVE_STEP) == 0) {
+            bool in_check = is_in_check(b);
+            SearchResult search_result = fixed_node_search(b, history, search_nodes);
+            int score_white = score_to_white_pov(b, search_result.score);
+            bool save_position = !in_check &&
+                                 !is_capture_or_promo(b, chosen) &&
+                                 !is_mate_score(score_white);
+            if (save_position)
+                entries.push_back({get_board_fen(b), training_score(score_white)});
+        }
+
+        Undo u;
+        if (!make_move(b, chosen, u)) return false;
+        history.push_back(b.hash);
+
+        if (terminal_result(b, history).end != GameEnd::None) return false;
+    }
+
+    return true;
+}
+
 bool claim_position(DatagenCounters &counters, U64 target_positions) {
     U64 current = counters.total_positions.load(std::memory_order_relaxed);
     while (current < target_positions) {
@@ -196,6 +239,7 @@ void write_game_entries(std::ofstream &out,
 
 void datagen_worker(int id,
                     U64 target_positions,
+                    U64 search_nodes,
                     const std::string output_prefix,
                     DatagenCounters &counters,
                     std::atomic<bool> &failed) {
@@ -218,10 +262,9 @@ void datagen_worker(int id,
     history.reserve(512);
 
     while (counters.total_positions.load(std::memory_order_relaxed) < target_positions) {
-        if (!play_random_opening(b, rng, history)) continue;
-
         std::vector<PlainEntry> game_entries;
         game_entries.reserve(256);
+        if (!play_opening(b, rng, history, game_entries, search_nodes)) continue;
         int decisive_plies = 0;
         GameResult result;
 
@@ -230,7 +273,7 @@ void datagen_worker(int id,
             if (result.end != GameEnd::None) break;
 
             bool in_check = is_in_check(b);
-            SearchResult search_result = fixed_node_search(b, history);
+            SearchResult search_result = fixed_node_search(b, history, search_nodes);
 
             MoveList legal = generate_legal_moves(b);
             Move chosen = search_result.best_move;
@@ -280,8 +323,10 @@ void datagen_worker(int id,
 
 } // namespace
 
-int generate_data(int threads, U64 target_positions, const char *output_prefix) {
-    if (threads <= 0 || target_positions == 0 || output_prefix == nullptr || *output_prefix == '\0') {
+int generate_data(int threads, U64 target_positions, const char *output_prefix, U64 search_nodes) {
+    if (search_nodes == 0) search_nodes = DATAGEN_DEFAULT_SEARCH_NODES;
+    if (threads <= 0 || target_positions == 0 || output_prefix == nullptr || *output_prefix == '\0' ||
+        search_nodes == 0) {
         std::cerr << "invalid datagen arguments\n";
         return 1;
     }
@@ -295,11 +340,12 @@ int generate_data(int threads, U64 target_positions, const char *output_prefix) 
     std::cerr << "datagen threads=" << threads
               << " target_positions=" << target_positions
               << " output_prefix=" << prefix
-              << " nodes=" << DATAGEN_SEARCH_NODES
+              << " nodes=" << search_nodes
               << " score_pov=white\n";
 
     for (int id = 0; id < threads; ++id) {
-        workers.emplace_back(datagen_worker, id, target_positions, prefix, std::ref(counters), std::ref(failed));
+        workers.emplace_back(datagen_worker, id, target_positions, search_nodes,
+                             prefix, std::ref(counters), std::ref(failed));
     }
     for (std::thread &worker : workers) {
         if (worker.joinable()) worker.join();

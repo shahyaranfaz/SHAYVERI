@@ -160,8 +160,6 @@ int main(int argc, char **argv) {
     Zobrist::init();
     init_attacks();
     TT.resize(64);
-    if (file_exists(g_eval_file))
-        NNUE::load(g_eval_file);
 
     Board b;
     set_startpos(b);
@@ -171,19 +169,30 @@ int main(int argc, char **argv) {
     hash_history.push_back(b.hash);
 
     if (argc > 1) {
-        if (argc == 5 && std::string(argv[1]) == "datagen") {
+        if ((argc == 5 || argc == 6) && std::string(argv[1]) == "datagen") {
             int threads = 0;
-            U64 start_pos = 0;
+            U64 target_positions = 0;
+            U64 search_nodes = 10000;
             if (!parse_int(argv[2], threads) || threads <= 0 ||
-                !parse_int_64(argv[3], start_pos) || start_pos == 0) {
-                std::cerr << "usage: " << argv[0] << " datagen <threads> <positions> <output_prefix>\n";
+                !parse_int_64(argv[3], target_positions) || target_positions == 0) {
+                std::cerr << "usage: " << argv[0]
+                          << " datagen <threads> <positions> <output_prefix> [nodes]\n";
                 return 1;
             }
-            return generate_data(threads, start_pos, argv[4]);
+            if (argc == 6 && (!parse_int_64(argv[5], search_nodes) || search_nodes == 0)) {
+                std::cerr << "usage: " << argv[0]
+                          << " datagen <threads> <positions> <output_prefix> [nodes]\n";
+                return 1;
+            }
+            return generate_data(threads, target_positions, argv[4], search_nodes);
         }
-        std::cerr << "usage: " << argv[0] << " datagen <threads> <positions> <output_prefix>\n";
+        std::cerr << "usage: " << argv[0]
+                  << " datagen <threads> <positions> <output_prefix> [nodes]\n";
         return 1;
     }
+
+    if (file_exists(g_eval_file))
+        NNUE::load(g_eval_file);
 
     std::string line;
     while (std::getline(std::cin, line)) {
