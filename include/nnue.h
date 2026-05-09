@@ -40,7 +40,8 @@ struct Accumulator {
 
 inline int chess768_index(int piece_type, int piece_color, int sq, int perspective) {
     const int effective_sq = (perspective == 1) ? (sq ^ 56) : sq;
-    return (piece_type * 2 + piece_color) * 64 + effective_sq;
+    const int effective_color = (perspective == 1) ? (piece_color ^ 1) : piece_color;
+    return ((effective_color * 6) + piece_type) * 64 + effective_sq;
 }
 
 inline void chess768_indices(int piece_type, int piece_color, int sq,

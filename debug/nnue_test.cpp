@@ -12,6 +12,37 @@
 
 using namespace SHAYVERI;
 
+static int marlinflow_board768_feature(int perspective, int piece_color,
+                                       int piece_type, int sq) {
+    int effective_sq = perspective == BLACK ? (sq ^ 56) : sq;
+    int effective_color = perspective == BLACK ? (piece_color ^ 1) : piece_color;
+    return ((effective_color * 6) + piece_type) * 64 + effective_sq;
+}
+
+static int check_feature_index_mapping() {
+    for (int perspective = WHITE; perspective <= BLACK; ++perspective) {
+        for (int piece_color = WHITE; piece_color <= BLACK; ++piece_color) {
+            for (int piece_type = 0; piece_type < 6; ++piece_type) {
+                for (int sq = 0; sq < 64; ++sq) {
+                    int expected = marlinflow_board768_feature(
+                        perspective, piece_color, piece_type, sq);
+                    int actual = NNUE::chess768_index(
+                        piece_type, piece_color, sq, perspective);
+                    if (actual != expected) {
+                        std::cerr << "NNUE feature index mismatch: perspective="
+                                  << perspective << " color=" << piece_color
+                                  << " type=" << piece_type << " sq=" << sq
+                                  << " expected=" << expected
+                                  << " actual=" << actual << "\n";
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 static bool same_acc(const NNUE::Accumulator &a, const NNUE::Accumulator &b) {
     return std::memcmp(a.vals, b.vals, sizeof(a.vals)) == 0;
 }
@@ -48,6 +79,9 @@ int main(int argc, char **argv) {
         std::cerr << "usage: nnue_test <net.nnue>\n";
         return 1;
     }
+
+    if (check_feature_index_mapping() != 0)
+        return 1;
 
     Zobrist::init();
     init_attacks();
