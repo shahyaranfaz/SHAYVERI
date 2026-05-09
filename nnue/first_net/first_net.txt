@@ -273,48 +273,5 @@ PHASE 4 - ENGINE INTEGRATION
 PHASE 5 - TESTING
 ======================================
 
-35. Sanity check NNUE binary
-    - run bench and record NPS
-    - NNUE may be slower than HCE; strength gain matters more than raw NPS
-    - play a few games via UCI
-    - confirm no crashes, no illegal moves, no broken time management
-    - check eval outputs look sane from starting position and known tactical positions
-
-36. Run gauntlet vs HCE v1.0
-    - use cutechess or fastchess
-    - time control: 90+0.5 (target TC)
-    - minimum 1000 games for statistical significance
-    - hoped-for gain: +200 to +350 Elo, but treat real results as data
-
-37. If Elo gain < 100, debug pipeline
-    - check WDL backfill is actually writing correct results
-    - check score is from white's POV in plain files
-    - sample and manually verify plain rows
-    - check accumulator update handles all special moves
-    - check Chess768 feature index for off-by-one and mirroring errors
-    - check quantization scale matches Bullet output and engine inference
-
-38. If Elo gain looks good, run at fast TC too
-    - repeat gauntlet at 10+0.1 and 1+0.01
-    - confirm gain holds at all time controls
-
-
-======================================
-PHASE 6 - MERGE + NEXT STEPS
-======================================
-
-39. Merge nnue branch to main, tag v2.0
-
-40. Delete HCE eval code only after NNUE is stable
-
-41. Iteration loop
-    - generate new data with NNUE engine
-    - rescore existing data at higher node count, e.g. 10K nodes
-    - retrain with new data
-    - test, confirm gain
-    - repeat
-
-42. After v2.0 is stable, next architecture upgrades
-    - king buckets (8 or 16): likely high value, more complexity
-    - hidden size 512: possible gain, benchmark NPS first
-    - multiple output buckets: possible gain after baseline is stable
+After running games between the various checkpoints, iter20 was best with iter30 close behind.
+iter20 vs HCE was about ~0.4 after 250 games.
