@@ -1,0 +1,67 @@
+Net3 methodology
+================
+
+Goal: fix the net2 recipe while keeping the distributed worker/master pipeline.
+
+Data differences from net2:
+- Kept the shared-disk multi-worker setup.
+- 1.2B positions: 48 chunks per worker * 5 workers * 5M positions.
+- Restored WDL signal with WDL=0.1 instead of effectively CP-only training.
+- Kept 10k-node labels.
+- Added stronger early-game coverage: book-guided openings and saved early quiet positions.
+- Kept Chess768/256 architecture for a clean recipe test before adding king buckets or Bullet.
+
+Result:
+- Net3 iter050 was already basically equal to curr:
+  curr vs net3_iter050: 404 - 396 - 200 [0.504] 1000, curr +2.8 +/- 19.3.
+- Net3 iter150 became clearly stronger than curr inside the checkpoint gauntlet.
+- Net3 iter240 was selected from the final checkpoint playoff.
+- Net3 iter240 beat HCE clearly at both 10+0.1 and 90+0.5.
+
+Measured Elo relative to HCE:
+- At 10+0.1, net3 iter240 scored 71.7% over 1000 games, about +161 Elo vs HCE.
+- At 90+0.5, net3 iter240 scored 67.6% over 136 games, about +128 Elo vs HCE.
+- The 10+0.1 result is the reliable anchor because it has the larger sample.
+
+Results
+=======
+
+After 150 iterations, a playoff was run:
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter150                       163      19    1142   71.9%   23.5%
+   2 iter125                       134      19    1143   68.4%   22.5%
+   3 iter075                        78      18    1143   61.0%   25.3%
+   4 curr                           12      18    1144   51.7%   22.1%
+   5 iter050                       -17      17    1142   47.5%   25.7%
+   6 iter025                      -137      20    1143   31.3%   16.0%
+   7 iter100                      -261      23    1143   18.2%   14.3%
+
+No others were within margin of error to 1st (iter150), so next we
+compare 150, 175, 200, and curr:
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter200                        66      16    1200   59.4%   37.1%
+   2 iter150                        33      16    1200   54.8%   35.6%
+   3 iter175                        26      15    1200   53.8%   39.0%
+   4 curr                         -130      18    1200   32.1%   25.0%
+
+Iter200 wins with none being within margin of error. Last comparison is
+iter200, iter225, iter240:
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter240                        23      17     800   53.3%   47.9%
+   2 iter225                        -9      17     800   48.7%   50.4%
+   3 iter200                       -14      17     800   48.0%   48.5%
+
+Learning still appears to be producing gains. Winner iter240 vs HCE at
+10+0.1:
+
+Score of nnue_net3 vs hce: 604 - 170 - 226  [0.717] 1000
+         nnue_net3 as Wht: 389 -  46 -  65  [0.843]  500
+         nnue_net3 as Blk: 215 - 124 - 161  [0.591]  500
+            White v Black: 513 - 261 - 226  [0.626] 1000
+
+And at 90+0.5 (small sample):
+
+Score of nnue_net3 vs hce: 65 - 17 - 54  [0.676] 136
+         nnue_net3 as Wht: 30 -  6 - 32  [0.676]  68
+         nnue_net3 as Blk: 35 - 11 - 22  [0.676]  68
+           White vs Black: 41 - 41 - 54  [0.500] 136

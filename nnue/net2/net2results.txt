@@ -3,7 +3,7 @@ Net2 methodology
 
 Goal: improve net1 by using the distributed feedback-loop pipeline and more total data.
 
-Differences from net1:
+Data differences from net1:
 - Moved from one-PC chunk loop to shared-disk worker/master pipeline.
 - Generated about 1.2B positions, around 240 chunks of 5M positions.
 - Continued training through many small chunks with resume.
