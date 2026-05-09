@@ -1,14 +1,16 @@
 Net4 methodology
 ================
 
-Goal: Extend on net3 wins, using better data, try and squeeze marlinflow dry of Elo (in however many runs).
+Goal: extend the net3 gains with stronger self-generated data and test how much Elo
+remains in the current Marlinflow setup and Chess768 architecture.
 
 Data differences from net3:
 - Kept the shared-disk multi-worker setup.
-- 750M positions: 50 chunks per worker * 3 workers * 5M positions.
-- WDL signal with WDL=0.1 instead of effectively CP-only training.
+- 1.25B positions: 50 chunks per worker * 5 workers * 5M positions.
+- Kept WDL=0.1.
 - 15k-node labels.
-- No changes to codebase, except use of much stronger net3's eval.
+- No architecture or trainer changes.
+- Datagen uses the stronger net3 eval.
 
 Result:
 

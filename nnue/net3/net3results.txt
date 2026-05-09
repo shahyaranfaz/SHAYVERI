@@ -6,9 +6,9 @@ Goal: fix the net2 recipe while keeping the distributed worker/master pipeline.
 Data differences from net2:
 - Kept the shared-disk multi-worker setup.
 - 1.2B positions: 48 chunks per worker * 5 workers * 5M positions.
-- Restored WDL signal with WDL=0.1 instead of effectively CP-only training.
+- Restored WDL signal with WDL=0.1 instead of CP-only training.
 - Kept 10k-node labels.
-- Added stronger early-game coverage: book-guided openings and saved early quiet positions.
+- Used the opening book 85% of the time, while saving quiet opening positions every 2 plies during the first 8 plies.
 - Kept Chess768/256 architecture for a clean recipe test before adding king buckets or Bullet.
 
 Result:
@@ -36,22 +36,22 @@ Rank Name                          Elo     +/-   Games   Score    Draw
    6 iter025                      -137      20    1143   31.3%   16.0%
    7 iter100                      -261      23    1143   18.2%   14.3%
 
-No others were within margin of error to 1st (iter150), so next we
-compare 150, 175, 200, and curr:
+No other checkpoint was within margin of error of iter150, so the next
+playoff compared iter150, iter175, iter200, and curr:
 Rank Name                          Elo     +/-   Games   Score    Draw
    1 iter200                        66      16    1200   59.4%   37.1%
    2 iter150                        33      16    1200   54.8%   35.6%
    3 iter175                        26      15    1200   53.8%   39.0%
    4 curr                         -130      18    1200   32.1%   25.0%
 
-Iter200 wins with none being within margin of error. Last comparison is
-iter200, iter225, iter240:
+Iter200 won with no other checkpoint within margin of error. The final
+checkpoint playoff compared iter200, iter225, and iter240:
 Rank Name                          Elo     +/-   Games   Score    Draw
    1 iter240                        23      17     800   53.3%   47.9%
    2 iter225                        -9      17     800   48.7%   50.4%
    3 iter200                       -14      17     800   48.0%   48.5%
 
-Learning still appears to be producing gains. Winner iter240 vs HCE at
+Learning still appeared to be producing gains. Winner iter240 vs HCE at
 10+0.1:
 
 Score of nnue_net3 vs hce: 604 - 170 - 226  [0.717] 1000

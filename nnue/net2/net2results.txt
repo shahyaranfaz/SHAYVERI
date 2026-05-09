@@ -1,28 +1,29 @@
 Net2 methodology
 ================
 
-Goal: improve net1 by using the distributed feedback-loop pipeline and more total data.
+Goal: improve net1 with the distributed feedback-loop pipeline and more data.
 
 Data differences from net1:
 - Moved from one-PC chunk loop to shared-disk worker/master pipeline.
 - Generated about 1.2B positions, around 240 chunks of 5M positions.
 - Continued training through many small chunks with resume.
 - Used 10k-node labels in the later pipeline.
-- This run leaned too hard toward CP-only learning and did not keep enough WDL signal.
+- WDL=0.0.
+- Own opening book used 85% of the time during the first eight opening plies.
 
 Result:
 - Net2 did not beat net1 / curr.
 - The best net2 checkpoint was roughly 190 Elo behind curr in the checkpoint gauntlet.
-- Main lesson: raw data volume alone was not enough; WDL/data mix mattered more.
+- Main lesson: raw data volume alone was not enough; the WDL/data mix mattered more.
 
 Estimated Elo relative to HCE:
-- If curr / net1 is estimated around -50 vs HCE, best net2 is about -240 vs HCE.
+- If curr/net1 is estimated around -50 vs HCE, best net2 is about -240 vs HCE.
 - Uncertainty is high, around +/- 50 Elo, because this is bridged through curr rather than a clean direct HCE gauntlet.
 
 Results
 =======
 
-After ~235 iterations. The run was cancelled here.
+After about 235 iterations, the run was stopped.
 
 Rank Name                                Elo     +/-   Games   Score    Draw
    1 curr (net1)                         198      30     569   75.7%   13.7%
