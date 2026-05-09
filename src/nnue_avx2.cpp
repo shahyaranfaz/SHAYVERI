@@ -29,8 +29,8 @@ __m256i mullo_epi32_to_epi64(__m256i a, __m256i b) {
 } // namespace
 
 int evaluate_avx2(int side_to_move, const Accumulator &acc) {
-    const I16 *stm_acc = acc.vals[side_to_move];
-    const I16 *nstm_acc = acc.vals[side_to_move ^ 1];
+    const I16 *white_acc = acc.vals[WHITE];
+    const I16 *black_acc = acc.vals[BLACK];
 
     __m256i sum_stm = _mm256_setzero_si256();
     __m256i sum_nstm = _mm256_setzero_si256();
@@ -38,7 +38,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
     const __m128i max = _mm_set1_epi16(static_cast<I16>(L1_SCALE));
 
     for (int i = 0; i < HIDDEN_SIZE; i += 8) {
-        __m128i stm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(stm_acc + i));
+        __m128i stm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(white_acc + i));
         __m128i stm_w = _mm_loadu_si128(reinterpret_cast<const __m128i *>(output_weights + i));
         stm = _mm_min_epi16(_mm_max_epi16(stm, zero), max);
 
@@ -47,7 +47,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
         __m256i stm_sq = _mm256_mullo_epi32(stm32, stm32);
         sum_stm = _mm256_add_epi64(sum_stm, mullo_epi32_to_epi64(stm_sq, stm_w32));
 
-        __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(nstm_acc + i));
+        __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(black_acc + i));
         __m128i nstm_w = _mm_loadu_si128(
             reinterpret_cast<const __m128i *>(output_weights + HIDDEN_SIZE + i));
         nstm = _mm_min_epi16(_mm_max_epi16(nstm, zero), max);
@@ -61,7 +61,9 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
     I64 total = hsum256_epi64(sum_stm) + hsum256_epi64(sum_nstm);
     total /= L1_SCALE;
     total += output_bias;
-    return static_cast<int>(total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));
+    int score = static_cast<int>(
+        total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));
+    return side_to_move == WHITE ? score : -score;
 }
 
 } // namespace NNUE

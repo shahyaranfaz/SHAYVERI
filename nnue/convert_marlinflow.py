@@ -42,7 +42,8 @@ def main():
     parser.add_argument("output_nnue")
     parser.add_argument("--feature-scale", type=float, default=L1_SCALE)
     parser.add_argument("--output-scale", type=float, default=L1_SCALE)
-    parser.add_argument("--bias-scale", type=float, default=L1_SCALE * L1_SCALE)
+    parser.add_argument("--feature-bias-scale", type=float, default=L1_SCALE)
+    parser.add_argument("--output-bias-scale", type=float, default=L1_SCALE * L1_SCALE)
     args = parser.parse_args()
 
     with open(args.input_json, "r", encoding="utf-8") as f:
@@ -68,12 +69,13 @@ def main():
                                                     args.feature_scale)))
 
         for hidden_idx in range(HIDDEN_SIZE):
-            f.write(struct.pack("<h", quant_i16(ft_bias[hidden_idx], args.bias_scale)))
+            f.write(struct.pack("<h", quant_i16(ft_bias[hidden_idx],
+                                                args.feature_bias_scale)))
 
         for weight in out_weight[0]:
             f.write(struct.pack("<h", quant_i16(weight, args.output_scale)))
 
-        f.write(struct.pack("<i", quant_i32(out_bias[0], args.output_scale)))
+        f.write(struct.pack("<i", quant_i32(out_bias[0], args.output_bias_scale)))
 
 
 if __name__ == "__main__":

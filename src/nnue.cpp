@@ -53,18 +53,19 @@ I32 screlu(I16 x) {
 }
 
 [[maybe_unused]] int evaluate_scalar(int side_to_move, const Accumulator &acc) {
-    const I16 *stm_acc  = acc.vals[side_to_move];
-    const I16 *nstm_acc = acc.vals[side_to_move ^ 1];
+    const I16 *white_acc = acc.vals[WHITE];
+    const I16 *black_acc = acc.vals[BLACK];
 
     I64 sum = 0;
     for (int i = 0; i < HIDDEN_SIZE; ++i) {
-        sum += static_cast<I64>(screlu(stm_acc[i])) * output_weights[i];
-        sum += static_cast<I64>(screlu(nstm_acc[i])) * output_weights[HIDDEN_SIZE + i];
+        sum += static_cast<I64>(screlu(white_acc[i])) * output_weights[i];
+        sum += static_cast<I64>(screlu(black_acc[i])) * output_weights[HIDDEN_SIZE + i];
     }
 
     sum /= L1_SCALE;
     sum += output_bias;
-    return static_cast<int>(sum * OUTPUT_SCALE / (L1_SCALE * L1_SCALE));
+    int score = static_cast<int>(sum * OUTPUT_SCALE / (L1_SCALE * L1_SCALE));
+    return side_to_move == WHITE ? score : -score;
 }
 
 } // namespace
