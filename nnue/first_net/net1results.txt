@@ -1,0 +1,79 @@
+Net1 methodology
+================
+
+Goal: first working Chess768 NNUE bootstrap from SHAYVERI self-play data.
+
+Data:
+- About 1.0B positions total.
+- 40 chunks of 25M positions.
+- Generated from the HCE engine before NNUE self-play was trusted.
+- Plain Marlinflow format: FEN | centipawn score from White POV | WDL.
+
+Training:
+- Marlinflow trainer.
+- Chess768 input, 256 hidden units, single scalar output.
+- Mixed score/WDL target from the first working training pipeline.
+- Converted final Marlinflow JSON/checkpoint into first_net.nnue.
+
+Important fixes made during/after this net:
+- Corrected Chess768 feature indexing to match Marlinflow Board768.
+- Corrected side-to-move / non-side-to-move accumulator ordering.
+- Corrected quantization scales in the Marlinflow-to-NNUE converter.
+- Tuned eval scale until bench output looked sane.
+
+Result summary
+==============
+
+Checkpoint tourney among net1 checkpoints:
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter020                        20      18    1025   52.9%   26.1%
+   2 iter030                        10      18    1019   51.4%   27.6%
+   3 iter025                       -13      18    1020   48.2%   26.8%
+   4 iter039                       -17      18    1024   47.6%   26.4%
+
+Earlier wider checkpoint tourney, before the narrower rerun:
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter030                        93      32     392   63.0%   20.4%
+   2 iter020                        77      31     391   60.9%   19.9%
+   3 iter039                        75      31     391   60.6%   23.0%
+   4 iter025                        61      31     391   58.7%   23.3%
+   5 iter015                        53      31     389   57.6%   20.6%
+   6 iter035                        27      31     389   53.9%   20.3%
+   7 iter005                       -39      32     390   44.4%   16.4%
+   8 iter010                       -94      33     388   36.9%   13.9%
+   9 iter000                      -314      46     391   14.1%    7.7%
+
+Direct HCE gauntlets seen during integration:
+
+Score of NNUE vs HCE: 92 - 131 - 204  [0.454] 427
+Elo difference: -31.8 +/- 23.8
+
+Score of NNUE vs HCE: 35 - 57 - 69  [0.432] 161
+Elo difference: -47.8 +/- 40.8
+
+Score of NNUE vs HCE: 77 - 111 - 171  [0.453] 359
+Approximate Elo difference: about -33
+
+Score of nnue_iter020 vs HCE: 42 - 85 - 84  [0.398] 211
+Elo difference: -71.8 +/- 36.7
+
+Small/noisy integration runs:
+
+Score of NNUE vs HCE: 5 - 21 - 21  [0.330] 47
+Elo difference: -123.2 +/- 75.8
+
+Score of NNUE vs HCE: 29 - 38 - 71  [0.467] 138
+Approximate Elo difference: about -23
+
+Estimated Elo relative to HCE
+=============================
+
+Best estimate for net1 / curr: about -50 Elo vs HCE.
+
+Reasoning:
+- Direct HCE matches put the early NNUE around -30 to -50 Elo.
+- The net1 checkpoint chosen as curr looked better than some earlier/incomplete NNUE builds, but still did not clearly beat HCE.
+- Later HCE tests were noisy and sometimes used different checkpoints/settings, so -50 is the safer anchor.
+- Treat the estimate as rough, around +/- 40 Elo.

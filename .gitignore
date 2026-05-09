@@ -12,7 +12,7 @@ debug/nnue_test
 debug/__pycache__
 
 tuning/*/pass*/batch*/
-nnue/first_net/artifacts
+nnue/*/artifacts
 
 # Prerequisites
 *.d
