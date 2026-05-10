@@ -1,0 +1,19 @@
+Net5 methodology
+================
+
+Goal: extend the net3 gains with stronger self-generated data and test how much Elo
+remains in the current Marlinflow setup and Chess768 architecture.
+
+Data differences from net3:
+- Kept the shared-disk multi-worker setup.
+- 1B positions: 40 chunks per worker * 5 workers * 5M positions.
+- Kept WDL=0.1.
+- Back to 10k-node labels.
+- No architecture or trainer changes.
+- Datagen uses 60% old HCE (3 PCs) and 40% NNUE (2 PCs).
+- Training resumes from the net3 iter240 PyTorch checkpoint.
+
+Result:
+
+Results
+=======
