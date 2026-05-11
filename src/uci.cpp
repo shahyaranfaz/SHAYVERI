@@ -40,7 +40,7 @@ static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
-static std::string g_eval_file = "net3_final.nnue";
+static std::string g_eval_file = "net5_final.nnue";
 
 // Ponder state.
 static Move g_ponder_move =         MOVE_NONE;  // move we are pondering on

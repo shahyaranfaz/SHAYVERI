@@ -810,18 +810,19 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         U64 nodes = searched_nodes();
         U64 nps = (nodes * 1000ULL) / ms;
 
-        std::string pv_line = move_to_uci(final_best_move);
+        std::string pv_line;
         Board b_pv = b;
-        Undo u_pv;
-        if (make_move(b_pv, final_best_move, u_pv)) {
-            for (int i = 0; i < depth - 1; ++i) {
+        Move pv_move = final_best_move;
+        for (int i = 0; i < depth && pv_move != MOVE_NONE; ++i) {
+            Undo u_pv;
+            if (make_move(b_pv, pv_move, u_pv)) {
+                if (!pv_line.empty()) pv_line += " ";
+                pv_line += move_to_uci(pv_move);
+
                 if (const TTEntry* e = tt().probe(b_pv.hash)) {
-                    if (e->best != MOVE_NONE) {
-                        pv_line += " " + move_to_uci(e->best);
-                        if (!make_move(b_pv, e->best, u_pv)) break;
-                    } else break;
+                    pv_move = e->best;
                 } else break;
-            }
+            } else break;
         }
 
         std::string score_str;

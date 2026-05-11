@@ -14,6 +14,268 @@ Data differences from net3:
 - Training resumes from the net3 iter240 PyTorch checkpoint.
 
 Result:
+- Net5 succeeded. The current winner is iter064.
+- iter064 beat iter037 directly by +30.9 +/- 17.0 Elo at 1+0.1.
+- In the final 10+0.1 pool, iter064 finished clearly ahead of both curr/net3 and HCE:
+  iter064 141, curr 44, HCE -194.
+- Direct 10+0.1 match vs HCE: +236.8 +/- 24.5 Elo.
+- Direct 90+0.5 match vs HCE: +220.1 +/- 42.5 Elo.
+- Using the HCE anchors in Elo.md, current estimated ratings are:
+  - 10+0.1: 2889.5 +/- 27.1
+  - 90+0.5: 2954.6 +/- 47.1
+- Main lesson for net6: the mixed HCE/NNUE data worked, but the master consumed chunks
+  in arrival order. Because NNUE workers finish faster, iteration-to-iteration strength
+  became noisy and non-monotonic. Net6 should enforce a balanced chunk schedule.
 
 Results
 =======
+
+The 40/60 NNUE/HCE split is only guaranteed after all chunks finish, as master
+consumes whichever chunk comes first (and those tend to be NNUE).
+
+This run on iter021 (22nd) had 12 HCE chunks, 10 NNUE chunks of training:
+Score of net3 vs net5_iter021:  76 - 168 - 256  [0.408] 500
+           net3 playing White:  47 -  43 - 160  [0.508] 250
+           net3 playing Black:  29 - 125 -  96  [0.308] 250
+               White vs Black: 172 -  72 - 256  [0.600] 500
+Elo difference: -64.7 +/- 21.2, LOS: 0.0 %, DrawRatio: 51.2 %
+
+IIRC, net3 was much worse with black. So perhaps those issues are being corrected by net5.
+Since we are waiting anyways, we can run HCE vs net5_021 at 10+0.1:
+Score of hce vs nnue:  47 - 346 - 107  [0.201] 500
+   hce playing White:  36 - 132 -  82  [0.308] 250
+   hce playing Black:  11 - 214 -  25  [0.094] 250
+      White vs Black: 250 - 143 - 107  [0.607] 500
+Elo difference: -239.7 +/- 31.2, LOS: 0.0 %, DrawRatio: 21.4 %
+
+This means iter021 is already 65 elo ahead of net3's iter240. Tremendous growth.
+
+Now, iter038 (21 HCE, 18 NNUE) vs net3:
+Score of net3 vs net5_iter038:  94 - 245 - 161  [0.349] 500
+           net3 playing White:  42 - 113 -  95  [0.358] 250
+           net3 playing Black:  52 - 132 -  66  [0.340] 250
+               White vs Black: 174 - 165 - 161  [0.509] 500
+Elo difference: -108.3 +/- 25.7, LOS: 0.0 %, DrawRatio: 32.2 %
+
+Again, we must wait so run vs HCE at 10+0.1:
+Score of hce vs nnue:  58 - 346 - 96  [0.212] 500
+   hce playing White:  40 - 154 - 56  [0.272] 250
+   hce playing Black:  18 - 192 - 40  [0.152] 250
+      White vs Black: 232 - 172 - 96  [0.560] 500
+Elo difference: -228.1 +/- 31.6, LOS: 0.0 %, DrawRatio: 19.2 %
+
+Performance is slightly worse than iter021 (vs HCE, but not vs net3), though with better color balance
+in general. From now on, we will test every 50th iteration, then continually zoom in around the best of the 4.
+
+iter049 (27 HCE, 23 NNUE):
+Score of net3 vs net5_iter049: 102 - 183 - 215  [0.419] 500
+           net3 playing White:  69 -  66 - 115  [0.506] 250
+           net3 playing Black:  33 - 117 - 100  [0.332] 250
+               White vs Black: 186 -  99 - 215  [0.587] 500
+Elo difference: -56.8 +/- 23.1, LOS: 0.0 %, DrawRatio: 43.0 %
+
+This suggests the peak strength occurred between iters 021 and 049. To check this, we will run current best
+(iter038) vs iter063:
+Score of iter038 vs iter063: 176 - 91 - 233  [0.585] 500
+      iter038 playing White: 98 - 33 - 119  [0.630] 250
+      iter038 playing Black: 78 - 58 - 114  [0.540] 250
+             White vs Black: 156 - 111 - 233  [0.545] 500
+Elo difference: 59.6 +/- 22.3, LOS: 100.0 %, DrawRatio: 46.6 %
+
+So again, clearly worse. Let us find the strength peak between iter021 and iter049.
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter049                        60      25     468   58.5%   39.7%
+   2 iter019                        53      24     466   57.5%   44.2%
+   3 iter024                        51      24     469   57.4%   42.2%
+   4 iter004                        48      25     469   56.9%   35.0%
+   5 iter009                        38      24     470   55.4%   41.9%
+   6 iter029                        33      24     468   54.7%   39.7%
+   7 iter014                        26      24     469   53.7%   39.7%
+   8 iter044                       -55      25     469   42.1%   37.7%
+   9 iter034                       -77      26     470   39.1%   32.8%
+  10 iter039                       -84      26     468   38.1%   32.7%
+  11 curr (net3_final)             -96      26     470   36.5%   31.7%
+
+Not sure what to make of this, could be noise.
+Going to rerun with some new iters added and the worst removed.
+Only the top 5 are within margin of error to first. Peak may be higher than 049 I suppose.
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter059                        16      15    1077   52.4%   44.6%
+   2 iter049                        16      16    1061   52.3%   44.1%
+   3 iter024                        14      15    1077   51.9%   44.3%
+   4 iter054                        10      16    1061   51.5%   41.6%
+   5 iter019                         2      15    1080   50.2%   45.3%
+   6 iter009                       -25      16    1080   46.4%   43.2%
+   7 iter004                       -33      16    1080   45.3%   39.1%
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter038                        47      20     600   56.8%   47.5%
+   2 iter054                        31      20     598   54.4%   47.3%
+   3 iter024                        13      20     601   51.9%   45.9%
+   4 iter059                       -42      20     600   43.9%   50.5%
+   5 iter049                       -49      20     603   43.0%   47.6%
+
+We should realistically be testing all iterations.
+Training is non-linear because we are mixing NNUE and HCE chunks non-deterministically.
+This is why adjacent checkpoints can be wildly different.
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter037                       103      36     264   64.4%   30.3%
+   2 iter041                        94      35     264   63.3%   33.3%
+   3 iter064                        79      33     264   61.2%   39.0%
+   4 iter038                        73      32     264   60.4%   41.3%
+   5 iter030                        73      33     264   60.4%   39.0%
+   6 iter060                        71      33     264   60.0%   40.5%
+   7 iter024                        71      35     264   60.0%   33.7%
+   8 iter031                        67      34     264   59.5%   35.6%
+   9 iter021                        67      33     264   59.5%   38.6%
+  10 iter051                        64      32     264   59.1%   41.7%
+  11 iter025                        63      32     264   58.9%   41.3%
+  12 iter063                        60      33     264   58.5%   39.0%
+  13 iter058                        60      33     264   58.5%   39.0%
+  14 iter042                        60      33     264   58.5%   37.5%
+  15 iter066                        58      34     264   58.3%   35.6%
+  16 iter059                        57      33     264   58.1%   40.5%
+  17 iter049                        56      35     264   58.0%   32.6%
+  18 iter009                        56      33     264   58.0%   37.9%
+  19 iter046                        53      32     264   57.6%   40.9%
+  20 iter014                        52      33     264   57.4%   37.5%
+  21 iter019                        49      32     264   57.0%   41.3%
+  22 iter020                        46      34     264   56.6%   36.7%
+  23 iter035                        45      33     264   56.4%   38.6%
+  24 iter012                        45      33     264   56.4%   37.9%
+  25 iter055                        42      33     264   56.1%   37.9%
+  26 iter047                        42      30     264   56.1%   47.7%
+  27 iter015                        38      33     264   55.5%   39.0%
+  28 iter008                        38      34     264   55.5%   35.2%
+  29 iter043                        37      34     264   55.3%   34.8%
+  30 iter054                        34      31     264   54.9%   43.9%
+  31 iter007                        22      32     264   53.2%   40.5%
+  32 iter029                        20      33     264   52.8%   38.3%
+  33 iter026                        20      35     264   52.8%   30.7%
+  34 iter003                         8      33     264   51.1%   38.6%
+  35 iter004                         1      33     264   50.2%   37.5%
+  36 iter052                       -12      34     264   48.3%   33.0%
+  37 iter050                       -20      33     264   47.2%   39.0%
+  38 iter048                       -21      32     264   47.0%   40.2%
+  39 iter044                       -21      33     264   47.0%   38.6%
+  40 iter065                       -28      33     264   46.0%   38.3%
+  41 iter002                       -30      33     264   45.6%   39.0%
+  42 iter053                       -32      32     264   45.5%   40.9%
+  43 iter062                       -36      34     264   44.9%   35.2%
+  44 iter027                       -41      34     264   44.1%   36.0%
+  45 iter056                       -42      33     264   43.9%   37.9%
+  46 iter032                       -42      34     264   43.9%   36.4%
+  47 iter023                       -44      34     264   43.8%   35.2%
+  48 iter034                       -46      34     264   43.4%   34.5%
+  49 iter028                       -48      35     264   43.2%   31.1%
+  50 iter045                       -50      33     264   42.8%   37.9%
+  51 iter039                       -53      33     264   42.4%   37.9%
+  52 iter018                       -53      35     264   42.4%   31.8%
+  53 iter033                       -54      35     264   42.2%   32.2%
+  54 iter040                       -57      35     264   41.9%   33.0%
+  55 iter036                       -58      34     264   41.7%   34.8%
+  56 iter061                       -63      34     264   41.1%   36.7%
+  57 iter057                       -68      35     264   40.3%   33.0%
+  58 iter017                       -73      33     264   39.6%   37.5%
+  59 iter001                       -76      34     264   39.2%   35.2%
+  60 iter011                       -78      34     264   39.0%   34.1%
+  61 iter016                       -92      34     264   37.1%   36.4%
+  62 iter010                       -93      35     264   36.9%   32.2%
+  63 iter006                       -94      35     264   36.7%   33.3%
+  64 iter000                       -94      36     264   36.7%   28.8%
+  65 iter005                       -97      35     264   36.4%   34.1%
+  66 iter013                      -100      35     264   36.0%   31.8%
+  67 iter022                      -115      35     264   34.1%   32.6%
+
+The top 8 are in margin-of-error to first. So a playoff between them (0.5+0.05):
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter024                        14      26     420   52.0%   40.2%
+   2 iter030                        11      24     420   51.5%   46.4%
+   3 iter064                        11      24     420   51.5%   48.8%
+   4 iter037                         7      25     420   51.1%   44.0%
+   5 iter041                         4      25     420   50.6%   44.5%
+   6 iter038                        -7      25     420   49.0%   44.8%
+   7 iter060                       -11      25     420   48.5%   42.6%
+   8 iter031                       -30      26     420   45.7%   41.0%
+
+So only iter031 is outside the margin-of-error. Let's do a longer run (0.5+0.05):
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter064                        26      21     588   53.7%   45.9%
+   2 iter037                        17      21     584   52.4%   44.5%
+   3 iter038                         2      20     584   50.3%   47.8%
+   4 iter030                         1      21     583   50.2%   43.7%
+   5 iter024                        -2      22     580   49.7%   41.0%
+   6 iter060                       -13      21     578   48.1%   45.0%
+   7 iter041                       -30      20     583   45.6%   47.7%
+
+So, iter064 vs iter037 play-off (1+0.1):
+Score of iter037 vs iter064: 165 - 236 - 399  [0.456] 800
+      iter037 playing White: 110 -  78 - 212  [0.540] 400
+      iter037 playing Black:  55 - 158 - 187  [0.371] 400
+             White vs Black: 268 - 133 - 399  [0.584] 800
+Elo difference: -30.9 +/- 17.0, LOS: 0.0 %, DrawRatio: 49.9 %
+
+Let's now run iter064 vs HCE and net3_final, which is current engine state (10+0.1):
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter064                       141      23     704   69.2%   28.8%
+   2 curr                           44      22     705   56.2%   29.4%
+   3 hce                          -194      25     709   24.7%   19.7%
+
+Direct iter064 vs HCE, 10+0.1:
+Score of iter064 vs hce: 551 - 77 - 172  [0.796] 800
+  iter064 playing White: 301 - 24 - 75  [0.846] 400
+  iter064 playing Black: 250 - 53 - 97  [0.746] 400
+         White vs Black: 354 - 274 - 172  [0.550] 800
+Elo difference: 236.8 +/- 24.5, LOS: 100.0 %, DrawRatio: 21.5 %
+
+Direct iter064 vs HCE, 90+0.5:
+Score of iter064 vs hce: 164 - 25 - 59  [0.780] 248
+  iter064 playing White: 100 - 5 - 19  [0.883] 124
+  iter064 playing Black: 64 - 20 - 40  [0.677] 124
+         White vs Black: 120 - 69 - 59  [0.603] 248
+Elo difference: 220.1 +/- 42.5, LOS: 100.0 %, DrawRatio: 23.8 %
+
+Using the HCE ratings from Elo.md:
+- 10+0.1 HCE = 2652.7, so net5 iter064 is estimated at 2889.5 +/- 27.1.
+- 90+0.5 HCE = 2734.5, so net5 iter064 is estimated at 2954.6 +/- 47.1.
+
+This run produced some decent gains, but the pipeline was flawed, because NNUE workers finishing faster
+add noise to each iteration of training, and reduce correlation between consecutive iterations. This must
+be fixed in net6.
+
+Selected net5 checkpoint: iter064.
+
+Games vs HCE:
+
+10+0.1:
+Score of iter064 vs hce: 551 -  77 - 172  [0.796] 800
+  iter064 playing White: 301 -  24 - 7 5  [0.846] 400
+  iter064 playing Black: 250 -  53 -  97  [0.746] 400
+         White vs Black: 354 - 274 - 172  [0.550] 800
+Elo difference: 236.8 +/- 24.5, LOS: 100.0 %, DrawRatio: 21.5 %
+
+90+0.5:
+Score of iter064 vs hce: 164 - 25 - 59  [0.780] 248
+  iter064 playing White: 100 -  5 - 19  [0.883] 124
+  iter064 playing Black:  64 - 20 - 40  [0.677] 124
+         White vs Black: 120 - 69 - 59  [0.603] 248
+Elo difference: 220.1 +/- 42.5, LOS: 100.0 %, DrawRatio: 23.8 %
+
+Illegal PV warning
+==================
+
+Cutechess reported:
+
+Warning: Illegal PV move b1d2info from iter064 (1377)
+Warning: PV: O-O c3 g6 b1d2info
+
+This looks like a PV-output problem rather than a confirmed illegal bestmove. The likely cause is
+that the engine followed transposition-table best moves while printing the PV and appended the move
+before checking whether it was legal in the current PV line. A stale/collided TT move could therefore
+be printed in `info pv`, which cutechess then flags even if the actual `bestmove` is legal.
+
+Fix: PV printing now calls `make_move` before appending each PV move. Illegal TT continuations are
+silently truncated instead of printed.

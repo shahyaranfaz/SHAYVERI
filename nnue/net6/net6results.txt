@@ -1,0 +1,120 @@
+Net6 methodology
+================
+
+Goal: continue from the net5 winner while fixing the biggest weakness of net5:
+arrival-order chunk mixing.
+
+Net5 result being continued
+===========================
+
+Selected checkpoint: net5 iter064.
+
+Direct strength vs HCE:
+- 10+0.1: +236.8 +/- 24.5 Elo
+- 90+0.5: +220.1 +/- 42.5 Elo
+
+Anchored rating estimate from Elo.md:
+- 10+0.1: 2889.5 +/- 27.1
+- 90+0.5: 2954.6 +/- 47.1
+
+Why net6 exists
+===============
+
+Net5 showed that mixed HCE/NNUE data works, but the pipeline had a flaw:
+NNUE workers finished chunks faster, so the master trained on whichever chunks
+arrived first. That made consecutive checkpoints noisy and non-monotonic. A strong
+checkpoint could be followed by a much weaker one even one iteration later.
+
+Net6 should keep the successful ingredients from net5 while making the data mix
+intentional instead of accidental.
+
+Planned data
+============
+
+- Shared-disk multi-worker setup.
+- 5 workers.
+- 5M positions per chunk.
+- 40 chunks per worker unless stopped early.
+- 1B total positions if all chunks complete.
+- 10k-node labels.
+- WDL=0.1.
+- Same Chess768, hidden=256 Marlinflow trainer.
+- Resume from the net5 iter064 PyTorch checkpoint.
+
+Planned HCE/NNUE split
+======================
+
+Target split:
+- 60% HCE-generated data.
+- 40% NNUE-generated data.
+
+Implementation requirement:
+- Do not let the master consume chunks purely by arrival time.
+- Either consume a fixed ratio per training window, or sort/claim from separate HCE
+  and NNUE queues.
+- If separate queues are not implemented yet, record exact HCE/NNUE counts per
+  checkpoint and treat iteration strength as noisy.
+
+Training plan
+=============
+
+Starting LR should stay conservative because net4 showed that high LR destroys a
+good resumed net quickly.
+
+Planned defaults:
+- LR: 0.0001
+- LR drop: 0.00003 after 100 chunks
+- second LR drop: 0.00001 after 200 chunks
+- epochs per chunk: 1
+- batch size: 16384
+- scale: 400
+- save every epoch
+
+Pre-run checklist
+=================
+
+- Update net6 scripts away from copied v2.4 names.
+- Use NFS root for net6 only.
+- Use train id `shayveri_v2.5` or the chosen net6 id consistently.
+- Set `RESUME` to the net5 iter064 checkpoint.
+- Ensure workers that should generate HCE data run in a directory without
+  `net3_final.nnue`.
+- Ensure workers that should generate NNUE data run in a directory with the selected
+  net5 `.nnue` available as the default eval file.
+- Confirm `./SHAYVERI datagen <threads> <positions> <prefix> <nodes>` still has no
+  eval-file argument.
+- Confirm master logs write HCE/NNUE source counts per checkpoint.
+
+Checkpoint testing plan
+=======================
+
+Primary:
+- Test every checkpoint if feasible, because mixed-source training is not monotonic.
+
+Fallback:
+- Run a coarse scan every 5 or 10 iterations.
+- Zoom in around the best cluster.
+- Play off candidates at 0.5+0.05 or 1+0.1.
+- Confirm the winner directly against net5 iter064 and HCE at 10+0.1.
+- If it is clearly stronger, run a 90+0.5 match vs HCE.
+
+Expected signal
+===============
+
+Net5 already gave the major jump. Net6 is mainly testing whether controlled mixed
+data can preserve that jump and add more without drift.
+
+Reasonable target:
+- +20 to +60 Elo over net5 iter064.
+
+Great outcome:
+- +80 Elo or more over net5 iter064.
+
+Failure signal:
+- Early checkpoints lose heavily to net5 iter064, especially if black performance
+  collapses again.
+
+Results
+=======
+
+No games yet.
