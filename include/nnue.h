@@ -7,15 +7,18 @@
 #include <string>
 
 namespace SHAYVERI {
+
 namespace NNUE {
 
-inline constexpr int INPUT_SIZE   = 768;
-inline constexpr int HIDDEN_SIZE  = 256;
-inline constexpr int OUTPUT_SIZE  = 1;
-inline constexpr int L1_SCALE     = 255;
-inline constexpr int OUTPUT_SCALE = 400;
+inline constexpr int CHESS768_INPUT_SIZE = 768;
+inline constexpr int MAX_KING_BUCKETS    = 8;
+inline constexpr int MAX_INPUT_SIZE      = CHESS768_INPUT_SIZE * MAX_KING_BUCKETS;
+inline constexpr int HIDDEN_SIZE         = 256;
+inline constexpr int OUTPUT_SIZE         = 1;
+inline constexpr int L1_SCALE            = 255;
+inline constexpr int OUTPUT_SCALE        = 400;
 
-extern I16 feature_weights[INPUT_SIZE][HIDDEN_SIZE];
+extern I16 feature_weights[MAX_INPUT_SIZE][HIDDEN_SIZE];
 extern I16 feature_bias[HIDDEN_SIZE];
 extern I16 output_weights[HIDDEN_SIZE * 2];
 extern I32 output_bias;
@@ -44,10 +47,39 @@ inline int chess768_index(int piece_type, int piece_color, int sq, int perspecti
     return ((effective_color * 6) + piece_type) * 64 + effective_sq;
 }
 
+int king_bucket_count();
+int active_input_size();
+bool has_king_buckets();
+
+inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
+    if (bucket_count <= 1) return 0;
+
+    const int effective_sq = (perspective == 1) ? (king_sq ^ 56) : king_sq;
+    const int file = effective_sq & 7;
+    const int rank = effective_sq >> 3;
+    const int file_group = file <= 3 ? file : (7 - file);
+    const int rank_group = rank >= 4 ? 1 : 0;
+    return rank_group * 4 + file_group;
+}
+
+inline int feature_index(int piece_type, int piece_color, int sq,
+                         int perspective, int perspective_king_sq) {
+    const int base = chess768_index(piece_type, piece_color, sq, perspective);
+    const int bucket = king_bucket_index(perspective_king_sq, perspective, king_bucket_count());
+    return bucket * CHESS768_INPUT_SIZE + base;
+}
+
 inline void chess768_indices(int piece_type, int piece_color, int sq,
                              int &white_idx, int &black_idx) {
     white_idx = chess768_index(piece_type, piece_color, sq, 0);
     black_idx = chess768_index(piece_type, piece_color, sq, 1);
+}
+
+inline void feature_indices(int piece_type, int piece_color, int sq,
+                            int white_king_sq, int black_king_sq,
+                            int &white_idx, int &black_idx) {
+    white_idx = feature_index(piece_type, piece_color, sq, 0, white_king_sq);
+    black_idx = feature_index(piece_type, piece_color, sq, 1, black_king_sq);
 }
 
 std::string load(const std::string &path);
@@ -59,6 +91,7 @@ inline constexpr const char *UCI_OPTION_NAME = "EvalFile";
 int evaluate(int side_to_move, const Accumulator &acc);
 
 } // namespace NNUE
+
 } // namespace SHAYVERI
 
 #endif // NNUE_H

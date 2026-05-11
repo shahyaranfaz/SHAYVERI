@@ -1,5 +1,5 @@
 CXX := g++
-PYTHON ?= python
+PYTHON ?= python3
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
 
@@ -11,6 +11,9 @@ COMMON_SRC := \
 	../src/move_gen.cpp \
 	../src/evaluate.cpp \
 	../src/search.cpp \
+	../src/nnue.cpp \
+	../src/nnue_avx2.cpp \
+	../src/nnue_update.cpp \
 	../src/zobrist.cpp \
 	../src/tt.cpp \
 	../src/see.cpp
@@ -22,6 +25,17 @@ MAKE_UNMAKE_SRC := $(COMMON_SRC) make_unmake.cpp
 SEE_TESTS_SRC := $(COMMON_SRC) see_tests.cpp
 EVAL_SYM_SRC := $(COMMON_SRC) eval_symmetry.cpp
 TT_SAFETY_SRC := ../src/tt.cpp tt_safety.cpp
+NNUE_TEST_SRC := \
+	../src/attacks.cpp \
+	../src/board.cpp \
+	../src/fen.cpp \
+	../src/make.cpp \
+	../src/move_gen.cpp \
+	../src/nnue.cpp \
+	../src/nnue_avx2.cpp \
+	../src/nnue_update.cpp \
+	../src/zobrist.cpp \
+	nnue_test.cpp
 
 BIN := perft
 LEGALITY_BIN := legality
@@ -30,8 +44,9 @@ MAKE_UNMAKE_BIN := make_unmake
 SEE_TESTS_BIN := see_tests
 EVAL_SYM_BIN := eval_symmetry
 TT_SAFETY_BIN := tt_safety
+NNUE_TEST_BIN := nnue_test
 
-all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN)
+all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN)
 
 test: perft_suite \
 	fen_state_suite \
@@ -40,6 +55,7 @@ test: perft_suite \
 	see_suite \
 	eval_symmetry_suite \
 	tt_safety_suite \
+	nnue_suite \
 	uci_smoke \
 	tactical_regression
 
@@ -66,6 +82,14 @@ $(EVAL_SYM_BIN): $(EVAL_SYM_SRC)
 $(TT_SAFETY_BIN): $(TT_SAFETY_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(TT_SAFETY_SRC)
 
+$(NNUE_TEST_BIN): $(NNUE_TEST_SRC)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(NNUE_TEST_SRC)
+
+nnue_classic_test.nnue nnue_kb8_test.nnue:
+	$(PYTHON) -c "import struct; h=256; magic=0x4E4E5545; \
+open('nnue_classic_test.nnue','wb').write(struct.pack('<II', magic, 2) + bytes(768*h*2) + bytes(h*2) + bytes(h*2*2) + bytes(4)); \
+open('nnue_kb8_test.nnue','wb').write(struct.pack('<III', magic, 3, 8) + bytes(768*8*h*2) + bytes(h*2) + bytes(h*2*2) + bytes(4))"
+
 perft_suite: $(BIN)
 	./$(BIN) suite
 
@@ -87,6 +111,10 @@ eval_symmetry_suite: $(EVAL_SYM_BIN)
 tt_safety_suite: $(TT_SAFETY_BIN)
 	./$(TT_SAFETY_BIN)
 
+nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
+	./$(NNUE_TEST_BIN) nnue_classic_test.nnue
+	./$(NNUE_TEST_BIN) nnue_kb8_test.nnue
+
 ensure_engine:
 	@if [ ! -x ../SHAYVERI ]; then $(MAKE) -C ..; fi
 
@@ -100,6 +128,6 @@ selfplay_smoke: ensure_engine
 	$(PYTHON) selfplay_smoke.py
 
 clean:
-	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) --rec __pycache__
+	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue --rec __pycache__
 
-.PHONY: all test release_test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite ensure_engine uci_smoke tactical_regression selfplay_smoke clean
+.PHONY: all test release_test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite nnue_suite ensure_engine uci_smoke tactical_regression selfplay_smoke clean

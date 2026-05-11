@@ -4,11 +4,11 @@
 #include "move_gen.h"
 #include "nnue.h"
 #include "nnue_update.h"
-#include "search.h"
 #include "zobrist.h"
 
 #include <cstring>
 #include <iostream>
+#include <string>
 
 using namespace SHAYVERI;
 
@@ -43,8 +43,48 @@ static int check_feature_index_mapping() {
     return 0;
 }
 
+static int check_king_bucket_mapping() {
+    for (int perspective = WHITE; perspective <= BLACK; ++perspective) {
+        for (int sq = 0; sq < 64; ++sq) {
+            int effective_sq = perspective == BLACK ? (sq ^ 56) : sq;
+            int file = effective_sq & 7;
+            int rank = effective_sq >> 3;
+            int expected = (rank >= 4 ? 4 : 0) + (file <= 3 ? file : (7 - file));
+            int actual = NNUE::king_bucket_index(sq, perspective, 8);
+            if (actual != expected) {
+                std::cerr << "NNUE king bucket mismatch: perspective=" << perspective
+                          << " sq=" << sq
+                          << " expected=" << expected
+                          << " actual=" << actual << "\n";
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 static bool same_acc(const NNUE::Accumulator &a, const NNUE::Accumulator &b) {
     return std::memcmp(a.vals, b.vals, sizeof(a.vals)) == 0;
+}
+
+static std::string test_move_to_uci(Move m) {
+    Square from = move_from(m);
+    Square to = move_to(m);
+    std::string out;
+    out += char('a' + get_file(from));
+    out += char('1' + get_rank(from));
+    out += char('a' + get_file(to));
+    out += char('1' + get_rank(to));
+
+    switch (move_promo(m)) {
+        case KNIGHT: out += 'n'; break;
+        case BISHOP: out += 'b'; break;
+        case ROOK:   out += 'r'; break;
+        case QUEEN:  out += 'q'; break;
+        default: break;
+    }
+
+    return out;
 }
 
 static int check_position(Board &b) {
@@ -67,7 +107,7 @@ static int check_position(Board &b) {
         refreshed.refresh(copy);
         if (!same_acc(child, refreshed)) {
             std::cerr << "NNUE accumulator mismatch after "
-                      << move_to_uci(m) << "\n";
+                      << test_move_to_uci(m) << "\n";
             return 1;
         }
     }
@@ -81,6 +121,8 @@ int main(int argc, char **argv) {
     }
 
     if (check_feature_index_mapping() != 0)
+        return 1;
+    if (check_king_bucket_mapping() != 0)
         return 1;
 
     Zobrist::init();

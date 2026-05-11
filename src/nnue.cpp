@@ -1,4 +1,5 @@
 #include "nnue.h"
+#include "attacks.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -8,9 +9,10 @@
 #include <iostream>
 
 namespace SHAYVERI {
+
 namespace NNUE {
 
-I16 feature_weights[INPUT_SIZE][HIDDEN_SIZE];
+I16 feature_weights[MAX_INPUT_SIZE][HIDDEN_SIZE];
 I16 feature_bias[HIDDEN_SIZE];
 I16 output_weights[HIDDEN_SIZE * 2];
 I32 output_bias;
@@ -18,11 +20,14 @@ I32 output_bias;
 namespace {
 
 static constexpr U32 NNUE_MAGIC   = 0x4E4E5545u;
-static constexpr U32 NNUE_VERSION = 2u;
+static constexpr U32 NNUE_VERSION_CLASSIC = 2u;
+static constexpr U32 NNUE_VERSION_KB      = 3u;
 
 std::string g_net_path;
 U64         g_net_hash = 0;
 bool        g_loaded = false;
+int         g_king_buckets = 1;
+int         g_input_size = CHESS768_INPUT_SIZE;
 
 U64 fnv1a_hash(const void *data, size_t bytes) {
     const U8 *p = static_cast<const U8 *>(data);
@@ -90,13 +95,32 @@ std::string load(const std::string &path) {
         std::fclose(f);
         std::exit(EXIT_FAILURE);
     }
-    if (version != NNUE_VERSION) {
+    if (version != NNUE_VERSION_CLASSIC && version != NNUE_VERSION_KB) {
         std::fprintf(stderr, "[nnue] unsupported version %u in \"%s\"\n", version, path.c_str());
         std::fclose(f);
         std::exit(EXIT_FAILURE);
     }
 
-    must_read(f, feature_weights, sizeof(feature_weights), "feature_weights");
+    if (version == NNUE_VERSION_CLASSIC) {
+        g_king_buckets = 1;
+        g_input_size = CHESS768_INPUT_SIZE;
+    } else {
+        U32 buckets = 0;
+        must_read(f, &buckets, sizeof(buckets), "king_bucket_count");
+        if (buckets != MAX_KING_BUCKETS) {
+            std::fprintf(stderr, "[nnue] invalid king bucket count %u in \"%s\"\n",
+                         buckets, path.c_str());
+            std::fclose(f);
+            std::exit(EXIT_FAILURE);
+        }
+        g_king_buckets = static_cast<int>(buckets);
+        g_input_size = CHESS768_INPUT_SIZE * g_king_buckets;
+    }
+
+    std::memset(feature_weights, 0, sizeof(feature_weights));
+    const size_t feature_weights_bytes =
+        static_cast<size_t>(g_input_size) * HIDDEN_SIZE * sizeof(I16);
+    must_read(f, feature_weights, feature_weights_bytes, "feature_weights");
     must_read(f, feature_bias, sizeof(feature_bias), "feature_bias");
     must_read(f, output_weights, sizeof(output_weights), "output_weights");
     must_read(f, &output_bias, sizeof(output_bias), "output_bias");
@@ -109,10 +133,11 @@ std::string load(const std::string &path) {
     }
     std::fclose(f);
 
-    U64 h = fnv1a_hash(feature_weights, sizeof(feature_weights));
+    U64 h = fnv1a_hash(feature_weights, feature_weights_bytes);
     h ^= fnv1a_hash(feature_bias, sizeof(feature_bias));
     h ^= fnv1a_hash(output_weights, sizeof(output_weights));
     h ^= fnv1a_hash(&output_bias, sizeof(output_bias));
+    h ^= fnv1a_hash(&g_king_buckets, sizeof(g_king_buckets));
 
     g_net_path = path;
     g_net_hash = h;
@@ -124,13 +149,28 @@ bool is_loaded() {
     return g_loaded;
 }
 
+int king_bucket_count() {
+    return g_king_buckets;
+}
+
+int active_input_size() {
+    return g_input_size;
+}
+
+bool has_king_buckets() {
+    return g_king_buckets > 1;
+}
+
 void print_info() {
     std::cout << "info string NNUE path " << g_net_path << "\n"
               << "info string NNUE hash " << std::uppercase << std::hex
               << std::setw(16) << std::setfill('0')
               << static_cast<unsigned long long>(g_net_hash)
               << std::dec << std::nouppercase << std::setfill(' ') << "\n"
-              << "info string NNUE arch Chess768 hidden=" << HIDDEN_SIZE << "\n"
+              << "info string NNUE arch "
+              << (has_king_buckets() ? "Chess768xKingBuckets" : "Chess768")
+              << " hidden=" << HIDDEN_SIZE
+              << " king_buckets=" << g_king_buckets << "\n"
               << "info string NNUE scales L1=" << L1_SCALE
               << " OUT=" << OUTPUT_SCALE << "\n";
 }
@@ -140,6 +180,9 @@ void Accumulator::reset() {
 }
 
 void Accumulator::refresh(const Board &board) {
+    const Square white_king_sq = king_square(board, WHITE);
+    const Square black_king_sq = king_square(board, BLACK);
+
     for (int i = 0; i < HIDDEN_SIZE; ++i) {
         vals[0][i] = feature_bias[i];
         vals[1][i] = feature_bias[i];
@@ -152,8 +195,8 @@ void Accumulator::refresh(const Board &board) {
             int wi = 0;
             int bi = 0;
             Piece piece = Piece(p);
-            chess768_indices(piece_type_index(piece), piece_colour_index(piece),
-                             sq, wi, bi);
+            feature_indices(piece_type_index(piece), piece_colour_index(piece), sq,
+                            white_king_sq, black_king_sq, wi, bi);
             for (int i = 0; i < HIDDEN_SIZE; ++i) {
                 vals[0][i] += feature_weights[wi][i];
                 vals[1][i] += feature_weights[bi][i];

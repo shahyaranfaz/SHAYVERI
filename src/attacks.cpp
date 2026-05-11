@@ -164,14 +164,19 @@ U64 queen_attacks(Square sq, U64 occupied) {
 }
 
 Square king_square(const Board &b, Colour c) {
+    assert((c == WHITE || c == BLACK) && "invalid king colour");
     U64 kbb = (c == WHITE) ? b.bit_boards[WK] : b.bit_boards[BK];
     assert(kbb && "king missing");
     return __builtin_ctzll(kbb);
 }
 
 bool is_square_attacked(const Board &b, Square sq, Colour attacker) {
+    assert((attacker == WHITE || attacker == BLACK) && "invalid attacker colour");
+    if (attacker != WHITE && attacker != BLACK) return false;
+
     U64 pawns = (attacker == WHITE) ? b.bit_boards[WP] : b.bit_boards[BP];
-    if (PAWN_ATTACKS[flip(attacker)][sq] & pawns) return true;
+    const Colour pawn_from = (attacker == WHITE) ? BLACK : WHITE;
+    if (PAWN_ATTACKS[pawn_from][sq] & pawns) return true;
 
     U64 knights = (attacker == WHITE) ? b.bit_boards[WN] : b.bit_boards[BN];
     if (KNIGHT_ATTACKS[sq] & knights) return true;

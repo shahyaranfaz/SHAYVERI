@@ -1,8 +1,12 @@
 #include "nnue_update.h"
 
+#include "attacks.h"
+#include "make.h"
+
 #include <cstdlib>
 
 namespace SHAYVERI {
+
 namespace NNUE {
 
 namespace {
@@ -11,22 +15,22 @@ int piece_type_index(PieceType pt) {
     return static_cast<int>(pt) - 1;
 }
 
-void acc_add(Accumulator &acc, Piece p, Square sq) {
+void acc_add(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square black_king_sq) {
     int wi = 0;
     int bi = 0;
-    chess768_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
-                     sq, wi, bi);
+    feature_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
+                    sq, white_king_sq, black_king_sq, wi, bi);
     for (int i = 0; i < HIDDEN_SIZE; ++i) {
         acc.vals[0][i] += feature_weights[wi][i];
         acc.vals[1][i] += feature_weights[bi][i];
     }
 }
 
-void acc_sub(Accumulator &acc, Piece p, Square sq) {
+void acc_sub(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square black_king_sq) {
     int wi = 0;
     int bi = 0;
-    chess768_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
-                     sq, wi, bi);
+    feature_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
+                    sq, white_king_sq, black_king_sq, wi, bi);
     for (int i = 0; i < HIDDEN_SIZE; ++i) {
         acc.vals[0][i] -= feature_weights[wi][i];
         acc.vals[1][i] -= feature_weights[bi][i];
@@ -59,13 +63,26 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
     Piece captured = b.get_piece(to);
     PieceType promo = move_promo(m);
     Colour stm = b.side_to_move;
+    Square white_king_sq = king_square(b, WHITE);
+    Square black_king_sq = king_square(b, BLACK);
+
+    if (get_type(moved) == KING && has_king_buckets()) {
+        Board post = b;
+        Undo u;
+        if (!make_move(post, m, u)) {
+            child = parent;
+            return;
+        }
+        child.refresh(post);
+        return;
+    }
 
     if (is_ep_move(m)) {
         Square cap_sq = (stm == WHITE) ? to - 8 : to + 8;
         Piece ep_pawn = b.get_piece(cap_sq);
-        acc_sub(child, ep_pawn, cap_sq);
-        acc_sub(child, moved, from);
-        acc_add(child, moved, to);
+        acc_sub(child, ep_pawn, cap_sq, white_king_sq, black_king_sq);
+        acc_sub(child, moved, from, white_king_sq, black_king_sq);
+        acc_add(child, moved, to, white_king_sq, black_king_sq);
         return;
     }
 
@@ -92,20 +109,21 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
             rook_piece = BR;
         }
 
-        acc_sub(child, moved, from);
-        acc_add(child, moved, to);
-        acc_sub(child, rook_piece, rook_from);
-        acc_add(child, rook_piece, rook_to);
+        acc_sub(child, moved, from, white_king_sq, black_king_sq);
+        acc_add(child, moved, to, white_king_sq, black_king_sq);
+        acc_sub(child, rook_piece, rook_from, white_king_sq, black_king_sq);
+        acc_add(child, rook_piece, rook_to, white_king_sq, black_king_sq);
         return;
     }
 
     if (captured != NONE_PIECE)
-        acc_sub(child, captured, to);
+        acc_sub(child, captured, to, white_king_sq, black_king_sq);
 
-    acc_sub(child, moved, from);
-    if (promo != NONE_PTYPE) acc_add(child, promoted_piece(stm, promo), to);
-    else                     acc_add(child, moved, to);
+    acc_sub(child, moved, from, white_king_sq, black_king_sq);
+    if (promo != NONE_PTYPE) acc_add(child, promoted_piece(stm, promo), to, white_king_sq, black_king_sq);
+    else                     acc_add(child, moved, to, white_king_sq, black_king_sq);
 }
 
 } // namespace NNUE
+
 } // namespace SHAYVERI

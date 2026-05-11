@@ -4,10 +4,12 @@ import json
 import struct
 
 
-INPUT_SIZE = 768
+CHESS768_INPUT_SIZE = 768
+MAX_KING_BUCKETS = 8
 HIDDEN_SIZE = 256
 NNUE_MAGIC = 0x4E4E5545
-NNUE_VERSION = 2
+NNUE_VERSION_CLASSIC = 2
+NNUE_VERSION_KB = 3
 L1_SCALE = 255
 OUTPUT_SCALE = 400
 
@@ -40,6 +42,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_json")
     parser.add_argument("output_nnue")
+    parser.add_argument("--king-buckets", type=int, default=None)
     parser.add_argument("--feature-scale", type=float, default=L1_SCALE)
     parser.add_argument("--output-scale", type=float, default=L1_SCALE)
     parser.add_argument("--feature-bias-scale", type=float, default=L1_SCALE)
@@ -54,16 +57,40 @@ def main():
     out_weight = net["out.weight"]
     out_bias = net["out.bias"]
 
-    require_shape("ft.weight", ft_weight, [HIDDEN_SIZE, INPUT_SIZE])
+    if len(ft_weight) != HIDDEN_SIZE or not ft_weight[0]:
+        raise ValueError("ft.weight must be a non-empty [hidden][input] matrix")
+    require_shape("ft.weight", ft_weight, [HIDDEN_SIZE, len(ft_weight[0])])
     require_shape("ft.bias", ft_bias, [HIDDEN_SIZE])
     require_shape("out.weight", out_weight, [1, HIDDEN_SIZE * 2])
     require_shape("out.bias", out_bias, [1])
 
+    input_size = len(ft_weight[0])
+    if args.king_buckets is None:
+        if input_size % CHESS768_INPUT_SIZE != 0:
+            raise ValueError(
+                f"ft.weight input size {input_size} is not divisible by {CHESS768_INPUT_SIZE}"
+            )
+        king_buckets = input_size // CHESS768_INPUT_SIZE
+    else:
+        king_buckets = args.king_buckets
+
+    if king_buckets not in (1, MAX_KING_BUCKETS):
+        raise ValueError(f"king-buckets must be 1 or {MAX_KING_BUCKETS}, got {king_buckets}")
+    expected_input = CHESS768_INPUT_SIZE * king_buckets
+    if input_size != expected_input:
+        raise ValueError(
+            f"ft.weight has input size {input_size}, expected {expected_input} for king-buckets={king_buckets}"
+        )
+
+    version = NNUE_VERSION_KB if king_buckets > 1 else NNUE_VERSION_CLASSIC
+
     with open(args.output_nnue, "wb") as f:
-        f.write(struct.pack("<II", NNUE_MAGIC, NNUE_VERSION))
+        f.write(struct.pack("<II", NNUE_MAGIC, version))
+        if version == NNUE_VERSION_KB:
+            f.write(struct.pack("<I", king_buckets))
 
         # Marlinflow stores ft.weight as [hidden][input]; SHAYVERI reads [input][hidden].
-        for input_idx in range(INPUT_SIZE):
+        for input_idx in range(input_size):
             for hidden_idx in range(HIDDEN_SIZE):
                 f.write(struct.pack("<h", quant_i16(ft_weight[hidden_idx][input_idx],
                                                     args.feature_scale)))

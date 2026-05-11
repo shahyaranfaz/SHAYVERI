@@ -23,6 +23,7 @@ START_ITER="${START_ITER:-0}"
 MAX_CHUNKS="${MAX_CHUNKS:-200}" # 0 means run forever.
 POLL_SECONDS="${POLL_SECONDS:-10}"
 RESUME="${RESUME:-}"
+KING_BUCKETS="${KING_BUCKETS:-8}"
 
 LR="${LR:-0.001}"
 LR_DROP_CHUNK="${LR_DROP_CHUNK:-100}"
@@ -160,6 +161,7 @@ process_chunk() {
     main.py
     --data-root "$DATA_DIR"
     --train-id "$run_train_id"
+    --king-buckets "$KING_BUCKETS"
     --lr "$lr_now"
     --epochs "$EPOCHS"
     --batch-size "$BATCH_SIZE"

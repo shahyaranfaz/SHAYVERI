@@ -35,10 +35,13 @@ MoveList generate_pseudo_legal_moves(Board &b) {
     MoveList moves;
 
     Colour curr  = b.side_to_move;
-    Colour other = flip(curr);
+    if (curr != WHITE && curr != BLACK) return moves;
+    Colour other = (curr == WHITE) ? BLACK : WHITE;
 
-    U64 curr_occupied  = b.occupancies[curr];
-    U64 other_occupied = b.occupancies[other];
+    const int curr_idx = (curr == WHITE) ? 0 : 1;
+    const int other_idx = curr_idx ^ 1;
+    U64 curr_occupied  = b.occupancies[curr_idx];
+    U64 other_occupied = b.occupancies[other_idx];
     U64 empty          = ~b.occupied;
 
     if (curr == WHITE) {
@@ -195,9 +198,10 @@ MoveList generate_pseudo_legal_moves(Board &b) {
 MoveList generate_pseudo_legal_captures(Board &b) {
     MoveList moves;
     Colour curr  = b.side_to_move;
-    Colour other = flip(curr);
+    if (curr != WHITE && curr != BLACK) return moves;
 
-    U64 other_occupied = b.occupancies[other];
+    const int other_idx = (curr == WHITE) ? 1 : 0;
+    U64 other_occupied = b.occupancies[other_idx];
 
     if (curr == WHITE) {
         U64 pawns = b.bit_boards[WP];

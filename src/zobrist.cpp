@@ -50,4 +50,5 @@ U64 compute(const Board &b) {
 }
 
 } // namespace Zobrist
+
 } // namespace SHAYVERI

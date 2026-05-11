@@ -12,6 +12,7 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
                         const Board &b, Move m);
 
 } // namespace NNUE
+
 } // namespace SHAYVERI
 
 #endif // NNUE_UPDATE_H
