@@ -45,15 +45,19 @@ Planned HCE/NNUE split
 ======================
 
 Target split:
-- 60% HCE-generated data.
-- 40% NNUE-generated data.
+- 50% HCE-generated data.
+- 50% NNUE-generated data.
+- Every 10 iterations is guaranteed to be 50/50.
 
-Implementation requirement:
-- Do not let the master consume chunks purely by arrival time.
-- Either consume a fixed ratio per training window, or sort/claim from separate HCE
-  and NNUE queues.
-- If separate queues are not implemented yet, record exact HCE/NNUE counts per
-  checkpoint and treat iteration strength as noisy.
+Implementation:
+- Workers alternate NNUE then HCE chunks.
+- Worker chunk directories are prefixed with source: `nnue_...` or `hce_...`.
+- Each chunk writes `source=nnue` or `source=hce` in metadata.
+- The master claims chunks by source slot:
+  - iterations 0-4 in each 10-iteration block require NNUE chunks.
+  - iterations 5-9 in each 10-iteration block require HCE chunks.
+- If the required source is not ready, the master waits instead of consuming the
+  wrong source.
 
 Training plan
 =============
@@ -73,17 +77,16 @@ Planned defaults:
 Pre-run checklist
 =================
 
-- Update net6 scripts away from copied v2.4 names.
+- Net6 scripts use v2.5 names.
 - Use NFS root for net6 only.
-- Use train id `shayveri_v2.5` or the chosen net6 id consistently.
+- Use train id `shayveri_v2.5`.
 - Set `RESUME` to the net5 iter064 checkpoint.
-- Ensure workers that should generate HCE data run in a directory without
-  `net3_final.nnue`.
-- Ensure workers that should generate NNUE data run in a directory with the selected
-  net5 `.nnue` available as the default eval file.
+- Ensure `NET_DIR` contains `net3_final.nnue` or the selected net5 `.nnue` at the
+  default eval path.
+- Ensure `NO_NET_DIR` contains only the engine binary and no default `.nnue`.
 - Confirm `./SHAYVERI datagen <threads> <positions> <prefix> <nodes>` still has no
   eval-file argument.
-- Confirm master logs write HCE/NNUE source counts per checkpoint.
+- Confirm chunk metadata writes `source=nnue` or `source=hce`.
 
 Checkpoint testing plan
 =======================
