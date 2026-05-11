@@ -1,0 +1,145 @@
+Net8 methodology
+================
+
+Goal: switch architecture instead of continuing to fine-tune Chess768/256.
+
+Current best baseline
+=====================
+
+Selected checkpoint: net5 iter064.
+
+Direct net5 iter064 strength vs HCE:
+- 10+0.1: +236.8 +/- 24.5 Elo
+- 90+0.5: +220.1 +/- 42.5 Elo
+
+Anchored net5 iter064 estimate from Elo.md:
+- 10+0.1: 2889.5 +/- 27.1
+- 90+0.5: 2954.6 +/- 47.1
+
+Why net8 exists
+===============
+
+Net5 found the best current Chess768/256 checkpoint. Net6 and net7 then showed that
+continuing to train from that checkpoint does not reliably improve it:
+
+- net6 controlled 50/50 HCE/NNUE continuation failed immediately.
+- net7 controlled 80/20 HCE/NNUE continuation also failed immediately.
+
+This suggests LR tweaks are unlikely to be the next major lever. The current
+architecture is probably the bottleneck. Net8 changes architecture and trains from
+scratch.
+
+Architecture plan
+=================
+
+Target:
+- King-bucket NNUE.
+- 8 king buckets first.
+- Hidden size 256.
+- Output size 1.
+- Keep scale 400 initially.
+
+Reason:
+- Chess768 has no explicit king-region specialization.
+- King buckets should improve king safety, attacks, and phase-dependent structure
+  without jumping straight to a much larger/slower 512-wide net.
+- 8 buckets is the best first step: meaningful extra structure without making the
+  integration and speed risk too large.
+
+Data plan
+=========
+
+Use 80/20 HCE/NNUE, not 50/50.
+
+Reason:
+- 50/50 was bad in net6.
+- 80/20 was less bad in net7, and is safer as a conservative architecture test.
+- Since architecture is the variable, do not also make the data distribution aggressive.
+
+Planned data:
+- Shared-disk multi-worker setup.
+- 5 workers.
+- 5M positions per chunk.
+- 40 chunks per worker unless stopped early.
+- 1B total positions if all chunks complete.
+- 10k-node labels.
+- WDL=0.1.
+- 80% HCE-generated data.
+- 20% NNUE-generated data from net5 iter064.
+
+Implementation:
+- Workers generate two NNUE chunks followed by eight HCE chunks in each 10-chunk cycle.
+- Worker chunk directories are prefixed with source: `nnue_...` or `hce_...`.
+- Each chunk writes `source=nnue` or `source=hce` in metadata.
+- The master claims chunks by source slot:
+  - iterations 0-1 in each 10-iteration block require NNUE chunks.
+  - iterations 2-9 in each 10-iteration block require HCE chunks.
+- If the required source is not ready, the master waits.
+
+Training plan
+=============
+
+This is a from-scratch architecture run.
+
+Planned defaults:
+- Train id: `shayveri_v2.7_kb8`.
+- NFS root: `~/nnue_v2_7`.
+- No resume checkpoint.
+- LR: 0.001.
+- LR drop: 0.0003 after 100 chunks.
+- second LR drop: 0.0001 after 200 chunks.
+- epochs per chunk: 1.
+- batch size: 16384.
+- WDL: 0.1.
+- scale: 400.
+- save every epoch.
+
+Script note:
+- `TRAIN_EXTRA_ARGS` is available for architecture-specific trainer flags if the
+  king-bucket trainer exposes them.
+- If the trainer needs a different entry point for king buckets, update the master
+  script before launching.
+
+Pre-run checklist
+=================
+
+- Confirm Marlinflow trainer actually supports the king-bucket architecture being used.
+- Confirm output JSON keys/shapes before conversion.
+- Confirm converter can export the new king-bucket net.
+- Confirm engine inference code can load and evaluate the new net before tournament testing.
+- Confirm datagen still works with existing engine binary and no eval-file argument.
+- Ensure `NET_DIR` contains net5 iter064 `.nnue` at the default eval path.
+- Ensure `NO_NET_DIR` contains only the engine binary and no default `.nnue`.
+- Confirm first 10 done chunks contain 2 NNUE and 8 HCE.
+
+Checkpoint testing plan
+=======================
+
+Because this is from scratch, early checkpoints may be weak. Do not kill as fast as
+net6/net7 unless results are catastrophically bad.
+
+Suggested testing:
+- Convert and test iter019, iter039, iter059, iter079.
+- First compare against HCE, not net5.
+- Once a checkpoint clears HCE comfortably, compare against net5 iter064.
+- If a checkpoint gets within 50 Elo of net5, continue deeper.
+- If no checkpoint beats HCE by iter080, stop and debug architecture/trainer/converter.
+
+Expected signal
+===============
+
+Reasonable target:
+- Match or slightly beat net5 iter064 after enough data.
+
+Great outcome:
+- +50 Elo or more over net5 iter064.
+
+Failure signal:
+- Cannot clearly beat HCE after 60-80 chunks.
+- Conversion/inference scale looks wrong.
+- NPS drop is too large to preserve search strength.
+
+Results
+=======
+
+No net8 games yet.
