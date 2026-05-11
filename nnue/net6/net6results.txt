@@ -120,4 +120,35 @@ Failure signal:
 Results
 =======
 
-No games yet.
+Iterations ending in 9 have completed a batch of 10 (5 HCE, 5 NNUE).
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 curr                           51      19     800   57.3%   40.9%
+   2 iter079                         2      18     800   50.3%   42.4%
+   3 iter019                       -13      18     800   48.1%   43.4%
+   4 iter039                       -14      18     800   47.9%   46.9%
+   5 iter059                       -25      18     800   46.4%   45.0%
+
+These results are nowhere close. Let's try iterations ending in 4 (had 5 straight NNUE):
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 curr                          141      33     327   69.3%   29.7%
+   2 iter024                        36      29     330   55.2%   41.2%
+   3 iter044                         0      29     329   50.0%   40.4%
+   4 iter014                       -22      29     330   46.8%   41.5%
+   5 iter074                       -24      29     329   46.5%   41.9%
+   6 iter034                       -32      29     331   45.5%   42.0%
+   7 iter054                       -36      29     327   44.8%   39.4%
+   8 iter064                       -56      30     327   42.0%   35.8%
+
+So, clearly the runs with more NN (early 0X4 iterations) perform the worst,
+and the iteration performs better when the ratio of NNUE/HCE is closer to 50/50.
+Even at 50/50, it's nowhere near net5 best.
+
+Let's try the first iteration which was 50/50 split:
+Score of iter009 vs curr: 177 - 248 - 375  [0.456] 800
+   iter009 playing White: 110 - 103 - 187  [0.509] 400
+   iter009 playing Black:  67 - 145 - 188  [0.403] 400
+          White vs Black: 255 - 170 - 375  [0.553] 800
+Elo difference: -30.9 +/- 17.5, LOS: 0.0 %, DrawRatio: 46.9 %
+
+So, this run is dead. We need HCE-dominant data.
