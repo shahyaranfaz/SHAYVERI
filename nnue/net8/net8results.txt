@@ -46,8 +46,8 @@ Reason:
 - 8 buckets is the best first step: meaningful extra structure without making the
   integration and speed risk too large.
 
-Data plan
-=========
+Data and toolchain plan
+=======================
 
 Use 80/20 HCE/NNUE, not 50/50.
 
@@ -67,6 +67,14 @@ Planned data:
 - 80% HCE-generated data.
 - 20% NNUE-generated data from net5 iter064.
 
+Toolchain:
+- SHAYVERI datagen still writes legacy text/plain lines:
+  `fen | score | wdl`.
+- Bullet utilities replace Marlinflow for conversion and shuffling:
+  `bullet-utils convert --from text`.
+- Marlinflow is no longer in the net8 critical path.
+- Bullet handles KB8 training.
+
 Implementation:
 - Workers generate two NNUE chunks followed by eight HCE chunks in each 10-chunk cycle.
 - Worker chunk directories are prefixed with source: `nnue_...` or `hce_...`.
@@ -84,6 +92,8 @@ This is a from-scratch architecture run.
 Planned defaults:
 - Train id: `shayveri_v2.7_kb8`.
 - NFS root: `~/nnue_v2_7`.
+- Data root: `~/nnue_v2_7/data`.
+- Output root: `~/nnue_v2_7/out`.
 - No resume checkpoint.
 - LR: 0.001.
 - LR drop: 0.0003 after 100 chunks.
@@ -95,22 +105,41 @@ Planned defaults:
 - save every epoch.
 
 Script note:
-- `TRAIN_EXTRA_ARGS` is available for architecture-specific trainer flags if the
-  king-bucket trainer exposes them.
-- If the trainer needs a different entry point for king buckets, update the master
-  script before launching.
+- `BULLET_UTILS` defaults to `~/bullet/target/release/bullet-utils`.
+- `BULLET_DIR` defaults to `~/bullet`.
+- `BULLET_PACKAGE` defaults to `bullet_lib`.
+- `BULLET_EXAMPLE` defaults to `shayveri_kb8`.
+- `BULLET_FEATURES` defaults to `cuda`.
+- `BULLET_TRAIN_CMD` defaults to
+  `cargo run --release --package bullet_lib --example shayveri_kb8 --features cuda`.
+- `BULLET_PREFLIGHT_CHECK` defaults to `1`, so the master runs
+  `cargo build --release --package bullet_lib --example shayveri_kb8 --features cuda`
+  before claiming any chunk.
+- If `CUDA_PATH` is unset and `/usr/local/cuda` exists, the master exports
+  `CUDA_PATH=/usr/local/cuda`.
+- The master passes these environment variables to the trainer:
+  `DATA_FILES`, `TRAIN_ID`, `OUT_DIR`, `RESUME`, `KING_BUCKETS`, `LR`, `EPOCHS`,
+  `BATCH_SIZE`, `WDL`, `SCALE`, `SAVE_EPOCHS`, and `TRAIN_EXTRA_ARGS`.
+- `DATA_FILES` is colon-separated.
+- `TRAIN_EXTRA_ARGS` is available for architecture-specific trainer flags.
 
-Pre-run checklist
-=================
+Validated setup
+===============
 
-- Confirm Marlinflow trainer actually supports the king-bucket architecture being used.
-- Confirm output JSON keys/shapes before conversion.
-- Confirm converter can export the new king-bucket net.
-- Confirm engine inference code can load and evaluate the new net before tournament testing.
-- Confirm datagen still works with existing engine binary and no eval-file argument.
-- Ensure `NET_DIR` contains net5 iter064 `.nnue` at the default eval path.
-- Ensure `NO_NET_DIR` contains only the engine binary and no default `.nnue`.
-- Confirm first 10 done chunks contain 2 NNUE and 8 HCE.
+- `nnue/shayveri_kb8.rs` is the canonical Bullet trainer example.
+- The example is registered in `~/bullet/crates/bullet_lib/Cargo.toml`.
+- The master uses a pre-backend-rewrite Bullet checkout because the current
+  backend requires CUDA symbols missing from the installed CUDA 11.8 toolkit.
+- The old backend needed two local compatibility patches:
+  - remove `ctx.set_blocking_synchronize()` from `crates/bullet_cuda_backend/src/device.rs`;
+  - compile NVRTC kernels with `-default-device` and `--std=c++17`.
+- Runtime smoke passed:
+  - one `.plain` row converted with `bullet-utils convert --from text`;
+  - shuffled with `bullet-utils shuffle`;
+  - trained with `cargo run --release --package bullet_lib --example shayveri_kb8 --features cuda`;
+  - saved `[runtime_smoke-1]`.
+- Master is running after the runtime smoke passed.
+- Still verify after launch that first 10 done chunks contain 2 NNUE and 8 HCE.
 
 Checkpoint testing plan
 =======================
@@ -142,4 +171,19 @@ Failure signal:
 Results
 =======
 
-No net8 games yet.
+No net8 games yet. Training has started.
+
+Launch notes
+============
+
+- Fake iter000/iter001 from the stale root-level script are not valid training.
+- Master now preflights the Bullet target before claiming chunks.
+- The Bullet example must not call `.output_buckets(Single)`; single output is
+  the default in this Bullet version.
+- The Bullet example uses the single-output builder signature:
+  `.build(|builder, stm_inputs, ntm_inputs| ...)`, with no output-bucket select.
+- CUDA 11.8 links failed with missing `cuFuncLoad`; this Bullet CUDA backend needs
+  a newer CUDA toolkit/driver API or an older compatible Bullet backend.
+- For the pre-backend-rewrite Bullet checkout, the saved-format store already
+  exposes `values` as `Vec<f32>`, so the trainer uses
+  `store.get("l0f").values.repeat(...)` instead of `.values.f32().repeat(...)`.

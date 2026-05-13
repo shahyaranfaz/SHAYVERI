@@ -2,13 +2,22 @@
 set -euo pipefail
 
 # Master-side consumer for SHAYVERI NNUE v2.7 data.
-# Claims completed NFS chunks, converts/shuffles worker plain files, trains with resume,
-# deletes bulky intermediates, and keeps only checkpoints/logs/json.
+# Claims completed NFS chunks, converts/shuffles worker plain files into Bullet data,
+# runs the configured Bullet trainer, and deletes bulky intermediates.
 
 NFS_ROOT="${NFS_ROOT:-$HOME/nnue_v2_7}"
-MARLINFLOW_UTILS="${MARLINFLOW_UTILS:-$HOME/marlinflow/target/release/marlinflow-utils}"
-TRAINER_DIR="${TRAINER_DIR:-$HOME/marlinflow/trainer}"
-PYTHON="${PYTHON:-python3}"
+BULLET_UTILS="${BULLET_UTILS:-$HOME/bullet/target/release/bullet-utils}"
+BULLET_DIR="${BULLET_DIR:-$HOME/bullet}"
+BULLET_PACKAGE="${BULLET_PACKAGE:-bullet_lib}"
+BULLET_EXAMPLE="${BULLET_EXAMPLE:-shayveri_kb8}"
+BULLET_FEATURES="${BULLET_FEATURES:-cuda}"
+BULLET_TRAIN_CMD="${BULLET_TRAIN_CMD:-cargo run --release --package $BULLET_PACKAGE --example $BULLET_EXAMPLE --features $BULLET_FEATURES}"
+BULLET_PREFLIGHT_CHECK="${BULLET_PREFLIGHT_CHECK:-1}"
+BULLET_SHUFFLE_MEM_MB="${BULLET_SHUFFLE_MEM_MB:-1024}"
+
+if [[ -z "${CUDA_PATH:-}" && -d /usr/local/cuda ]]; then
+  export CUDA_PATH=/usr/local/cuda
+fi
 
 READY_DIR="$NFS_ROOT/ready"
 CLAIMED_DIR="$NFS_ROOT/claimed"
@@ -17,7 +26,8 @@ FAILED_DIR="$NFS_ROOT/failed"
 LOCK_DIR="$NFS_ROOT/master.lock"
 STATE_DIR="$NFS_ROOT/state"
 
-DATA_DIR="${DATA_DIR:-$TRAINER_DIR/data}"
+DATA_DIR="${DATA_DIR:-$NFS_ROOT/data}"
+OUT_DIR="${OUT_DIR:-$NFS_ROOT/out}"
 TRAIN_ID="${TRAIN_ID:-shayveri_v2.7_kb8}"
 START_ITER="${START_ITER:-0}"
 MAX_CHUNKS="${MAX_CHUNKS:-200}" # 0 means run forever.
@@ -38,7 +48,40 @@ SAVE_EPOCHS="${SAVE_EPOCHS:-1}"
 TRAIN_EXTRA_ARGS="${TRAIN_EXTRA_ARGS:-}"
 
 mkdir -p "$READY_DIR" "$CLAIMED_DIR" "$DONE_DIR" "$FAILED_DIR" "$STATE_DIR"
-mkdir -p "$DATA_DIR" "$TRAINER_DIR/nn" "$TRAINER_DIR/runs"
+mkdir -p "$DATA_DIR" "$OUT_DIR"
+
+if [[ ! -x "$BULLET_UTILS" ]]; then
+  echo "missing bullet-utils: $BULLET_UTILS" >&2
+  echo "build it with: cd $BULLET_DIR && cargo build --release --package bullet-utils" >&2
+  exit 1
+fi
+
+if [[ ! -d "$BULLET_DIR" ]]; then
+  echo "missing Bullet dir: $BULLET_DIR" >&2
+  exit 1
+fi
+
+if [[ -z "${BULLET_TRAIN_CMD// }" ]]; then
+  echo "BULLET_TRAIN_CMD is empty" >&2
+  exit 1
+fi
+
+if [[ "$BULLET_TRAIN_CMD" == *"--example $BULLET_EXAMPLE"* ]]; then
+  if [[ ! -f "$BULLET_DIR/examples/$BULLET_EXAMPLE.rs" ]]; then
+    echo "missing Bullet trainer example: $BULLET_DIR/examples/$BULLET_EXAMPLE.rs" >&2
+    echo "copy shayveri_kb8.rs there, or override BULLET_TRAIN_CMD" >&2
+    exit 1
+  fi
+fi
+
+if [[ "$BULLET_PREFLIGHT_CHECK" != "0" && "$BULLET_TRAIN_CMD" == *"--example $BULLET_EXAMPLE"* ]]; then
+  echo "checking Bullet trainer target: $BULLET_EXAMPLE"
+  if [[ -n "$BULLET_FEATURES" ]]; then
+    (cd "$BULLET_DIR" && cargo build --release --package "$BULLET_PACKAGE" --example "$BULLET_EXAMPLE" --features "$BULLET_FEATURES") || exit 1
+  else
+    (cd "$BULLET_DIR" && cargo build --release --package "$BULLET_PACKAGE" --example "$BULLET_EXAMPLE") || exit 1
+  fi
+fi
 
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
   echo "another master appears to be running: $LOCK_DIR" >&2
@@ -135,59 +178,51 @@ process_chunk() {
 
   for plain in "${plain_files[@]}"; do
     local stem
-    local bin
+    local bullet
     local shuffled
     stem="${run_train_id}_$(basename "$plain" .plain)"
-    bin="$DATA_DIR/${stem}.bin"
-    shuffled="$DATA_DIR/${stem}_shuffled.bin"
+    bullet="$DATA_DIR/${stem}.bullet"
+    shuffled="$DATA_DIR/${stem}_shuffled.bullet"
 
     echo "-- convert $(basename "$plain")"
-    wc -l "$plain"
-    "$MARLINFLOW_UTILS" txt-to-data "$plain" --output "$bin"
+    wc -l "$plain" || return 1
+    "$BULLET_UTILS" convert --from text --input "$plain" --output "$bullet" || return 1
     rm -f "$plain"
-    "$MARLINFLOW_UTILS" shuffle "$bin" --output "$shuffled"
-    rm -f "$bin"
+    "$BULLET_UTILS" shuffle --input "$bullet" --output "$shuffled" --mem-used-mb "$BULLET_SHUFFLE_MEM_MB" || return 1
+    rm -f "$bullet"
   done
 
-  local shuffled_files=("$DATA_DIR/${run_train_id}"_*_shuffled.bin)
+  local shuffled_files=("$DATA_DIR/${run_train_id}"_*_shuffled.bullet)
   if (( ${#shuffled_files[@]} == 0 )); then
-    echo "no shuffled bins for $run_train_id" >&2
+    echo "no shuffled Bullet data for $run_train_id" >&2
     return 1
   fi
 
   echo "== train $run_train_id =="
-  pushd "$TRAINER_DIR" >/dev/null
-  local train_args=(
-    main.py
-    --data-root "$DATA_DIR"
-    --train-id "$run_train_id"
-    --king-buckets "$KING_BUCKETS"
-    --lr "$lr_now"
-    --epochs "$EPOCHS"
-    --batch-size "$BATCH_SIZE"
-    --wdl "$WDL"
-    --scale "$SCALE"
-    --save-epochs "$SAVE_EPOCHS"
-  )
-  if [[ -n "$TRAIN_EXTRA_ARGS" ]]; then
-    # shellcheck disable=SC2206
-    local extra_args=($TRAIN_EXTRA_ARGS)
-    train_args+=("${extra_args[@]}")
-  fi
-  if [[ -n "$resume_path" ]]; then
-    train_args+=(--resume "$resume_path")
-  fi
-  "$PYTHON" "${train_args[@]}"
+  pushd "$BULLET_DIR" >/dev/null
+  DATA_FILES="$(IFS=:; echo "${shuffled_files[*]}")" \
+    TRAIN_ID="$run_train_id" \
+    OUT_DIR="$OUT_DIR" \
+    RESUME="$resume_path" \
+    KING_BUCKETS="$KING_BUCKETS" \
+    LR="$lr_now" \
+    EPOCHS="$EPOCHS" \
+    BATCH_SIZE="$BATCH_SIZE" \
+    WDL="$WDL" \
+    SCALE="$SCALE" \
+    SAVE_EPOCHS="$SAVE_EPOCHS" \
+    TRAIN_EXTRA_ARGS="$TRAIN_EXTRA_ARGS" \
+    bash -lc "$BULLET_TRAIN_CMD" || {
+      local status=$?
+      popd >/dev/null
+      return "$status"
+    }
   popd >/dev/null
 
   echo "== cleanup chunk data =="
   rm -f "${shuffled_files[@]}"
 
-  local checkpoint="$TRAINER_DIR/nn/${run_train_id}_${EPOCHS}"
-  if [[ ! -f "$checkpoint" ]]; then
-    echo "expected checkpoint missing: $checkpoint" >&2
-    return 1
-  fi
+  local checkpoint="$OUT_DIR/$run_train_id"
 
   echo "$checkpoint" > "$STATE_DIR/latest_checkpoint.txt"
   echo "$((iter + 1))" > "$STATE_DIR/next_iter.txt"
@@ -196,7 +231,7 @@ process_chunk() {
 
   local base
   base="$(basename "$chunk_dir")"
-  mv "$chunk_dir" "$DONE_DIR/${iter_id}_${base}"
+  mv "$chunk_dir" "$DONE_DIR/${iter_id}_${base}" || return 1
   echo "done $iter_id checkpoint=$checkpoint"
 }
 
