@@ -314,6 +314,7 @@ int main(int argc, char **argv) {
 
         // ===== POSITION =====
         else if (token == "position") {
+            stop_search();
             std::string pos;
             iss >> pos;
             move_history.clear();
