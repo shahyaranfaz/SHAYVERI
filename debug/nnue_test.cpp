@@ -49,7 +49,7 @@ static int check_king_bucket_mapping() {
             int effective_sq = perspective == BLACK ? (sq ^ 56) : sq;
             int file = effective_sq & 7;
             int rank = effective_sq >> 3;
-            int expected = (rank >= 4 ? 4 : 0) + (file <= 3 ? file : (7 - file));
+            int expected = (rank >= 4 ? 4 : 0) + (file & 3);
             int actual = NNUE::king_bucket_index(sq, perspective, 8);
             if (actual != expected) {
                 std::cerr << "NNUE king bucket mismatch: perspective=" << perspective

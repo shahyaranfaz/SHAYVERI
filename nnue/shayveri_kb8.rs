@@ -59,8 +59,8 @@ fn main() {
                 .round()
                 .quantise::<i16>(255),
             SavedFormat::id("l0b").round().quantise::<i16>(255),
-            SavedFormat::id("l1w").round().quantise::<i16>(64).transpose(),
-            SavedFormat::id("l1b").round().quantise::<i16>(255 * 64),
+            SavedFormat::id("l1w").round().quantise::<i16>(255).transpose(),
+            SavedFormat::id("l1b").round().quantise::<i32>(255 * 255),
         ])
         .loss_fn(|output, target| output.sigmoid().squared_error(target))
         .build(|builder, stm_inputs, ntm_inputs| {

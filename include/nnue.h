@@ -57,9 +57,8 @@ inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
     const int effective_sq = (perspective == 1) ? (king_sq ^ 56) : king_sq;
     const int file = effective_sq & 7;
     const int rank = effective_sq >> 3;
-    const int file_group = file <= 3 ? file : (7 - file);
     const int rank_group = rank >= 4 ? 1 : 0;
-    return rank_group * 4 + file_group;
+    return rank_group * 4 + (file & 3);
 }
 
 inline int feature_index(int piece_type, int piece_color, int sq,

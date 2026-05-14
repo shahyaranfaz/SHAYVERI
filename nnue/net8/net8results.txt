@@ -74,6 +74,8 @@ Toolchain:
   `bullet-utils convert --from text`.
 - Marlinflow is no longer in the net8 critical path.
 - Bullet handles KB8 training.
+- Bullet checkpoints are converted with `nnue/convert_bullet.py`, which wraps
+  Bullet `quantised.bin` in the SHAYVERI `.nnue` header/layout.
 
 Implementation:
 - Workers generate two NNUE chunks followed by eight HCE chunks in each 10-chunk cycle.
@@ -176,7 +178,6 @@ No net8 games yet. Training has started.
 Launch notes
 ============
 
-- Fake iter000/iter001 from the stale root-level script are not valid training.
 - Master now preflights the Bullet target before claiming chunks.
 - The Bullet example must not call `.output_buckets(Single)`; single output is
   the default in this Bullet version.
@@ -187,3 +188,8 @@ Launch notes
 - For the pre-backend-rewrite Bullet checkout, the saved-format store already
   exposes `values` as `Vec<f32>`, so the trainer uses
   `store.get("l0f").values.repeat(...)` instead of `.values.f32().repeat(...)`.
+- The trainer saves output weights at scale 255 and output bias at scale
+  255 * 255 so the produced `.nnue` matches SHAYVERI's current forward pass.
+- SHAYVERI's king-bucket mapping was corrected to match Bullet's
+  `ChessBucketsMirrored` bucket layout. The previous folded-file mapping made
+  KB8 inference incompatible with Bullet-trained weights.
