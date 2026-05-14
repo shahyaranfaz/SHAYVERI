@@ -212,6 +212,22 @@ Score of iter029 vs iter049: 345 - 274 - 181  [0.544] 800
              White vs Black: 334 - 285 - 181  [0.531] 800
 Elo difference: 30.9 +/- 21.2, LOS: 99.8 %, DrawRatio: 22.6 %
 
+Now running vs net5, our current baseline:
+
+10+0.1:
+Score of net8 vs net5: 404 - 336 - 184  [0.537] 924
+   net8 playing White: 239 - 139 -  84  [0.608] 462
+   net8 playing Black: 165 - 197 - 100  [0.465] 462
+       White vs Black: 436 - 304 - 184  [0.571] 924
+Elo difference: 25.6 +/- 20.1, LOS: 99.4 %, DrawRatio: 19.9 %
+
+90+0.5:
+Score of net8 vs net5: 47 - 29 - 15  [0.599] 91
+   net8 playing White: 32 - 10 -  4  [0.739] 46
+   net8 playing Black: 15 - 19 - 11  [0.456] 45
+       White vs Black: 51 - 25 - 15  [0.643] 91
+Elo difference: 69.6 +/- 67.1, LOS: 98.1 %, DrawRatio: 16.5 %
+
 Net8 conclusion
 ===============
 
