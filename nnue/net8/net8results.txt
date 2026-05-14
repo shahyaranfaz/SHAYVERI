@@ -29,8 +29,8 @@ This suggests LR tweaks are unlikely to be the next major lever. The current
 architecture is probably the bottleneck. Net8 changes architecture and trains from
 scratch.
 
-Architecture plan
-=================
+Architecture
+============
 
 Target:
 - King-bucket NNUE.
@@ -46,8 +46,8 @@ Reason:
 - 8 buckets is the best first step: meaningful extra structure without making the
   integration and speed risk too large.
 
-Data and toolchain plan
-=======================
+Data and toolchain
+==================
 
 Use 80/20 HCE/NNUE, not 50/50.
 
@@ -56,12 +56,11 @@ Reason:
 - 80/20 was less bad in net7, and is safer as a conservative architecture test.
 - Since architecture is the variable, do not also make the data distribution aggressive.
 
-Planned data:
+Data:
 - Shared-disk multi-worker setup.
-- 5 workers.
+- Started with 5 workers; later expanded to 8 workers.
 - 5M positions per chunk.
-- 40 chunks per worker unless stopped early.
-- 1B total positions if all chunks complete.
+- Stopped at 80 master-consumed chunks.
 - 10k-node labels.
 - WDL=0.1.
 - 80% HCE-generated data.
@@ -77,7 +76,7 @@ Toolchain:
 - Bullet checkpoints are converted with `nnue/convert_bullet.py`, which wraps
   Bullet `quantised.bin` in the SHAYVERI `.nnue` header/layout.
 
-Implementation:
+Chunk scheduling:
 - Workers generate two NNUE chunks followed by eight HCE chunks in each 10-chunk cycle.
 - Worker chunk directories are prefixed with source: `nnue_...` or `hce_...`.
 - Each chunk writes `source=nnue` or `source=hce` in metadata.
@@ -86,8 +85,8 @@ Implementation:
   - iterations 2-9 in each 10-iteration block require HCE chunks.
 - If the required source is not ready, the master waits.
 
-Training plan
-=============
+Training
+========
 
 This is a from-scratch architecture run.
 
@@ -99,31 +98,12 @@ Planned defaults:
 - No resume checkpoint.
 - LR: 0.001.
 - LR drop: 0.0003 after 100 chunks.
-- second LR drop: 0.0001 after 200 chunks.
+- Second LR drop: 0.0001 after 200 chunks.
 - epochs per chunk: 1.
 - batch size: 16384.
 - WDL: 0.1.
 - scale: 400.
 - save every epoch.
-
-Script note:
-- `BULLET_UTILS` defaults to `~/bullet/target/release/bullet-utils`.
-- `BULLET_DIR` defaults to `~/bullet`.
-- `BULLET_PACKAGE` defaults to `bullet_lib`.
-- `BULLET_EXAMPLE` defaults to `shayveri_kb8`.
-- `BULLET_FEATURES` defaults to `cuda`.
-- `BULLET_TRAIN_CMD` defaults to
-  `cargo run --release --package bullet_lib --example shayveri_kb8 --features cuda`.
-- `BULLET_PREFLIGHT_CHECK` defaults to `1`, so the master runs
-  `cargo build --release --package bullet_lib --example shayveri_kb8 --features cuda`
-  before claiming any chunk.
-- If `CUDA_PATH` is unset and `/usr/local/cuda` exists, the master exports
-  `CUDA_PATH=/usr/local/cuda`.
-- The master passes these environment variables to the trainer:
-  `DATA_FILES`, `TRAIN_ID`, `OUT_DIR`, `RESUME`, `KING_BUCKETS`, `LR`, `EPOCHS`,
-  `BATCH_SIZE`, `WDL`, `SCALE`, `SAVE_EPOCHS`, and `TRAIN_EXTRA_ARGS`.
-- `DATA_FILES` is colon-separated.
-- `TRAIN_EXTRA_ARGS` is available for architecture-specific trainer flags.
 
 Validated setup
 ===============
@@ -140,43 +120,111 @@ Validated setup
   - shuffled with `bullet-utils shuffle`;
   - trained with `cargo run --release --package bullet_lib --example shayveri_kb8 --features cuda`;
   - saved `[runtime_smoke-1]`.
-- Master is running after the runtime smoke passed.
-- Still verify after launch that first 10 done chunks contain 2 NNUE and 8 HCE.
-
-Checkpoint testing plan
-=======================
-
-Because this is from scratch, early checkpoints may be weak. Do not kill as fast as
-net6/net7 unless results are catastrophically bad.
-
-Suggested testing:
-- Convert and test iter019, iter039, iter059, iter079.
-- First compare against HCE, not net5.
-- Once a checkpoint clears HCE comfortably, compare against net5 iter064.
-- If a checkpoint gets within 50 Elo of net5, continue deeper.
-- If no checkpoint beats HCE by iter080, stop and debug architecture/trainer/converter.
-
-Expected signal
-===============
-
-Reasonable target:
-- Match or slightly beat net5 iter064 after enough data.
-
-Great outcome:
-- +50 Elo or more over net5 iter064.
-
-Failure signal:
-- Cannot clearly beat HCE after 60-80 chunks.
-- Conversion/inference scale looks wrong.
-- NPS drop is too large to preserve search strength.
+- First 10 consumed chunks followed the intended 2 NNUE / 8 HCE schedule.
 
 Results
 =======
 
-No net8 games yet. Training has started.
+Some early signal tests:
 
-Launch notes
-============
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter003                        62      36     300   58.8%   17.7%
+   2 iter000                        14      36     300   52.0%   17.3%
+   3 iter006                       -29      35     300   45.8%   20.3%
+   4 curr                          -47      36     300   43.3%   16.7%
+
+Score of iter003 vs curr: 47 - 31 - 22  [0.580] 100
+   iter003 playing White: 25 - 10 - 15  [0.650] 50
+   iter003 playing Black: 22 - 21 -  7  [0.510] 50
+          White vs Black: 46 - 32 - 22  [0.570] 100
+Elo difference: 56.1 +/- 61.3, LOS: 96.5 %, DrawRatio: 22.0 %
+
+No statistical significance yet, but this is an important verifier for the
+full Bullet pipeline: Bullet training -> `convert_bullet.py` -> SHAYVERI
+loading/inference/search. The converted KB8 nets play legal chess, produce
+sane search behavior, and are not instantly dead against the current best net.
+That is enough signal to let training continue and wait for larger checkpoint
+tests before making any strength claim.
+
+First real strength check:
+
+Score of net8_019 vs net5: 418 - 389 - 193  [0.514] 1000
+...      net8_019 playing White: 241 - 158 - 101  [0.583] 500
+...      net8_019 playing Black: 177 - 231 - 92  [0.446] 500
+...      White vs Black: 472 - 335 - 193  [0.569] 1000
+Elo difference: 10.1 +/- 19.3, LOS: 84.6 %, DrawRatio: 19.3 %
+
+This is the first meaningful net8 result. At only iter019, the from-scratch KB8
+net is already roughly equal to net5 iter064, the best Chess768/256 net. The
+result is not statistically decisive, but it is a strong sign that the KB8
+architecture is viable and that net8 should continue.
+
+Checkpoint ladder:
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter049                        33      28     500   54.8%   17.2%
+   2 iter029                        10      27     500   51.4%   22.8%
+   3 iter039                         9      27     500   51.3%   21.0%
+   4 iter019                       -10      27     500   48.5%   21.4%
+   5 iter009                       -13      28     500   48.2%   17.6%
+   6 curr                          -29      28     500   45.8%   16.8%
+
+This ladder suggests the run is still improving through iter049. The margin is
+not decisive yet, but the ordering is encouraging: later checkpoints are trending
+above the early checkpoints and above current/net5.
+
+After roughly 70 iterations, chunk delivery timing became the bottleneck. The
+master was waiting on the required source slots while workers continued producing
+large 5M chunks. Queue pressure pushed disk usage over the limit, and some later
+chunks became malformed/truncated while still being consumed. For that reason,
+the run is cut at 80 iterations, and iter069/iter079 are treated as suspect.
+
+Main lesson for the next run: use 1M chunks, validate converted Bullet files, and
+add a disk-free guard before publishing chunks.
+
+The final checkpoint ladder at 0.5+0.05 with 100 games per pairing:
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter049                        79      22     800   61.1%   19.0%
+   2 iter029                        66      22     800   59.4%   20.5%
+   3 iter039                        54      22     800   57.7%   18.6%
+   4 iter059                        38      21     800   55.5%   21.5%
+   5 iter019                        34      21     800   54.9%   21.9%
+   6 iter009                        34      21     800   54.9%   21.0%
+   7 curr                            3      22     800   50.4%   19.0%
+   8 iter069                        -8      21     800   48.9%   20.5%
+   9 iter079                      -443      42     800    7.2%    5.5%
+
+Clearly, iter079 is in a class of its own in terms of terrible performance, as
+expected due to the issues explained above. The top 3 are within margin of
+error, so a playoff is necessary. This is at 0.5+0.05 with 500 games per
+pairing:
+
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 iter029                        28      19    1000   53.9%   25.5%
+   2 iter049                        14      19    1000   52.0%   23.7%
+   3 iter039                       -42      19    1000   44.0%   22.6%
+
+One last run-off at 0.5+0.05 with 800 games:
+Score of iter029 vs iter049: 345 - 274 - 181  [0.544] 800
+      iter029 playing White: 177 - 117 - 106  [0.575] 400
+      iter029 playing Black: 168 - 157 -  75  [0.514] 400
+             White vs Black: 334 - 285 - 181  [0.531] 800
+Elo difference: 30.9 +/- 21.2, LOS: 99.8 %, DrawRatio: 22.6 %
+
+Net8 conclusion
+===============
+
+KB8 is worth continuing. Bullet training is worth continuing. Net8 reached net5
+strength from scratch, and the clean checkpoints around iter029/iter049 are
+competitive with the best Chess768/256 net.
+
+The run should not be extended directly because the tail is contaminated by
+chunk/disk issues. Net9 should resume from the best clean net8 checkpoint after
+playoff and continue with 1M chunks.
+
+Future reference
+================
 
 - Master now preflights the Bullet target before claiming chunks.
 - The Bullet example must not call `.output_buckets(Single)`; single output is

@@ -1,0 +1,63 @@
+Net9 methodology
+================
+
+Goal: continue the successful KB8/Bullet direction from net8, but fix the chunk
+delivery and disk-pressure problems that made the net8 tail untrustworthy.
+
+Baseline
+========
+
+Net8 proved the architecture and pipeline:
+- KB8 from scratch reached net5 strength quickly.
+- `net8_019` scored +10.1 +/- 19.3 Elo vs net5 over 1000 games.
+- The net8 checkpoint ladder peaked around iter029/iter049 before disk pressure
+  corrupted the later chunk region.
+
+Net8 winner selection:
+- Fast playoff favored iter029 over iter049:
+  `Score of iter029 vs iter049: 345 - 274 - 181 [0.544] 800`
+  for +30.9 +/- 21.2 Elo.
+- Final long-time-control playoff is still needed before choosing the exact
+  net9 resume checkpoint.
+
+Net9 changes from net8
+======================
+
+- Same KB8 architecture.
+- Same Bullet trainer and strict `convert_bullet.py` format.
+- Same 80/20 controlled HCE/NNUE source schedule.
+- Chunk size drops from 5M positions to 1M positions.
+- NFS root changes to `~/nnue_v2_8`.
+- Train id changes to `shayveri_v2.8_kb8`.
+- Master validates every shuffled Bullet file before training.
+- Master rejects chunks below the minimum expected line count before training.
+- Worker refuses to start/publish a chunk when free disk is below the configured
+  safety threshold.
+- Worker source order is configurable with `SOURCE_PATTERN`; default is
+  `NNHHHHHHHH`, and reverse feeder workers can use `NNNNNNNNHH`.
+
+Reason for 1M chunks
+====================
+
+With 8 workers, the old 5M chunk size allowed too much data to sit in
+`incoming/` and `ready/`. In net8 this led to disk exhaustion and malformed
+chunks around the 070s. Smaller chunks reduce queue pressure, improve source
+delivery timing, and make failures cheaper.
+
+Planned setup
+=============
+
+- `POSITIONS=1000000`.
+- `NODES=10000`.
+- `WDL=0.1`.
+- `SCALE=400`.
+- `BATCH_SIZE=16384`.
+- `EPOCHS=1`.
+- Default worker `SOURCE_PATTERN=NNHHHHHHHH`.
+- Reverse feeder workers can run with `SOURCE_PATTERN=NNNNNNNNHH`.
+- Resume from the best clean net8 checkpoint after final playoff.
+
+Results
+=======
+
+No net9 games yet.
