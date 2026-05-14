@@ -33,7 +33,8 @@ TRAIN_ID="${TRAIN_ID:-shayveri_v2.8_kb8}"
 START_ITER="${START_ITER:-0}"
 MAX_CHUNKS="${MAX_CHUNKS:-1000}" # 0 means run forever.
 POLL_SECONDS="${POLL_SECONDS:-10}"
-RESUME="${RESUME:-~/nnue_v2_7/out/shayveri_v2.7_kb8_iter029-1}"
+INITIAL_RESUME="${INITIAL_RESUME:-$HOME/nnue_v2_7/out/shayveri_v2.7_kb8_iter029-1}"
+RESUME="${RESUME:-}"
 KING_BUCKETS="${KING_BUCKETS:-8}"
 
 LR="${LR:-0.001}"
@@ -254,6 +255,8 @@ fi
 
 if [[ -z "$RESUME" && -f "$STATE_DIR/latest_checkpoint.txt" ]]; then
   RESUME="$(cat "$STATE_DIR/latest_checkpoint.txt")"
+elif [[ -z "$RESUME" ]]; then
+  RESUME="$INITIAL_RESUME"
 fi
 
 processed=0

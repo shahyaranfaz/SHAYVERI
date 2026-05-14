@@ -56,6 +56,9 @@ Planned setup
 - Default worker `SOURCE_PATTERN=NNHHHHHHHH`.
 - Reverse feeder workers can run with `SOURCE_PATTERN=NNNNNNNNHH`.
 - Resume from the best clean net8 checkpoint after final playoff.
+- `INITIAL_RESUME` defaults to the selected net8 iter029 Bullet checkpoint.
+- On restart, if `state/latest_checkpoint.txt` exists, master resumes from that
+  latest net9 checkpoint instead of returning to the net8 checkpoint.
 
 Results
 =======
