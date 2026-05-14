@@ -23,11 +23,13 @@ fn main() {
     let data_files = env::var("DATA_FILES").expect("DATA_FILES must be set");
     let train_id = env::var("TRAIN_ID").unwrap_or_else(|_| "shayveri_v2.7_kb8".to_string());
     let out_dir = env::var("OUT_DIR").unwrap_or_else(|_| "checkpoints".to_string());
+    let resume = env::var("RESUME").unwrap_or_default();
 
     let initial_lr: f32 = env_or("LR", 0.001);
     let final_lr = initial_lr;
     let superbatches: usize = env_or("EPOCHS", 1);
     let batch_size: usize = env_or("BATCH_SIZE", 16_384);
+    let batches_per_superbatch: usize = env_or("BATCHES_PER_SUPERBATCH", 6104);
     let wdl_proportion: f32 = env_or("WDL", 0.1);
     let scale: f32 = env_or("SCALE", 400.0);
     let save_rate: usize = env_or("SAVE_EPOCHS", 1);
@@ -88,7 +90,7 @@ fn main() {
         eval_scale: scale,
         steps: TrainingSteps {
             batch_size,
-            batches_per_superbatch: 6104,
+            batches_per_superbatch,
             start_superbatch: 1,
             end_superbatch: superbatches,
         },
@@ -102,6 +104,11 @@ fn main() {
     let data_paths: Vec<String> = data_files.split(':').map(str::to_string).collect();
     let data_refs: Vec<&str> = data_paths.iter().map(String::as_str).collect();
     let dataloader = DirectSequentialDataLoader::new(&data_refs);
+
+    if !resume.is_empty() {
+        println!("Loading checkpoint: {resume}");
+        trainer.load_from_checkpoint(&resume);
+    }
 
     trainer.run(&schedule, &settings, &dataloader);
 }

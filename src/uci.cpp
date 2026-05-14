@@ -36,6 +36,7 @@ namespace SHAYVERI {
 // UCI options (written by setoption, read by go / search)
 // ======
 static int  g_num_threads   = 1;
+static int  g_hash_mb       = 64;
 static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
@@ -63,6 +64,21 @@ static const BookEntry *probe_book(U64 zobrist_key) {
     if (it != OPENING_BOOK + OPENING_BOOK_SIZE && it->key == zobrist_key)
         return it;
     return nullptr;
+}
+
+static bool is_legal_root_move(Board b, Move move) {
+    if (move == MOVE_NONE) return false;
+
+    MoveList legal = generate_legal_moves(b);
+    for (int i = 0; i < legal.count; ++i)
+        if (legal.moves[i] == move)
+            return true;
+    return false;
+}
+
+static Move first_legal_move(Board b) {
+    MoveList legal = generate_legal_moves(b);
+    return legal.count > 0 ? legal.moves[0] : MOVE_NONE;
 }
 
 static bool parse_bool(const std::string &value) {
@@ -124,6 +140,7 @@ static void resize_hash_option(const std::string &value) {
     if (!parse_spin(value, 1, 32768, hash_mb)) return;
     try {
         TT.resize(static_cast<SIZE_T>(hash_mb));
+        g_hash_mb = hash_mb;
     } catch (const std::exception &) {
         // Keep the existing table if the requested size cannot be allocated.
     }
@@ -140,8 +157,8 @@ static std::string ponder_suffix(Board b, Move best) {
     Undo u;
     if (!make_move(b, best, u)) return "";
 
-    if (const TTEntry *pe = TT.probe(b.hash)) {
-        if (pe->best != MOVE_NONE) {
+    if (const TTEntry *pe = tt().probe(b.hash)) {
+        if (is_legal_root_move(b, pe->best)) {
             g_ponder_move = pe->best;
             return " ponder " + move_to_uci(pe->best);
         }
@@ -324,7 +341,15 @@ int main(int argc, char **argv) {
                         if (make_move(b, m, u)) {
                             move_history.push_back(mv);
                             hash_history.push_back(b.hash);
+                        } else {
+                            std::cout << "info string rejected position move " << mv
+                                      << " at " << get_board_fen(b) << "\n";
+                            break;
                         }
+                    } else {
+                        std::cout << "info string rejected position move " << mv
+                                  << " at " << get_board_fen(b) << "\n";
+                        break;
                     }
                 }
             }
@@ -354,8 +379,8 @@ int main(int argc, char **argv) {
                         if (b.side_to_move == BLACK) book_eval_cp = -book_eval_cp;
 
                         std::cout << "info depth 8 score cp " << book_eval_cp
-                                  << " pv " << entry->move << " \n"
-                                  << "bestmove " << entry->move
+                                  << " pv " << move_to_uci(m) << " \n"
+                                  << "bestmove " << move_to_uci(m)
                                   << ponder_suffix(b, m) << "\n";
                         std::cout.flush();
                         continue;
@@ -422,16 +447,21 @@ int main(int argc, char **argv) {
             I64   hard_ms   = g_time_manager.hard_ms();
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
+            int   hash_mb    = g_hash_mb;
 
             // Lazy SMP helper threads.
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
-                    std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
+                    std::thread([b_copy, rep, t, searchmoves, root_depth, hash_mb]() mutable {
+                        TranspositionTable local_tt;
+                        local_tt.resize(static_cast<SIZE_T>(hash_mb));
+                        active_tt = &local_tt;
                         std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
                         int helper_depth = std::max(1, root_depth - (t % 4));
                         search(b_copy, helper_depth,
                                rep.data(), static_cast<int>(rep.size()),
                                searchmoves, nullptr, true, t);
+                        active_tt = &TT;
                     })
                 );
             }
@@ -439,7 +469,12 @@ int main(int argc, char **argv) {
             // Main search thread.
             smp_threads.insert(
                 smp_threads.begin(),
-                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth]() mutable {
+                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth, hash_mb]() mutable {
+                    TranspositionTable local_tt;
+                    local_tt.resize(static_cast<SIZE_T>(hash_mb));
+                    active_tt = &local_tt;
+                    local_tt.new_search();
+
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
 
                     std::thread timer([hard_ms, real_tc, pondering, timer_active]() {
@@ -485,11 +520,8 @@ int main(int argc, char **argv) {
                     g_stop        = true;
                     timer.join();
 
-                    if (result.best_move == MOVE_NONE) {
-                        MoveList legal = generate_legal_moves(b_copy);
-                        if (legal.count > 0)
-                            result.best_move = legal.moves[0];
-                    }
+                    if (!is_legal_root_move(b_copy, result.best_move))
+                        result.best_move = first_legal_move(b_copy);
 
                     while (pondering && g_pondering.load() && !g_stop.load())
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -499,6 +531,7 @@ int main(int argc, char **argv) {
                     std::cout << "bestmove " << move_to_uci(result.best_move)
                               << ponder_str << "\n";
                     std::cout.flush();
+                    active_tt = &TT;
                 })
             );
         }

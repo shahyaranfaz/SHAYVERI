@@ -60,8 +60,59 @@ bool make_move(Board &b, Move m, Undo &u) {
     Square    from     = move_from(m);
     Square    to       = move_to(m);
     PieceType promo    = move_promo(m);
+
+    if (!is_valid(from) || !is_valid(to))
+        return false;
+
     Piece     moved    = b.get_piece(from);
     Piece     captured = b.get_piece(to);
+
+    if (moved == NONE_PIECE || get_colour(moved) != b.side_to_move)
+        return false;
+    if (captured != NONE_PIECE && get_colour(captured) == b.side_to_move)
+        return false;
+    if (promo != NONE_PTYPE) {
+        if (promo != KNIGHT && promo != BISHOP && promo != ROOK && promo != QUEEN)
+            return false;
+        if (get_type(moved) != PAWN)
+            return false;
+        Rank promo_rank = get_rank(to);
+        if ((b.side_to_move == WHITE && promo_rank != RANK_8) ||
+            (b.side_to_move == BLACK && promo_rank != RANK_1))
+            return false;
+    }
+    if (is_ep_move(m)) {
+        if (get_type(moved) != PAWN || to != b.en_passant || captured != NONE_PIECE)
+            return false;
+        Square cap_sq = (b.side_to_move == WHITE) ? to - 8 : to + 8;
+        if (!is_valid(cap_sq) || b.get_piece(cap_sq) != (b.side_to_move == WHITE ? BP : WP))
+            return false;
+    }
+    if (get_type(moved) == KING && std::abs(get_file(from) - get_file(to)) == 2) {
+        if (b.side_to_move == WHITE) {
+            if (from != make_square(FILE_E, RANK_1)) return false;
+            if (to == make_square(FILE_G, RANK_1)) {
+                if (!(b.castling & WHITE_KINGSIDE) || b.get_piece(make_square(FILE_H, RANK_1)) != WR)
+                    return false;
+            } else if (to == make_square(FILE_C, RANK_1)) {
+                if (!(b.castling & WHITE_QUEENSIDE) || b.get_piece(make_square(FILE_A, RANK_1)) != WR)
+                    return false;
+            } else {
+                return false;
+            }
+        } else {
+            if (from != make_square(FILE_E, RANK_8)) return false;
+            if (to == make_square(FILE_G, RANK_8)) {
+                if (!(b.castling & BLACK_KINGSIDE) || b.get_piece(make_square(FILE_H, RANK_8)) != BR)
+                    return false;
+            } else if (to == make_square(FILE_C, RANK_8)) {
+                if (!(b.castling & BLACK_QUEENSIDE) || b.get_piece(make_square(FILE_A, RANK_8)) != BR)
+                    return false;
+            } else {
+                return false;
+            }
+        }
+    }
 
     u.hash       = b.hash;
     u.castling   = b.castling;

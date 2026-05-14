@@ -157,6 +157,7 @@ process_chunk() {
   local iter_id
   local run_train_id
   local lr_now
+  local batches_per_superbatch
   iter_id="$(printf 'iter%03d' "$iter")"
   run_train_id="${TRAIN_ID}_${iter_id}"
   lr_now="$(chunk_lr "$iter")"
@@ -203,6 +204,12 @@ process_chunk() {
     echo "chunk $chunk_dir has only $total_lines lines; expected at least $MIN_CHUNK_LINES" >&2
     return 1
   fi
+  batches_per_superbatch=$(( (total_lines + BATCH_SIZE - 1) / BATCH_SIZE ))
+  if (( batches_per_superbatch < 1 )); then
+    batches_per_superbatch=1
+  fi
+  echo "positions=$total_lines" >> "$chunk_dir/master.log"
+  echo "batches_per_superbatch=$batches_per_superbatch" >> "$chunk_dir/master.log"
 
   local shuffled_files=("$DATA_DIR/${run_train_id}"_*_shuffled.bullet)
   if (( ${#shuffled_files[@]} == 0 )); then
@@ -220,6 +227,7 @@ process_chunk() {
     LR="$lr_now" \
     EPOCHS="$EPOCHS" \
     BATCH_SIZE="$BATCH_SIZE" \
+    BATCHES_PER_SUPERBATCH="$batches_per_superbatch" \
     WDL="$WDL" \
     SCALE="$SCALE" \
     SAVE_EPOCHS="$SAVE_EPOCHS" \
@@ -234,7 +242,14 @@ process_chunk() {
   echo "== cleanup chunk data =="
   rm -f "${shuffled_files[@]}"
 
-  local checkpoint="$OUT_DIR/$run_train_id"
+  local checkpoint="$OUT_DIR/$run_train_id-$EPOCHS"
+  if [[ ! -d "$checkpoint" ]]; then
+    checkpoint="$(find "$OUT_DIR" -mindepth 1 -maxdepth 1 -type d -name "$run_train_id-*" | sort | tail -n 1)"
+  fi
+  if [[ -z "$checkpoint" || ! -d "$checkpoint" ]]; then
+    echo "could not find checkpoint for $run_train_id in $OUT_DIR" >&2
+    return 1
+  fi
 
   echo "$checkpoint" > "$STATE_DIR/latest_checkpoint.txt"
   echo "$((iter + 1))" > "$STATE_DIR/next_iter.txt"

@@ -63,4 +63,60 @@ Planned setup
 Results
 =======
 
-No net9 games yet.
+Blocked before continuing
+=========================
+
+Net9 was killed after sanity tests showed catastrophic strength loss in nets
+that should have been continuations from net8 iter029.
+
+Score of iter049 vs curr: 36 - 313 - 51  [0.154] 400
+...      iter049 playing White: 11 - 169 - 20  [0.105] 200
+...      iter049 playing Black: 25 - 144 - 31  [0.203] 200
+...      White vs Black: 155 - 194 - 51  [0.451] 400
+Elo difference: -296.3 +/- 41.4, LOS: 0.0 %, DrawRatio: 12.8 %
+
+Illegal move losses by iter049:
+- Black: d6e5, d8e7, e7e5, f6e4, g8f6
+- White: b5c6, f1b5
+
+Score of iter009 vs curr: 22 - 318 - 60  [0.130] 400
+...      iter009 playing White: 18 - 144 - 38  [0.185] 200
+...      iter009 playing Black: 4 - 174 - 22  [0.075] 200
+...      White vs Black: 192 - 148 - 60  [0.555] 400
+Elo difference: -330.2 +/- 41.9, LOS: 0.0 %, DrawRatio: 15.0 %
+
+Illegal move losses by iter009:
+- Black: e7e5, f6e4
+- White: c4d5, d2d4, e1g1, f1b5, g1f3
+
+Root cause:
+- `master_train_chunks.sh` passed `RESUME` into Bullet, but
+  `nnue/shayveri_kb8.rs` did not read or apply `RESUME`.
+- Therefore net9 checkpoints were not continuations from net8 iter029. They were
+  effectively fresh 1M-position single-chunk trainings, which explains the
+  collapse compared to net8's 5M-position from-scratch chunks.
+
+Fix:
+- `nnue/shayveri_kb8.rs` now reads `RESUME` and calls
+  `trainer.load_from_checkpoint(&resume)` before `trainer.run(...)`.
+- Restart net9 from a clean `~/nnue_v2_8` after copying the fixed trainer into
+  `~/bullet/examples/shayveri_kb8.rs`.
+
+Follow-up fix:
+- Bullet saves checkpoint directories with the superbatch suffix, e.g.
+  `shayveri_v2.8_kb8_iter000-1`.
+- The master initially wrote `latest_checkpoint.txt` without that suffix, causing
+  iter001 to try loading a non-existent checkpoint.
+- `master_train_chunks.sh` now records `$OUT_DIR/$run_train_id-$EPOCHS`, with a
+  fallback search for `$run_train_id-*`.
+
+Second blocker:
+- After resume was fixed, iter000 still collapsed:
+  `Score of iter000 vs curr: 25 - 67 - 28 [0.325] 120`
+  for -127.0 +/- 57.5 Elo.
+- Root cause: `nnue/shayveri_kb8.rs` hardcoded `batches_per_superbatch = 6104`,
+  which is roughly 100M training samples per chunk.
+- With net9's 1M-position chunks, each chunk was repeated around 100 times at
+  LR 0.001, destroying the resumed net immediately.
+- Fix: the trainer now reads `BATCHES_PER_SUPERBATCH`, and the master sets it
+  from the actual chunk line count divided by `BATCH_SIZE`.
