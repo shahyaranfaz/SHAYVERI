@@ -1,0 +1,110 @@
+Net10 methodology
+=================
+
+Goal: respond to net9's long-time-control failure by running a more conservative
+KB8 continuation from the last trusted checkpoint, net8 iter029.
+
+Baseline
+========
+
+Current trusted KB8 checkpoint:
+- net8 iter029 / `net8_final.nnue`.
+- Selected over net8 iter049 by:
+  `Score of iter029 vs iter049: 345 - 274 - 181 [0.544] 800`
+  for +30.9 +/- 21.2 Elo.
+- Direct net8 vs net5:
+  - 10+0.1: +25.6 +/- 20.1 Elo over net5.
+  - 90+0.5: +69.6 +/- 67.1 Elo over net5, small sample.
+
+Why net10 exists
+================
+
+Net9 fixed the pipeline problems from the net8 tail:
+- 1M chunks reduced queue/disk pressure.
+- Bullet conversion/shuffle validation caught bad chunks.
+- Resume path handling was fixed.
+- `BATCHES_PER_SUPERBATCH` is now computed from actual chunk size.
+- UCI/search lifecycle bugs causing illegal moves were fixed.
+
+But net9 itself failed as a strength continuation:
+
+Score of iter039 vs curr at 10+0.1:
+`20 - 58 - 39 [0.338] 117`, -117.1 +/- 53.2 Elo.
+
+The split was the important part:
+- White: `18 - 6 - 33 [0.605]`.
+- Black: `2 - 52 - 6 [0.083]`.
+
+Fast 0.5+0.05 testing made iter039 look plausible, but 10+0.1 exposed a severe
+Black-side/generalization collapse. Net10 should therefore not continue net9.
+
+Net10 changes from net9
+=======================
+
+- Restart from net8 iter029, not from net9.
+- Keep KB8 architecture.
+- Keep Bullet trainer and strict `convert_bullet.py` format.
+- Keep 1M chunks and all master validation/disk-safety fixes.
+- Make the source mix more conservative:
+  - net9 used 80% HCE / 20% NNUE.
+  - net10 uses 90% HCE / 10% NNUE.
+- Lower the continuation LR:
+  - net9 used `LR=0.001`.
+  - net10 uses `LR=0.0003`.
+  - drop to `0.0001` after 100 chunks.
+  - drop to `0.00003` after 200 chunks.
+
+Reasoning
+=========
+
+Net9's pipeline was valid but its training recipe drifted away from the net8
+balance. The 10+0.1 result was not a small generic loss; it was a color split
+collapse. That points to distribution/training drift more than architecture.
+
+The safest next test is a smaller update step and a stronger HCE anchor:
+- 90/10 keeps some NNUE self-play signal.
+- HCE-heavy data should reduce narrow self-play bias.
+- Lower LR should preserve the net8 checkpoint instead of rapidly overwriting it.
+
+Planned setup
+=============
+
+- NFS root: `~/nnue_v2_9`.
+- Train id: `shayveri_v2.9_kb8`.
+- Resume checkpoint: net8 iter029 Bullet checkpoint,
+  `~/nnue_v2_7/out/shayveri_v2.7_kb8_iter029-1`.
+- `POSITIONS=1000000`.
+- `NODES=10000`.
+- `WDL=0.1`.
+- `SCALE=400`.
+- `BATCH_SIZE=16384`.
+- `EPOCHS=1`.
+- `LR=0.0003`.
+- `LR_AFTER_DROP=0.0001` at chunk 100.
+- `SECOND_LR_AFTER_DROP=0.00003` at chunk 200.
+- Default worker `SOURCE_PATTERN=NHHHHHHHHH`.
+- Master schedule: each 10-iteration block consumes 1 NNUE chunk then 9 HCE
+  chunks.
+
+Testing plan
+============
+
+Early gate:
+- Test `iter009` against `curr/net8_final` at 0.5+0.05.
+- If it is already more than about -30 Elo, stop or re-evaluate.
+
+Main checkpoint checks:
+- Test `iter009`, `iter019`, `iter029`, and `curr` at 0.5+0.05.
+- If a candidate looks close or better, immediately run a direct 10+0.1 match
+  against `curr`.
+
+Promotion gate:
+- Do not trust fast-TC pool results alone.
+- Require direct 10+0.1 against curr before considering promotion.
+- Track White/Black split explicitly. Any Black collapse like net9 is a kill
+  signal even if aggregate fast-TC Elo looks okay.
+
+Results
+=======
+
+No results yet.
