@@ -57,15 +57,16 @@ inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
     const int effective_sq = (perspective == 1) ? (king_sq ^ 56) : king_sq;
     const int file = effective_sq & 7;
     const int rank = effective_sq >> 3;
-    const int rank_group = rank >= 4 ? 1 : 0;
-    return rank_group * 4 + (file & 3);
+    static constexpr int FILE_MAP[8] = {0, 1, 2, 3, 3, 2, 1, 0};
+    return (rank >= 4 ? 1 : 0) * 4 + FILE_MAP[file];
 }
 
-inline int feature_index(int piece_type, int piece_color, int sq,
-                         int perspective, int perspective_king_sq) {
-    const int base = chess768_index(piece_type, piece_color, sq, perspective);
-    const int bucket = king_bucket_index(perspective_king_sq, perspective, king_bucket_count());
-    return bucket * CHESS768_INPUT_SIZE + base;
+inline int feature_index(int piece_type, int piece_color, int sq, int perspective, int perspective_king_sq) {
+    const int king_file = perspective_king_sq & 7; // file unaffected by ^56
+    const int flip      = (king_file > 3) ? 7 : 0;
+    const int base      = chess768_index(piece_type, piece_color, sq, perspective);
+    const int bucket    = king_bucket_index(perspective_king_sq, perspective, king_bucket_count());
+    return bucket * CHESS768_INPUT_SIZE + (base ^ flip);
 }
 
 inline void chess768_indices(int piece_type, int piece_color, int sq,
