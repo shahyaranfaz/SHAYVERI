@@ -210,15 +210,32 @@ Rank Name                          Elo     +/-   Games   Score    Draw
 
 Clearly, none are close.
 
-cutechess-cli \
-  -engine name=iter039 cmd=./SHAYVERI dir="." proto=uci option.OwnBook=false option.EvalFile="iter039.nnue" \
-  -engine name=iter059 cmd=./SHAYVERI dir="." proto=uci option.OwnBook=false option.EvalFile="iter059.nnue" \
-  -engine name=net10 cmd=./SHAYVERI dir="." proto=uci option.OwnBook=false \
-  -each tc=0.5+0.05 option.Hash=64 option.Threads=1 \
-  -rounds 1 \
-  -games 300 \
-  -concurrency 23 \
-  -ratinginterval 250
+After net11, let's run vs HCE:
+Score of SHAYVERI vs SHAYVERI_HCE: 17 - 26 - 9  [0.413] 52
+...      SHAYVERI playing White: 11 - 11 - 4  [0.500] 26
+...      SHAYVERI playing Black: 6 - 15 - 5  [0.327] 26
+...      White vs Black: 26 - 17 - 9  [0.587] 52
+Elo difference: -60.7 +/- 88.8, LOS: 8.5 %, DrawRatio: 17.3 %
+
+Small sample, but it shouldn't be close at all. It should be net10 by 300+ Elo.
+This implies that net10 is worse than HCE at 10+0.1. So, we should test net8 as well.
+
+Score of SHAYVERI vs SHAYVERI_HCE: 18 - 30 - 12  [0.400] 60
+...      SHAYVERI playing White: 8 - 16 - 7  [0.371] 31
+...      SHAYVERI playing Black: 10 - 14 - 5  [0.431] 29
+...      White vs Black: 22 - 26 - 12  [0.467] 60
+Elo difference: -70.4 +/- 81.4, LOS: 4.2 %, DrawRatio: 20.0 %
+SPRT: llr 0 (0.0%), lbound -inf, ubound inf
+
+Okay, so this new arch is purely worse than HCE. Let us double-check net5's Elo, and
+revert to net5_final.nnue. We must figure out what to do about the new architecture.
+Score of SHAYVERI vs SHAYVERI_HCE: 23 - 10 - 11  [0.648] 44
+...      SHAYVERI playing White: 12 - 4 - 6  [0.682] 22
+...      SHAYVERI playing Black: 11 - 6 - 5  [0.614] 22
+...      White vs Black: 18 - 15 - 11  [0.534] 44
+Elo difference: 105.8 +/- 94.3, LOS: 98.8 %, DrawRatio: 25.0 %
+
+So, net5 is our current net still. We will revert.
 
 Conclusion
 ==========

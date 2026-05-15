@@ -62,6 +62,9 @@ inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
 }
 
 inline int feature_index(int piece_type, int piece_color, int sq, int perspective, int perspective_king_sq) {
+    if (king_bucket_count() <= 1)
+        return chess768_index(piece_type, piece_color, sq, perspective);
+
     const int king_file = perspective_king_sq & 7; // file unaffected by ^56
     const int flip      = (king_file > 3) ? 7 : 0;
     const int base      = chess768_index(piece_type, piece_color, sq, perspective);
