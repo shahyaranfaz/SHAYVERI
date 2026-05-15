@@ -107,7 +107,7 @@ std::string load(const std::string &path) {
     } else {
         U32 buckets = 0;
         must_read(f, &buckets, sizeof(buckets), "king_bucket_count");
-        if (buckets != MAX_KING_BUCKETS) {
+        if (buckets != 8 && buckets != 16) {
             std::fprintf(stderr, "[nnue] invalid king bucket count %u in \"%s\"\n",
                          buckets, path.c_str());
             std::fclose(f);

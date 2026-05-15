@@ -261,3 +261,25 @@ Recommended next experiment:
 - Keep the fixed Bullet/1M validation pipeline.
 - Keep early dense checkpoint testing, because useful peaks appear very early
   and later training can regress.
+
+
+21,22,23,24,25, 26,27,30,31,32
+
+  cutechess-cli \
+    -engine name=SHAYVERI    dir="engines" cmd=./SHAYVERI option.EvalFile="net3_final.nnue" \
+    -engine name=SF2850      dir="engines" cmd=./Stockfish18 option.UCI_LimitStrength=true option.UCI_Elo=2850 \
+    -engine name=SF3000      dir="engines" cmd=./Stockfish18 option.UCI_LimitStrength=true option.UCI_Elo=3000 \
+    -engine name=Berserk     dir="engines" cmd=./Berserk13 \
+    -engine name=Ethereal    dir="engines" cmd=./Ethereal14 \
+    -engine name=Weiss       dir="engines" cmd=./Weiss2 \
+    -engine name=Alexandria  dir="engines" cmd=./Alexandria9 \
+    -engine name=PlentyChess dir="engines" cmd=./PlentyChess7 \
+    -each proto=uci tc=10+0.1 option.Threads=1 option.Hash=64 \
+    -rounds 180 \
+    -games 2 \
+    -repeat \
+    -openings file=books/UHO_2024_8mvs_split_10.epd format=epd order=random \
+    -pgnout results/results_nnue_$(hostname).pgn \
+    -concurrency 23 \
+    -resign movecount=4 score=900 \
+    -draw movenumber=40 movecount=8 score=10

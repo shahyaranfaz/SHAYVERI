@@ -11,7 +11,7 @@ namespace SHAYVERI {
 namespace NNUE {
 
 inline constexpr int CHESS768_INPUT_SIZE = 768;
-inline constexpr int MAX_KING_BUCKETS    = 8;
+inline constexpr int MAX_KING_BUCKETS    = 16;
 inline constexpr int MAX_INPUT_SIZE      = CHESS768_INPUT_SIZE * MAX_KING_BUCKETS;
 inline constexpr int HIDDEN_SIZE         = 256;
 inline constexpr int OUTPUT_SIZE         = 1;
@@ -58,7 +58,13 @@ inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
     const int file = effective_sq & 7;
     const int rank = effective_sq >> 3;
     static constexpr int FILE_MAP[8] = {0, 1, 2, 3, 3, 2, 1, 0};
-    return (rank >= 4 ? 1 : 0) * 4 + FILE_MAP[file];
+    const int file_bucket = FILE_MAP[file];
+    if (bucket_count == 8)
+        return (rank >= 4 ? 1 : 0) * 4 + file_bucket;
+    if (bucket_count == 16)
+        return (rank / 2) * 4 + file_bucket;
+
+    return 0;
 }
 
 inline int feature_index(int piece_type, int piece_color, int sq, int perspective, int perspective_king_sq) {

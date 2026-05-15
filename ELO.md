@@ -1,20 +1,24 @@
 # Engine Benchmarks and Overview
 
-This section provides the expected world-standard ratings (CCRL) and technical details for the engines used in this tournament. Ratings are mapped from CCRL Blitz (STC) and CCRL 40/15 (LTC) to provide a performance baseline.
+This section provides the expected world-standard ratings (CCRL) and technical details for the engines used in this tournament. Ratings are mapped from CCRL Blitz/STC and CCRL 40/15-style LTC lists only as a sanity baseline. The Ordo ratings below are from this local gauntlet and should not be compared directly to CCRL numbers.
 
 ### Expected World Ratings (CCRL)
-| Engine Version    | Eval Type               | Expected STC (10+0.1) | Expected LTC (90+0.5) |
-|-------------------|-------------------------|----------------------:|----------------------:|
-| Stockfish 18      | NNUE                    |                 ~4100 |                 ~3650 |
-| PlentyChess 7.0.0 | NNUE                    |                 ~4050 |                 ~3640 |
-| Alexandria 9      | NNUE                    |                 ~4000 |                 ~3580 |
-| Berserk 13        | NNUE                    |                 ~4010 |                 ~3510 |
-| Ethereal 14       | Classical + NNUE Hybrid |                 ~3450 |                 ~3350 |
-| Weiss 2.0         | Classical HCE           |                 ~3335 |                 ~3265 |
-| SHAYVERI          | Classical HCE           |                 ~2650 |                 ~2735 |
+| Engine Version    | Eval Type               |   Expected STC (10+0.1) |   Expected LTC (90+0.5) |
+|-------------------|-------------------------|------------------------:|------------------------:|
+| PlentyChess 7.0.0 | NNUE                    |                   ~3750 |                   ~3610 |
+| Alexandria 9      | NNUE                    |                   ~3760 |                   ~3630 |
+| Berserk 13        | NNUE                    |                   ~3730 |                   ~3620 |
+| Ethereal 14       | Classical HCE           |              ~3530-3710 |              ~3530-3580 |
+| Weiss 2.0         | Classical HCE           |                   ~3325 |              ~3260-3380 |
+| SHAYVERI HCE      | Classical HCE           |                  2652.7 |                  2734.5 |
+| SHAYVERI net5     | NNUE                    |                  2716.2 |                  2792.3 |
 
 
-*\*Note: While commercial versions of Ethereal 14 use NNUE, the open-source GitHub version typically defaults to its powerful Hand-Crafted Evaluation (HCE) unless a specific network is provided.*
+Notes:
+- Weiss and the tested Ethereal build are **not NNUE**. The rest of the non-SHAYVERI opponents in this gauntlet are NNUE engines.
+- `SF2850` and `SF3000` are fixed-strength Stockfish anchors, not full-strength Stockfish 18.
+- Ethereal is awkward in rating tables because CCRL contains several Ethereal 14.x entries and CPU-count variants. For this gauntlet, treat the tested binary as the open/free HCE line, not the commercial NNUE line.
+- CCRL references used for sanity only: CCRL 404 lists PlentyChess 7.0.0 around 3753, Alexandria 8.x around 3730-3764, Berserk 13 around 3732, Ethereal 14.00 around 3709 on an 8CPU entry, and Weiss 2.0 around 3325. CCRL 4040 lists PlentyChess 7.0.0 around 3606, Alexandria 8.x around 3588-3634, Berserk 13 around 3617, Ethereal 14.00 around 3531-3579 depending on CPU entry, and Weiss 2.0 around 3263-3381 depending on CPU entry.
 
 ---
 
@@ -26,7 +30,7 @@ All engines were compiled from source (Git) on the testing hardware.
 * **PlentyChess 7.0.0**: A top-tier NNUE engine trained on over 15 billion positions.
 * **Alexandria 9**: A bitboard-based engine. **Verified**: Version 9 uses NNUE (trained via Bullet trainer).
 * **Berserk 13**: **Verified**: Uses a proprietary NNUE architecture (16-bucket mirrored).
-* **Ethereal 14**: **Verified**: The open-source version is one of the strongest **HCE** engines. (NNUE is available in commercial/paid builds).
+* **Ethereal 14**: **Verified**: The tested binary is **HCE**. (NNUE is available in commercial/paid builds).
 * **Weiss 2.0**: **Verified**: A pure **HCE** engine and descendant of the VICE engine.
 * **SHAYVERI**: Developmental engine under test.
 
@@ -36,15 +40,25 @@ All engines were compiled from source (Git) on the testing hardware.
 
 ## Overview
 
-SHAYVERI was evaluated in a controlled multi-engine round-robin tournament using Ordo rating analysis. Two time controls were tested: **STC (10+0.1)** and **LTC (90+0.5)**. All engines ran single-threaded under identical hardware conditions.
+SHAYVERI was evaluated in controlled multi-engine round-robin tournaments using Ordo rating analysis. Two time controls were tested: **STC (10+0.1)** and **LTC (90+0.5)**. All engines ran single-threaded under identical hardware conditions.
 
 Ratings are pool-relative and anchored to SF2850 = 2850 and SF3000 = 3000. They are **not** universal chess ratings.
 
+Two SHAYVERI configurations are now recorded:
+- **SHAYVERI HCE**: original hand-crafted evaluation gauntlet.
+- **SHAYVERI net5**: NNUE net5_final.nnue gauntlet.
+
+The same opponent binaries and same tournament setup were used for both HCE and NNUE gauntlets. The opening book was `UHO_2024_8mvs.epd`, and Ordo was run as:
+
+```bash
+./ordo -p rating_pool.pgn -m anchors -W -D -s 5000 -n 8 -J -j h2h.txt -C cfs.csv -e err.csv -o results.txt -c results.csv -F 99
+```
+
 ---
 
-## Final Ratings
+## HCE Final Ratings
 
-### STC — 10+0.1 (17,000+ games per engine)
+### HCE STC — 10+0.1 (17,000+ games per engine)
 
 | # | Engine       | Rating     | Error     | Points   | Played  | Score % | CFS %     |
 |---|--------------|------------|-----------|----------|---------|---------|-----------|
@@ -62,7 +76,7 @@ Ratings are pool-relative and anchored to SF2850 = 2850 and SF3000 = 3000. They 
 
 ---
 
-### LTC — 90+0.5 (600 games per pairing, 4200 total per engine)
+### HCE LTC — 90+0.5 (600 games per pairing, 4200 total per engine)
 
 | # | Engine       | Rating     | Error     | Points | Played | Score % | CFS % |
 |---|--------------|------------|-----------|--------|--------|---------|-------|
@@ -80,7 +94,60 @@ Ratings are pool-relative and anchored to SF2850 = 2850 and SF3000 = 3000. They 
 
 ---
 
-## SHAYVERI Summary
+## NNUE net5 Final Ratings
+
+### NNUE STC — 10+0.1 (~7,000 games per engine)
+
+| # | Engine            | Rating     | Error     | Points  | Played | Score % | CFS % |
+|---|-------------------|------------|-----------|---------|--------|---------|-------|
+| 1 | PlentyChess       | 3674.2     | ±20.6     | 5827.5  | 6998   | 83%     | 91    |
+| 2 | Alexandria        | 3665.7     | ±20.3     | 5789.0  | 6994   | 83%     | 100   |
+| 3 | Berserk           | 3601.6     | ±19.3     | 5468.0  | 6998   | 78%     | 100   |
+| 4 | Weiss             | 3280.7     | ±15.7     | 3634.0  | 7001   | 52%     | 100   |
+| 5 | Ethereal          | 3226.0     | ±14.9     | 3312.5  | 6998   | 47%     | 100   |
+| 6 | SF3000            | 3000.0     | anchor    | 2102.5  | 6998   | 30%     | 100   |
+| 7 | SF2850            | 2850.0     | anchor    | 1174.5  | 6999   | 17%     | 100   |
+| 8 | **SHAYVERI net5** | **2716.2** | **±16.4** | 688.0   | 7006   | **10%** | ---   |
+
+**White advantage:** 165.15 ±2.85<br>
+**Draw rate (equal opponents):** 40.48% ±0.56
+
+### NNUE LTC — 90+0.5 (~950 games per engine)
+
+| # | Engine            | Rating     | Error     | Points  | Played | Score % | CFS % |
+|---|-------------------|------------|-----------|---------|--------|---------|-------|
+| 1 | PlentyChess       | 3750.3     | ±57.6     | 779.0   | 942    | 83%     | 95    |
+| 2 | Alexandria        | 3723.2     | ±57.1     | 770.5   | 943    | 82%     | 100   |
+| 3 | Berserk           | 3675.9     | ±55.3     | 738.5   | 949    | 78%     | 100   |
+| 4 | Weiss             | 3409.2     | ±45.8     | 536.5   | 943    | 57%     | 100   |
+| 5 | Ethereal          | 3314.9     | ±42.8     | 468.5   | 944    | 50%     | 100   |
+| 6 | SF3000            | 3000.0     | anchor    | 251.5   | 948    | 27%     | 100   |
+| 7 | SF2850            | 2850.0     | anchor    | 128.5   | 947    | 14%     | 100   |
+| 8 | **SHAYVERI net5** | **2792.3** | **±41.5** | 111.0   | 952    | **12%** | ---   |
+
+**White advantage:** 190.63 ±7.83<br>
+**Draw rate (equal opponents):** 49.19% ±1.76
+
+---
+
+## SHAYVERI HCE vs NNUE Summary
+
+| Eval | Time Control | Rating | Error | Gap to SF2850 | Gap to SF3000 |
+|------|--------------|-------:|------:|--------------:|--------------:|
+| HCE  | STC 10+0.1   | 2652.7 | ±11.5 |        −197.3 |        −347.3 |
+| net5 | STC 10+0.1   | 2716.2 | ±16.4 |        −133.8 |        −283.8 |
+| HCE  | LTC 90+0.5   | 2734.5 | ±20.3 |        −115.5 |        −265.5 |
+| net5 | LTC 90+0.5   | 2792.3 | ±41.5 |         −57.7 |        −207.7 |
+
+| Comparison    |     STC Δ |     LTC Δ |
+|---------------|----------:|----------:|
+| net5 over HCE | **+63.5** | **+57.8** |
+
+Net5 is a real improvement over HCE in this pool, but it is much smaller than the hoped-for +300 Elo. The gauntlet says SHAYVERI net5 remains below SF2850 at both time controls, though it gets close at LTC.
+
+---
+
+## Original HCE SHAYVERI Summary
 
 | Time Control | Rating    | Error | Gap to SF2850 | Gap to SF3000 |
 |--------------|-----------|-------|---------------|---------------|
@@ -132,11 +199,51 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 | SF3000      | 600   | 62  | 127 | 411 | 20.9%   | −265.5  | 0.0   |
 | SF2850      | 600   | 209 | 95  | 296 | 42.8%   | −115.5  | 0.0   |
 
+## SHAYVERI net5 Head-to-Head Results
+
+### vs. SF2850
+
+| TC  | Games | W   | D   | L   | Score % | Rating Diff | CFS % |
+|-----|-------|-----|-----|-----|---------|-------------|-------|
+| STC | 990   | 298 | 198 | 494 | 40.1%   | −133.8      | 0.0   |
+| LTC | 124   | 45  | 32  | 47  | 49.2%   | −57.7       | 0.0   |
+
+### vs. SF3000
+
+| TC  | Games | W   | D   | L   | Score % | Rating Diff | CFS % |
+|-----|-------|-----|-----|-----|---------|-------------|-------|
+| STC | 996   | 115 | 191 | 690 | 21.1%   | −283.8      | 0.0   |
+| LTC | 131   | 20  | 33  | 78  | 27.9%   | −207.7      | 0.0   |
+
+### vs. All Opponents — STC
+
+| Opponent    | Games | W   | D   | L   | Score % | Diff    | CFS % |
+|-------------|-------|-----|-----|-----|---------|---------|-------|
+| PlentyChess | 1010  | 0   | 24  | 986 | 1.2%    | −958.0  | 0.0   |
+| Alexandria  | 1005  | 1   | 21  | 983 | 1.1%    | −949.5  | 0.0   |
+| Berserk     | 1000  | 0   | 8   | 992 | 0.4%    | −885.4  | 0.0   |
+| Weiss       | 1003  | 3   | 39  | 961 | 2.2%    | −564.5  | 0.0   |
+| Ethereal    | 1002  | 5   | 51  | 946 | 3.0%    | −509.8  | 0.0   |
+| SF3000      | 996   | 115 | 191 | 690 | 21.1%   | −283.8  | 0.0   |
+| SF2850      | 990   | 298 | 198 | 494 | 40.1%   | −133.8  | 0.0   |
+
+### vs. All Opponents — LTC
+
+| Opponent    | Games | W  | D  | L   | Score % | Diff    | CFS % |
+|-------------|-------|----|----|-----|---------|---------|-------|
+| PlentyChess | 142   | 0  | 7  | 135 | 2.5%    | −958.0  | 0.0   |
+| Alexandria  | 140   | 0  | 3  | 137 | 1.1%    | −930.9  | 0.0   |
+| Berserk     | 135   | 0  | 6  | 129 | 2.2%    | −883.6  | 0.0   |
+| Weiss       | 140   | 1  | 3  | 136 | 1.8%    | −616.9  | 0.0   |
+| Ethereal    | 140   | 0  | 6  | 134 | 2.1%    | −522.6  | 0.0   |
+| SF3000      | 131   | 20 | 33 | 78  | 27.9%   | −207.7  | 0.0   |
+| SF2850      | 124   | 45 | 32 | 47  | 49.2%   | −57.7   | 0.0   |
+
 ---
 
 ## Pool Rankings — Full Comparison
 
-### STC Rating Gaps (relative to SF3000 = 3000)
+### HCE STC Rating Gaps (relative to SF3000 = 3000)
 
 | Engine      | Rating | vs SF3000 |
 |-------------|--------|-----------|
@@ -149,7 +256,20 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 | SF2850      | 2850.0 | −150      |
 | SHAYVERI    | 2652.7 | −347      |
 
-### STC vs LTC Rating Shift by Engine
+### NNUE net5 STC Rating Gaps (relative to SF3000 = 3000)
+
+| Engine      | Rating | vs SF3000 |
+|-------------|--------|-----------|
+| PlentyChess | 3674.2 | +674      |
+| Alexandria  | 3665.7 | +666      |
+| Berserk     | 3601.6 | +602      |
+| Weiss       | 3280.7 | +281      |
+| Ethereal    | 3226.0 | +226      |
+| SF3000      | 3000.0 | 0         |
+| SF2850      | 2850.0 | −150      |
+| SHAYVERI    | 2716.2 | −284      |
+
+### HCE STC vs LTC Rating Shift by Engine
 
 | Engine      | STC     | LTC     | Δ         |
 |-------------|---------|---------|-----------|
@@ -164,14 +284,31 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 
 SHAYVERI's STC→LTC gain (+81.8) is the largest in the pool (excluding the fixed anchors), on par with Weiss (+83.0). This indicates SHAYVERI's eval or search benefits more from additional time than most pool engines.
 
+### NNUE net5 STC vs LTC Rating Shift by Engine
+
+| Engine      | STC     | LTC     | Δ         |
+|-------------|---------|---------|-----------|
+| PlentyChess | 3674.2  | 3750.3  | +76.1     |
+| Alexandria  | 3665.7  | 3723.2  | +57.5     |
+| Berserk     | 3601.6  | 3675.9  | +74.3     |
+| Weiss       | 3280.7  | 3409.2  | +128.5    |
+| Ethereal    | 3226.0  | 3314.9  | +88.9     |
+| SF3000      | 3000.0  | 3000.0  | 0.0       |
+| SF2850      | 2850.0  | 2850.0  | 0.0       |
+| SHAYVERI    | 2716.2  | 2792.3  | **+76.1** |
+
+Net5 keeps the same broad STC→LTC pattern as HCE. It scales better with time than the fixed anchors, but not enough to close the gap to SF3000 or the HCE mid-pool engines.
+
 ---
 
 ## Draw Rate & White Advantage Analysis
 
-| TC  | White Advantage | Draw Rate     |
-|-----|-----------------|---------------|
-| STC | 169.43 ±1.85    | 40.47% ±0.38% |
-| LTC | 187.40 ±3.47    | 49.80% ±0.82% |
+| Eval | TC  | White Advantage | Draw Rate     |
+|------|-----|-----------------|---------------|
+| HCE  | STC | 169.43 ±1.85    | 40.47% ±0.38% |
+| HCE  | LTC | 187.40 ±3.47    | 49.80% ±0.82% |
+| net5 | STC | 165.15 ±2.85    | 40.48% ±0.56% |
+| net5 | LTC | 190.63 ±7.83    | 49.19% ±1.76% |
 
 The white advantage is notably high at both time controls (typical engine testing shows ~15–35 Elo). This may reflect the UHO opening book providing unbalanced positions that favor White. Draw rate rises substantially at LTC (+9.3 pp), consistent with deeper search resolving positions more accurately and producing more drawn outcomes.
 
@@ -179,13 +316,17 @@ The white advantage is notably high at both time controls (typical engine testin
 
 ## Observations & Notes
 
-**SHAYVERI's current strength** places it approximately 197 Elo below SF2850 at STC and 116 Elo below at LTC. It is not yet competitive with the mid-pool engines (Ethereal, Weiss) at either time control.
+**SHAYVERI HCE strength** places it approximately 197 Elo below SF2850 at STC and 116 Elo below at LTC.
+
+**SHAYVERI net5 strength** places it approximately 134 Elo below SF2850 at STC and 58 Elo below SF2850 at LTC. It is still not competitive with the mid-pool HCE engines Ethereal and Weiss, but it is clearly closer to the anchors than HCE.
+
+**NNUE gain:** net5 adds about +64 Elo at STC and +58 Elo at LTC over HCE in this anchored pool. This is a real gain, but it is nowhere near the +300 Elo hoped for from the NNUE project.
 
 **LTC improvement** is encouraging. SHAYVERI's +82 Elo gain from STC to LTC is the largest relative gain in the pool, suggesting the engine's search or evaluation scales well with time and is not primarily relying on tactical shortcuts that faster engines exploit.
 
 **SHAYVERI's draw profile** is unusual — at STC it scored almost exclusively losses against top engines (0 wins vs. PlentyChess, Alexandria, Berserk), with draws being the only survival mechanism against stronger opposition. Draw counts increase at LTC, which is a positive sign.
 
-**Sample size:** STC results (~17,000 games per engine, ~2,400 per pairing) are statistically robust. LTC results (~600 per pairing) carry larger error margins (±20 Elo vs ±11 Elo) and should be treated as directionally reliable but not final.
+**Sample size:** HCE STC results (~17,000 games per engine, ~2,400 per pairing) are statistically robust. HCE LTC results (~600 per pairing) carry larger error margins. NNUE STC results (~7,000 games per engine, ~1,000 per pairing) are solid. NNUE LTC results (~950 games per engine, ~125-140 per pairing) are directionally useful but still noisy.
 
 ---
 
@@ -196,9 +337,10 @@ The white advantage is notably high at both time controls (typical engine testin
 | Time control       | 10+0.1                          | 90+0.5        |
 | Threads            | 1                               | 1             |
 | Hash               | 64 MB                           | 128 MB        |
-| Opening book       | UHO_2024_8mvs_big_+085_+104.epd | same          |
+| Opening book       | UHO_2024_8mvs.epd               | same          |
 | Paired games       | Yes (−repeat)                   | Yes (−repeat) |
-| Total games (pool) | ~136,000                        | ~33,600       |
+| HCE total games    | ~136,000                        | ~33,600       |
+| NNUE total games   | ~56,000                         | ~7,600        |
 | Anchors            | SF2850=2850, SF3000=3000        | same          |
 | Simulations        | 1000+                           | 1000+         |
 | Confidence         | 99%                             | 99%           |

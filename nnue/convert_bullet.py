@@ -5,7 +5,7 @@ import struct
 
 
 CHESS768_INPUT_SIZE = 768
-MAX_KING_BUCKETS = 8
+MAX_KING_BUCKETS = 16
 HIDDEN_SIZE = 256
 NNUE_MAGIC = 0x4E4E5545
 NNUE_VERSION_CLASSIC = 2
@@ -20,15 +20,15 @@ def read_exact(data, offset, size, name):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert Bullet quantised.bin saved by shayveri_kb8.rs to SHAYVERI .nnue"
+        description="Convert Bullet quantised.bin saved by SHAYVERI Bullet trainers to SHAYVERI .nnue"
     )
     parser.add_argument("input_quantised")
     parser.add_argument("output_nnue")
     parser.add_argument("--king-buckets", type=int, default=MAX_KING_BUCKETS)
     args = parser.parse_args()
 
-    if args.king_buckets not in (1, MAX_KING_BUCKETS):
-        raise ValueError(f"king-buckets must be 1 or {MAX_KING_BUCKETS}, got {args.king_buckets}")
+    if args.king_buckets not in (1, 8, 16):
+        raise ValueError(f"king-buckets must be 1, 8, or 16, got {args.king_buckets}")
 
     input_size = CHESS768_INPUT_SIZE * args.king_buckets
     l0w_count = input_size * HIDDEN_SIZE
@@ -36,7 +36,7 @@ def main():
     l1w_count = HIDDEN_SIZE * 2
     l1b_size = 4
 
-    # SavedFormat order in nnue/shayveri_kb8.rs:
+    # SavedFormat order in the SHAYVERI Bullet trainers:
     #   l0w i16, merged with factoriser, flat input-major [input][hidden]
     #   l0b i16
     #   l1w i16, transposed to flat [stm hidden][nstm hidden]
@@ -67,7 +67,7 @@ def main():
     if output_bias_raw[2:4] == b"bu" or padding.startswith(b"llet"):
         raise ValueError(
             f"{args.input_quantised} looks like the old legacy64 Bullet format "
-            "(2-byte l1b followed by Bullet padding). Retrain with nnue/shayveri_kb8.rs "
+            "(2-byte l1b followed by Bullet padding). Retrain with a SHAYVERI Bullet trainer "
             "saving l1w at scale 255 and l1b as i32 at scale 255*255."
         )
     if padding:
