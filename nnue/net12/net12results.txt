@@ -180,4 +180,41 @@ If KB16 fails:
 Results
 =======
 
-No games yet.
+After ~9 iterations, let's just do some quick signal checks (200 per pair, 0.5+0.05):
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 curr                          458      51     600   93.3%    5.0%
+   2 iter006                        -8      26     600   48.8%   11.7%
+   3 iter003                        -9      26     600   48.7%   10.3%
+   4 iter000                      -398      45     600    9.2%    5.0%
+
+Obviously a massive regression, but the later iterations improve. Another
+signal check (100 per pair, 0.5+0.05):
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 curr                          278      46     300   83.2%   14.3%
+   2 iter012                       -28      34     300   46.0%   24.0%
+   3 iter006                      -102      35     300   35.7%   25.3%
+   4 iter009                      -106      36     300   35.2%   22.3%
+
+A similar pattern. Let it run for a while, as the new architecture is being
+discovered from scratch.
+
+After 20 iterations, lets test iter019 vs curr, including 014 and 009 for
+reference (200 per pair, 0.5+0.05):
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 curr                          466      51     600   93.6%    5.5%
+   2 iter009                       -13      25     600   48.2%   16.3%
+   3 iter019                      -149      27     600   29.8%   17.3%
+   4 iter014                      -160      27     600   28.4%   16.8%
+
+So, training starts to degrade pretty quickly. Training has been stopped at 23 iterations.
+A final playoff including HCE and curr (200 per pair, 10+0.1):
+Rank Name                          Elo     +/-   Games   Score    Draw
+   1 curr                          395      41     600   90.7%    9.0%
+   2 hce                           243      27     800   80.2%   13.6%
+   3 iter022                        33      22     800   54.7%   20.4%
+   4 iter009                       -35      25     600   45.0%   22.0%
+   5 iter004                      -103      23     784   35.6%   18.9%
+   6 iter019                      -167      23     784   27.6%   23.6%
+   7 iter014                      -196      23     800   24.4%   23.4%
+
+Stopped early, but net12 is clearly not even close.
