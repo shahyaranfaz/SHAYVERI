@@ -2,7 +2,18 @@
 
 **Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence**
 
-SHAYVERI is a UCI-compliant chess engine written in C++ that achieved 2750 Elo on Lichess. It implements a full classical search and evaluation stack, with all parameters tuned via SPSA and Texel tuning on self-play datasets.
+SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a tuned handcrafted evaluation fallback, and a net5 NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
+
+## Elo results
+
+| Configuration | Evaluation | Time control | Rating | Error | Gap to SF2850 | Gap to SF3000 |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| SHAYVERI HCE | Classical HCE | STC 10+0.1 | 2652.7 | +/-11.5 | -197.3 | -347.3 |
+| SHAYVERI HCE | Classical HCE | LTC 90+0.5 | 2734.5 | +/-20.3 | -115.5 | -265.5 |
+| SHAYVERI net5 | NNUE | STC 10+0.1 | 2716.2 | +/-16.4 | -133.8 | -283.8 |
+| SHAYVERI net5 | NNUE | LTC 90+0.5 | 2792.3 | +/-41.5 | -57.7 | -207.7 |
+
+Net5 improved over HCE by about +63.5 Elo at STC and +57.8 Elo at LTC in this anchored pool.
 
 ## How to build
 
@@ -51,7 +62,11 @@ go movetime 1000
 - Lazy SMP for multi-threaded search
 - Dynamic time management
 
-## Evaluation
+## NNUE and HCE
+
+Current builds support `EvalFile net5_final.nnue`, making net5 the stronger tested evaluation route when the NNUE file is available. The search uses NNUE when the network loads successfully; otherwise, SHAYVERI still has the original handcrafted evaluator.
+
+## Handcrafted evaluation
 
 - Piece-square tables with tapered middlegame/endgame interpolation
 - Pawn structure: passed pawns, isolated pawns, doubled/backward pawns, pawn chains, pawn storms, pawn islands
@@ -70,18 +85,13 @@ Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluat
 ## UCI options
 
 - `Hash`: transposition table size in MB.
-- `Clear Hash`: clears the transposition table.
 - `Threads`: number of search threads.
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
-- `Minimum Thinking Time`: lower bound for allocated move time, in milliseconds.
+- `EvalFile`: NNUE network path. Defaults to `net5_final.nnue`.
 - `Move Overhead`: GUI/network delay reserve, in milliseconds.
 
-The engine supports normal chess only. Chess960 is not advertised.
-
 ## Verification
-
-## Tests
 
 The debug harness lives in `debug/`.
 
