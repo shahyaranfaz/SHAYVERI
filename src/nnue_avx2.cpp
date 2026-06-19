@@ -44,8 +44,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
 
         __m256i stm32 = _mm256_cvtepi16_epi32(stm);
         __m256i stm_w32 = _mm256_cvtepi16_epi32(stm_w);
-        __m256i stm_sq = _mm256_mullo_epi32(stm32, stm32);
-        sum_stm = _mm256_add_epi64(sum_stm, mullo_epi32_to_epi64(stm_sq, stm_w32));
+        sum_stm = _mm256_add_epi64(sum_stm, mullo_epi32_to_epi64(stm32, stm_w32));
 
         __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(nstm_acc + i));
         __m128i nstm_w = _mm_loadu_si128(
@@ -54,15 +53,12 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
 
         __m256i nstm32 = _mm256_cvtepi16_epi32(nstm);
         __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
-        __m256i nstm_sq = _mm256_mullo_epi32(nstm32, nstm32);
-        sum_nstm = _mm256_add_epi64(sum_nstm, mullo_epi32_to_epi64(nstm_sq, nstm_w32));
+        sum_nstm = _mm256_add_epi64(sum_nstm, mullo_epi32_to_epi64(nstm32, nstm_w32));
     }
 
     I64 total = hsum256_epi64(sum_stm) + hsum256_epi64(sum_nstm);
-    total /= L1_SCALE;
     total += output_bias;
-    int score = static_cast<int>(
-        total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));
+    int score = static_cast<int>(total * OUTPUT_SCALE / L1_SCALE);
     return score;
 }
 

@@ -53,8 +53,7 @@ int piece_colour_index(Piece p) {
 }
 
 I32 screlu(I16 x) {
-    I32 clamped = std::clamp<I32>(x, 0, L1_SCALE);
-    return clamped * clamped;
+    return std::clamp<I32>(x, 0, L1_SCALE);
 }
 
 [[maybe_unused]] int evaluate_scalar(int side_to_move, const Accumulator &acc) {
@@ -67,9 +66,8 @@ I32 screlu(I16 x) {
         sum += static_cast<I64>(screlu(nstm_acc[i])) * output_weights[HIDDEN_SIZE + i];
     }
 
-    sum /= L1_SCALE;
     sum += output_bias;
-    int score = static_cast<int>(sum * OUTPUT_SCALE / (L1_SCALE * L1_SCALE));
+    int score = static_cast<int>(sum * OUTPUT_SCALE / L1_SCALE);
     return score;
 }
 

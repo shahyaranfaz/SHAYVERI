@@ -57,9 +57,22 @@ def main():
     out_weight = net["out.weight"]
     out_bias = net["out.bias"]
 
-    if len(ft_weight) != HIDDEN_SIZE or not ft_weight[0]:
-        raise ValueError("ft.weight must be a non-empty [hidden][input] matrix")
-    require_shape("ft.weight", ft_weight, [HIDDEN_SIZE, len(ft_weight[0])])
+    if not ft_weight or not ft_weight[0]:
+        raise ValueError("ft.weight must be a non-empty 2D matrix")
+    if len(ft_weight) == HIDDEN_SIZE:
+        require_shape("ft.weight", ft_weight, [HIDDEN_SIZE, len(ft_weight[0])])
+    elif len(ft_weight[0]) == HIDDEN_SIZE:
+        input_size = len(ft_weight)
+        require_shape("ft.weight", ft_weight, [input_size, HIDDEN_SIZE])
+        ft_weight = [
+            [ft_weight[input_idx][hidden_idx] for input_idx in range(input_size)]
+            for hidden_idx in range(HIDDEN_SIZE)
+        ]
+    else:
+        raise ValueError(
+            f"ft.weight must be [hidden][input] or [input][hidden] with hidden={HIDDEN_SIZE}, "
+            f"got {shape(ft_weight)}"
+        )
     require_shape("ft.bias", ft_bias, [HIDDEN_SIZE])
     require_shape("out.weight", out_weight, [1, HIDDEN_SIZE * 2])
     require_shape("out.bias", out_bias, [1])

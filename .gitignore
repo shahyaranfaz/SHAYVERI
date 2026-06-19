@@ -11,8 +11,9 @@ debug/tt_safety
 debug/nnue_test
 debug/__pycache__
 
-tuning/*/pass*/batch*/
-nnue/*/artifacts
+tuning/*/pass*/
+nnue/net*/
+
 
 # Prerequisites
 *.d
