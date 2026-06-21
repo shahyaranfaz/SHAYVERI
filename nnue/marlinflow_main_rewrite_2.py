@@ -17,11 +17,31 @@ from model import (
 from time import time
 
 import torch
-from trainlog import TrainLog
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 LOG_ITERS = 10_000_000
+
+
+class RunLog:
+    def __init__(self, train_id: str):
+        self.path = pathlib.Path("runs") / f"{train_id}.txt"
+        self.sample = 0
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text("", encoding="utf-8")
+
+    def append(self, line: str) -> None:
+        with self.path.open("a", encoding="utf-8") as log:
+            log.write(line + "\n")
+
+    def log_epoch(self, epoch: int, positions: int, loss: float, pos_per_sec: float) -> None:
+        self.append(
+            f"epoch {epoch}: loss={loss} positions={positions} pos_per_sec={pos_per_sec}"
+        )
+
+    def log_sample(self, positions: int, loss: float) -> None:
+        self.sample += 1
+        self.append(f"sample {self.sample}: positions={positions} running_loss={loss}")
 
 
 def has_cupy() -> bool:
@@ -53,7 +73,7 @@ def train(
     save_epochs: int,
     train_id: str,
     lr_drop: int | None = None,
-    train_log: TrainLog | None = None,
+    run_log: RunLog | None = None,
 ) -> None:
     clipper = WeightClipper()
     running_loss = torch.zeros((1,), device=DEVICE)
@@ -72,13 +92,17 @@ def train(
             epoch += 1
             if epoch == lr_drop:
                 optimizer.param_groups[0]["lr"] *= 0.1
+            epoch_loss = running_loss.item() / iterations
+            epoch_pos_per_sec = fens / (time() - start_time)
             print(
                 f"epoch {epoch}",
                 f"epoch positions: {fens}",
-                f"epoch train loss: {running_loss.item() / iterations}",
-                f"epoch pos/s: {fens / (time() - start_time)}",
+                f"epoch train loss: {epoch_loss}",
+                f"epoch pos/s: {epoch_pos_per_sec}",
                 sep=os.linesep,
             )
+            if run_log is not None:
+                run_log.log_epoch(epoch, fens, epoch_loss, epoch_pos_per_sec)
 
             running_loss = torch.zeros((1,), device=DEVICE)
             start_time = time()
@@ -117,9 +141,8 @@ def train(
                 f"Running Loss: {loss}",
                 sep=os.linesep,
             )
-            if train_log is not None:
-                train_log.update(loss)
-                train_log.save()
+            if run_log is not None:
+                run_log.log_sample(iterations * batch.size, loss)
             iter_since_log = 0
             loss_since_log = torch.zeros((1,), device=DEVICE)
 
@@ -154,7 +177,7 @@ def main():
     assert args.train_id is not None
     assert args.scale is not None
 
-    train_log = TrainLog(args.train_id)
+    run_log = RunLog(args.train_id)
 
     model_cls = NnBoard768Cuda if torch.cuda.is_available() and has_cupy() else NnBoard768
     model = model_cls(256).to(DEVICE)
@@ -175,7 +198,7 @@ def main():
         args.save_epochs,
         args.train_id,
         lr_drop=args.lr_drop,
-        train_log=train_log,
+        run_log=run_log,
     )
 
 
