@@ -67,7 +67,7 @@ I32 screlu(I16 x) {
     }
 
     sum += output_bias;
-    int score = static_cast<int>(sum * OUTPUT_SCALE / L1_SCALE);
+    int score = static_cast<int>(sum * OUTPUT_SCALE / (L1_SCALE * L1_SCALE));
     return score;
 }
 

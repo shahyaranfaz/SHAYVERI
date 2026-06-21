@@ -58,7 +58,8 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
 
     I64 total = hsum256_epi64(sum_stm) + hsum256_epi64(sum_nstm);
     total += output_bias;
-    int score = static_cast<int>(total * OUTPUT_SCALE / L1_SCALE);
+    int score = static_cast<int>(
+        total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));
     return score;
 }
 

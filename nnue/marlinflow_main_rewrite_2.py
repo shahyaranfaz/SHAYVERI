@@ -74,6 +74,7 @@ def train(
                 optimizer.param_groups[0]["lr"] *= 0.1
             print(
                 f"epoch {epoch}",
+                f"epoch positions: {fens}",
                 f"epoch train loss: {running_loss.item() / iterations}",
                 f"epoch pos/s: {fens / (time() - start_time)}",
                 sep=os.linesep,
@@ -90,7 +91,7 @@ def train(
                     name: param.detach().cpu().numpy().tolist()
                     for name, param in model.named_parameters()
                 }
-                with open(f"nn/{train_id}.json", "w") as json_file:
+                with open(f"nn/{train_id}_{epoch}.json", "w") as json_file:
                     json.dump(param_map, json_file)
 
         optimizer.zero_grad()
