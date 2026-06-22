@@ -312,15 +312,15 @@
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
             <strong>2792.3</strong>
-            <span>Anchored Ordo LTC rating for SHAYVERI net5</span>
+            <span>Anchored Ordo LTC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
             <strong>2716.2</strong>
-            <span>Anchored Ordo STC rating for SHAYVERI net5</span>
+            <span>Anchored Ordo STC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
             <strong>+58</strong>
-            <span>Approximate LTC net5 gain over HCE</span>
+            <span>Approximate LTC NNUE gain over HCE</span>
           </div>
           <div class="metric">
             <strong>UCI</strong>
@@ -335,7 +335,7 @@
     <section id="overview">
       <div class="wrap">
         <h2>Overview</h2>
-        <p class="lead">SHAYVERI is a native chess engine written in C++. The README describes a full classical search and evaluation stack, with parameters tuned by SPSA and Texel tuning on self-play datasets. Current builds also support <code>EvalFile net5_final.nnue</code>, making net5 the stronger tested evaluation route when the NNUE file is available.</p>
+        <p class="lead">SHAYVERI is a native chess engine written in C++. The README describes a full classical search and evaluation stack, with parameters tuned by SPSA and Texel tuning on self-play datasets. Current builds also support <code>EvalFile SHAYVERI2_2_0.nnue</code>, making NNUE the stronger tested evaluation route when the NNUE file is available.</p>
         <div class="card-grid">
           <article class="card">
             <h3>Protocol</h3>
@@ -372,7 +372,7 @@
             </thead>
             <tbody>
               <tr>
-                <td>SHAYVERI HCE</td>
+                <td>SHAYVERI v1.0</td>
                 <td>Classical HCE</td>
                 <td>STC 10+0.1</td>
                 <td>2652.7</td>
@@ -381,7 +381,7 @@
                 <td>-347.3</td>
               </tr>
               <tr>
-                <td>SHAYVERI HCE</td>
+                <td>SHAYVERI v1.0</td>
                 <td>Classical HCE</td>
                 <td>LTC 90+0.5</td>
                 <td>2734.5</td>
@@ -390,7 +390,7 @@
                 <td>-265.5</td>
               </tr>
               <tr>
-                <td>SHAYVERI net5</td>
+                <td>SHAYVERI v2.2.0</td>
                 <td>NNUE</td>
                 <td>STC 10+0.1</td>
                 <td class="good">2716.2</td>
@@ -399,7 +399,7 @@
                 <td>-283.8</td>
               </tr>
               <tr>
-                <td>SHAYVERI net5</td>
+                <td>SHAYVERI v2.2.0</td>
                 <td>NNUE</td>
                 <td>LTC 90+0.5</td>
                 <td class="good">2792.3</td>
@@ -410,14 +410,14 @@
             </tbody>
           </table>
         </div>
-        <p class="note">Net5 improved over HCE by about <span class="warn">+63.5 Elo at STC</span> and <span class="warn">+57.8 Elo at LTC</span> in this anchored pool. It gets close to SF2850 at LTC, but remains below both fixed-strength Stockfish anchors in the recorded tests.</p>
+        <p class="note">NNUE improved over HCE by about <span class="warn">+63.5 Elo at STC</span> and <span class="warn">+57.8 Elo at LTC</span> in this anchored pool. It gets close to SF2850 at LTC, but remains below both fixed-strength Stockfish anchors in the recorded tests.</p>
       </div>
     </section>
 
     <section id="evaluation">
       <div class="wrap">
         <h2>NNUE And HCE</h2>
-        <p class="lead">SHAYVERI has two evaluation stories. The original engine is a hand-crafted evaluator with tuned chess terms. The current net5 testing path uses NNUE through <code>EvalFile</code>, with <code>net5_final.nnue</code> as the default network file in the UCI layer.</p>
+        <p class="lead">SHAYVERI has two evaluation stories. The original engine is a hand-crafted evaluator with tuned chess terms. The default path is NNUE through the UCI option <code>EvalFile</code>, with <code>SHAYVER2_2_0.nnue</code> as the default network file in the UCI layer.</p>
         <div class="split">
           <article class="card">
             <h3>Handcrafted Evaluation</h3>
@@ -429,9 +429,9 @@
             </ul>
           </article>
           <article class="card">
-            <h3>NNUE net5</h3>
+            <h3>NNUE</h3>
             <ul>
-              <li>Loaded through the UCI <code>EvalFile</code> option, defaulting to <code>net5_final.nnue</code>.</li>
+              <li>Loaded through the UCI <code>EvalFile</code> option, defaulting to <code>SHAYVERI2_2_0.nnue</code>.</li>
               <li>Used by search when the network is successfully loaded.</li>
               <li>Recorded as a real gain over HCE, though smaller than the hoped-for +300 Elo jump.</li>
               <li>Tested against the same opponent binaries and tournament setup as the HCE gauntlet.</li>
@@ -502,7 +502,7 @@ go movetime 1000</code></pre>
           <div class="card"><h3>Threads</h3><p>Number of search threads.</p></div>
           <div class="card"><h3>Ponder</h3><p>Enable ponder output and search support.</p></div>
           <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
-          <div class="card"><h3>EvalFile</h3><p>NNUE network path. Defaults to <code>net5_final.nnue</code>.</p></div>
+          <div class="card"><h3>EvalFile</h3><p>NNUE network path. Defaults to <code>SHAYVERI2_2_0.nnue</code>.</p></div>
           <div class="card"><h3>Move Overhead</h3><p>GUI or network delay reserve in milliseconds.</p></div>
         </div>
       </div>

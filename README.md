@@ -2,18 +2,18 @@
 
 **Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence**
 
-SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a tuned handcrafted evaluation fallback, and a net5 NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
+SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a tuned handcrafted evaluation fallback, and an NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
 
 ## Elo results
 
-| Configuration | Evaluation | Time control | Rating | Error | Gap to SF2850 | Gap to SF3000 |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| SHAYVERI HCE | Classical HCE | STC 10+0.1 | 2652.7 | +/-11.5 | -197.3 | -347.3 |
-| SHAYVERI HCE | Classical HCE | LTC 90+0.5 | 2734.5 | +/-20.3 | -115.5 | -265.5 |
-| SHAYVERI net5 | NNUE | STC 10+0.1 | 2716.2 | +/-16.4 | -133.8 | -283.8 |
-| SHAYVERI net5 | NNUE | LTC 90+0.5 | 2792.3 | +/-41.5 | -57.7 | -207.7 |
+| Configuration   | Evaluation    | Time control | Rating |   Error | Gap to SF2850 | Gap to SF3000 |
+|-----------------|---------------|--------------|-------:|--------:|--------------:|--------------:|
+| SHAYVERI v1.0   | Classical HCE | STC 10+0.1   | 2652.7 | +/-11.5 |        -197.3 |        -347.3 |
+| SHAYVERI v1.0   | Classical HCE | LTC 90+0.5   | 2734.5 | +/-20.3 |        -115.5 |        -265.5 |
+| SHAYVERI v2.2.0 | NNUE          | STC 10+0.1   | 2716.2 | +/-16.4 |        -133.8 |        -283.8 |
+| SHAYVERI v2.2.0 | NNUE          | LTC 90+0.5   | 2792.3 | +/-41.5 |         -57.7 |        -207.7 |
 
-Net5 improved over HCE by about +63.5 Elo at STC and +57.8 Elo at LTC in this anchored pool.
+NNUE improved over HCE by about +63.5 Elo at STC and +57.8 Elo at LTC in this anchored pool.
 
 ## How to build
 
@@ -64,7 +64,7 @@ go movetime 1000
 
 ## NNUE and HCE
 
-Current builds support `EvalFile SHAYVERI2_2_0.nnue`, making net5 the stronger tested evaluation route when the NNUE file is available. The search uses NNUE when the network loads successfully; otherwise, SHAYVERI still has the original handcrafted evaluator.
+Current builds support `EvalFile SHAYVERI2_2_0.nnue`, making NNUE the stronger tested evaluation route when the NNUE file is available. Otherwise, SHAYVERI still has the original handcrafted evaluator.
 
 ## Handcrafted evaluation
 

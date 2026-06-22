@@ -10,8 +10,8 @@ This section provides the expected world-standard ratings (CCRL) and technical d
 | Berserk 13        | NNUE                    |                   ~3730 |                   ~3620 |
 | Ethereal 14       | Classical HCE           |              ~3530-3710 |              ~3530-3580 |
 | Weiss 2.0         | Classical HCE           |                   ~3325 |              ~3260-3380 |
-| SHAYVERI HCE      | Classical HCE           |                  2652.7 |                  2734.5 |
-| SHAYVERI net5     | NNUE                    |                  2716.2 |                  2792.3 |
+| SHAYVERI v1.0     | Classical HCE           |                  2652.7 |                  2734.5 |
+| SHAYVERI v2.2.0   | NNUE                    |                  2716.2 |                  2792.3 |
 
 
 Notes:
@@ -44,9 +44,7 @@ SHAYVERI was evaluated in controlled multi-engine round-robin tournaments using 
 
 Ratings are pool-relative and anchored to SF2850 = 2850 and SF3000 = 3000. They are **not** universal chess ratings.
 
-Two SHAYVERI configurations are now recorded:
-- **SHAYVERI HCE**: original hand-crafted evaluation gauntlet.
-- **SHAYVERI net5**: NNUE net5_final.nnue gauntlet.
+Two SHAYVERI configurations are now recorded: **SHAYVERI HCE** and **SHAYVERI NNUE**.
 
 The same opponent binaries and same tournament setup were used for both HCE and NNUE gauntlets. The opening book was `UHO_2024_8mvs.epd`, and Ordo was run as:
 
@@ -94,7 +92,7 @@ The same opponent binaries and same tournament setup were used for both HCE and 
 
 ---
 
-## NNUE net5 Final Ratings
+## NNUE Final Ratings
 
 ### NNUE STC — 10+0.1 (~7,000 games per engine)
 
@@ -107,7 +105,7 @@ The same opponent binaries and same tournament setup were used for both HCE and 
 | 5 | Ethereal          | 3226.0     | ±14.9     | 3312.5  | 6998   | 47%     | 100   |
 | 6 | SF3000            | 3000.0     | anchor    | 2102.5  | 6998   | 30%     | 100   |
 | 7 | SF2850            | 2850.0     | anchor    | 1174.5  | 6999   | 17%     | 100   |
-| 8 | **SHAYVERI net5** | **2716.2** | **±16.4** | 688.0   | 7006   | **10%** | ---   |
+| 8 | **SHAYVERI NNUE** | **2716.2** | **±16.4** | 688.0   | 7006   | **10%** | ---   |
 
 **White advantage:** 165.15 ±2.85<br>
 **Draw rate (equal opponents):** 40.48% ±0.56
@@ -123,7 +121,7 @@ The same opponent binaries and same tournament setup were used for both HCE and 
 | 5 | Ethereal          | 3314.9     | ±42.8     | 468.5   | 944    | 50%     | 100   |
 | 6 | SF3000            | 3000.0     | anchor    | 251.5   | 948    | 27%     | 100   |
 | 7 | SF2850            | 2850.0     | anchor    | 128.5   | 947    | 14%     | 100   |
-| 8 | **SHAYVERI net5** | **2792.3** | **±41.5** | 111.0   | 952    | **12%** | ---   |
+| 8 | **SHAYVERI NNUE** | **2792.3** | **±41.5** | 111.0   | 952    | **12%** | ---   |
 
 **White advantage:** 190.63 ±7.83<br>
 **Draw rate (equal opponents):** 49.19% ±1.76
@@ -135,15 +133,15 @@ The same opponent binaries and same tournament setup were used for both HCE and 
 | Eval | Time Control | Rating | Error | Gap to SF2850 | Gap to SF3000 |
 |------|--------------|-------:|------:|--------------:|--------------:|
 | HCE  | STC 10+0.1   | 2652.7 | ±11.5 |        −197.3 |        −347.3 |
-| net5 | STC 10+0.1   | 2716.2 | ±16.4 |        −133.8 |        −283.8 |
+| NNUE | STC 10+0.1   | 2716.2 | ±16.4 |        −133.8 |        −283.8 |
 | HCE  | LTC 90+0.5   | 2734.5 | ±20.3 |        −115.5 |        −265.5 |
-| net5 | LTC 90+0.5   | 2792.3 | ±41.5 |         −57.7 |        −207.7 |
+| NNUE | LTC 90+0.5   | 2792.3 | ±41.5 |         −57.7 |        −207.7 |
 
 | Comparison    |     STC Δ |     LTC Δ |
 |---------------|----------:|----------:|
-| net5 over HCE | **+63.5** | **+57.8** |
+| NNUE over HCE | **+63.5** | **+57.8** |
 
-Net5 is a real improvement over HCE in this pool, but it is much smaller than the hoped-for +300 Elo. The gauntlet says SHAYVERI net5 remains below SF2850 at both time controls, though it gets close at LTC.
+NNUE is a real improvement over HCE in this pool. The gauntlet says SHAYVERI remains below SF2850 at both time controls, though it gets close at LTC.
 
 ---
 
@@ -199,7 +197,7 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 | SF3000      | 600   | 62  | 127 | 411 | 20.9%   | −265.5  | 0.0   |
 | SF2850      | 600   | 209 | 95  | 296 | 42.8%   | −115.5  | 0.0   |
 
-## SHAYVERI net5 Head-to-Head Results
+## SHAYVERI NNUE Head-to-Head Results
 
 ### vs. SF2850
 
@@ -256,7 +254,7 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 | SF2850      | 2850.0 | −150      |
 | SHAYVERI    | 2652.7 | −347      |
 
-### NNUE net5 STC Rating Gaps (relative to SF3000 = 3000)
+### NNUE STC Rating Gaps (relative to SF3000 = 3000)
 
 | Engine      | Rating | vs SF3000 |
 |-------------|--------|-----------|
@@ -284,7 +282,7 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 
 SHAYVERI's STC→LTC gain (+81.8) is the largest in the pool (excluding the fixed anchors), on par with Weiss (+83.0). This indicates SHAYVERI's eval or search benefits more from additional time than most pool engines.
 
-### NNUE net5 STC vs LTC Rating Shift by Engine
+### NNUE STC vs LTC Rating Shift by Engine
 
 | Engine      | STC     | LTC     | Δ         |
 |-------------|---------|---------|-----------|
@@ -297,7 +295,7 @@ SHAYVERI's STC→LTC gain (+81.8) is the largest in the pool (excluding the fixe
 | SF2850      | 2850.0  | 2850.0  | 0.0       |
 | SHAYVERI    | 2716.2  | 2792.3  | **+76.1** |
 
-Net5 keeps the same broad STC→LTC pattern as HCE. It scales better with time than the fixed anchors, but not enough to close the gap to SF3000 or the HCE mid-pool engines.
+NNUE keeps the same broad STC→LTC pattern as HCE. It scales better with time than the fixed anchors, but not enough to close the gap to SF3000 or the HCE mid-pool engines.
 
 ---
 
@@ -307,8 +305,8 @@ Net5 keeps the same broad STC→LTC pattern as HCE. It scales better with time t
 |------|-----|-----------------|---------------|
 | HCE  | STC | 169.43 ±1.85    | 40.47% ±0.38% |
 | HCE  | LTC | 187.40 ±3.47    | 49.80% ±0.82% |
-| net5 | STC | 165.15 ±2.85    | 40.48% ±0.56% |
-| net5 | LTC | 190.63 ±7.83    | 49.19% ±1.76% |
+| NNUE | STC | 165.15 ±2.85    | 40.48% ±0.56% |
+| NNUE | LTC | 190.63 ±7.83    | 49.19% ±1.76% |
 
 The white advantage is notably high at both time controls (typical engine testing shows ~15–35 Elo). This may reflect the UHO opening book providing unbalanced positions that favor White. Draw rate rises substantially at LTC (+9.3 pp), consistent with deeper search resolving positions more accurately and producing more drawn outcomes.
 
@@ -318,9 +316,9 @@ The white advantage is notably high at both time controls (typical engine testin
 
 **SHAYVERI HCE strength** places it approximately 197 Elo below SF2850 at STC and 116 Elo below at LTC.
 
-**SHAYVERI net5 strength** places it approximately 134 Elo below SF2850 at STC and 58 Elo below SF2850 at LTC. It is still not competitive with the mid-pool HCE engines Ethereal and Weiss, but it is clearly closer to the anchors than HCE.
+**SHAYVERI NNUE strength** places it approximately 134 Elo below SF2850 at STC and 58 Elo below SF2850 at LTC. It is still not competitive with the mid-pool HCE engines Ethereal and Weiss, but it is clearly closer to the anchors than HCE.
 
-**NNUE gain:** net5 adds about +64 Elo at STC and +58 Elo at LTC over HCE in this anchored pool. This is a real gain, but it is nowhere near the +300 Elo hoped for from the NNUE project.
+**NNUE gain:** NNUE adds about +64 Elo at STC and +58 Elo at LTC over HCE in this anchored pool. This is a real gain, but it is nowhere near the +300 Elo hoped for from the NNUE project.
 
 **LTC improvement** is encouraging. SHAYVERI's +82 Elo gain from STC to LTC is the largest relative gain in the pool, suggesting the engine's search or evaluation scales well with time and is not primarily relying on tactical shortcuts that faster engines exploit.
 
