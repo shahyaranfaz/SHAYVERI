@@ -25,7 +25,7 @@ fn main() {
     let resume = env::var("RESUME").unwrap_or_default();
 
     let initial_lr: f32 = env_or("LR", 0.001);
-    let final_lr = initial_lr;
+    let final_lr: f32 = env_or("FINAL_LR", initial_lr);
     let superbatches: usize = env_or("EPOCHS", 1);
     let batch_size: usize = env_or("BATCH_SIZE", 16_384);
     let batches_per_superbatch: usize = env_or("BATCHES_PER_SUPERBATCH", 6104);

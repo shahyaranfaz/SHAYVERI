@@ -881,4 +881,11 @@ SearchResult search_nodes(Board &b, U64 max_nodes,
     return result;
 }
 
+int qsearch_score(Board &b) {
+    StackInfo st[MAX_PLY + 5]{};
+    StackInfo *ss = st + 2;
+    ss->acc.refresh(b);
+    return qsearch(b, -INF, INF, 8, 0, ss);
+}
+
 } // namespace SHAYVERI

@@ -88,6 +88,22 @@ static bool parse_bool(const std::string &value) {
     return v == "true" || v == "1" || v == "yes" || v == "on";
 }
 
+static bool parse_bool_strict(const std::string &value, bool &out) {
+    std::string v = value;
+    std::transform(v.begin(), v.end(), v.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+    if (v == "true" || v == "1" || v == "yes" || v == "on") {
+        out = true;
+        return true;
+    }
+    if (v == "false" || v == "0" || v == "no" || v == "off") {
+        out = false;
+        return true;
+    }
+    return false;
+}
+
 static std::string trim(std::string value) {
     auto first = std::find_if_not(value.begin(), value.end(),
                                   [](unsigned char c) { return std::isspace(c); });
@@ -128,6 +144,20 @@ static bool parse_int_64(const std::string &value, U64 &out) {
     return true;
 }
 
+static bool parse_double_value(const std::string &value, double &out) {
+    std::string v = trim(value);
+    if (v.empty()) return false;
+
+    char *end = nullptr;
+    errno = 0;
+    double parsed = std::strtod(v.c_str(), &end);
+    if (end == v.c_str() || *end != '\0' || errno == ERANGE)
+        return false;
+
+    out = parsed;
+    return true;
+}
+
 static bool parse_spin(const std::string &value, int min_value, int max_value, int &out) {
     int parsed = 0;
     if (!parse_int(value, parsed)) return false;
@@ -149,6 +179,122 @@ static void resize_hash_option(const std::string &value) {
 static bool file_exists(const std::string &path) {
     std::ifstream f(path, std::ios::binary);
     return f.good();
+}
+
+static void print_datagen_usage(const char *argv0) {
+    std::cerr
+        << "usage: " << argv0 << " datagen"
+        << " --threads <n>"
+        << " [--positions <n>]"
+        << " [--games <n>]"
+        << " --output-prefix <path>"
+        << " [--output-format shayveri-plain-v1]"
+        << " [--eval-file <path>]"
+        << " [--nodes <n>]"
+        << " [--opening-min-plies <n>]"
+        << " [--opening-max-plies <n>]"
+        << " [--book-prob <0..1>]"
+        << " [--start-file <fen-or-epd-file>]"
+        << " [--start-file-prob <0..1>]"
+        << " [--seed <n>]"
+        << " [--max-abs-cp <n>]"
+        << " [--include-checks <bool>]"
+        << " [--include-captures <bool>]"
+        << " [--include-mate-scores <bool>]"
+        << " [--include-duplicates <bool>]"
+        << " [--min-ply <n>]"
+        << " [--max-ply <n>]"
+        << " [--sample-stride <n>]"
+        << " [--max-samples-per-game <n>]"
+        << " [--enable-adjudication <bool>]"
+        << " [--adjudication-cp <n>]"
+        << " [--adjudication-plies <n>]"
+        << " [--print-interval <games>]\n";
+}
+
+static bool require_value(int argc, char **argv, int &i, std::string &value) {
+    if (i + 1 >= argc) return false;
+    value = argv[++i];
+    return true;
+}
+
+static bool parse_datagen_args(int argc, char **argv, DatagenOptions &options) {
+    for (int i = 2; i < argc; ++i) {
+        std::string key = argv[i];
+        std::string value;
+
+        auto need_int = [&](int &out) {
+            return require_value(argc, argv, i, value) && parse_int(value, out);
+        };
+        auto need_u64 = [&](U64 &out) {
+            return require_value(argc, argv, i, value) && parse_int_64(value, out);
+        };
+        auto need_double = [&](double &out) {
+            return require_value(argc, argv, i, value) && parse_double_value(value, out);
+        };
+        auto need_bool = [&](bool &out) {
+            if (!require_value(argc, argv, i, value)) return false;
+            return parse_bool_strict(value, out);
+        };
+
+        if (key == "--threads") {
+            if (!need_int(options.threads)) return false;
+        } else if (key == "--positions") {
+            if (!need_u64(options.target_positions)) return false;
+        } else if (key == "--games") {
+            if (!need_u64(options.target_games)) return false;
+        } else if (key == "--output-prefix") {
+            if (!require_value(argc, argv, i, options.output_prefix)) return false;
+        } else if (key == "--output-format") {
+            if (!require_value(argc, argv, i, options.output_format)) return false;
+        } else if (key == "--eval-file") {
+            if (!require_value(argc, argv, i, options.eval_file)) return false;
+        } else if (key == "--nodes") {
+            if (!need_u64(options.search_nodes)) return false;
+        } else if (key == "--opening-min-plies") {
+            if (!need_int(options.opening_min_plies)) return false;
+        } else if (key == "--opening-max-plies") {
+            if (!need_int(options.opening_max_plies)) return false;
+        } else if (key == "--book-prob") {
+            if (!need_double(options.book_move_probability)) return false;
+        } else if (key == "--start-file") {
+            if (!require_value(argc, argv, i, options.start_file)) return false;
+        } else if (key == "--start-file-prob") {
+            if (!need_double(options.start_file_probability)) return false;
+        } else if (key == "--seed") {
+            if (!need_u64(options.seed)) return false;
+        } else if (key == "--max-abs-cp") {
+            if (!need_int(options.max_abs_cp)) return false;
+        } else if (key == "--include-checks") {
+            if (!need_bool(options.include_checks)) return false;
+        } else if (key == "--include-captures") {
+            if (!need_bool(options.include_captures)) return false;
+        } else if (key == "--include-mate-scores") {
+            if (!need_bool(options.include_mate_scores)) return false;
+        } else if (key == "--include-duplicates") {
+            if (!need_bool(options.include_duplicates)) return false;
+        } else if (key == "--min-ply") {
+            if (!need_int(options.min_ply)) return false;
+        } else if (key == "--max-ply") {
+            if (!need_int(options.max_ply)) return false;
+        } else if (key == "--sample-stride") {
+            if (!need_int(options.sample_stride)) return false;
+        } else if (key == "--max-samples-per-game") {
+            if (!need_int(options.max_samples_per_game)) return false;
+        } else if (key == "--enable-adjudication") {
+            if (!need_bool(options.enable_adjudication)) return false;
+        } else if (key == "--adjudication-cp") {
+            if (!need_int(options.adjudication_cp)) return false;
+        } else if (key == "--adjudication-plies") {
+            if (!need_int(options.adjudication_plies)) return false;
+        } else if (key == "--print-interval") {
+            if (!need_u64(options.print_interval)) return false;
+        } else {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 static std::string ponder_suffix(Board b, Move best) {
@@ -189,25 +335,29 @@ int main(int argc, char **argv) {
     hash_history.push_back(b.hash);
 
     if (argc > 1) {
-        if ((argc == 5 || argc == 6) && std::string(argv[1]) == "datagen") {
-            int threads = 0;
-            U64 target_positions = 0;
-            U64 search_nodes = 10000;
-            if (!parse_int(argv[2], threads) || threads <= 0 ||
-                !parse_int_64(argv[3], target_positions) || target_positions == 0) {
-                std::cerr << "usage: " << argv[0]
-                          << " datagen <threads> <positions> <output_prefix> [nodes]\n";
+        if (std::string(argv[1]) == "datagen") {
+            DatagenOptions options;
+            if (!parse_datagen_args(argc, argv, options) ||
+                options.threads <= 0 ||
+                (options.target_positions == 0 && options.target_games == 0) ||
+                options.output_prefix.empty()) {
+                print_datagen_usage(argv[0]);
                 return 1;
             }
-            if (argc == 6 && (!parse_int_64(argv[5], search_nodes) || search_nodes == 0)) {
-                std::cerr << "usage: " << argv[0]
-                          << " datagen <threads> <positions> <output_prefix> [nodes]\n";
-                return 1;
+            if (options.eval_file.empty())
+                options.eval_file = g_eval_file;
+            else
+                g_eval_file = options.eval_file;
+            if (!g_eval_file.empty() && g_eval_file != "<empty>") {
+                if (!file_exists(g_eval_file)) {
+                    std::cerr << "missing eval file: " << g_eval_file << '\n';
+                    return 1;
+                }
+                NNUE::load(g_eval_file);
             }
-            return generate_data(threads, target_positions, argv[4], search_nodes);
+            return generate_data(options);
         }
-        std::cerr << "usage: " << argv[0]
-                  << " datagen <threads> <positions> <output_prefix> [nodes]\n";
+        print_datagen_usage(argv[0]);
         return 1;
     }
 
