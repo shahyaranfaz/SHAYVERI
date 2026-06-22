@@ -172,8 +172,8 @@ self-generated corpus/labels were the blocker.
   adding more positions.
 - Designed a Chess768 / 256 recovery path around the v2.1 line with deeper
   SHAYVERI self-distillation and hard-position relabeling.
-- Added a branch matrix over net5/HCE baseline and deep-hard lanes.
-- Reinforced that HCE/net5/SF2850 gates need to happen early, before internal
+- Added a branch matrix over NNUE/HCE baseline and deep-hard lanes.
+- Reinforced that HCE/SF2850 gates need to happen early, before internal
   pool optimism wastes training time.
 
 ### v2.4: Persistent SHAYVERI Corpus
