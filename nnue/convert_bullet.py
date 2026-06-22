@@ -79,6 +79,7 @@ def main():
             )
         print(f"warning: ignoring {len(padding)} Bullet padding bytes in {args.input_quantised}")
 
+    # SHAYVERI uses CReLU for classic 768 nets and SCReLU for king-bucket nets.
     version = NNUE_VERSION_KB if args.king_buckets > 1 else NNUE_VERSION_CLASSIC
     os.makedirs(os.path.dirname(os.path.abspath(args.output_nnue)), exist_ok=True)
 

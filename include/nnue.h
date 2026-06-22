@@ -50,6 +50,7 @@ inline int chess768_index(int piece_type, int piece_color, int sq, int perspecti
 int king_bucket_count();
 int active_input_size();
 bool has_king_buckets();
+bool uses_screlu();
 
 inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
     if (bucket_count <= 1) return 0;

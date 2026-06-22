@@ -26,6 +26,27 @@ __m256i mullo_epi32_to_epi64(__m256i a, __m256i b) {
     return _mm256_add_epi64(even, odd);
 }
 
+__m256i div255_epi32(__m256i x) {
+    // Exact floor(x / 255) for x in [0, 255 * 255].
+    const __m256i one = _mm256_set1_epi32(1);
+    __m256i t = _mm256_add_epi32(x, one);
+    t = _mm256_add_epi32(t, _mm256_srli_epi32(x, 8));
+    return _mm256_srli_epi32(t, 8);
+}
+
+__m256i crelu16_to_i32(__m128i x) {
+    const __m128i zero = _mm_setzero_si128();
+    const __m128i max = _mm_set1_epi16(static_cast<I16>(L1_SCALE));
+    x = _mm_min_epi16(_mm_max_epi16(x, zero), max);
+    return _mm256_cvtepi16_epi32(x);
+}
+
+__m256i screlu16_to_i32(__m128i x) {
+    __m256i y = crelu16_to_i32(x);
+    y = _mm256_mullo_epi32(y, y);
+    return div255_epi32(y);
+}
+
 } // namespace
 
 int evaluate_avx2(int side_to_move, const Accumulator &acc) {
@@ -34,24 +55,21 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
 
     __m256i sum_stm = _mm256_setzero_si256();
     __m256i sum_nstm = _mm256_setzero_si256();
-    const __m128i zero = _mm_setzero_si128();
-    const __m128i max = _mm_set1_epi16(static_cast<I16>(L1_SCALE));
+    const bool use_screlu = uses_screlu();
 
     for (int i = 0; i < HIDDEN_SIZE; i += 8) {
         __m128i stm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(stm_acc + i));
         __m128i stm_w = _mm_loadu_si128(reinterpret_cast<const __m128i *>(output_weights + i));
-        stm = _mm_min_epi16(_mm_max_epi16(stm, zero), max);
 
-        __m256i stm32 = _mm256_cvtepi16_epi32(stm);
+        __m256i stm32 = use_screlu ? screlu16_to_i32(stm) : crelu16_to_i32(stm);
         __m256i stm_w32 = _mm256_cvtepi16_epi32(stm_w);
         sum_stm = _mm256_add_epi64(sum_stm, mullo_epi32_to_epi64(stm32, stm_w32));
 
         __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(nstm_acc + i));
         __m128i nstm_w = _mm_loadu_si128(
             reinterpret_cast<const __m128i *>(output_weights + HIDDEN_SIZE + i));
-        nstm = _mm_min_epi16(_mm_max_epi16(nstm, zero), max);
 
-        __m256i nstm32 = _mm256_cvtepi16_epi32(nstm);
+        __m256i nstm32 = use_screlu ? screlu16_to_i32(nstm) : crelu16_to_i32(nstm);
         __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
         sum_nstm = _mm256_add_epi64(sum_nstm, mullo_epi32_to_epi64(nstm32, nstm_w32));
     }

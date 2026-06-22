@@ -4,7 +4,6 @@ use bullet_lib::{
     game::inputs::{get_num_buckets, ChessBucketsMirrored},
     nn::{
         optimiser::{AdamW, AdamWParams},
-        InitSettings, Shape,
     },
     trainer::{
         save::SavedFormat,
@@ -53,25 +52,14 @@ fn main() {
         .optimiser(AdamW)
         .inputs(ChessBucketsMirrored::new(BUCKET_LAYOUT))
         .save_format(&[
-            SavedFormat::id("l0w")
-                .transform(|store, weights| {
-                    let factoriser = store.get("l0f").values.repeat(NUM_INPUT_BUCKETS);
-                    weights.into_iter().zip(factoriser).map(|(a, b)| a + b).collect()
-                })
-                .round()
-                .quantise::<i16>(255),
+            SavedFormat::id("l0w").round().quantise::<i16>(255),
             SavedFormat::id("l0b").round().quantise::<i16>(255),
             SavedFormat::id("l1w").round().quantise::<i16>(255).transpose(),
             SavedFormat::id("l1b").round().quantise::<i32>(255 * 255),
         ])
         .loss_fn(|output, target| output.sigmoid().squared_error(target))
         .build(|builder, stm_inputs, ntm_inputs| {
-            let l0f = builder.new_weights("l0f", Shape::new(hl_size, 768), InitSettings::Zeroed);
-            let expanded_factoriser = l0f.repeat(NUM_INPUT_BUCKETS);
-
-            let mut l0 = builder.new_affine("l0", 768 * NUM_INPUT_BUCKETS, hl_size);
-            l0.weights = l0.weights + expanded_factoriser;
-
+            let l0 = builder.new_affine("l0", 768 * NUM_INPUT_BUCKETS, hl_size);
             let l1 = builder.new_affine("l1", 2 * hl_size, 1);
 
             let stm_hidden = l0.forward(stm_inputs).screlu();
@@ -83,7 +71,6 @@ fn main() {
 
     let stricter_clipping = AdamWParams { max_weight: 0.99, min_weight: -0.99, ..Default::default() };
     trainer.optimiser.set_params_for_weight("l0w", stricter_clipping);
-    trainer.optimiser.set_params_for_weight("l0f", stricter_clipping);
 
     let schedule = TrainingSchedule {
         net_id: train_id,

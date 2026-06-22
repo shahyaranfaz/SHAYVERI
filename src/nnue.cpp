@@ -28,6 +28,7 @@ U64         g_net_hash = 0;
 bool        g_loaded = false;
 int         g_king_buckets = 1;
 int         g_input_size = CHESS768_INPUT_SIZE;
+bool        g_use_screlu = false;
 
 U64 fnv1a_hash(const void *data, size_t bytes) {
     const U8 *p = static_cast<const U8 *>(data);
@@ -56,14 +57,24 @@ I32 screlu(I16 x) {
     return std::clamp<I32>(x, 0, L1_SCALE);
 }
 
+I32 squared_crelu_scaled(I16 x) {
+    const I32 y = std::clamp<I32>(x, 0, L1_SCALE);
+    return (y * y) / L1_SCALE;
+}
+
 [[maybe_unused]] int evaluate_scalar(int side_to_move, const Accumulator &acc) {
     const I16 *stm_acc = acc.vals[side_to_move];
     const I16 *nstm_acc = acc.vals[side_to_move ^ 1];
 
     I64 sum = 0;
     for (int i = 0; i < HIDDEN_SIZE; ++i) {
-        sum += static_cast<I64>(screlu(stm_acc[i])) * output_weights[i];
-        sum += static_cast<I64>(screlu(nstm_acc[i])) * output_weights[HIDDEN_SIZE + i];
+        if (g_use_screlu) {
+            sum += static_cast<I64>(squared_crelu_scaled(stm_acc[i])) * output_weights[i];
+            sum += static_cast<I64>(squared_crelu_scaled(nstm_acc[i])) * output_weights[HIDDEN_SIZE + i];
+        } else {
+            sum += static_cast<I64>(screlu(stm_acc[i])) * output_weights[i];
+            sum += static_cast<I64>(screlu(nstm_acc[i])) * output_weights[HIDDEN_SIZE + i];
+        }
     }
 
     sum += output_bias;
@@ -102,6 +113,7 @@ std::string load(const std::string &path) {
     if (version == NNUE_VERSION_CLASSIC) {
         g_king_buckets = 1;
         g_input_size = CHESS768_INPUT_SIZE;
+        g_use_screlu = false;
     } else {
         U32 buckets = 0;
         must_read(f, &buckets, sizeof(buckets), "king_bucket_count");
@@ -113,6 +125,7 @@ std::string load(const std::string &path) {
         }
         g_king_buckets = static_cast<int>(buckets);
         g_input_size = CHESS768_INPUT_SIZE * g_king_buckets;
+        g_use_screlu = true;
     }
 
     std::memset(feature_weights, 0, sizeof(feature_weights));
@@ -136,6 +149,7 @@ std::string load(const std::string &path) {
     h ^= fnv1a_hash(output_weights, sizeof(output_weights));
     h ^= fnv1a_hash(&output_bias, sizeof(output_bias));
     h ^= fnv1a_hash(&g_king_buckets, sizeof(g_king_buckets));
+    h ^= fnv1a_hash(&g_use_screlu, sizeof(g_use_screlu));
 
     g_net_path = path;
     g_net_hash = h;
@@ -159,6 +173,10 @@ bool has_king_buckets() {
     return g_king_buckets > 1;
 }
 
+bool uses_screlu() {
+    return g_use_screlu;
+}
+
 void print_info() {
     std::cout << "info string NNUE path " << g_net_path << "\n"
               << "info string NNUE hash " << std::uppercase << std::hex
@@ -168,7 +186,8 @@ void print_info() {
               << "info string NNUE arch "
               << (has_king_buckets() ? "Chess768xKingBuckets" : "Chess768")
               << " hidden=" << HIDDEN_SIZE
-              << " king_buckets=" << g_king_buckets << "\n"
+              << " king_buckets=" << g_king_buckets
+              << " activation=" << (g_use_screlu ? "SCReLU" : "CReLU") << "\n"
               << "info string NNUE scales L1=" << L1_SCALE
               << " OUT=" << OUTPUT_SCALE << "\n";
 }
