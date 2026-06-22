@@ -64,7 +64,7 @@ go movetime 1000
 
 ## NNUE and HCE
 
-Current builds support `EvalFile net5_final.nnue`, making net5 the stronger tested evaluation route when the NNUE file is available. The search uses NNUE when the network loads successfully; otherwise, SHAYVERI still has the original handcrafted evaluator.
+Current builds support `EvalFile SHAYVERI2_2_0.nnue`, making net5 the stronger tested evaluation route when the NNUE file is available. The search uses NNUE when the network loads successfully; otherwise, SHAYVERI still has the original handcrafted evaluator.
 
 ## Handcrafted evaluation
 
@@ -88,7 +88,7 @@ Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluat
 - `Threads`: number of search threads.
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
-- `EvalFile`: NNUE network path. Defaults to `net5_final.nnue`.
+- `EvalFile`: NNUE network path. Defaults to `SHAYVERI2_2_0.nnue`.
 - `Move Overhead`: GUI/network delay reserve, in milliseconds.
 
 ## Verification

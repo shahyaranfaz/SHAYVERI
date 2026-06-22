@@ -197,6 +197,8 @@ the v2.x self-generated corpora.
 
 - Reworked datagen toward training-ready NNUE data instead of loosely filtered
   legacy text output.
+- Added direct `bullet-v1` output using the 32-byte `bulletformat` chess record
+  layout.
 - Added TWIC-book rooted starts as the baseline opening distribution.
 - Added qsearch/static-eval labeling so training targets are quieter and not
   polluted by raw search noise.
@@ -225,6 +227,5 @@ the v2.x self-generated corpora.
 
 ## Future Work
 
-- Direct Bullet-format datagen output or a fast lossless Bullet conversion path.
 - Scale architecture after the self-loop is stable.
 - Syzygy tablebases and tablebase policy for NNUE.

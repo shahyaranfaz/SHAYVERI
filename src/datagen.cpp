@@ -13,6 +13,7 @@
 #include <array>
 #include <atomic>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -52,10 +53,23 @@ enum class FilterReason : int {
     Count,
 };
 
-struct PlainEntry {
+struct DataEntry {
+    Board board;
     std::string fen;
     int score_white_pov = 0;
 };
+
+struct BulletChessBoard {
+    U64 occ = 0;
+    U8 pcs[16]{};
+    I16 score = 0;
+    U8 result = 0;
+    U8 ksq = 0;
+    U8 opp_ksq = 0;
+    U8 extra[3]{};
+};
+
+static_assert(sizeof(BulletChessBoard) == 32, "Bullet chess records must be 32 bytes");
 
 struct GameResult {
     GameEnd end = GameEnd::None;
@@ -268,6 +282,59 @@ const char *marlinflow_wdl(int wdl) {
     return "0.5";
 }
 
+bool output_is_bullet(const DatagenOptions &options) {
+    return options.output_format == "bullet-v1" || options.output_format == "bullet";
+}
+
+U8 bullet_piece_code(Piece p, Colour stm) {
+    int colour = get_colour(p) == BLACK ? 8 : 0;
+    int type = static_cast<int>(get_type(p)) - 1;
+    U8 code = static_cast<U8>(colour | type);
+    if (stm == BLACK)
+        code ^= 8;
+    return code;
+}
+
+Square bullet_square(Square sq, Colour stm) {
+    return stm == BLACK ? (sq ^ 56) : sq;
+}
+
+BulletChessBoard make_bullet_record(const Board &b, int score_white_pov, int wdl) {
+    BulletChessBoard rec;
+    Colour stm = b.side_to_move;
+    int score = score_white_pov;
+    int result = std::clamp(wdl, 0, 2);
+    if (stm == BLACK) {
+        score = -score;
+        result = 2 - result;
+    }
+
+    int idx = 0;
+    U64 occ = b.occupied;
+    while (occ) {
+        Square sq = pop_lsb(occ);
+        Piece p = b.get_piece(sq);
+        if (p == NONE_PIECE || idx >= 32)
+            continue;
+
+        Square packed_sq = bullet_square(sq, stm);
+        rec.occ |= bb_square(packed_sq);
+        U8 piece = bullet_piece_code(p, stm);
+        rec.pcs[idx / 2] |= static_cast<U8>(piece << (4 * (idx & 1)));
+
+        if (piece == 5)
+            rec.ksq = static_cast<U8>(packed_sq);
+        else if (piece == 13)
+            rec.opp_ksq = static_cast<U8>(packed_sq ^ 56);
+
+        ++idx;
+    }
+
+    rec.score = static_cast<I16>(std::clamp(score, -32768, 32767));
+    rec.result = static_cast<U8>(result);
+    return rec;
+}
+
 Move choose_opening_move(Board &b, std::mt19937_64 &rng, const MoveList &legal,
                          const DatagenOptions &options) {
     const BookEntry *entry = probe_book(b.hash);
@@ -464,7 +531,7 @@ void record_game_end(DatagenCounters &counters, const GameResult &result, int pl
     }
 }
 
-void record_stats(DatagenCounters &counters, const PlainEntry &entry, int wdl, Colour stm, int phase) {
+void record_stats(DatagenCounters &counters, const DataEntry &entry, int wdl, Colour stm, int phase) {
     counters.cp_buckets[cp_bucket(entry.score_white_pov)]++;
     counters.wdl_buckets[std::clamp(wdl, 0, 2)]++;
     counters.stm_buckets[static_cast<int>(stm)]++;
@@ -472,17 +539,23 @@ void record_stats(DatagenCounters &counters, const PlainEntry &entry, int wdl, C
 }
 
 U64 write_game_entries(std::ofstream &out,
-                       const std::vector<PlainEntry> &entries,
+                       const std::vector<DataEntry> &entries,
                        const std::vector<Colour> &stms,
                        const std::vector<int> &phases,
                        int wdl,
                        DatagenCounters &counters,
+                       const DatagenOptions &options,
                        U64 target_positions) {
     U64 written = 0;
     for (size_t i = 0; i < entries.size(); ++i) {
         if (!claim_position(counters, target_positions)) return written;
-        const PlainEntry &entry = entries[i];
-        out << entry.fen << " | " << entry.score_white_pov << " | " << marlinflow_wdl(wdl) << '\n';
+        const DataEntry &entry = entries[i];
+        if (output_is_bullet(options)) {
+            BulletChessBoard rec = make_bullet_record(entry.board, entry.score_white_pov, wdl);
+            out.write(reinterpret_cast<const char *>(&rec), sizeof(rec));
+        } else {
+            out << entry.fen << " | " << entry.score_white_pov << " | " << marlinflow_wdl(wdl) << '\n';
+        }
         record_stats(counters, entry, wdl, stms[i], phases[i]);
         ++written;
     }
@@ -501,7 +574,11 @@ void datagen_worker(int id,
     active_tt = &local_tt;
 
     std::mt19937_64 rng(options.seed + static_cast<U64>(id) * DATAGEN_THREAD_PRIME);
-    std::ofstream out(options.output_prefix + "_" + std::to_string(id) + ".plain");
+    const std::string extension = output_is_bullet(options) ? ".bullet.bin" : ".plain";
+    std::ios::openmode mode = std::ios::out;
+    if (output_is_bullet(options))
+        mode |= std::ios::binary;
+    std::ofstream out(options.output_prefix + "_" + std::to_string(id) + extension, mode);
     if (!out) {
         std::cerr << "datagen worker " << id << " failed to open output file\n";
         failed.store(true, std::memory_order_relaxed);
@@ -515,7 +592,7 @@ void datagen_worker(int id,
     std::unordered_set<U64> *seen_ptr = options.include_duplicates ? nullptr : &seen_positions;
 
     while (should_continue(counters, options)) {
-        std::vector<PlainEntry> game_entries;
+        std::vector<DataEntry> game_entries;
         std::vector<Colour> stms;
         std::vector<int> phases;
         game_entries.reserve(256);
@@ -563,7 +640,7 @@ void datagen_worker(int id,
                 if (seen_ptr != nullptr)
                     counters.duplicate_checks++;
                 int phase = phase_bucket(b);
-                game_entries.push_back({get_board_fen(b), qscore_white});
+                game_entries.push_back({b, output_is_bullet(options) ? std::string{} : get_board_fen(b), qscore_white});
                 stms.push_back(b.side_to_move);
                 phases.push_back(phase);
                 ++samples_this_game;
@@ -581,7 +658,7 @@ void datagen_worker(int id,
             history.push_back(b.hash);
         }
 
-        U64 written = write_game_entries(out, game_entries, stms, phases, result.wdl, counters, options.target_positions);
+        U64 written = write_game_entries(out, game_entries, stms, phases, result.wdl, counters, options, options.target_positions);
         counters.game_position_sum.fetch_add(written, std::memory_order_relaxed);
         update_max(counters.max_positions_in_game, written);
         record_game_end(counters, result, ply_number(b));
@@ -696,7 +773,10 @@ bool valid_options(const DatagenOptions &options) {
     return options.threads > 0 &&
            (options.target_positions > 0 || options.target_games > 0) &&
            !options.output_prefix.empty() &&
-           (options.output_format == "shayveri-plain-v1" || options.output_format == "plain") &&
+           (options.output_format == "shayveri-plain-v1" ||
+            options.output_format == "plain" ||
+            options.output_format == "bullet-v1" ||
+            options.output_format == "bullet") &&
            options.search_nodes > 0 &&
            options.opening_min_plies >= 0 &&
            options.opening_max_plies >= options.opening_min_plies &&

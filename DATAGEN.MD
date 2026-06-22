@@ -6,7 +6,12 @@ collapse are obvious before we waste a training run.
 
 ## Output
 
-Current output format is `shayveri-plain-v1`:
+Supported output formats:
+
+- `shayveri-plain-v1`
+- `bullet-v1`
+
+`shayveri-plain-v1` is the readable bridge format:
 
 ```text
 <full FEN> | <white-pov cp> | <white-pov WDL>
@@ -18,9 +23,24 @@ The bridge format is intentionally lossless for the information we need:
 - centipawn label from White's perspective
 - game result/WDL from White's perspective
 
-Direct Bullet `.bin` output or a fast lossless Bullet conversion path is still
-the main remaining scale improvement. Text is acceptable for validating the
-self-loop, but too large and slow for serious repeated generation.
+`bullet-v1` writes 32-byte records compatible with the `jw1912/bulletformat`
+chess `ChessBoard` layout:
+
+```text
+u64 occ
+u8  pcs[16]
+i16 score
+u8  result
+u8  ksq
+u8  opp_ksq
+u8  extra[3]
+```
+
+The Bullet record is side-to-move normalized. For black-to-move positions,
+datagen mirrors the board vertically, swaps colours, negates the score, and
+flips the result, matching `bulletformat` semantics. `score` is centipawns from
+the side-to-move-normalized perspective. `result` is encoded as `0` black win,
+`1` draw, `2` white win after the same normalization.
 
 ## Defaults
 
