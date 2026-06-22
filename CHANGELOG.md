@@ -134,7 +134,7 @@ Version 1.0 is the final handcrafted-evaluation release before NNUE development.
 
 ## v2.0 NNUE Development Line
 
-Version 2.1 covers the first SHAYVERI NNUE development line before the later
+Version 2.0 covers the first SHAYVERI NNUE development line before the later
 external-corpus bootstrap work: classic Chess768/256 Marlinflow nets, KB8/KB16
 Bullet experiments, data scheduling fixes, and the final diagnosis that the
 self-generated corpus/labels were the blocker.
@@ -155,30 +155,22 @@ self-generated corpus/labels were the blocker.
 - Built the first working Chess768 NNUE bootstrap from SHAYVERI-generated data.
 - Net5 was the best classic result: Chess768 / 256, Marlinflow, 1B generated
   positions, WDL=0.1, 10k-node labels, and mixed HCE/NNUE generation.
-- Net5 iter064 beat iter037 by +30.9 +/- 17.0 Elo at 1+0.1.
-- Direct HCE gates: +236.8 +/- 24.5 at 10+0.1 and +220.1 +/- 42.5 at 90+0.5.
-- HCE-anchored estimates: 2889.5 +/- 27.1 STC and 2954.6 +/- 47.1 LTC.
 - Lesson: mixed HCE/NNUE data worked, but arrival-order chunk consumption made
   checkpoint strength noisy and non-monotonic.
 
 ### v2.2: King Buckets And Bullet
 
 - Switched from continuing Chess768 to KB8/Bullet architecture tests.
-- v1.2 net1 used KB8 / 256, 80/20 HCE/NNUE data, WDL=0.1, and 10k-node labels.
-- `net1_019` roughly matched net5: 418 - 389 - 193, score 0.514 over 1000
-  games, +10.1 +/- 19.3 Elo.
 - Proved the KB8/Bullet pipeline was legal and viable, but later runs were
   hurt by disk/queue/truncated chunk issues.
-- v1.2 net2 fixed chunk sizing and validation but did not improve over v1.2
-  net1.
-- KB16 and bucket-only scaling did not produce anchored strength by themselves.
+- Found that KB16 and bucket-only scaling did not produce more strength by
+  themselves.
 
 ### v2.3: Deep-Hard Reset
 
-- Diagnosed that 10k-node labels were too weak, continuation training overwrote
-  good checkpoints, internal family pools misled, and data distribution was too
-  narrow.
-- Designed a Chess768 / 256 recovery path around `net5_final.nnue` with deeper
+- Tried to repair the datagen signal with deeper relabeling instead of just
+  adding more positions.
+- Designed a Chess768 / 256 recovery path around the v2.1 line with deeper
   SHAYVERI self-distillation and hard-position relabeling.
 - Added a branch matrix over net5/HCE baseline and deep-hard lanes.
 - Reinforced that HCE/net5/SF2850 gates need to happen early, before internal
@@ -195,34 +187,24 @@ self-generated corpus/labels were the blocker.
 - Concluded failure was not tiny data volume, streaming churn, or checkpoint
   selection; the blocker was generated data distribution and/or labels.
 
-### Takeaways
-
-- SHAYVERI NNUE runtime, conversion, and training became operational.
-- Net5 was the best pre-v2.0 self-generated-data net.
-- Architecture changes alone did not fix the label/data problem.
-- More generated volume alone did not fix transfer.
-- The release points directly to the next datagen overhaul: better filters,
-  qsearch labels, TWIC-rooted starts, summary stats, DONE markers, and faster
-  direct training dataflow.
-
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 
-Version 3.0 is the first serious self-looping NNUE line. The goal is to train a
-KB16 network from stronger SHAYVERI-generated data, while fixing the datagen
-issues that limited the v2.x self-generated corpora.
+Version 3.0 starts the serious self-looping NNUE line: train a KB16 network
+from stronger SHAYVERI-generated data and fixes the datagen problems that capped
+the v2.x self-generated corpora.
 
 ### Datagen
 
-- Reworked datagen around training-ready NNUE output instead of loosely filtered
-  legacy text.
+- Reworked datagen toward training-ready NNUE data instead of loosely filtered
+  legacy text output.
 - Added TWIC-book rooted starts as the baseline opening distribution.
-- Added qsearch/static-eval labeling so training targets are quieter and less
+- Added qsearch/static-eval labeling so training targets are quieter and not
   polluted by raw search noise.
 - Added cp3000-compatible filtering before data is written.
 - Added explicit handling for mate-like and tablebase-like scores so sentinel
   values do not leak into training.
-- Added filtering for illegal, malformed, duplicate-terminal, impossible, and
-  check/noisy tactical states when the target recipe expects quiet positions.
+- Added filtering for illegal, malformed, duplicate-terminal, impossible, in-check,
+  and noisy tactical states when the recipe expects quiet positions.
 - Added deterministic seeds, resumable shard output, `.incomplete` / `DONE`
   markers, and per-shard summaries.
 - Added per-shard stats for positions written, filtered counts by reason, cp
@@ -234,18 +216,12 @@ issues that limited the v2.x self-generated corpora.
 
 ### Training
 
-- Moves the main NNUE target to KB16.
-- Uses the stronger datagen output as the basis for the next promoted net.
-- Keeps HCE as a flavor/debugging reference without letting it dominate the
+- Moved the main NNUE target to KB16.
+- Uses stronger datagen output as the basis for the next promoted net.
+- Keeps HCE as a flavor/debugging reference without letting it dominate
   training labels.
-- Uses fixed external anchors for promotion instead of trusting internal family
+- Uses fixed external anchors for promotion instead of trusting internal-family
   pools alone.
-
-### Takeaways
-
-- v3.0 is a datagen repair plus the KB16 training line.
-- The main question is whether cleaner SHAYVERI-generated data can finally make
-  self-looping stronger.
 
 ## Future Work
 
