@@ -8,12 +8,12 @@ SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a v
 
 | Configuration   | Evaluation    | Time control | Rating |   Error | Gap to SF2850 | Gap to SF3000 |
 |-----------------|---------------|--------------|-------:|--------:|--------------:|--------------:|
-| SHAYVERI v1.0   | Classical HCE | STC 10+0.1   | 2652.7 | +/-11.5 |        -197.3 |        -347.3 |
-| SHAYVERI v1.0   | Classical HCE | LTC 90+0.5   | 2734.5 | +/-20.3 |        -115.5 |        -265.5 |
-| SHAYVERI v2.2.0 | NNUE          | STC 10+0.1   | 2716.2 | +/-16.4 |        -133.8 |        -283.8 |
-| SHAYVERI v2.2.0 | NNUE          | LTC 90+0.5   | 2792.3 | +/-41.5 |         -57.7 |        -207.7 |
+| SHAYVERI v1.0   | Classical HCE | STC 10+0.1   | 2578.6 | +/-19.9 |        -271.4 |        -421.4 |
+| SHAYVERI v1.0   | Classical HCE | LTC 90+0.5   | 2699.7 | +/-33.2 |        -150.3 |        -300.3 |
+| SHAYVERI v2.2.0 | NNUE          | STC 10+0.1   | 2938.3 | +/-14.9 |         +88.3 |         -61.7 |
+| SHAYVERI v2.2.0 | NNUE          | LTC 90+0.5   | 3046.2 | +/-28.6 |        +196.2 |         +46.2 |
 
-SHAYVERI v2.2.0 improved over v1.0 by about +63.5 Elo at STC and +57.8 Elo at LTC in this anchored pool.
+SHAYVERI v2.2.0 improved over v1.0 by about +359.7 Elo at STC and +346.5 Elo at LTC in this anchored pool.
 
 ## How to build
 
@@ -88,6 +88,7 @@ Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluat
 - `Threads`: number of search threads.
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
+- `UseNNUE`: enable or disable NNUE evaluation without changing the configured network path.
 - `EvalFile`: NNUE network path. Defaults to `SHAYVERI2_2_0.nnue`.
 - `Move Overhead`: GUI/network delay reserve, in milliseconds.
 

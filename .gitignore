@@ -13,7 +13,7 @@ debug/__pycache__
 
 tuning/*/pass*/
 nnue/v*/
-
+elo_pin/runs
 
 # Prerequisites
 *.d

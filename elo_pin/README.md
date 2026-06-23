@@ -55,13 +55,13 @@ PIN_ROOT="$PWD" \
 Useful knobs
 ============
 
-- The pool is fixed: `SHAYVERI HCE`, the current/configured SHAYVERI NNUE, plus `Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000`.
+- The pool is fixed: `SHAYVERI v1.0`, the current/configured SHAYVERI NNUE, plus `Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000`.
 - Every worker runs a full round robin over all 9 engines.
-- `SHAYVERI HCE` is always included with `UseNNUE=false`.
+- `SHAYVERI v1.0` is always included with `UseNNUE=false`.
 - `NET=` uses SHAYVERI's default current NNUE file.
 - `NET=SHAYVERI2_2_0.nnue` pins the NNUE slot with that file.
 - `NAME_ID` controls the NNUE SHAYVERI name written into PGNs/Ordo.
-- `HCE_NAME` defaults to `SHAYVERI HCE`.
+- `HCE_NAME` defaults to `SHAYVERI v1.0`.
 - `NNUE_NAME` defaults to `NAME_ID`.
 - Run IDs are always `NAME_ID_TC_YYYYmmdd_HHMMSS`.
 - `TC=stc` means `10+0.1`.
@@ -84,6 +84,7 @@ Under `$PIN_ROOT/results/$RUN_ID`:
 - `anchors`: copied Ordo anchor file.
 - `ordo`: copied Ordo executable.
 - `results.txt`: Ordo text output.
+- `h2h.txt`: pairwise sanity output.
 - `results.csv`: Ordo CSV output.
-- `h2h.txt`, `cfs.csv`, `err.csv`: Ordo support outputs.
+- `cfs.csv` and `err.csv`: Ordo support diagnostics.
 - `master.log`: master progress.

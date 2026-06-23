@@ -311,15 +311,15 @@
         </div>
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
-            <strong>2792.3</strong>
+            <strong>3046.2</strong>
             <span>Anchored Ordo LTC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
-            <strong>2716.2</strong>
+            <strong>2938.3</strong>
             <span>Anchored Ordo STC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
-            <strong>+58</strong>
+            <strong>+347</strong>
             <span>Approximate LTC v2.2.0 gain over v1.0</span>
           </div>
           <div class="metric">
@@ -375,42 +375,42 @@
                 <td>SHAYVERI v1.0</td>
                 <td>Classical HCE</td>
                 <td>STC 10+0.1</td>
-                <td>2652.7</td>
-                <td>+/-11.5</td>
-                <td>-197.3</td>
-                <td>-347.3</td>
+                <td>2578.6</td>
+                <td>+/-19.9</td>
+                <td>-271.4</td>
+                <td>-421.4</td>
               </tr>
               <tr>
                 <td>SHAYVERI v1.0</td>
                 <td>Classical HCE</td>
                 <td>LTC 90+0.5</td>
-                <td>2734.5</td>
-                <td>+/-20.3</td>
-                <td>-115.5</td>
-                <td>-265.5</td>
+                <td>2699.7</td>
+                <td>+/-33.2</td>
+                <td>-150.3</td>
+                <td>-300.3</td>
               </tr>
               <tr>
                 <td>SHAYVERI v2.2.0</td>
                 <td>NNUE</td>
                 <td>STC 10+0.1</td>
-                <td class="good">2716.2</td>
-                <td>+/-16.4</td>
-                <td>-133.8</td>
-                <td>-283.8</td>
+                <td class="good">2938.3</td>
+                <td>+/-14.9</td>
+                <td>+88.3</td>
+                <td>-61.7</td>
               </tr>
               <tr>
                 <td>SHAYVERI v2.2.0</td>
                 <td>NNUE</td>
                 <td>LTC 90+0.5</td>
-                <td class="good">2792.3</td>
-                <td>+/-41.5</td>
-                <td>-57.7</td>
-                <td>-207.7</td>
+                <td class="good">3046.2</td>
+                <td>+/-28.6</td>
+                <td>+196.2</td>
+                <td>+46.2</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="note">SHAYVERI v2.2.0 improved over v1.0 by about <span class="warn">+63.5 Elo at STC</span> and <span class="warn">+57.8 Elo at LTC</span> in this anchored pool. It gets close to SF2850 at LTC, but remains below both fixed-strength Stockfish anchors in the recorded tests.</p>
+        <p class="note">SHAYVERI v2.2.0 improved over v1.0 by about <span class="warn">+359.7 Elo at STC</span> and <span class="warn">+346.5 Elo at LTC</span> in this anchored pool. It is above SF2850 at both time controls and above SF3000 in the recorded LTC pin.</p>
       </div>
     </section>
 
@@ -502,6 +502,7 @@ go movetime 1000</code></pre>
           <div class="card"><h3>Threads</h3><p>Number of search threads.</p></div>
           <div class="card"><h3>Ponder</h3><p>Enable ponder output and search support.</p></div>
           <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
+          <div class="card"><h3>UseNNUE</h3><p>Enable or disable NNUE evaluation without changing the configured network path.</p></div>
           <div class="card"><h3>EvalFile</h3><p>NNUE network path. Defaults to <code>SHAYVERI2_2_0.nnue</code>.</p></div>
           <div class="card"><h3>Move Overhead</h3><p>GUI or network delay reserve in milliseconds.</p></div>
         </div>

@@ -51,13 +51,22 @@ printf "%-12s %8s\n" "failed" "$(count_files "$RUN_DIR/failed" '*.failed')"
 printf "%-12s %8s\n" "games" "$(count_files "$RUN_DIR/games" '*.pgn')"
 echo
 printf "%-24s %10s %12s %12s %10s\n" "worker" "pgn_size" "games" "total" "complete"
-find "$RUN_DIR/workers" -maxdepth 1 -type f -name '*.worker' -printf '%f\n' 2>/dev/null \
-  | sed 's/\.worker$//' \
-  | sort \
-  | while read -r worker; do
-      pgn="$RUN_DIR/games/${worker}_tournament.pgn"
-      games="$(pgn_games "$pgn")"
-      size="$(human_size "$pgn")"
-      pct="$(awk -v g="$games" -v t="$expected_worker_games" 'BEGIN { if (t > 0) printf "%.1f%%", (g/t)*100; else printf "0.0%%" }')"
-      printf "%-24s %10s %12s %12s %10s\n" "$worker" "$size" "$games" "$expected_worker_games" "$pct"
-    done
+total_games=0
+total_expected=0
+while read -r worker; do
+  [[ -n "$worker" ]] || continue
+  pgn="$RUN_DIR/games/${worker}_tournament.pgn"
+  games="$(pgn_games "$pgn")"
+  size="$(human_size "$pgn")"
+  pct="$(awk -v g="$games" -v t="$expected_worker_games" 'BEGIN { if (t > 0) printf "%.1f%%", (g/t)*100; else printf "0.0%%" }')"
+  printf "%-24s %10s %12s %12s %10s\n" "$worker" "$size" "$games" "$expected_worker_games" "$pct"
+  total_games=$((total_games + games))
+  total_expected=$((total_expected + expected_worker_games))
+done < <(
+  find "$RUN_DIR/workers" -maxdepth 1 -type f -name '*.worker' -printf '%f\n' 2>/dev/null \
+    | sed 's/\.worker$//' \
+    | sort
+)
+
+total_pct="$(awk -v g="$total_games" -v t="$total_expected" 'BEGIN { if (t > 0) printf "%.1f%%", (g/t)*100; else printf "0.0%%" }')"
+printf "%-24s %10s %12s %12s %10s\n" "TOTALS" "-" "$total_games" "$total_expected" "$total_pct"

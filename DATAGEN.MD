@@ -56,7 +56,7 @@ reasonable:
 - DONE marker written only after successful C++ datagen completion
 
 If `--eval-file` is omitted, the engine default net is used. For serious runs,
-always pass the intended seed net explicitly. Use `--eval-file "<empty>"` only
+always pass the intended seed net explicitly. Use `--eval-file "<hce>"` only
 for no-NNUE debug runs.
 
 ## Start Positions
@@ -77,8 +77,8 @@ counted in the summary.
 
 ## Filters
 
-Default filters are intended to stay close to the Stockfish/RobotMoon-style
-data we know transfers:
+Default filters are intended to produce quiet, bounded, NNUE-ready training
+positions, similar in shape to public RobotMoon/Stockfish-style datasets:
 
 - reject positions where side to move is in check unless `--include-checks true`
 - reject captures, promotions, and en-passant moves unless

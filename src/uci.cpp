@@ -181,6 +181,10 @@ static bool file_exists(const std::string &path) {
     return f.good();
 }
 
+static bool is_hce_eval_file(const std::string &path) {
+    return path == "<hce>";
+}
+
 static void print_datagen_usage(const char *argv0) {
     std::cerr
         << "usage: " << argv0 << " datagen"
@@ -348,12 +352,15 @@ int main(int argc, char **argv) {
                 options.eval_file = g_eval_file;
             else
                 g_eval_file = options.eval_file;
-            if (!g_eval_file.empty() && g_eval_file != "<empty>") {
+            if (is_hce_eval_file(g_eval_file)) {
+                NNUE::set_enabled(false);
+            } else if (!g_eval_file.empty()) {
                 if (!file_exists(g_eval_file)) {
                     std::cerr << "missing eval file: " << g_eval_file << '\n';
                     return 1;
                 }
                 NNUE::load(g_eval_file);
+                NNUE::set_enabled(true);
             }
             return generate_data(options);
         }
@@ -430,8 +437,12 @@ int main(int argc, char **argv) {
             }
             else if (opt_name == NNUE::UCI_OPTION_NAME) {
                 g_eval_file = value;
-                if (!g_eval_file.empty() && g_eval_file != "<empty>") {
+                if (is_hce_eval_file(g_eval_file)) {
+                    NNUE::set_enabled(false);
+                    TT.clear();
+                } else if (!g_eval_file.empty()) {
                     NNUE::load(g_eval_file);
+                    NNUE::set_enabled(true);
                     TT.clear();
                     NNUE::print_info();
                 }
