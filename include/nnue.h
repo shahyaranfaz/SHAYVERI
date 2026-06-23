@@ -94,6 +94,8 @@ inline void feature_indices(int piece_type, int piece_color, int sq,
 
 std::string load(const std::string &path);
 bool is_loaded();
+bool is_enabled();
+void set_enabled(bool enabled);
 void print_info();
 
 inline constexpr const char *UCI_OPTION_NAME = "EvalFile";

@@ -44,9 +44,9 @@ SHAYVERI was evaluated in controlled multi-engine round-robin tournaments using 
 
 Ratings are pool-relative and anchored to SF2850 = 2850 and SF3000 = 3000. They are **not** universal chess ratings.
 
-Two SHAYVERI configurations are now recorded: **SHAYVERI HCE** and **SHAYVERI NNUE**.
+Two SHAYVERI configurations are now recorded: **SHAYVERI v1.0** and **SHAYVERI v2.2.0**.
 
-The same opponent binaries and same tournament setup were used for both HCE and NNUE gauntlets. The opening book was `UHO_2024_8mvs.epd`, and Ordo was run as:
+The same opponent binaries and same tournament setup were used for both v1.0 and v2.2.0 gauntlets. The opening book was `UHO_2024_8mvs.epd`, and Ordo was run as:
 
 ```bash
 ./ordo -p rating_pool.pgn -m anchors -W -D -s 5000 -n 8 -J -j h2h.txt -C cfs.csv -e err.csv -o results.txt -c results.csv -F 99
@@ -54,9 +54,9 @@ The same opponent binaries and same tournament setup were used for both HCE and 
 
 ---
 
-## HCE Final Ratings
+## v1.0 Final Ratings
 
-### HCE STC — 10+0.1 (17,000+ games per engine)
+### v1.0 STC — 10+0.1 (17,000+ games per engine)
 
 | # | Engine       | Rating     | Error     | Points   | Played  | Score % | CFS %     |
 |---|--------------|------------|-----------|----------|---------|---------|-----------|
@@ -74,7 +74,7 @@ The same opponent binaries and same tournament setup were used for both HCE and 
 
 ---
 
-### HCE LTC — 90+0.5 (600 games per pairing, 4200 total per engine)
+### v1.0 LTC — 90+0.5 (600 games per pairing, 4200 total per engine)
 
 | # | Engine       | Rating     | Error     | Points | Played | Score % | CFS % |
 |---|--------------|------------|-----------|--------|--------|---------|-------|
@@ -128,24 +128,24 @@ The same opponent binaries and same tournament setup were used for both HCE and 
 
 ---
 
-## SHAYVERI HCE vs NNUE Summary
+## SHAYVERI v1.0 vs v2.2.0 Summary
 
 | Eval | Time Control | Rating | Error | Gap to SF2850 | Gap to SF3000 |
 |------|--------------|-------:|------:|--------------:|--------------:|
-| HCE  | STC 10+0.1   | 2652.7 | ±11.5 |        −197.3 |        −347.3 |
+| v1.0 | STC 10+0.1   | 2652.7 | ±11.5 |        −197.3 |        −347.3 |
 | NNUE | STC 10+0.1   | 2716.2 | ±16.4 |        −133.8 |        −283.8 |
-| HCE  | LTC 90+0.5   | 2734.5 | ±20.3 |        −115.5 |        −265.5 |
+| v1.0 | LTC 90+0.5   | 2734.5 | ±20.3 |        −115.5 |        −265.5 |
 | NNUE | LTC 90+0.5   | 2792.3 | ±41.5 |         −57.7 |        −207.7 |
 
 | Comparison    |     STC Δ |     LTC Δ |
 |---------------|----------:|----------:|
-| NNUE over HCE | **+63.5** | **+57.8** |
+| v2.2.0 over v1.0 | **+63.5** | **+57.8** |
 
-NNUE is a real improvement over HCE in this pool. The gauntlet says SHAYVERI remains below SF2850 at both time controls, though it gets close at LTC.
+SHAYVERI v2.2.0 is a real improvement over v1.0 in this pool. The gauntlet says SHAYVERI remains below SF2850 at both time controls, though it gets close at LTC.
 
 ---
 
-## Original HCE SHAYVERI Summary
+## Original v1.0 SHAYVERI Summary
 
 | Time Control | Rating    | Error | Gap to SF2850 | Gap to SF3000 |
 |--------------|-----------|-------|---------------|---------------|
@@ -241,7 +241,7 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 
 ## Pool Rankings — Full Comparison
 
-### HCE STC Rating Gaps (relative to SF3000 = 3000)
+### v1.0 STC Rating Gaps (relative to SF3000 = 3000)
 
 | Engine      | Rating | vs SF3000 |
 |-------------|--------|-----------|
@@ -267,7 +267,7 @@ SHAYVERI gains approximately **+82 Elo** moving from STC to LTC, suggesting it b
 | SF2850      | 2850.0 | −150      |
 | SHAYVERI    | 2716.2 | −284      |
 
-### HCE STC vs LTC Rating Shift by Engine
+### v1.0 STC vs LTC Rating Shift by Engine
 
 | Engine      | STC     | LTC     | Δ         |
 |-------------|---------|---------|-----------|
@@ -295,7 +295,7 @@ SHAYVERI's STC→LTC gain (+81.8) is the largest in the pool (excluding the fixe
 | SF2850      | 2850.0  | 2850.0  | 0.0       |
 | SHAYVERI    | 2716.2  | 2792.3  | **+76.1** |
 
-NNUE keeps the same broad STC→LTC pattern as HCE. It scales better with time than the fixed anchors, but not enough to close the gap to SF3000 or the HCE mid-pool engines.
+NNUE keeps the same broad STC→LTC pattern as v1.0. It scales better with time than the fixed anchors, but not enough to close the gap to SF3000 or the HCE mid-pool engines.
 
 ---
 
@@ -303,8 +303,8 @@ NNUE keeps the same broad STC→LTC pattern as HCE. It scales better with time t
 
 | Eval | TC  | White Advantage | Draw Rate     |
 |------|-----|-----------------|---------------|
-| HCE  | STC | 169.43 ±1.85    | 40.47% ±0.38% |
-| HCE  | LTC | 187.40 ±3.47    | 49.80% ±0.82% |
+| v1.0 | STC | 169.43 ±1.85    | 40.47% ±0.38% |
+| v1.0 | LTC | 187.40 ±3.47    | 49.80% ±0.82% |
 | NNUE | STC | 165.15 ±2.85    | 40.48% ±0.56% |
 | NNUE | LTC | 190.63 ±7.83    | 49.19% ±1.76% |
 
@@ -314,17 +314,17 @@ The white advantage is notably high at both time controls (typical engine testin
 
 ## Observations & Notes
 
-**SHAYVERI HCE strength** places it approximately 197 Elo below SF2850 at STC and 116 Elo below at LTC.
+**SHAYVERI v1.0 strength** places it approximately 197 Elo below SF2850 at STC and 116 Elo below at LTC.
 
-**SHAYVERI NNUE strength** places it approximately 134 Elo below SF2850 at STC and 58 Elo below SF2850 at LTC. It is still not competitive with the mid-pool HCE engines Ethereal and Weiss, but it is clearly closer to the anchors than HCE.
+**SHAYVERI v2.2.0 strength** places it approximately 134 Elo below SF2850 at STC and 58 Elo below SF2850 at LTC. It is still not competitive with the mid-pool HCE engines Ethereal and Weiss, but it is clearly closer to the anchors than v1.0.
 
-**NNUE gain:** NNUE adds about +64 Elo at STC and +58 Elo at LTC over HCE in this anchored pool. This is a real gain, but it is nowhere near the +300 Elo hoped for from the NNUE project.
+**v2.2.0 gain:** v2.2.0 adds about +64 Elo at STC and +58 Elo at LTC over v1.0 in this anchored pool.
 
 **LTC improvement** is encouraging. SHAYVERI's +82 Elo gain from STC to LTC is the largest relative gain in the pool, suggesting the engine's search or evaluation scales well with time and is not primarily relying on tactical shortcuts that faster engines exploit.
 
 **SHAYVERI's draw profile** is unusual — at STC it scored almost exclusively losses against top engines (0 wins vs. PlentyChess, Alexandria, Berserk), with draws being the only survival mechanism against stronger opposition. Draw counts increase at LTC, which is a positive sign.
 
-**Sample size:** HCE STC results (~17,000 games per engine, ~2,400 per pairing) are statistically robust. HCE LTC results (~600 per pairing) carry larger error margins. NNUE STC results (~7,000 games per engine, ~1,000 per pairing) are solid. NNUE LTC results (~950 games per engine, ~125-140 per pairing) are directionally useful but still noisy.
+**Sample size:** v1.0 STC results (~17,000 games per engine, ~2,400 per pairing) are statistically robust. v1.0 LTC results (~600 per pairing) carry larger error margins. v2.2.0 STC results (~7,000 games per engine, ~1,000 per pairing) are solid. v2.2.0 LTC results (~950 games per engine, ~125-140 per pairing) are directionally useful but still noisy.
 
 ---
 
@@ -337,7 +337,7 @@ The white advantage is notably high at both time controls (typical engine testin
 | Hash               | 64 MB                           | 128 MB        |
 | Opening book       | UHO_2024_8mvs.epd               | same          |
 | Paired games       | Yes (−repeat)                   | Yes (−repeat) |
-| HCE total games    | ~136,000                        | ~33,600       |
+| v1.0 total games   | ~136,000                        | ~33,600       |
 | NNUE total games   | ~56,000                         | ~7,600        |
 | Anchors            | SF2850=2850, SF3000=3000        | same          |
 | Simulations        | 1000+                           | 1000+         |

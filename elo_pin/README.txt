@@ -11,7 +11,7 @@ Flow
 
 1. Start the master on the shared filesystem.
 2. Start workers within the master's registration window.
-3. Each worker runs a full 7-engine round-robin tournament and writes one PGN.
+3. Each worker runs a full 9-engine round-robin tournament and writes one PGN.
 4. Master waits for all registered workers to finish.
 5. Master concatenates worker PGNs into one PGN.
 6. Master runs Ordo on the combined PGN.
@@ -55,17 +55,19 @@ PIN_ROOT="$PWD" \
 Useful knobs
 ============
 
-- The pool is fixed: SHAYVERI plus `Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000`.
-- Every worker runs a full round robin over all 8 engines.
-- `NET=` uses SHAYVERI's default net.
-- `NET=None` pins SHAYVERI HCE with `UseNNUE=false`.
-- `NET=net5_final.nnue` pins SHAYVERI with that NNUE file.
-- `NAME_ID` controls the SHAYVERI name written into PGNs/Ordo.
+- The pool is fixed: `SHAYVERI HCE`, the current/configured SHAYVERI NNUE, plus `Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000`.
+- Every worker runs a full round robin over all 9 engines.
+- `SHAYVERI HCE` is always included with `UseNNUE=false`.
+- `NET=` uses SHAYVERI's default current NNUE file.
+- `NET=SHAYVERI2_2_0.nnue` pins the NNUE slot with that file.
+- `NAME_ID` controls the NNUE SHAYVERI name written into PGNs/Ordo.
+- `HCE_NAME` defaults to `SHAYVERI HCE`.
+- `NNUE_NAME` defaults to `NAME_ID`.
 - Run IDs are always `NAME_ID_TC_YYYYmmdd_HHMMSS`.
 - `TC=stc` means `10+0.1`.
 - `TC=ltc` means `90+0.5`.
 - `GAMES_PER_PAIR_PER_WORKER` is total games per worker for each engine pair.
-- Total games are `workers * 28 * GAMES_PER_PAIR_PER_WORKER`.
+- Total games are `workers * 36 * GAMES_PER_PAIR_PER_WORKER`.
 - `REGISTER_SECONDS` is the worker join window.
 - `CONCURRENCY` defaults to 23.
 - `SHAYVERI_OPTIONS` can append extra UCI options to the SHAYVERI engine.

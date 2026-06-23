@@ -377,6 +377,7 @@ int main(int argc, char **argv) {
                 << "option name Threads type spin default 1 min 1 max 512\n"
                 << "option name Ponder type check default false\n"
                 << "option name OwnBook type check default true\n"
+                << "option name UseNNUE type check default true\n"
                 << "option name " << NNUE::UCI_OPTION_NAME
                 << " type string default " << g_eval_file << "\n"
                 << "option name Minimum Thinking Time type spin default 0 min 0 max 5000\n"
@@ -423,6 +424,10 @@ int main(int argc, char **argv) {
                 g_ponder = parse_bool(value);
             else if (opt_name == "OwnBook")
                 g_own_book = parse_bool(value);
+            else if (opt_name == "UseNNUE") {
+                NNUE::set_enabled(parse_bool(value));
+                TT.clear();
+            }
             else if (opt_name == NNUE::UCI_OPTION_NAME) {
                 g_eval_file = value;
                 if (!g_eval_file.empty() && g_eval_file != "<empty>") {

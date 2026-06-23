@@ -18,13 +18,15 @@ GAMES_PER_PAIR_PER_WORKER="${GAMES_PER_PAIR_PER_WORKER:-40}"
 REGISTER_SECONDS="${REGISTER_SECONDS:-300}"
 RATING_INTERVAL="${RATING_INTERVAL:-100}"
 
-NAME_ID="${NAME_ID:-SHAYVERI}"
+NAME_ID="${NAME_ID:-SHAYVERI NNUE}"
+HCE_NAME="${HCE_NAME:-SHAYVERI HCE}"
+NNUE_NAME="${NNUE_NAME:-$NAME_ID}"
 NET="${NET:-}"
 SHAYVERI_OPTIONS="${SHAYVERI_OPTIONS:-}"
 
 FIXED_OPPONENTS="Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000"
-ENGINE_COUNT=8
-PAIR_COUNT=28
+ENGINE_COUNT=9
+PAIR_COUNT=36
 ORDO_FLAGS="${ORDO_FLAGS:--m anchors -W -D -s 5000 -n 23 -J -j h2h.txt -C cfs.csv -e err.csv -F 99}"
 
 die() {
@@ -87,22 +89,28 @@ engine_dir_arg() {
   fi
 }
 
-shayveri_engine_args() {
-  printf '%s\n' -engine "name=$NAME_ID" "cmd=./SHAYVERI" "dir=$(engine_dir_arg "$ENGINES_DIR")"
+shayveri_common_options() {
+  [[ -z "$SHAYVERI_OPTIONS" ]] && return 0
+  # shellcheck disable=SC2206
+  local parts=( $SHAYVERI_OPTIONS )
+  printf '%s\n' "${parts[@]}"
+}
+
+shayveri_hce_engine_args() {
+  printf '%s\n' -engine "name=$HCE_NAME" "cmd=./SHAYVERI" "dir=$(engine_dir_arg "$ENGINES_DIR")" "option.UseNNUE=false"
+  shayveri_common_options
+}
+
+shayveri_nnue_engine_args() {
+  printf '%s\n' -engine "name=$NNUE_NAME" "cmd=./SHAYVERI" "dir=$(engine_dir_arg "$ENGINES_DIR")"
   case "$NET" in
     "")
-      ;;
-    None|none|NONE)
-      printf '%s\n' "option.UseNNUE=false"
       ;;
     *)
       printf '%s\n' "option.EvalFile=$NET"
       ;;
   esac
-  [[ -z "$SHAYVERI_OPTIONS" ]] && return 0
-  # shellcheck disable=SC2206
-  local parts=( $SHAYVERI_OPTIONS )
-  printf '%s\n' "${parts[@]}"
+  shayveri_common_options
 }
 
 opponent_engine_args() {
@@ -143,7 +151,8 @@ rounds_for_pair_games() {
 }
 
 tournament_engine_args() {
-  shayveri_engine_args
+  shayveri_hce_engine_args
+  shayveri_nnue_engine_args
 
   IFS=',' read -ra opponent_list <<< "$FIXED_OPPONENTS"
   for opponent in "${opponent_list[@]}"; do

@@ -26,6 +26,7 @@ static constexpr U32 NNUE_VERSION_KB      = 3u;
 std::string g_net_path;
 U64         g_net_hash = 0;
 bool        g_loaded = false;
+bool        g_enabled = true;
 int         g_king_buckets = 1;
 int         g_input_size = CHESS768_INPUT_SIZE;
 bool        g_use_screlu = false;
@@ -159,6 +160,14 @@ std::string load(const std::string &path) {
 
 bool is_loaded() {
     return g_loaded;
+}
+
+bool is_enabled() {
+    return g_enabled && g_loaded;
+}
+
+void set_enabled(bool enabled) {
+    g_enabled = enabled;
 }
 
 int king_bucket_count() {

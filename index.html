@@ -300,14 +300,14 @@
       <nav aria-label="Primary">
         <a href="#overview">Overview</a>
         <a href="#elo">Elo</a>
-        <a href="#evaluation">NNUE/HCE</a>
+        <a href="#evaluation">NNUE / v1.0</a>
         <a href="#search">Search</a>
         <a href="#build">Build</a>
       </nav>
       <div class="hero">
         <div>
           <h1>SHAYVERI</h1>
-          <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, handcrafted evaluation fallback, and an NNUE evaluation path.</p>
+          <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, v1.0 handcrafted evaluation fallback, and a v2.2.0 NNUE evaluation path.</p>
         </div>
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
@@ -320,7 +320,7 @@
           </div>
           <div class="metric">
             <strong>+58</strong>
-            <span>Approximate LTC NNUE gain over HCE</span>
+            <span>Approximate LTC v2.2.0 gain over v1.0</span>
           </div>
           <div class="metric">
             <strong>UCI</strong>
@@ -410,14 +410,14 @@
             </tbody>
           </table>
         </div>
-        <p class="note">NNUE improved over HCE by about <span class="warn">+63.5 Elo at STC</span> and <span class="warn">+57.8 Elo at LTC</span> in this anchored pool. It gets close to SF2850 at LTC, but remains below both fixed-strength Stockfish anchors in the recorded tests.</p>
+        <p class="note">SHAYVERI v2.2.0 improved over v1.0 by about <span class="warn">+63.5 Elo at STC</span> and <span class="warn">+57.8 Elo at LTC</span> in this anchored pool. It gets close to SF2850 at LTC, but remains below both fixed-strength Stockfish anchors in the recorded tests.</p>
       </div>
     </section>
 
     <section id="evaluation">
       <div class="wrap">
-        <h2>NNUE And HCE</h2>
-        <p class="lead">SHAYVERI has two evaluation stories. The original engine is a hand-crafted evaluator with tuned chess terms. The default path is NNUE through the UCI option <code>EvalFile</code>, with <code>SHAYVER2_2_0.nnue</code> as the default network file in the UCI layer.</p>
+        <h2>NNUE And v1.0</h2>
+        <p class="lead">SHAYVERI has two evaluation stories. The original v1.0 engine is a hand-crafted evaluator with tuned chess terms. The default path is NNUE through the UCI option <code>EvalFile</code>, with <code>SHAYVERI2_2_0.nnue</code> as the default network file in the UCI layer.</p>
         <div class="split">
           <article class="card">
             <h3>Handcrafted Evaluation</h3>
@@ -433,8 +433,8 @@
             <ul>
               <li>Loaded through the UCI <code>EvalFile</code> option, defaulting to <code>SHAYVERI2_2_0.nnue</code>.</li>
               <li>Used by search when the network is successfully loaded.</li>
-              <li>Recorded as a real gain over HCE, though smaller than the hoped-for +300 Elo jump.</li>
-              <li>Tested against the same opponent binaries and tournament setup as the HCE gauntlet.</li>
+              <li>Recorded as a real gain over SHAYVERI v1.0.</li>
+              <li>Tested against the same opponent binaries and tournament setup as the v1.0 gauntlet.</li>
             </ul>
           </article>
         </div>

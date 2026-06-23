@@ -7,7 +7,8 @@ source "$SCRIPT_DIR/common.sh"
 
 TC_VALUE="$(tc_value)"
 TC_LABEL="$(tc_label)"
-RUN_ID="${NAME_ID}_${TC_LABEL}_$(date +%Y%m%d_%H%M%S)"
+RUN_NAME_ID="${NAME_ID//[^A-Za-z0-9_.-]/_}"
+RUN_ID="${RUN_NAME_ID}_${TC_LABEL}_$(date +%Y%m%d_%H%M%S)"
 RUN_DIR="$(run_dir "$RUN_ID")"
 
 mkdir -p "$PIN_ROOT/results" "$RUN_DIR"/{workers,games,done,failed,state,logs}
@@ -36,6 +37,8 @@ write_config() {
   write_env TIMEMARGIN "$TIMEMARGIN"
   write_env GAMES_PER_PAIR_PER_WORKER "$GAMES_PER_PAIR_PER_WORKER"
   write_env NAME_ID "$NAME_ID"
+  write_env HCE_NAME "$HCE_NAME"
+  write_env NNUE_NAME "$NNUE_NAME"
   write_env NET "$NET"
   write_env SHAYVERI_OPTIONS "$SHAYVERI_OPTIONS"
   write_env FIXED_OPPONENTS "$FIXED_OPPONENTS"
@@ -63,8 +66,9 @@ fi
 log "run_id=$RUN_ID"
 log "run_dir=$RUN_DIR"
 log "registration window=${REGISTER_SECONDS}s"
-log "name_id=$NAME_ID net=${NET:-default}"
-log "engines=$NAME_ID,$FIXED_OPPONENTS"
+log "hce_name=$HCE_NAME"
+log "nnue_name=$NNUE_NAME net=${NET:-default}"
+log "engines=$HCE_NAME,$NNUE_NAME,$FIXED_OPPONENTS"
 log "tc=$TC_VALUE label=$TC_LABEL games_per_pair_per_worker=$GAMES_PER_PAIR_PER_WORKER pair_count=$PAIR_COUNT"
 
 deadline=$((SECONDS + REGISTER_SECONDS))

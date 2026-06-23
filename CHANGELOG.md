@@ -153,9 +153,9 @@ self-generated corpus/labels were the blocker.
 ### v2.1: Classic Chess768 / 256 Progress
 
 - Built the first working Chess768 NNUE bootstrap from SHAYVERI-generated data.
-- Net5 was the best classic result: Chess768 / 256, Marlinflow, 1B generated
-  positions, WDL=0.1, 10k-node labels, and mixed HCE/NNUE generation.
-- Lesson: mixed HCE/NNUE data worked, but arrival-order chunk consumption made
+- The best classic result was Chess768 / 256, Marlinflow, 1B generated
+  positions, WDL=0.1, 10k-node labels, and mixed v1.0/NNUE generation.
+- Lesson: mixed v1.0/NNUE data worked, but arrival-order chunk consumption made
   checkpoint strength noisy and non-monotonic.
 
 ### v2.2: King Buckets And Bullet
@@ -172,8 +172,8 @@ self-generated corpus/labels were the blocker.
   adding more positions.
 - Designed a Chess768 / 256 recovery path around the v2.1 line with deeper
   SHAYVERI self-distillation and hard-position relabeling.
-- Added a branch matrix over NNUE/HCE baseline and deep-hard lanes.
-- Reinforced that HCE/SF2850 gates need to happen early, before internal
+- Added a branch matrix over NNUE/v1.0 baseline and deep-hard lanes.
+- Reinforced that v1.0/SF2850 gates need to happen early, before internal
   pool optimism wastes training time.
 
 ### v2.4: Persistent SHAYVERI Corpus
@@ -182,7 +182,7 @@ self-generated corpus/labels were the blocker.
   data plus about 130M earlier 10k-node positions.
 - Trained persistent 500M, 1B, and fullmove-8-plus filtered Board768 / 256
   views through the patched Marlinflow path.
-- Best observed HCE transfer from this corpus was only around score 0.25 vs HCE,
+- Best observed v1.0 transfer from this corpus was only around score 0.25 vs v1.0,
   roughly -190 Elo; the fullmove-8-plus slice was worse.
 - Concluded failure was not tiny data volume, streaming churn, or checkpoint
   selection; the blocker was generated data distribution and/or labels.
@@ -220,7 +220,7 @@ the v2.x self-generated corpora.
 
 - Moved the main NNUE target to KB16.
 - Uses stronger datagen output as the basis for the next promoted net.
-- Keeps HCE as a flavor/debugging reference without letting it dominate
+- Keeps v1.0 as a flavor/debugging reference without letting it dominate
   training labels.
 - Uses fixed external anchors for promotion instead of trusting internal-family
   pools alone.

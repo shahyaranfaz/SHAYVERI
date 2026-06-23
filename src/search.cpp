@@ -314,7 +314,7 @@ static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len, int
 }
 
 static inline int evaluate_position(const Board &b, const StackInfo *ss) {
-    if (NNUE::is_loaded())
+    if (NNUE::is_enabled())
         return NNUE::evaluate(static_cast<int>(b.side_to_move), ss->acc);
     return evaluate(b);
 }

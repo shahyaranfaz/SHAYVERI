@@ -2,7 +2,7 @@
 
 **Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence**
 
-SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a tuned handcrafted evaluation fallback, and an NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
+SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a v1.0 handcrafted evaluation fallback, and a v2.2.0 NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
 
 ## Elo results
 
@@ -13,7 +13,7 @@ SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a t
 | SHAYVERI v2.2.0 | NNUE          | STC 10+0.1   | 2716.2 | +/-16.4 |        -133.8 |        -283.8 |
 | SHAYVERI v2.2.0 | NNUE          | LTC 90+0.5   | 2792.3 | +/-41.5 |         -57.7 |        -207.7 |
 
-NNUE improved over HCE by about +63.5 Elo at STC and +57.8 Elo at LTC in this anchored pool.
+SHAYVERI v2.2.0 improved over v1.0 by about +63.5 Elo at STC and +57.8 Elo at LTC in this anchored pool.
 
 ## How to build
 
@@ -62,7 +62,7 @@ go movetime 1000
 - Lazy SMP for multi-threaded search
 - Dynamic time management
 
-## NNUE and HCE
+## NNUE and v1.0
 
 Current builds support `EvalFile SHAYVERI2_2_0.nnue`, making NNUE the stronger tested evaluation route when the NNUE file is available. Otherwise, SHAYVERI still has the original handcrafted evaluator.
 
