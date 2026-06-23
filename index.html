@@ -300,14 +300,14 @@
       <nav aria-label="Primary">
         <a href="#overview">Overview</a>
         <a href="#elo">Elo</a>
-        <a href="#evaluation">NNUE / v1.0</a>
+        <a href="#evaluation">Evaluation</a>
         <a href="#search">Search</a>
         <a href="#build">Build</a>
       </nav>
       <div class="hero">
         <div>
           <h1>SHAYVERI</h1>
-          <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, v1.0 handcrafted evaluation fallback, and a v2.2.0 NNUE evaluation path.</p>
+          <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and a v2.2.0 NNUE evaluation path.</p>
         </div>
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
@@ -335,7 +335,7 @@
     <section id="overview">
       <div class="wrap">
         <h2>Overview</h2>
-        <p class="lead">SHAYVERI is a native chess engine written in C++. The README describes a full classical search and evaluation stack, with parameters tuned by SPSA and Texel tuning on self-play datasets. Current builds also support <code>EvalFile SHAYVERI2_2_0.nnue</code>, making NNUE the stronger tested evaluation route when the NNUE file is available.</p>
+        <p class="lead">SHAYVERI is a native chess engine written in C++. The README describes a full classical search and evaluation stack, with parameters tuned by SPSA and Texel tuning on self-play datasets. Current builds default to NNUE through <code>EvalFile SHAYVERI2_2_0.nnue</code>, while the classical handcrafted evaluator remains available through <code>UseNNUE=false</code>.</p>
         <div class="card-grid">
           <article class="card">
             <h3>Protocol</h3>
@@ -416,8 +416,8 @@
 
     <section id="evaluation">
       <div class="wrap">
-        <h2>NNUE And v1.0</h2>
-        <p class="lead">SHAYVERI has two evaluation stories. The original v1.0 engine is a hand-crafted evaluator with tuned chess terms. The default path is NNUE through the UCI option <code>EvalFile</code>, with <code>SHAYVERI2_2_0.nnue</code> as the default network file in the UCI layer.</p>
+        <h2>Evaluation Paths</h2>
+        <p class="lead">SHAYVERI has two evaluation paths: classical handcrafted evaluation and NNUE. The Elo tables label the pinned classical configuration as v1.0. Current builds default to NNUE through <code>EvalFile SHAYVERI2_2_0.nnue</code>.</p>
         <div class="split">
           <article class="card">
             <h3>Handcrafted Evaluation</h3>
@@ -433,8 +433,8 @@
             <ul>
               <li>Loaded through the UCI <code>EvalFile</code> option, defaulting to <code>SHAYVERI2_2_0.nnue</code>.</li>
               <li>Used by search when the network is successfully loaded.</li>
-              <li>Recorded as a real gain over SHAYVERI v1.0.</li>
-              <li>Tested against the same opponent binaries and tournament setup as the v1.0 gauntlet.</li>
+              <li>Pinned at +359.7 Elo STC and +346.5 Elo LTC over the v1.0 classical configuration.</li>
+              <li>Tested against the same opponent binaries and tournament setup as the classical v1.0 configuration.</li>
             </ul>
           </article>
         </div>

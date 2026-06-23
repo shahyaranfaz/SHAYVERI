@@ -11,6 +11,19 @@ Supported output formats:
 - `shayveri-plain-v1`
 - `bullet-v1`
 
+Example direct Bullet run:
+
+```bash
+./SHAYVERI datagen \
+  --threads 1 \
+  --positions 10000 \
+  --output-prefix /tmp/shayveri_datagen/smoke \
+  --output-format bullet-v1 \
+  --eval-file SHAYVERI2_2_0.nnue \
+  --nodes 1000 \
+  --seed 1
+```
+
 `shayveri-plain-v1` is the readable bridge format:
 
 ```text
@@ -22,6 +35,20 @@ The bridge format is intentionally lossless for the information we need:
 - full FEN
 - centipawn label from White's perspective
 - game result/WDL from White's perspective
+
+Datagen writes one shard per worker thread:
+
+```text
+<output-prefix>_<worker-id>.plain
+<output-prefix>_<worker-id>.bullet.bin
+```
+
+It also writes:
+
+```text
+<output-prefix>.summary.txt
+<output-prefix>.DONE
+```
 
 `bullet-v1` writes 32-byte records compatible with the `jw1912/bulletformat`
 chess `ChessBoard` layout:
@@ -156,7 +183,7 @@ owns:
 - `.incomplete` directories
 - atomic rename into completed shard directories
 - resume and skip logic
-- conversion to Bullet format
+- conversion to Bullet format when the datagen output is not already `bullet-v1`
 - shuffle
 - training
 
