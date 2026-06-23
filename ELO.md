@@ -24,7 +24,9 @@ On this shared scale, v2.2.0 is about **+359.7 Elo over v1.0 at STC** and
 ## STC Pool
 
 Time control: `10+0.1`
+
 Total games: `28800`
+
 Per pairing: `800`
 
 | # | Player          | Rating | Error  | Points | Played | Score | CFS |
@@ -40,8 +42,11 @@ Per pairing: `800`
 | 9 | SHAYVERI v1.0   | 2578.6 | 19.9   | 423.5  | 6400   | 7%    | --- |
 
 White advantage: `167.14 +/- 2.92`
+
 Draw rate: `37.45% +/- 0.54`
-Game split: `14789` White wins, `4400` draws, `9611` Black wins, `0` discarded.
+
+Game split: `14789` White wins, `4400` draws, `9611` Black wins, 
+`0` discarded.
 
 ### STC Head-To-Head
 
@@ -56,7 +61,9 @@ Game split: `14789` White wins, `4400` draws, `9611` Black wins, `0` discarded.
 ## LTC Pool
 
 Time control: `90+0.5`
+
 Total games: `7200`
+
 Per pairing: `200`
 
 | #  | Player          | Rating | Error  | Points | Played | Score | CFS |
@@ -72,8 +79,11 @@ Per pairing: `200`
 | 9  | SHAYVERI v1.0   | 2699.7 | 33.2   | 156.0  | 1600   | 10%   | --- |
 
 White advantage: `181.74 +/- 5.46`
+
 Draw rate: `44.42% +/- 1.13`
-Game split: `3692` White wins, `1346` draws, `2162` Black wins, `0` discarded.
+
+Game split: `3692` White wins, `1346` draws, `2162` Black wins, 
+`0` discarded.
 
 ### LTC Head-To-Head
 
@@ -84,9 +94,3 @@ Game split: `3692` White wins, `1346` draws, `2162` Black wins, `0` discarded.
 | SHAYVERI v2.2.0 vs SF3000        | 200   | 71-59-70  | 50.2% | +46.2    |
 | SHAYVERI v1.0 vs SF2850          | 200   | 69-36-95  | 43.5% | -150.3   |
 | SHAYVERI v1.0 vs SF3000          | 200   | 18-36-146 | 18.0% | -300.3   |
-
-## Notes
-
-For public reporting, the useful information is the Ordo rating table, selected
-head-to-head rows against the anchors and v1.0, and the run summary: total games,
-discarded games, white advantage, draw rate, and anchor confirmation.
