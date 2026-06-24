@@ -3,15 +3,18 @@ from itertools import islice
 import pandas as pd
 import chess.pgn
 from collections import defaultdict
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 DEPTH = 24
 MIN_GAMES = 25
 
-subprocess.run(["bash", "filter.sh", "920", "2500"])
+subprocess.run(["bash", "filter.sh", "920", "2500"], cwd=SCRIPT_DIR)
 
 openings = defaultdict(lambda: {"games_played": 0, "white_win": 0, "draw": 0, "black_win": 0, "total_elo": 0})
 
-with open("db/twic.pgn", encoding="utf-8", errors="ignore") as game_file:
+with open(SCRIPT_DIR / "db" / "twic.pgn", encoding="utf-8", errors="ignore") as game_file:
     game = chess.pgn.read_game(game_file)
     while game is not None:
         try:
@@ -63,6 +66,6 @@ for moves, stats in openings.items():
 
 opening_book = pd.DataFrame(data, columns=["Moves", "Played", "WhiteWins", "Draws", "BlackWins", "AvgElo"])
 opening_book = opening_book.sort_values(by="Moves", ascending=True)
-opening_book.to_csv("table.csv", index=False)
+opening_book.to_csv(SCRIPT_DIR / "table.csv", index=False)
 
 print("Opening base has been built! (written to table.csv)")

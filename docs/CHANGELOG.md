@@ -77,7 +77,7 @@ Version 1.0 is the final handcrafted-evaluation release before NNUE development.
   - king safety/tactical phase;
   - final refinement phase.
 - Normalized piece values and PSTs after Texel.
-- Archived tuning logs and result notes under `tuning/`.
+- Archived tuning logs and result notes outside the release-facing source tree.
 - Disabled the tuning registry for release UCI output.
 
 ### Opening Book

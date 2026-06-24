@@ -11,9 +11,11 @@ debug/tt_safety
 debug/nnue_test
 debug/__pycache__
 
-tuning/*/pass*/
 nnue/v*/
-elo_pin/runs
+scripts/elo_pin/results
+scripts/opening_book/eval_cache.json
+scripts/opening_book/table.csv
+scripts/opening_book/zobrist_keys.json
 
 # Prerequisites
 *.d

@@ -23,19 +23,22 @@ except ImportError:
     _has_pandas = False
 
 # --- CONFIGURATION ---
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+
 STOCKFISH_PATH = "./stockfish"
 BOOK_DEPTH = 8
 
-CACHE_FILE = "eval_cache.json"
+CACHE_FILE = os.path.join(SCRIPT_DIR, "eval_cache.json")
 SAVE_INTERVAL = 500
 
 MAX_WORKERS = 24
 STOCKFISH_HASH_MB = 1024
 MAX_LIVE_FUTURES = 96
 
-ZOBRIST_KEYS_FILE = "zobrist_keys.json"
+ZOBRIST_KEYS_FILE = os.path.join(SCRIPT_DIR, "zobrist_keys.json")
 
-CSV_FILE = "table.csv"
+CSV_FILE = os.path.join(SCRIPT_DIR, "table.csv")
 MAX_PLIES_PER_ROW = 30
 
 MIN_TOTAL_PLAYS = 5
@@ -252,7 +255,7 @@ if __name__ == "__main__":
     entries.sort(key=lambda x: x[0])  # required for binary search
 
     os.makedirs("include", exist_ok=True)
-    with open("include/opening_book.h", "w", encoding="utf-8") as out:
+    with open(os.path.join(REPO_ROOT, "include", "opening_book.h"), "w", encoding="utf-8") as out:
         out.write("#ifndef OPENING_BOOK_H\n#define OPENING_BOOK_H\n#include <cstdint>\n\n")
         out.write("struct BookEntry { U64 key; char move[6]; float evaluation; };\n\n")
         out.write("static constexpr BookEntry OPENING_BOOK[] = {\n")
