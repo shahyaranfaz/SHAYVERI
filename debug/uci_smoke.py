@@ -8,13 +8,14 @@ import os
 import re
 import subprocess
 import sys
+import traceback
 
-ENGINE_BINARY_NAME = "SHAYVERI"
+ENGINE_BINARY_NAME = "SHAYVERI.exe" if os.name == "nt" else "SHAYVERI"
 DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ENGINE_BINARY_NAME))
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 542167
+BENCH_SIGNATURE_NODES = 492803
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -42,8 +43,11 @@ def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
                     out.append(line)
                     if line.startswith("bestmove "):
                         break
-        proc.stdin.write("quit\n")
-        proc.stdin.flush()
+        try:
+            proc.stdin.write("quit\n")
+            proc.stdin.flush()
+        except OSError:
+            pass
         try:
             rest, _ = proc.communicate(timeout=TIMEOUT_SEC)
             out.append(rest)
@@ -84,6 +88,12 @@ def extract_bench_nodes(text: str) -> int:
         raise AssertionError(f"missing bench node summary in output: {text[-TAIL_CHARS:]}")
     return int(m.group(1))
 
+def extract_max_info_nodes(text: str) -> int:
+    nodes = [int(n) for n in re.findall(r"\bnodes\s+(\d+)", text)]
+    if not nodes:
+        raise AssertionError(f"missing info nodes in output: {text[-TAIL_CHARS:]}")
+    return max(nodes)
+
 def looks_like_book_probe(text: str) -> bool:
     info_lines = [line for line in text.splitlines() if line.startswith("info depth ")]
     if len(info_lines) != 1:
@@ -105,8 +115,15 @@ def main() -> int:
         require(handshake, "uciok")
         require(handshake, "readyok")
 
-        startpos = run_engine(["ucinewgame", "position startpos", "go nodes 1000"], wait_for_bestmove=True)
+        startpos = run_engine([
+            "setoption name OwnBook value false",
+            "ucinewgame",
+            "position startpos",
+            "go nodes 1000",
+        ], wait_for_bestmove=True)
         require_bestmove(startpos)
+        if extract_max_info_nodes(startpos) > 2000:
+            raise AssertionError("go nodes 1000 did not stop near the requested node limit")
 
         depth1 = run_engine(["ucinewgame", "position startpos", "go depth 1"], wait_for_bestmove=True)
         require_bestmove(depth1)
@@ -167,6 +184,7 @@ def main() -> int:
         return 0
     except Exception as exc:
         print(f"UCI smoke tests failed: {exc}", file=sys.stderr)
+        traceback.print_exc()
         return 2
 
 

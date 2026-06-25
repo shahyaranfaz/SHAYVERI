@@ -55,6 +55,7 @@ static void stop_search() {
     for (auto &t : smp_threads)
         if (t.joinable()) t.join();
     smp_threads.clear();
+    node_limit = 0;
 }
 
 static const BookEntry *probe_book(U64 zobrist_key) {
@@ -299,6 +300,70 @@ static bool parse_datagen_args(int argc, char **argv, DatagenOptions &options) {
     }
 
     return true;
+}
+
+static SearchResult run_fixed_search(Board b, const std::vector<U64> &rep,
+                                     const std::vector<Move> &searchmoves,
+                                     int root_depth, int num_threads,
+                                     int hash_mb, U64 fixed_nodes) {
+    SearchResult seed_result;
+    if (fixed_nodes > 0) {
+        TranspositionTable seed_tt;
+        seed_tt.resize(static_cast<SIZE_T>(hash_mb));
+        active_tt = &seed_tt;
+        g_stop = false;
+        node_count = 0;
+        node_limit = 0;
+        seed_result = search(
+            b, 1,
+            rep.data(), static_cast<int>(rep.size()),
+            searchmoves,
+            nullptr, true);
+        active_tt = &TT;
+    }
+
+    node_count = 0;
+    node_limit = fixed_nodes;
+    g_stop     = false;
+
+    std::vector<std::thread> helpers;
+    helpers.reserve(std::max(0, num_threads - 1));
+
+    for (int t = 1; t < num_threads; ++t) {
+        helpers.emplace_back([b, rep, searchmoves, root_depth, hash_mb, t]() mutable {
+            TranspositionTable local_tt;
+            local_tt.resize(static_cast<SIZE_T>(hash_mb));
+            active_tt = &local_tt;
+            std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
+            int helper_depth = std::max(1, root_depth - (t % 4));
+            search(b, helper_depth,
+                   rep.data(), static_cast<int>(rep.size()),
+                   searchmoves, nullptr, true, t);
+            active_tt = &TT;
+        });
+    }
+
+    TranspositionTable local_tt;
+    local_tt.resize(static_cast<SIZE_T>(hash_mb));
+    active_tt = &local_tt;
+    local_tt.new_search();
+
+    SearchResult result = search(
+        b, root_depth,
+        rep.data(), static_cast<int>(rep.size()),
+        searchmoves,
+        nullptr, false);
+
+    active_tt = &TT;
+    g_stop    = true;
+
+    for (auto &t : helpers)
+        if (t.joinable()) t.join();
+
+    node_limit = 0;
+    if (result.best_move == MOVE_NONE && seed_result.best_move != MOVE_NONE)
+        result = seed_result;
+    return result;
 }
 
 static std::string ponder_suffix(Board b, Move best) {
@@ -566,6 +631,7 @@ int main(int argc, char **argv) {
             tc.move_overhead = g_move_overhead;
             tc.min_think_ms  = g_min_think_ms;
             int fixed_depth  = 0;
+            U64 fixed_nodes   = 0;
 
             std::vector<Move> searchmoves;
             {
@@ -581,7 +647,7 @@ int main(int argc, char **argv) {
                     else if (tok == "binc")      go_iss >> tc.binc;
                     else if (tok == "movetime")  go_iss >> tc.movetime;
                     else if (tok == "depth")     go_iss >> fixed_depth;
-                    else if (tok == "nodes")     { I64 n; go_iss >> n; }
+                    else if (tok == "nodes")     go_iss >> fixed_nodes;
                     else if (tok == "movestogo") go_iss >> tc.moves_to_go;
                     else if (tok == "searchmoves") {
                         std::string sm_str;
@@ -602,6 +668,7 @@ int main(int argc, char **argv) {
 
             TimeControl real_tc = tc;
             if (fixed_depth > 0) tc.infinite = true;
+            if (fixed_nodes > 0) tc.infinite = true;
             if (is_ponder_search) tc.infinite = true;
             g_time_manager.init(tc);
 
@@ -615,6 +682,21 @@ int main(int argc, char **argv) {
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
             int   hash_mb    = g_hash_mb;
+
+            if (fixed_nodes > 0 || fixed_depth > 0) {
+                SearchResult result = run_fixed_search(
+                    b_copy, rep, searchmoves,
+                    root_depth, num_thr, hash_mb, fixed_nodes);
+
+                if (!is_legal_root_move(b_copy, result.best_move))
+                    result.best_move = first_legal_move(b_copy);
+
+                std::string ponder_str = ponder_suffix(b_copy, result.best_move);
+                std::cout << "bestmove " << move_to_uci(result.best_move)
+                          << ponder_str << "\n";
+                std::cout.flush();
+                continue;
+            }
 
             // Lazy SMP helper threads.
             for (int t = 1; t < num_thr; ++t) {
@@ -699,6 +781,7 @@ int main(int argc, char **argv) {
                               << ponder_str << "\n";
                     std::cout.flush();
                     active_tt = &TT;
+                    node_limit = 0;
                 })
             );
         }
