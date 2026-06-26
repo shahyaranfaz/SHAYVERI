@@ -13,14 +13,14 @@ namespace NNUE {
 inline constexpr int CHESS768_INPUT_SIZE = 768;
 inline constexpr int MAX_KING_BUCKETS    = 16;
 inline constexpr int MAX_INPUT_SIZE      = CHESS768_INPUT_SIZE * MAX_KING_BUCKETS;
-inline constexpr int HIDDEN_SIZE         = 256;
+inline constexpr int MAX_HIDDEN_SIZE     = 512;
 inline constexpr int OUTPUT_SIZE         = 1;
 inline constexpr int L1_SCALE            = 255;
 inline constexpr int OUTPUT_SCALE        = 400;
 
-extern I16 feature_weights[MAX_INPUT_SIZE][HIDDEN_SIZE];
-extern I16 feature_bias[HIDDEN_SIZE];
-extern I16 output_weights[HIDDEN_SIZE * 2];
+extern I16 feature_weights[MAX_INPUT_SIZE][MAX_HIDDEN_SIZE];
+extern I16 feature_bias[MAX_HIDDEN_SIZE];
+extern I16 output_weights[MAX_HIDDEN_SIZE * 2];
 extern I32 output_bias;
 
 struct Accumulator {
@@ -31,7 +31,7 @@ struct Accumulator {
         int sub_b;
     };
 
-    I16 vals[2][HIDDEN_SIZE]{};
+    I16 vals[2][MAX_HIDDEN_SIZE]{};
 
     Accumulator() { reset(); }
 
@@ -49,6 +49,7 @@ inline int chess768_index(int piece_type, int piece_color, int sq, int perspecti
 
 int king_bucket_count();
 int active_input_size();
+int active_hidden_size();
 bool has_king_buckets();
 bool uses_screlu();
 

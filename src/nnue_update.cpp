@@ -20,7 +20,7 @@ void acc_add(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square 
     int bi = 0;
     feature_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
                     sq, white_king_sq, black_king_sq, wi, bi);
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
+    for (int i = 0; i < active_hidden_size(); ++i) {
         acc.vals[0][i] += feature_weights[wi][i];
         acc.vals[1][i] += feature_weights[bi][i];
     }
@@ -31,7 +31,7 @@ void acc_sub(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square 
     int bi = 0;
     feature_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
                     sq, white_king_sq, black_king_sq, wi, bi);
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
+    for (int i = 0; i < active_hidden_size(); ++i) {
         acc.vals[0][i] -= feature_weights[wi][i];
         acc.vals[1][i] -= feature_weights[bi][i];
     }

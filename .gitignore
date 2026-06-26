@@ -12,6 +12,9 @@ debug/nnue_test
 debug/__pycache__
 
 nnue/v*/
+nnue/extra_nets
+nnue/README.md
+
 scripts/elo_pin/results
 scripts/opening_book/eval_cache.json
 scripts/opening_book/table.csv

@@ -12,9 +12,9 @@ namespace SHAYVERI {
 
 namespace NNUE {
 
-I16 feature_weights[MAX_INPUT_SIZE][HIDDEN_SIZE];
-I16 feature_bias[HIDDEN_SIZE];
-I16 output_weights[HIDDEN_SIZE * 2];
+I16 feature_weights[MAX_INPUT_SIZE][MAX_HIDDEN_SIZE];
+I16 feature_bias[MAX_HIDDEN_SIZE];
+I16 output_weights[MAX_HIDDEN_SIZE * 2];
 I32 output_bias;
 
 namespace {
@@ -29,6 +29,7 @@ bool        g_loaded = false;
 bool        g_enabled = true;
 int         g_king_buckets = 1;
 int         g_input_size = CHESS768_INPUT_SIZE;
+int         g_hidden_size = 256;
 bool        g_use_screlu = false;
 
 U64 fnv1a_hash(const void *data, size_t bytes) {
@@ -44,6 +45,22 @@ void must_read(FILE *f, void *dst, size_t n, const char *what) {
         std::fprintf(stderr, "[nnue] failed to read %s (%zu bytes)\n", what, n);
         std::exit(EXIT_FAILURE);
     }
+}
+
+long file_size(FILE *f) {
+    const long cur = std::ftell(f);
+    if (cur < 0 || std::fseek(f, 0, SEEK_END) != 0) {
+        std::fprintf(stderr, "[nnue] failed to measure network file\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    const long end = std::ftell(f);
+    if (end < 0 || std::fseek(f, cur, SEEK_SET) != 0) {
+        std::fprintf(stderr, "[nnue] failed to restore network file position\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    return end;
 }
 
 int piece_type_index(Piece p) {
@@ -68,13 +85,13 @@ I32 squared_crelu_scaled(I16 x) {
     const I16 *nstm_acc = acc.vals[side_to_move ^ 1];
 
     I64 sum = 0;
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
+    for (int i = 0; i < g_hidden_size; ++i) {
         if (g_use_screlu) {
             sum += static_cast<I64>(squared_crelu_scaled(stm_acc[i])) * output_weights[i];
-            sum += static_cast<I64>(squared_crelu_scaled(nstm_acc[i])) * output_weights[HIDDEN_SIZE + i];
+            sum += static_cast<I64>(squared_crelu_scaled(nstm_acc[i])) * output_weights[g_hidden_size + i];
         } else {
             sum += static_cast<I64>(screlu(stm_acc[i])) * output_weights[i];
-            sum += static_cast<I64>(screlu(nstm_acc[i])) * output_weights[HIDDEN_SIZE + i];
+            sum += static_cast<I64>(screlu(nstm_acc[i])) * output_weights[g_hidden_size + i];
         }
     }
 
@@ -129,12 +146,53 @@ std::string load(const std::string &path) {
         g_use_screlu = true;
     }
 
+    const long end = file_size(f);
+    const long cur = std::ftell(f);
+    if (cur < 0 || end < cur) {
+        std::fprintf(stderr, "[nnue] failed to measure payload in \"%s\"\n", path.c_str());
+        std::fclose(f);
+        std::exit(EXIT_FAILURE);
+    }
+
+    const long payload_bytes = end - cur;
+    const long hidden_stride_bytes = static_cast<long>(g_input_size * sizeof(I16) + sizeof(I16) + 2 * sizeof(I16));
+    const long fixed_bytes = sizeof(output_bias);
+    if (payload_bytes <= fixed_bytes || (payload_bytes - fixed_bytes) % hidden_stride_bytes != 0) {
+        std::fprintf(stderr,
+                     "[nnue] cannot infer hidden size from payload %ld bytes in \"%s\"\n",
+                     payload_bytes, path.c_str());
+        std::fclose(f);
+        std::exit(EXIT_FAILURE);
+    }
+
+    const long inferred_hidden = (payload_bytes - fixed_bytes) / hidden_stride_bytes;
+    if (inferred_hidden != 256 && inferred_hidden != 512) {
+        std::fprintf(stderr,
+                     "[nnue] unsupported hidden size %ld in \"%s\"; supported sizes are 256 and 512\n",
+                     inferred_hidden, path.c_str());
+        std::fclose(f);
+        std::exit(EXIT_FAILURE);
+    }
+    if (inferred_hidden > MAX_HIDDEN_SIZE) {
+        std::fprintf(stderr,
+                     "[nnue] hidden size %ld exceeds compiled max %d in \"%s\"\n",
+                     inferred_hidden, MAX_HIDDEN_SIZE, path.c_str());
+        std::fclose(f);
+        std::exit(EXIT_FAILURE);
+    }
+    g_hidden_size = static_cast<int>(inferred_hidden);
+
     std::memset(feature_weights, 0, sizeof(feature_weights));
-    const size_t feature_weights_bytes =
-        static_cast<size_t>(g_input_size) * HIDDEN_SIZE * sizeof(I16);
-    must_read(f, feature_weights, feature_weights_bytes, "feature_weights");
-    must_read(f, feature_bias, sizeof(feature_bias), "feature_bias");
-    must_read(f, output_weights, sizeof(output_weights), "output_weights");
+    std::memset(feature_bias, 0, sizeof(feature_bias));
+    std::memset(output_weights, 0, sizeof(output_weights));
+
+    const size_t feature_weights_row_bytes =
+        static_cast<size_t>(g_hidden_size) * sizeof(I16);
+    for (int input = 0; input < g_input_size; ++input)
+        must_read(f, feature_weights[input], feature_weights_row_bytes, "feature_weights");
+
+    must_read(f, feature_bias, static_cast<size_t>(g_hidden_size) * sizeof(I16), "feature_bias");
+    must_read(f, output_weights, static_cast<size_t>(g_hidden_size) * 2 * sizeof(I16), "output_weights");
     must_read(f, &output_bias, sizeof(output_bias), "output_bias");
 
     U8 probe = 0;
@@ -145,11 +203,14 @@ std::string load(const std::string &path) {
     }
     std::fclose(f);
 
-    U64 h = fnv1a_hash(feature_weights, feature_weights_bytes);
-    h ^= fnv1a_hash(feature_bias, sizeof(feature_bias));
-    h ^= fnv1a_hash(output_weights, sizeof(output_weights));
+    U64 h = 0xcbf29ce484222325ULL;
+    for (int input = 0; input < g_input_size; ++input)
+        h ^= fnv1a_hash(feature_weights[input], feature_weights_row_bytes);
+    h ^= fnv1a_hash(feature_bias, static_cast<size_t>(g_hidden_size) * sizeof(I16));
+    h ^= fnv1a_hash(output_weights, static_cast<size_t>(g_hidden_size) * 2 * sizeof(I16));
     h ^= fnv1a_hash(&output_bias, sizeof(output_bias));
     h ^= fnv1a_hash(&g_king_buckets, sizeof(g_king_buckets));
+    h ^= fnv1a_hash(&g_hidden_size, sizeof(g_hidden_size));
     h ^= fnv1a_hash(&g_use_screlu, sizeof(g_use_screlu));
 
     g_net_path = path;
@@ -178,6 +239,10 @@ int active_input_size() {
     return g_input_size;
 }
 
+int active_hidden_size() {
+    return g_hidden_size;
+}
+
 bool has_king_buckets() {
     return g_king_buckets > 1;
 }
@@ -194,7 +259,7 @@ void print_info() {
               << std::dec << std::nouppercase << std::setfill(' ') << "\n"
               << "info string NNUE arch "
               << (has_king_buckets() ? "Chess768xKingBuckets" : "Chess768")
-              << " hidden=" << HIDDEN_SIZE
+              << " hidden=" << g_hidden_size
               << " king_buckets=" << g_king_buckets
               << " activation=" << (g_use_screlu ? "SCReLU" : "CReLU") << "\n"
               << "info string NNUE scales L1=" << L1_SCALE
@@ -209,7 +274,7 @@ void Accumulator::refresh(const Board &board) {
     const Square white_king_sq = king_square(board, WHITE);
     const Square black_king_sq = king_square(board, BLACK);
 
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
+    for (int i = 0; i < g_hidden_size; ++i) {
         vals[0][i] = feature_bias[i];
         vals[1][i] = feature_bias[i];
     }
@@ -223,7 +288,7 @@ void Accumulator::refresh(const Board &board) {
             Piece piece = Piece(p);
             feature_indices(piece_type_index(piece), piece_colour_index(piece), sq,
                             white_king_sq, black_king_sq, wi, bi);
-            for (int i = 0; i < HIDDEN_SIZE; ++i) {
+            for (int i = 0; i < g_hidden_size; ++i) {
                 vals[0][i] += feature_weights[wi][i];
                 vals[1][i] += feature_weights[bi][i];
             }
@@ -233,14 +298,14 @@ void Accumulator::refresh(const Board &board) {
 
 void Accumulator::apply_delta(int add_white, int add_black,
                               int sub_white, int sub_black) {
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
+    for (int i = 0; i < g_hidden_size; ++i) {
         vals[0][i] += feature_weights[add_white][i] - feature_weights[sub_white][i];
         vals[1][i] += feature_weights[add_black][i] - feature_weights[sub_black][i];
     }
 }
 
 void Accumulator::apply_deltas(const Delta *deltas, int count) {
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
+    for (int i = 0; i < g_hidden_size; ++i) {
         int dw = 0;
         int db = 0;
         for (int k = 0; k < count; ++k) {

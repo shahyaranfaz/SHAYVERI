@@ -195,9 +195,6 @@ self-generated corpus/labels were the blocker.
   the SHAYVERI/Bullet training flow.
 - Used these external corpora as the bootstrap strength source for the promoted
   v2.2.0 NNUE net.
-- Kept the external training data outside the source repository; the repo
-  contains engine code, conversion/training scripts, notes, and selected network
-  artifacts only.
 - Added GPL-3.0-or-later licensing for SHAYVERI.
 
 ## v3.0 Datagen And KB16 Self-Loop Foundation

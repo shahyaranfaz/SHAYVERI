@@ -56,8 +56,9 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
     __m256i sum_stm = _mm256_setzero_si256();
     __m256i sum_nstm = _mm256_setzero_si256();
     const bool use_screlu = uses_screlu();
+    const int hidden_size = active_hidden_size();
 
-    for (int i = 0; i < HIDDEN_SIZE; i += 8) {
+    for (int i = 0; i < hidden_size; i += 8) {
         __m128i stm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(stm_acc + i));
         __m128i stm_w = _mm_loadu_si128(reinterpret_cast<const __m128i *>(output_weights + i));
 
@@ -67,7 +68,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
 
         __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(nstm_acc + i));
         __m128i nstm_w = _mm_loadu_si128(
-            reinterpret_cast<const __m128i *>(output_weights + HIDDEN_SIZE + i));
+            reinterpret_cast<const __m128i *>(output_weights + hidden_size + i));
 
         __m256i nstm32 = use_screlu ? screlu16_to_i32(nstm) : crelu16_to_i32(nstm);
         __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
