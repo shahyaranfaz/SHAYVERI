@@ -66,6 +66,8 @@ go movetime 1000
 
 Current builds default to NNUE through `EvalFile SHAYVERI2_2_0.nnue`. The original handcrafted evaluator remains available as the classical HCE path through `UseNNUE=false`, and that pinned configuration is listed in rating tables as `SHAYVERI v1.0`.
 
+The current public NNUE line was trained using external Stockfish/RobotMoon-style position corpora; those corpora are not included in this repository.
+
 ## Handcrafted evaluation
 
 - Piece-square tables with tapered middlegame/endgame interpolation

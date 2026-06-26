@@ -6,7 +6,7 @@ import struct
 
 CHESS768_INPUT_SIZE = 768
 MAX_KING_BUCKETS = 16
-HIDDEN_SIZE = 256
+DEFAULT_HIDDEN_SIZE = 512
 NNUE_MAGIC = 0x4E4E5545
 NNUE_VERSION_CLASSIC = 2
 NNUE_VERSION_KB = 3
@@ -25,15 +25,24 @@ def main():
     parser.add_argument("input_quantised")
     parser.add_argument("output_nnue")
     parser.add_argument("--king-buckets", type=int, default=MAX_KING_BUCKETS)
+    parser.add_argument(
+        "--hidden-size",
+        type=int,
+        default=DEFAULT_HIDDEN_SIZE,
+        help="hidden width used by the Bullet trainer; defaults to 512 for v2.3 KB16x512",
+    )
     args = parser.parse_args()
 
     if args.king_buckets not in (1, 8, 16):
         raise ValueError(f"king-buckets must be 1, 8, or 16, got {args.king_buckets}")
+    if args.hidden_size <= 0 or args.hidden_size % 8 != 0:
+        raise ValueError(f"hidden-size must be a positive multiple of 8, got {args.hidden_size}")
 
     input_size = CHESS768_INPUT_SIZE * args.king_buckets
-    l0w_count = input_size * HIDDEN_SIZE
-    l0b_count = HIDDEN_SIZE
-    l1w_count = HIDDEN_SIZE * 2
+    hidden_size = args.hidden_size
+    l0w_count = input_size * hidden_size
+    l0b_count = hidden_size
+    l1w_count = hidden_size * 2
     l1b_size = 4
 
     # SavedFormat order in the SHAYVERI Bullet trainers:
@@ -95,7 +104,7 @@ def main():
     written = os.path.getsize(args.output_nnue)
     print(
         f"wrote {args.output_nnue}: input={input_size} "
-        f"hidden={HIDDEN_SIZE} king_buckets={args.king_buckets} bytes={written}"
+        f"hidden={hidden_size} king_buckets={args.king_buckets} bytes={written}"
     )
 
 

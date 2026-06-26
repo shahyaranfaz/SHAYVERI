@@ -54,11 +54,16 @@ run_datagen() {
   local prefix="$1"
   local seed="$2"
   local eval_arg=()
+  local start_file_arg=()
 
   if [[ "$EVAL_FILE" == /* || "$EVAL_FILE" == "<hce>" ]]; then
     eval_arg=(--eval-file "$EVAL_FILE")
   else
     eval_arg=(--eval-file "$EVAL_FILE")
+  fi
+
+  if [[ -n "$START_FILE" ]]; then
+    start_file_arg=(--start-file "$START_FILE" --start-file-prob "$START_FILE_PROB")
   fi
 
   (
@@ -71,6 +76,8 @@ run_datagen() {
       --nodes "$NODES" \
       --threads "$THREADS" \
       --seed "$seed" \
+      "${start_file_arg[@]}" \
+      --sample-stride "$SAMPLE_STRIDE" \
       --max-samples-per-game "$MAX_SAMPLES_PER_GAME" \
       --enable-adjudication "$ENABLE_ADJUDICATION" \
       --adjudication-cp "$ADJUDICATION_CP" \
@@ -100,10 +107,13 @@ while (( SHARDS == 0 || made < SHARDS )); do
     write_env_line positions "$SHARD_POSITIONS"
     write_env_line threads "$THREADS"
     write_env_line nodes "$NODES"
+    write_env_line sample_stride "$SAMPLE_STRIDE"
     write_env_line max_samples_per_game "$MAX_SAMPLES_PER_GAME"
     write_env_line enable_adjudication "$ENABLE_ADJUDICATION"
     write_env_line adjudication_cp "$ADJUDICATION_CP"
     write_env_line adjudication_plies "$ADJUDICATION_PLIES"
+    write_env_line start_file "$START_FILE"
+    write_env_line start_file_prob "$START_FILE_PROB"
     write_env_line seed "$seed"
     write_env_line worker "$WORKER_ID"
     write_env_line shard_prefix "$SHARD_PREFIX"

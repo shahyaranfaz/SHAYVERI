@@ -187,6 +187,19 @@ self-generated corpus/labels were the blocker.
 - Concluded failure was not tiny data volume, streaming churn, or checkpoint
   selection; the blocker was generated data distribution and/or labels.
 
+### v2.6: External Corpus Experiments
+
+- Started the external-corpus NNUE line after the self-generated v2.x corpora
+  failed to transfer enough strength.
+- Trained on public Stockfish/RobotMoon-style position corpora converted into
+  the SHAYVERI/Bullet training flow.
+- Used these external corpora as the bootstrap strength source for the promoted
+  v2.2.0 NNUE net.
+- Kept the external training data outside the source repository; the repo
+  contains engine code, conversion/training scripts, notes, and selected network
+  artifacts only.
+- Added GPL-3.0-or-later licensing for SHAYVERI.
+
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 
 Version 3.0 starts the serious self-looping NNUE line: train a KB16 network
