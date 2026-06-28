@@ -1,6 +1,7 @@
 
 SHAYVERI.exe
 SHAYVERI
+build/
 debug/perft
 debug/legality
 debug/fen_state
@@ -20,6 +21,7 @@ scripts/elo_pin/runs
 scripts/opening_book/eval_cache.json
 scripts/opening_book/table.csv
 scripts/opening_book/zobrist_keys.json
+scripts/opening_book/artifacts/
 
 # Prerequisites
 *.d

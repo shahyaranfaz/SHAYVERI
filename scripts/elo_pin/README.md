@@ -55,13 +55,13 @@ PIN_ROOT="$PWD" \
 Useful knobs
 ============
 
-- The pool is fixed: `SHAYVERI v1.0`, the current/configured SHAYVERI NNUE, plus `Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000`.
+- The pool is fixed: SHAYVERI HCE-classical, the current/configured SHAYVERI NNUE, plus `Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000`.
 - Every worker runs a full round robin over all 9 engines.
-- `SHAYVERI v1.0` is always included with `UseNNUE=false`.
-- `NET=` uses SHAYVERI's default current NNUE file.
+- HCE-classical is always included with `UseNNUE=false`.
+- `NET=` uses SHAYVERI's embedded default NNUE file.
 - `NET=SHAYVERI2_5_0.nnue` pins the NNUE slot with the current public net.
 - `NAME_ID` controls the NNUE SHAYVERI name written into PGNs/Ordo.
-- `HCE_NAME` defaults to `SHAYVERI v1.0`.
+- `HCE_NAME` defaults to `SHAYVERI HCE-classical`.
 - `NNUE_NAME` defaults to `NAME_ID`.
 - Run IDs are always `NAME_ID_TC_YYYYmmdd_HHMMSS`.
 - `TC=stc` means `10+0.1`.

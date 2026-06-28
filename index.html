@@ -307,20 +307,21 @@
       <div class="hero">
         <div>
           <h1>SHAYVERI</h1>
-          <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and a v2.5.0 NNUE evaluation path.</p>
+          <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and an embedded NNUE evaluation path.</p>
+          <p class="tagline">Current release: SHAYVERI v2.6 / NNUE SHAYVERI2_5_0.</p>
         </div>
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
-            <strong>3081.9</strong>
+            <strong>3136.5</strong>
             <span>Anchored Ordo LTC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
-            <strong>2952.4</strong>
+            <strong>3045.7</strong>
             <span>Anchored Ordo STC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
-            <strong>+388</strong>
-            <span>Approximate LTC v2.5.0 gain over v1.0</span>
+            <strong>+418</strong>
+            <span>Approximate LTC gain over HCE-classical</span>
           </div>
           <div class="metric">
             <strong>UCI</strong>
@@ -335,7 +336,7 @@
     <section id="overview">
       <div class="wrap">
         <h2>Overview</h2>
-        <p class="lead">SHAYVERI is a native chess engine written in C++. The README describes a full classical search and evaluation stack, with parameters tuned by SPSA and Texel tuning on self-play datasets. Current builds default to NNUE through <code>EvalFile SHAYVERI2_5_0.nnue</code>, while the classical handcrafted evaluator remains available through <code>UseNNUE=false</code>.</p>
+        <p class="lead">SHAYVERI is a native chess engine written in C++. The README describes a full classical search and evaluation stack, with parameters tuned by SPSA and Texel tuning on self-play datasets. Current builds embed <code>SHAYVERI2_5_0.nnue</code>, while the classical handcrafted evaluator remains available through <code>UseNNUE=false</code>.</p>
         <div class="card-grid">
           <article class="card">
             <h3>Protocol</h3>
@@ -348,6 +349,7 @@
           <article class="card">
             <h3>Book</h3>
             <p>Includes an embedded opening book built from 2600+ rated TWIC games with precomputed cached evaluations.</p>
+            <pre><code>make -C scripts/opening_book dump_keys</code></pre>
           </article>
         </div>
       </div>
@@ -361,8 +363,9 @@
           <table>
             <thead>
               <tr>
-                <th>Configuration</th>
+                <th>Engine</th>
                 <th>Evaluation</th>
+                <th>Network</th>
                 <th>Time Control</th>
                 <th>Rating</th>
                 <th>Error</th>
@@ -372,52 +375,56 @@
             </thead>
             <tbody>
               <tr>
-                <td>SHAYVERI v1.0</td>
-                <td>Classical HCE</td>
+                <td>SHAYVERI v2.6</td>
+                <td>HCE-classical</td>
+                <td>none</td>
                 <td>STC 10+0.1</td>
-                <td>2572.4</td>
-                <td>+/-19.9</td>
-                <td>-277.6</td>
-                <td>-427.6</td>
+                <td>2594.5</td>
+                <td>+/-19.8</td>
+                <td>-255.5</td>
+                <td>-405.5</td>
               </tr>
               <tr>
-                <td>SHAYVERI v1.0</td>
-                <td>Classical HCE</td>
+                <td>SHAYVERI v2.6</td>
+                <td>HCE-classical</td>
+                <td>none</td>
                 <td>LTC 90+0.5</td>
-                <td>2694.3</td>
-                <td>+/-33.6</td>
-                <td>-155.7</td>
-                <td>-305.7</td>
+                <td>2718.8</td>
+                <td>+/-33.2</td>
+                <td>-131.2</td>
+                <td>-281.2</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.5.0</td>
+                <td>SHAYVERI v2.6</td>
                 <td>NNUE</td>
+                <td>SHAYVERI2_5_0</td>
                 <td>STC 10+0.1</td>
-                <td class="good">2952.4</td>
-                <td>+/-14.7</td>
-                <td>+102.4</td>
-                <td>-47.6</td>
+                <td class="good">3045.7</td>
+                <td>+/-14.8</td>
+                <td>+195.7</td>
+                <td>+45.7</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.5.0</td>
+                <td>SHAYVERI v2.6</td>
                 <td>NNUE</td>
+                <td>SHAYVERI2_5_0</td>
                 <td>LTC 90+0.5</td>
-                <td class="good">3081.9</td>
-                <td>+/-28.4</td>
-                <td>+231.9</td>
-                <td>+81.9</td>
+                <td class="good">3136.5</td>
+                <td>+/-28.9</td>
+                <td>+286.5</td>
+                <td>+136.5</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="note">SHAYVERI v2.5.0 improved over v1.0 by about <span class="warn">+380.0 Elo at STC</span> and <span class="warn">+387.6 Elo at LTC</span> in this anchored pool. It is above SF2850 at both time controls and above SF3000 in the recorded LTC pin.</p>
+        <p class="note">SHAYVERI v2.6 / NNUE improved over HCE-classical by about <span class="warn">+451.2 Elo at STC</span> and <span class="warn">+417.7 Elo at LTC</span> in this anchored pool. It is above SF3000 at both time controls.</p>
       </div>
     </section>
 
     <section id="evaluation">
       <div class="wrap">
         <h2>Evaluation Paths</h2>
-        <p class="lead">SHAYVERI has two evaluation paths: classical handcrafted evaluation and NNUE. The Elo tables label the pinned classical configuration as v1.0. Current builds default to NNUE through <code>EvalFile SHAYVERI2_5_0.nnue</code>. The current public NNUE line was trained using external Stockfish/RobotMoon-style position corpora, which are not included in this repository.</p>
+        <p class="lead">SHAYVERI has two evaluation paths: HCE-classical and NNUE. Current builds embed <code>SHAYVERI2_5_0.nnue</code> and can still load external networks through <code>EvalFile</code>. The current public NNUE line was trained using external Stockfish/RobotMoon-style position corpora, which are not included in this repository.</p>
         <div class="split">
           <article class="card">
             <h3>Handcrafted Evaluation</h3>
@@ -431,10 +438,10 @@
           <article class="card">
             <h3>NNUE</h3>
             <ul>
-              <li>Loaded through the UCI <code>EvalFile</code> option, defaulting to <code>SHAYVERI2_5_0.nnue</code>.</li>
+              <li>Embedded default network: <code>SHAYVERI2_5_0.nnue</code>.</li>
               <li>Used by search when the network is successfully loaded.</li>
-              <li>Pinned at +380.0 Elo STC and +387.6 Elo LTC over the v1.0 classical configuration.</li>
-              <li>Tested against the same opponent binaries and tournament setup as the classical v1.0 configuration.</li>
+              <li>Pinned at +451.2 Elo STC and +417.7 Elo LTC over HCE-classical.</li>
+              <li>External network files can still be loaded through <code>EvalFile</code>.</li>
             </ul>
           </article>
         </div>
@@ -464,7 +471,7 @@
             <h3>State</h3>
             <ul>
               <li>Killer moves, gravity-based history tables, and two-ply continuation histories.</li>
-              <li>Zobrist transposition table, repetition detection, Lazy SMP, and dynamic time management.</li>
+              <li>Atomic bucketed TT, repetition detection, Lazy SMP with shared TT, and dynamic time management.</li>
             </ul>
           </article>
         </div>
@@ -480,7 +487,6 @@
             <pre><code>make
 make windows
 make macos
-make dump_keys
 make clean</code></pre>
           </article>
           <article>
@@ -503,7 +509,7 @@ go movetime 1000</code></pre>
           <div class="card"><h3>Ponder</h3><p>Enable ponder output and search support.</p></div>
           <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
           <div class="card"><h3>UseNNUE</h3><p>Enable or disable NNUE evaluation without changing the configured network path.</p></div>
-          <div class="card"><h3>EvalFile</h3><p>NNUE network path. Defaults to <code>SHAYVERI2_5_0.nnue</code>.</p></div>
+          <div class="card"><h3>EvalFile</h3><p>NNUE network path. Defaults to the embedded <code>SHAYVERI2_5_0.nnue</code>.</p></div>
           <div class="card"><h3>Move Overhead</h3><p>GUI or network delay reserve in milliseconds.</p></div>
         </div>
       </div>
@@ -513,10 +519,7 @@ go movetime 1000</code></pre>
       <div class="wrap">
         <h2>Verification</h2>
         <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, UCI smoke tests, opening-book behavior, deterministic single-thread search, and tactical mate-in-1 regression positions.</p>
-        <pre><code>cd debug
-make test
-
-cd debug
+        <pre><code>make test
 make release_test</code></pre>
       </div>
     </section>

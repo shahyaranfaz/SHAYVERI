@@ -3,6 +3,9 @@ PYTHON ?= python3
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
 
+DEFAULT_NNUE := ../SHAYVERI2_5_0.nnue
+EMBEDDED_NNUE_SRC := ../build/embedded_nnue.cpp
+
 COMMON_SRC := \
 	../src/board.cpp \
 	../src/fen.cpp \
@@ -12,6 +15,7 @@ COMMON_SRC := \
 	../src/evaluate.cpp \
 	../src/search.cpp \
 	../src/nnue.cpp \
+	$(EMBEDDED_NNUE_SRC) \
 	../src/nnue_avx2.cpp \
 	../src/nnue_update.cpp \
 	../src/zobrist.cpp \
@@ -32,6 +36,7 @@ NNUE_TEST_SRC := \
 	../src/make.cpp \
 	../src/move_gen.cpp \
 	../src/nnue.cpp \
+	$(EMBEDDED_NNUE_SRC) \
 	../src/nnue_avx2.cpp \
 	../src/nnue_update.cpp \
 	../src/zobrist.cpp \
@@ -47,6 +52,9 @@ TT_SAFETY_BIN := tt_safety
 NNUE_TEST_BIN := nnue_test
 
 all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN)
+
+$(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) ../scripts/embed_nnue.py
+	$(PYTHON) ../scripts/embed_nnue.py $(DEFAULT_NNUE) $@ --name SHAYVERI2_5_0.nnue
 
 test: perft_suite \
 	fen_state_suite \

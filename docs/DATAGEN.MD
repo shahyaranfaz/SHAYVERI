@@ -19,7 +19,7 @@ Example direct Bullet run:
   --positions 10000 \
   --output-prefix /tmp/shayveri_datagen/smoke \
   --output-format bullet-v1 \
-  --eval-file SHAYVERI2_5_0.nnue \
+  --eval-file "<embedded>" \
   --nodes 1000 \
   --seed 1
 ```
@@ -82,9 +82,10 @@ reasonable:
 - summaries written for every run
 - DONE marker written only after successful C++ datagen completion
 
-If `--eval-file` is omitted, the engine default net is used. For serious runs,
-always pass the intended seed net explicitly. Use `--eval-file "<hce>"` only
-for no-NNUE debug runs.
+If `--eval-file` is omitted, the embedded default net is used. Use
+`--eval-file "<embedded>"` for the same behavior, pass an explicit `.nnue` path
+to seed with another network, and use `--eval-file "<hce>"` only for no-NNUE
+debug runs.
 
 ## Start Positions
 

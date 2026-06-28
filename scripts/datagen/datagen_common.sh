@@ -11,7 +11,7 @@ LOG_DIR="${LOG_DIR:-$RUN_ROOT/logs}"
 
 ENGINE_DIR="${ENGINE_DIR:-$HOME/chess_arena/chess_bot}"
 ENGINE="${ENGINE:-./SHAYVERI}"
-EVAL_FILE="${EVAL_FILE:-SHAYVERI2_5_0.nnue}"
+EVAL_FILE="${EVAL_FILE:-<embedded>}"
 
 THREADS="${THREADS:-23}"
 SHARD_POSITIONS="${SHARD_POSITIONS:-${POSITIONS_PER_SHARD:-5000000}}"
@@ -62,7 +62,7 @@ require_engine() {
   else
     [[ -x "$ENGINE_DIR/$ENGINE" ]] || die "missing engine: $ENGINE_DIR/$ENGINE"
   fi
-  if [[ "$EVAL_FILE" != "<hce>" && "$EVAL_FILE" != /* ]]; then
+  if [[ "$EVAL_FILE" != "<hce>" && "$EVAL_FILE" != "<embedded>" && "$EVAL_FILE" != "<default>" && "$EVAL_FILE" != /* ]]; then
     [[ -f "$ENGINE_DIR/$EVAL_FILE" ]] || die "missing EVAL_FILE: $ENGINE_DIR/$EVAL_FILE"
   fi
 }

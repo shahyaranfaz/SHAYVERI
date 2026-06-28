@@ -56,7 +56,7 @@ run_datagen() {
   local eval_arg=()
   local start_file_arg=()
 
-  if [[ "$EVAL_FILE" == /* || "$EVAL_FILE" == "<hce>" ]]; then
+  if [[ "$EVAL_FILE" == /* || "$EVAL_FILE" == "<hce>" || "$EVAL_FILE" == "<embedded>" || "$EVAL_FILE" == "<default>" ]]; then
     eval_arg=(--eval-file "$EVAL_FILE")
   else
     eval_arg=(--eval-file "$EVAL_FILE")

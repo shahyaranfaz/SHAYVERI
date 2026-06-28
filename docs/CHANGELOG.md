@@ -1,13 +1,15 @@
 # Changelog
 
-## v1.0 Classical Baseline
+## Early Classical Baseline
 
-Version 1.0 is the final handcrafted-evaluation release before NNUE development.
+This line is the final handcrafted-evaluation baseline before NNUE development.
+Current documentation refers to the evaluation path as `HCE-classical` so it is
+not confused with engine/source versioning.
 
 ### Engine Strength
 
 - Completed the final classical tuning cycle.
-- Froze the `spsa_f3` parameter set as the strongest v1.0 line.
+- Froze the `spsa_f3` parameter set as the strongest HCE-classical line.
 - Validated the final engine through large self-play and Stockfish reference matches.
 - Repaired the final search tuning after discovering some tuned search parameters were not actually wired into search behavior.
 - Retuned search after activating the missing LMR, aspiration, and SEE-pruning parameters.
@@ -112,7 +114,7 @@ Version 1.0 is the final handcrafted-evaluation release before NNUE development.
 - Added ponder move output.
 - Improved GUI/cutechess compatibility.
 - Added Lichess-oriented support work.
-- Removed Chess960 from the v1.0 target after testing showed it needed a deeper castling/legal-move pass.
+- Removed Chess960 from the classical target after testing showed it needed a deeper castling/legal-move pass.
 
 ### Infrastructure
 
@@ -154,8 +156,8 @@ self-generated corpus/labels were the blocker.
 
 - Built the first working Chess768 NNUE bootstrap from SHAYVERI-generated data.
 - The best classic result was Chess768 / 256, Marlinflow, 1B generated
-  positions, WDL=0.1, 10k-node labels, and mixed v1.0/NNUE generation.
-- Lesson: mixed v1.0/NNUE data worked, but arrival-order chunk consumption made
+  positions, WDL=0.1, 10k-node labels, and mixed HCE-classical/NNUE generation.
+- Lesson: mixed HCE-classical/NNUE data worked, but arrival-order chunk consumption made
   checkpoint strength noisy and non-monotonic.
 
 ### v2.2: King Buckets And Bullet
@@ -172,8 +174,8 @@ self-generated corpus/labels were the blocker.
   adding more positions.
 - Designed a Chess768 / 256 recovery path around the v2.1 line with deeper
   SHAYVERI self-distillation and hard-position relabeling.
-- Added a branch matrix over NNUE/v1.0 baseline and deep-hard lanes.
-- Reinforced that v1.0/SF2850 gates need to happen early, before internal
+- Added a branch matrix over NNUE/HCE-classical baseline and deep-hard lanes.
+- Reinforced that HCE-classical/SF2850 gates need to happen early, before internal
   pool optimism wastes training time.
 
 ### v2.4: Persistent SHAYVERI Corpus
@@ -182,7 +184,7 @@ self-generated corpus/labels were the blocker.
   data plus about 130M earlier 10k-node positions.
 - Trained persistent 500M, 1B, and fullmove-8-plus filtered Board768 / 256
   views through the patched Marlinflow path.
-- Best observed v1.0 transfer from this corpus was only around score 0.25 vs v1.0,
+- Best observed HCE-classical transfer from this corpus was only around score 0.25 vs HCE-classical,
   roughly -190 Elo; the fullmove-8-plus slice was worse.
 - Concluded failure was not tiny data volume, streaming churn, or checkpoint
   selection; the blocker was generated data distribution and/or labels.
@@ -195,10 +197,30 @@ self-generated corpus/labels were the blocker.
   the SHAYVERI/Bullet training flow.
 - Promoted `SHAYVERI2_5_0.nnue`, a KB16x512 net from the March/June external
   corpus scale-up.
-- Pinned v2.5.0 at `2952.4 +/-14.7` STC and `3081.9 +/-28.4` LTC.
-- Improved over the previous v2.2.0 NNUE baseline by +14.1 Elo at STC and
+- Pinned `SHAYVERI v2.5 / NNUE SHAYVERI2_5_0` at
+  `2952.4 +/-14.7` STC and `3081.9 +/-28.4` LTC.
+- Improved over the previous promoted NNUE baseline by +14.1 Elo at STC and
   +35.7 Elo at LTC in the same anchor pool.
 - Added GPL-3.0-or-later licensing for SHAYVERI.
+
+## v2.6 Search Overhaul
+
+- Reworked the shared transposition table into an atomic 4-entry bucketed table
+  suitable for timed multi-threaded search.
+- Fixed Lazy SMP so timed games share TT information across workers, while
+  fixed-depth, fixed-node, and datagen searches remain deterministic.
+- Added persistent history across searches and cleared it on new-game or eval
+  changes.
+- Tightened null-move pruning, LMR, and time allocation.
+- Updated the bench signature and test harness after the search changes.
+- Initial same-net A/B checks with `SHAYVERI2_5_0.nnue` showed the new search
+  clearly ahead of the old binary: `199-52-149` at 1 thread and `102-3-45` at
+  4 threads.
+- Embedded `SHAYVERI2_5_0.nnue` as the default release network while preserving
+  explicit external `EvalFile` loading.
+- Pinned `SHAYVERI v2.6 / NNUE SHAYVERI2_5_0` at `3045.7 +/-14.8` STC and
+  `3136.5 +/-28.9` LTC.
+- Standardized release docs on `HCE-classical` for the handcrafted evaluator.
 
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 
@@ -233,7 +255,7 @@ the v2.x self-generated corpora.
 
 - Moved the main NNUE target to KB16.
 - Uses stronger datagen output as the basis for the next promoted net.
-- Keeps v1.0 as a flavor/debugging reference without letting it dominate
+- Keeps HCE-classical as a flavor/debugging reference without letting it dominate
   training labels.
 - Uses fixed external anchors for promotion instead of trusting internal-family
   pools alone.
