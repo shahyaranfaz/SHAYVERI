@@ -59,7 +59,7 @@ Useful knobs
 - Every worker runs a full round robin over all 9 engines.
 - `SHAYVERI v1.0` is always included with `UseNNUE=false`.
 - `NET=` uses SHAYVERI's default current NNUE file.
-- `NET=SHAYVERI2_2_0.nnue` pins the NNUE slot with that file.
+- `NET=SHAYVERI2_5_0.nnue` pins the NNUE slot with the current public net.
 - `NAME_ID` controls the NNUE SHAYVERI name written into PGNs/Ordo.
 - `HCE_NAME` defaults to `SHAYVERI v1.0`.
 - `NNUE_NAME` defaults to `NAME_ID`.

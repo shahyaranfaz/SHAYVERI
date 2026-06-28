@@ -2,18 +2,18 @@
 
 **Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence**
 
-SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and a v2.2.0 NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
+SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and a v2.5.0 NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
 
 ## Elo results
 
 | Configuration   | Evaluation    | Time control | Rating |   Error | Gap to SF2850 | Gap to SF3000 |
 |-----------------|---------------|--------------|-------:|--------:|--------------:|--------------:|
-| SHAYVERI v1.0   | Classical HCE | STC 10+0.1   | 2578.6 | +/-19.9 |        -271.4 |        -421.4 |
-| SHAYVERI v1.0   | Classical HCE | LTC 90+0.5   | 2699.7 | +/-33.2 |        -150.3 |        -300.3 |
-| SHAYVERI v2.2.0 | NNUE          | STC 10+0.1   | 2938.3 | +/-14.9 |         +88.3 |         -61.7 |
-| SHAYVERI v2.2.0 | NNUE          | LTC 90+0.5   | 3046.2 | +/-28.6 |        +196.2 |         +46.2 |
+| SHAYVERI v1.0   | Classical HCE | STC 10+0.1   | 2572.4 | +/-19.9 |        -277.6 |        -427.6 |
+| SHAYVERI v1.0   | Classical HCE | LTC 90+0.5   | 2694.3 | +/-33.6 |        -155.7 |        -305.7 |
+| SHAYVERI v2.5.0 | NNUE          | STC 10+0.1   | 2952.4 | +/-14.7 |        +102.4 |         -47.6 |
+| SHAYVERI v2.5.0 | NNUE          | LTC 90+0.5   | 3081.9 | +/-28.4 |        +231.9 |         +81.9 |
 
-SHAYVERI v2.2.0 improved over v1.0 by about +359.7 Elo at STC and +346.5 Elo at LTC in this anchored pool.
+SHAYVERI v2.5.0 improved over v1.0 by about +380.0 Elo at STC and +387.6 Elo at LTC in this anchored pool.
 
 ## How to build
 
@@ -64,7 +64,7 @@ go movetime 1000
 
 ## Evaluation paths
 
-Current builds default to NNUE through `EvalFile SHAYVERI2_2_0.nnue`. The original handcrafted evaluator remains available as the classical HCE path through `UseNNUE=false`, and that pinned configuration is listed in rating tables as `SHAYVERI v1.0`.
+Current builds default to NNUE through `EvalFile SHAYVERI2_5_0.nnue`. The original handcrafted evaluator remains available as the classical HCE path through `UseNNUE=false`, and that pinned configuration is listed in rating tables as `SHAYVERI v1.0`.
 
 The current public NNUE line was trained using external Stockfish/RobotMoon-style position corpora; those corpora are not included in this repository.
 
@@ -91,7 +91,7 @@ Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluat
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
 - `UseNNUE`: enable or disable NNUE evaluation without changing the configured network path.
-- `EvalFile`: NNUE network path. Defaults to `SHAYVERI2_2_0.nnue`.
+- `EvalFile`: NNUE network path. Defaults to `SHAYVERI2_5_0.nnue`.
 - `Move Overhead`: GUI/network delay reserve, in milliseconds.
 
 ## Verification

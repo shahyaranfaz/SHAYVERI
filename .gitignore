@@ -16,6 +16,7 @@ nnue/extra_nets
 nnue/README.md
 
 scripts/elo_pin/results
+scripts/elo_pin/runs
 scripts/opening_book/eval_cache.json
 scripts/opening_book/table.csv
 scripts/opening_book/zobrist_keys.json
@@ -83,6 +84,7 @@ cmake-build-debug
 *.pgn
 
 # NNUE datagen/training artifacts
+iter*.nnue
 *.plain
 *.bin
 raw/

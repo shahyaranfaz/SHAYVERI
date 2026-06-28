@@ -19,7 +19,7 @@ Example direct Bullet run:
   --positions 10000 \
   --output-prefix /tmp/shayveri_datagen/smoke \
   --output-format bullet-v1 \
-  --eval-file SHAYVERI2_2_0.nnue \
+  --eval-file SHAYVERI2_5_0.nnue \
   --nodes 1000 \
   --seed 1
 ```

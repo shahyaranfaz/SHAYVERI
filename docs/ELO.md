@@ -7,19 +7,25 @@ Ordo. They are pool-relative and anchored to fixed-strength `SF2850=2850` and
 Both SHAYVERI evaluation modes are included in the same pool:
 
 - `SHAYVERI v1.0`: classical handcrafted evaluation.
-- `SHAYVERI v2.2.0`: current NNUE, default file `SHAYVERI2_2_0.nnue`.
+- `SHAYVERI v2.5.0`: current NNUE, default file `SHAYVERI2_5_0.nnue`.
+
+Previous NNUE baseline: `SHAYVERI v2.2.0` was `2938.3 +/-14.9` at STC and
+`3046.2 +/-28.6` at LTC.
 
 ## Current Public Ratings
 
 | Configuration   | Evaluation    | Time Control | Rating | Error   | Gap to SF2850 | Gap to SF3000 |
 |-----------------|---------------|--------------|--------|---------|---------------|---------------|
-| SHAYVERI v1.0   | Classical HCE | STC 10+0.1   | 2578.6 | +/-19.9 | -271.4        | -421.4        |
-| SHAYVERI v1.0   | Classical HCE | LTC 90+0.5   | 2699.7 | +/-33.2 | -150.3        | -300.3        |
-| SHAYVERI v2.2.0 | NNUE          | STC 10+0.1   | 2938.3 | +/-14.9 | +88.3         | -61.7         |
-| SHAYVERI v2.2.0 | NNUE          | LTC 90+0.5   | 3046.2 | +/-28.6 | +196.2        | +46.2         |
+| SHAYVERI v1.0   | Classical HCE | STC 10+0.1   | 2572.4 | +/-19.9 | -277.6        | -427.6        |
+| SHAYVERI v1.0   | Classical HCE | LTC 90+0.5   | 2694.3 | +/-33.6 | -155.7        | -305.7        |
+| SHAYVERI v2.5.0 | NNUE          | STC 10+0.1   | 2952.4 | +/-14.7 | +102.4        | -47.6         |
+| SHAYVERI v2.5.0 | NNUE          | LTC 90+0.5   | 3081.9 | +/-28.4 | +231.9        | +81.9         |
 
-On this shared scale, v2.2.0 is about **+359.7 Elo over v1.0 at STC** and
-**+346.5 Elo over v1.0 at LTC**.
+On this shared scale, v2.5.0 is about **+380.0 Elo over v1.0 at STC** and
+**+387.6 Elo over v1.0 at LTC**.
+
+Compared with the previous v2.2.0 NNUE baseline, v2.5.0 is **+14.1 Elo at STC**
+and **+35.7 Elo at LTC**.
 
 ## STC Pool
 
@@ -31,32 +37,29 @@ Per pairing: `800`
 
 | # | Player          | Rating | Error  | Points | Played | Score | CFS |
 |---|-----------------|--------|--------|--------|--------|-------|-----|
-| 1 | PlentyChess7    | 3689.3 | 22.1   | 5470.0 | 6400   | 85%   | 100 |
-| 2 | Alexandria9     | 3665.9 | 21.9   | 5377.5 | 6400   | 84%   | 100 |
-| 3 | Berserk13       | 3610.5 | 20.5   | 5148.0 | 6400   | 80%   | 100 |
-| 4 | Weiss2          | 3295.5 | 16.8   | 3633.0 | 6400   | 57%   | 100 |
-| 5 | Ethereal14      | 3244.0 | 16.3   | 3369.5 | 6400   | 53%   | 100 |
-| 6 | SF3000          | 3000.0 | anchor | 2190.5 | 6400   | 34%   | 100 |
-| 7 | SHAYVERI v2.2.0 | 2938.3 | 14.9   | 1831.0 | 6400   | 29%   | 100 |
-| 8 | SF2850          | 2850.0 | anchor | 1357.0 | 6400   | 21%   | 100 |
-| 9 | SHAYVERI v1.0   | 2578.6 | 19.9   | 423.5  | 6400   | 7%    | --- |
+| 1 | PlentyChess7    | 3661.5 | 21.4   | 5458.5 | 6400   | 85%   | 100 |
+| 2 | Alexandria9     | 3641.2 | 21.2   | 5376.5 | 6400   | 84%   | 100 |
+| 3 | Berserk13       | 3584.5 | 19.8   | 5136.0 | 6400   | 80%   | 100 |
+| 4 | Weiss2          | 3271.3 | 16.3   | 3585.0 | 6400   | 56%   | 100 |
+| 5 | Ethereal14      | 3223.1 | 15.9   | 3330.0 | 6400   | 52%   | 100 |
+| 6 | SF3000          | 3000.0 | anchor | 2224.0 | 6400   | 35%   | 100 |
+| 7 | SHAYVERI v2.5.0 | 2952.4 | 14.7   | 1922.0 | 6400   | 30%   | 100 |
+| 8 | SF2850          | 2850.0 | anchor | 1365.0 | 6400   | 21%   | 100 |
+| 9 | SHAYVERI v1.0   | 2572.4 | 19.9   | 403.0  | 6400   | 6%    | --- |
 
-White advantage: `167.14 +/- 2.92`
+White advantage: `160.28 +/- 2.84`
 
-Draw rate: `37.45% +/- 0.54`
-
-Game split: `14789` White wins, `4400` draws, `9611` Black wins, 
-`0` discarded.
+Draw rate: `37.05% +/- 0.53`
 
 ### STC Head-To-Head
 
 | Pairing                          | Games | W-D-L       | Score | Elo Diff |
 |----------------------------------|-------|-------------|-------|----------|
-| SHAYVERI v2.2.0 vs SHAYVERI v1.0 | 800   | 662-73-65   | 87.3% | +359.7   |
-| SHAYVERI v2.2.0 vs SF2850        | 800   | 427-139-234 | 62.1% | +88.3    |
-| SHAYVERI v2.2.0 vs SF3000        | 800   | 219-220-361 | 41.1% | -61.7    |
-| SHAYVERI v1.0 vs SF2850          | 800   | 149-85-566  | 23.9% | -271.4   |
-| SHAYVERI v1.0 vs SF3000          | 800   | 49-112-639  | 13.1% | -421.4   |
+| SHAYVERI v2.5.0 vs SHAYVERI v1.0 | 800   | 688-64-48   | 90.0% | +380.0   |
+| SHAYVERI v2.5.0 vs SF2850        | 800   | 452-145-203 | 65.6% | +102.4   |
+| SHAYVERI v2.5.0 vs SF3000        | 800   | 234-197-369 | 41.6% | -47.6    |
+| SHAYVERI v1.0 vs SF2850          | 800   | 148-111-541 | 25.4% | -277.6   |
+| SHAYVERI v1.0 vs SF3000          | 800   | 56-92-652   | 12.8% | -427.6   |
 
 ## LTC Pool
 
@@ -68,29 +71,26 @@ Per pairing: `200`
 
 | #  | Player          | Rating | Error  | Points | Played | Score | CFS |
 |----|-----------------|--------|--------|--------|--------|-------|-----|
-| 1  | PlentyChess7    | 3675.0 | 40.5   | 1342.0 | 1600   | 84%   | 97  |
-| 2  | Alexandria9     | 3649.4 | 39.4   | 1314.5 | 1600   | 82%   | 100 |
-| 3  | Berserk13       | 3600.9 | 38.4   | 1260.0 | 1600   | 79%   | 100 |
-| 4  | Weiss2          | 3363.3 | 32.3   | 957.5  | 1600   | 60%   | 100 |
-| 5  | Ethereal14      | 3297.7 | 31.5   | 868.5  | 1600   | 54%   | 100 |
-| 6  | SHAYVERI v2.2.0 | 3046.2 | 28.6   | 533.0  | 1600   | 33%   | 100 |
-| 7  | SF3000          | 3000.0 | anchor | 520.0  | 1600   | 32%   | 100 |
-| 8  | SF2850          | 2850.0 | anchor | 248.5  | 1600   | 16%   | 100 |
-| 9  | SHAYVERI v1.0   | 2699.7 | 33.2   | 156.0  | 1600   | 10%   | --- |
+| 1  | PlentyChess7    | 3696.8 | 41.2   | 1348.0 | 1600   | 84%   | 100 |
+| 2  | Alexandria9     | 3655.7 | 39.7   | 1305.0 | 1600   | 82%   | 99  |
+| 3  | Berserk13       | 3625.1 | 38.9   | 1271.5 | 1600   | 79%   | 100 |
+| 4  | Weiss2          | 3364.3 | 32.3   | 945.5  | 1600   | 59%   | 100 |
+| 5  | Ethereal14      | 3289.4 | 31.3   | 845.0  | 1600   | 53%   | 100 |
+| 6  | SHAYVERI v2.5.0 | 3081.9 | 28.4   | 571.0  | 1600   | 36%   | 100 |
+| 7  | SF3000          | 3000.0 | anchor | 503.5  | 1600   | 31%   | 100 |
+| 8  | SF2850          | 2850.0 | anchor | 258.0  | 1600   | 16%   | 100 |
+| 9  | SHAYVERI v1.0   | 2694.3 | 33.6   | 152.5  | 1600   | 10%   | --- |
 
-White advantage: `181.74 +/- 5.46`
+White advantage: `191.22 +/- 5.52`
 
-Draw rate: `44.42% +/- 1.13`
-
-Game split: `3692` White wins, `1346` draws, `2162` Black wins, 
-`0` discarded.
+Draw rate: `45.82% +/- 1.15`
 
 ### LTC Head-To-Head
 
 | Pairing                          | Games | W-D-L     | Score | Elo Diff |
 |----------------------------------|-------|-----------|-------|----------|
-| SHAYVERI v2.2.0 vs SHAYVERI v1.0 | 200   | 170-21-9  | 90.2% | +346.6   |
-| SHAYVERI v2.2.0 vs SF2850        | 200   | 135-26-39 | 74.0% | +196.2   |
-| SHAYVERI v2.2.0 vs SF3000        | 200   | 71-59-70  | 50.2% | +46.2    |
-| SHAYVERI v1.0 vs SF2850          | 200   | 69-36-95  | 43.5% | -150.3   |
-| SHAYVERI v1.0 vs SF3000          | 200   | 18-36-146 | 18.0% | -300.3   |
+| SHAYVERI v2.5.0 vs SHAYVERI v1.0 | 200   | 171-17-12 | 89.8% | +387.6   |
+| SHAYVERI v2.5.0 vs SF2850        | 200   | 143-27-30 | 78.2% | +231.9   |
+| SHAYVERI v2.5.0 vs SF3000        | 200   | 84-50-66  | 54.5% | +81.9    |
+| SHAYVERI v1.0 vs SF2850          | 200   | 58-37-105 | 38.2% | -155.7   |
+| SHAYVERI v1.0 vs SF3000          | 200   | 22-46-132 | 22.5% | -305.7   |

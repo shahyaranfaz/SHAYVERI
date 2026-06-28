@@ -41,7 +41,7 @@ static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
-static std::string g_eval_file = "SHAYVERI2_2_0.nnue";
+static std::string g_eval_file = "SHAYVERI2_5_0.nnue";
 
 // Ponder state.
 static Move g_ponder_move =         MOVE_NONE;  // move we are pondering on
