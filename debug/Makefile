@@ -1,9 +1,9 @@
 CXX := g++
-PYTHON ?= python3
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
 
 DEFAULT_NNUE := ../SHAYVERI2_5_0.nnue
+EMBED_NNUE := ../build/embed_nnue
 EMBEDDED_NNUE_SRC := ../build/embedded_nnue.cpp
 
 COMMON_SRC := \
@@ -53,8 +53,12 @@ NNUE_TEST_BIN := nnue_test
 
 all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN)
 
-$(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) ../scripts/embed_nnue.py
-	$(PYTHON) ../scripts/embed_nnue.py $(DEFAULT_NNUE) $@ --name SHAYVERI2_5_0.nnue
+$(EMBED_NNUE): ../src/tools/embed_nnue.cpp
+	mkdir -p ../build
+	$(CXX) -std=c++20 -O2 -Wall -Wextra -Wpedantic -o $@ ../src/tools/embed_nnue.cpp
+
+$(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) $(EMBED_NNUE)
+	$(EMBED_NNUE) $(DEFAULT_NNUE) $@ SHAYVERI2_5_0.nnue
 
 test: perft_suite \
 	fen_state_suite \
