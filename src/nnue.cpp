@@ -2,11 +2,14 @@
 #include "attacks.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <vector>
 
 namespace SHAYVERI {
 
@@ -40,27 +43,41 @@ U64 fnv1a_hash(const void *data, size_t bytes) {
     return h;
 }
 
-void must_read(FILE *f, void *dst, size_t n, const char *what) {
-    if (std::fread(dst, 1, n, f) != n) {
-        std::fprintf(stderr, "[nnue] failed to read %s (%zu bytes)\n", what, n);
+void must_read(const U8 *data, size_t size, size_t &offset, void *dst, size_t n,
+               const char *what, const std::string &label) {
+    if (offset > size || n > size - offset) {
+        std::fprintf(stderr, "[nnue] failed to read %s (%zu bytes) in \"%s\"\n",
+                     what, n, label.c_str());
         std::exit(EXIT_FAILURE);
     }
+    std::memcpy(dst, data + offset, n);
+    offset += n;
 }
 
-long file_size(FILE *f) {
-    const long cur = std::ftell(f);
-    if (cur < 0 || std::fseek(f, 0, SEEK_END) != 0) {
-        std::fprintf(stderr, "[nnue] failed to measure network file\n");
+std::vector<U8> read_file_bytes(const std::string &path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        std::fprintf(stderr,
+                     "[nnue] cannot open network file \"%s\"\n"
+                     "[nnue] use an explicit EvalFile path, or leave EvalFile as the embedded default\n",
+                     path.c_str());
         std::exit(EXIT_FAILURE);
     }
 
-    const long end = std::ftell(f);
-    if (end < 0 || std::fseek(f, cur, SEEK_SET) != 0) {
-        std::fprintf(stderr, "[nnue] failed to restore network file position\n");
+    in.seekg(0, std::ios::end);
+    const std::streamoff end = in.tellg();
+    if (end <= 0) {
+        std::fprintf(stderr, "[nnue] empty or unreadable network file \"%s\"\n", path.c_str());
         std::exit(EXIT_FAILURE);
     }
+    in.seekg(0, std::ios::beg);
 
-    return end;
+    std::vector<U8> bytes(static_cast<size_t>(end));
+    if (!in.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(end))) {
+        std::fprintf(stderr, "[nnue] failed to read network file \"%s\"\n", path.c_str());
+        std::exit(EXIT_FAILURE);
+    }
+    return bytes;
 }
 
 int piece_type_index(Piece p) {
@@ -100,31 +117,19 @@ I32 squared_crelu_scaled(I16 x) {
     return score;
 }
 
-} // namespace
-
-std::string load(const std::string &path) {
-    FILE *f = std::fopen(path.c_str(), "rb");
-    if (!f) {
-        std::fprintf(stderr,
-                     "[nnue] cannot open network file \"%s\"\n"
-                     "[nnue] set the EvalFile UCI option to a valid .nnue path\n",
-                     path.c_str());
-        std::exit(EXIT_FAILURE);
-    }
-
+std::string load_from_bytes(const U8 *data, size_t size, const std::string &label) {
+    size_t offset = 0;
     U32 magic = 0;
     U32 version = 0;
-    must_read(f, &magic, sizeof(magic), "magic");
-    must_read(f, &version, sizeof(version), "version");
+    must_read(data, size, offset, &magic, sizeof(magic), "magic", label);
+    must_read(data, size, offset, &version, sizeof(version), "version", label);
 
     if (magic != NNUE_MAGIC) {
-        std::fprintf(stderr, "[nnue] bad magic 0x%08X in \"%s\"\n", magic, path.c_str());
-        std::fclose(f);
+        std::fprintf(stderr, "[nnue] bad magic 0x%08X in \"%s\"\n", magic, label.c_str());
         std::exit(EXIT_FAILURE);
     }
     if (version != NNUE_VERSION_CLASSIC && version != NNUE_VERSION_KB) {
-        std::fprintf(stderr, "[nnue] unsupported version %u in \"%s\"\n", version, path.c_str());
-        std::fclose(f);
+        std::fprintf(stderr, "[nnue] unsupported version %u in \"%s\"\n", version, label.c_str());
         std::exit(EXIT_FAILURE);
     }
 
@@ -134,11 +139,10 @@ std::string load(const std::string &path) {
         g_use_screlu = false;
     } else {
         U32 buckets = 0;
-        must_read(f, &buckets, sizeof(buckets), "king_bucket_count");
+        must_read(data, size, offset, &buckets, sizeof(buckets), "king_bucket_count", label);
         if (buckets != 8 && buckets != 16) {
             std::fprintf(stderr, "[nnue] invalid king bucket count %u in \"%s\"\n",
-                         buckets, path.c_str());
-            std::fclose(f);
+                         buckets, label.c_str());
             std::exit(EXIT_FAILURE);
         }
         g_king_buckets = static_cast<int>(buckets);
@@ -146,38 +150,35 @@ std::string load(const std::string &path) {
         g_use_screlu = true;
     }
 
-    const long end = file_size(f);
-    const long cur = std::ftell(f);
-    if (cur < 0 || end < cur) {
-        std::fprintf(stderr, "[nnue] failed to measure payload in \"%s\"\n", path.c_str());
-        std::fclose(f);
+    if (offset > size) {
+        std::fprintf(stderr, "[nnue] failed to measure payload in \"%s\"\n", label.c_str());
         std::exit(EXIT_FAILURE);
     }
 
-    const long payload_bytes = end - cur;
+    const size_t payload_bytes = size - offset;
     const long hidden_stride_bytes = static_cast<long>(g_input_size * sizeof(I16) + sizeof(I16) + 2 * sizeof(I16));
     const long fixed_bytes = sizeof(output_bias);
-    if (payload_bytes <= fixed_bytes || (payload_bytes - fixed_bytes) % hidden_stride_bytes != 0) {
+    if (payload_bytes <= static_cast<size_t>(fixed_bytes) ||
+        (payload_bytes - static_cast<size_t>(fixed_bytes)) % static_cast<size_t>(hidden_stride_bytes) != 0) {
         std::fprintf(stderr,
-                     "[nnue] cannot infer hidden size from payload %ld bytes in \"%s\"\n",
-                     payload_bytes, path.c_str());
-        std::fclose(f);
+                     "[nnue] cannot infer hidden size from payload %zu bytes in \"%s\"\n",
+                     payload_bytes, label.c_str());
         std::exit(EXIT_FAILURE);
     }
 
-    const long inferred_hidden = (payload_bytes - fixed_bytes) / hidden_stride_bytes;
+    const long inferred_hidden =
+        static_cast<long>((payload_bytes - static_cast<size_t>(fixed_bytes)) /
+                          static_cast<size_t>(hidden_stride_bytes));
     if (inferred_hidden != 256 && inferred_hidden != 512) {
         std::fprintf(stderr,
                      "[nnue] unsupported hidden size %ld in \"%s\"; supported sizes are 256 and 512\n",
-                     inferred_hidden, path.c_str());
-        std::fclose(f);
+                     inferred_hidden, label.c_str());
         std::exit(EXIT_FAILURE);
     }
     if (inferred_hidden > MAX_HIDDEN_SIZE) {
         std::fprintf(stderr,
                      "[nnue] hidden size %ld exceeds compiled max %d in \"%s\"\n",
-                     inferred_hidden, MAX_HIDDEN_SIZE, path.c_str());
-        std::fclose(f);
+                     inferred_hidden, MAX_HIDDEN_SIZE, label.c_str());
         std::exit(EXIT_FAILURE);
     }
     g_hidden_size = static_cast<int>(inferred_hidden);
@@ -189,19 +190,19 @@ std::string load(const std::string &path) {
     const size_t feature_weights_row_bytes =
         static_cast<size_t>(g_hidden_size) * sizeof(I16);
     for (int input = 0; input < g_input_size; ++input)
-        must_read(f, feature_weights[input], feature_weights_row_bytes, "feature_weights");
+        must_read(data, size, offset, feature_weights[input], feature_weights_row_bytes,
+                  "feature_weights", label);
 
-    must_read(f, feature_bias, static_cast<size_t>(g_hidden_size) * sizeof(I16), "feature_bias");
-    must_read(f, output_weights, static_cast<size_t>(g_hidden_size) * 2 * sizeof(I16), "output_weights");
-    must_read(f, &output_bias, sizeof(output_bias), "output_bias");
+    must_read(data, size, offset, feature_bias,
+              static_cast<size_t>(g_hidden_size) * sizeof(I16), "feature_bias", label);
+    must_read(data, size, offset, output_weights,
+              static_cast<size_t>(g_hidden_size) * 2 * sizeof(I16), "output_weights", label);
+    must_read(data, size, offset, &output_bias, sizeof(output_bias), "output_bias", label);
 
-    U8 probe = 0;
-    if (std::fread(&probe, 1, 1, f) != 0) {
-        std::fprintf(stderr, "[nnue] \"%s\" is larger than expected\n", path.c_str());
-        std::fclose(f);
+    if (offset != size) {
+        std::fprintf(stderr, "[nnue] \"%s\" is larger than expected\n", label.c_str());
         std::exit(EXIT_FAILURE);
     }
-    std::fclose(f);
 
     U64 h = 0xcbf29ce484222325ULL;
     for (int input = 0; input < g_input_size; ++input)
@@ -213,10 +214,22 @@ std::string load(const std::string &path) {
     h ^= fnv1a_hash(&g_hidden_size, sizeof(g_hidden_size));
     h ^= fnv1a_hash(&g_use_screlu, sizeof(g_use_screlu));
 
-    g_net_path = path;
+    g_net_path = label;
     g_net_hash = h;
     g_loaded = true;
-    return path;
+    return label;
+}
+
+} // namespace
+
+std::string load(const std::string &path) {
+    std::vector<U8> bytes = read_file_bytes(path);
+    return load_from_bytes(bytes.data(), bytes.size(), path);
+}
+
+std::string load_embedded_default() {
+    return load_from_bytes(EMBEDDED_DEFAULT_NET, EMBEDDED_DEFAULT_NET_SIZE,
+                           std::string("<embedded:") + EMBEDDED_DEFAULT_NET_NAME + ">");
 }
 
 bool is_loaded() {

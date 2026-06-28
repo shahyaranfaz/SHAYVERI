@@ -3,6 +3,7 @@ MAKEFLAGS += -j$(shell nproc)
 CXX := g++
 CXX_WIN := x86_64-w64-mingw32-g++
 CXX_MACOS := clang++
+PYTHON ?= python3
 
 LTO := -flto=auto
 LTO_MACOS := -flto
@@ -76,6 +77,11 @@ SRC := \
 	src/tt.cpp \
 	src/zobrist.cpp
 
+DEFAULT_NNUE := SHAYVERI2_5_0.nnue
+EMBEDDED_NNUE_SRC := build/embedded_nnue.cpp
+
+SRC += $(EMBEDDED_NNUE_SRC)
+
 HEADERS := $(wildcard include/*.h)
 
 BIN := SHAYVERI
@@ -88,6 +94,9 @@ windows: $(BIN_WIN)
 
 macos: $(BIN_MACOS)
 
+$(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) scripts/embed_nnue.py
+	$(PYTHON) scripts/embed_nnue.py $(DEFAULT_NNUE) $@ --name $(DEFAULT_NNUE)
+
 $(BIN): $(SRC) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS)
 
@@ -99,6 +108,7 @@ $(BIN_MACOS): $(SRC) $(HEADERS)
 
 clean:
 	rm -f $(BIN) $(BIN_WIN) $(BIN_MACOS)
+	rm -rf build
 	$(MAKE) -C debug clean
 
 test: $(BIN)

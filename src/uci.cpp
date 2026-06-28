@@ -41,7 +41,7 @@ static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
 static int  g_min_think_ms  = 0;
-static std::string g_eval_file = "SHAYVERI2_5_0.nnue";
+static std::string g_eval_file = "<embedded>";
 
 // Ponder state.
 static Move g_ponder_move =         MOVE_NONE;  // move we are pondering on
@@ -186,6 +186,26 @@ static bool is_hce_eval_file(const std::string &path) {
     return path == "<hce>";
 }
 
+static bool is_embedded_eval_file(const std::string &path) {
+    return path.empty() || path == "<embedded>" || path == "<default>";
+}
+
+static void load_eval_file_or_default(const std::string &path) {
+    if (is_hce_eval_file(path)) {
+        NNUE::set_enabled(false);
+        return;
+    }
+
+    if (is_embedded_eval_file(path)) {
+        NNUE::load_embedded_default();
+        NNUE::set_enabled(true);
+        return;
+    }
+
+    NNUE::load(path);
+    NNUE::set_enabled(true);
+}
+
 static void print_datagen_usage(const char *argv0) {
     std::cerr
         << "usage: " << argv0 << " datagen"
@@ -194,7 +214,7 @@ static void print_datagen_usage(const char *argv0) {
         << " [--games <n>]"
         << " --output-prefix <path>"
         << " [--output-format shayveri-plain-v1|bullet-v1]"
-        << " [--eval-file <path>]"
+        << " [--eval-file <path|<embedded>|<hce>>]"
         << " [--nodes <n>]"
         << " [--opening-min-plies <n>]"
         << " [--opening-max-plies <n>]"
@@ -366,9 +386,7 @@ int main(int argc, char **argv) {
     Zobrist::init();
     init_attacks();
     TT.resize(64);
-
-    if (file_exists(g_eval_file))
-        NNUE::load(g_eval_file);
+    load_eval_file_or_default(g_eval_file);
 
     Board b;
     set_startpos(b);
@@ -391,16 +409,12 @@ int main(int argc, char **argv) {
                 options.eval_file = g_eval_file;
             else
                 g_eval_file = options.eval_file;
-            if (is_hce_eval_file(g_eval_file)) {
-                NNUE::set_enabled(false);
-            } else if (!g_eval_file.empty()) {
-                if (!file_exists(g_eval_file)) {
-                    std::cerr << "missing eval file: " << g_eval_file << '\n';
-                    return 1;
-                }
-                NNUE::load(g_eval_file);
-                NNUE::set_enabled(true);
+            if (!is_hce_eval_file(g_eval_file) && !is_embedded_eval_file(g_eval_file) &&
+                !file_exists(g_eval_file)) {
+                std::cerr << "missing eval file: " << g_eval_file << '\n';
+                return 1;
             }
+            load_eval_file_or_default(g_eval_file);
             return generate_data(options);
         }
         print_datagen_usage(argv[0]);
@@ -479,17 +493,11 @@ int main(int argc, char **argv) {
             }
             else if (opt_name == NNUE::UCI_OPTION_NAME) {
                 g_eval_file = value;
-                if (is_hce_eval_file(g_eval_file)) {
-                    NNUE::set_enabled(false);
-                    TT.clear();
-                    clear_search_histories();
-                } else if (!g_eval_file.empty()) {
-                    NNUE::load(g_eval_file);
-                    NNUE::set_enabled(true);
-                    TT.clear();
-                    clear_search_histories();
+                load_eval_file_or_default(g_eval_file);
+                TT.clear();
+                clear_search_histories();
+                if (NNUE::is_enabled())
                     NNUE::print_info();
-                }
             }
             else if (opt_name == "Minimum Thinking Time") {
                 int min_think_ms = 0;

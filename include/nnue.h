@@ -4,6 +4,7 @@
 #include "board.h"
 #include "types.h"
 
+#include <cstddef>
 #include <string>
 
 namespace SHAYVERI {
@@ -22,6 +23,10 @@ extern I16 feature_weights[MAX_INPUT_SIZE][MAX_HIDDEN_SIZE];
 extern I16 feature_bias[MAX_HIDDEN_SIZE];
 extern I16 output_weights[MAX_HIDDEN_SIZE * 2];
 extern I32 output_bias;
+
+extern const char EMBEDDED_DEFAULT_NET_NAME[];
+extern const U8 EMBEDDED_DEFAULT_NET[];
+extern const std::size_t EMBEDDED_DEFAULT_NET_SIZE;
 
 struct Accumulator {
     struct Delta {
@@ -94,6 +99,7 @@ inline void feature_indices(int piece_type, int piece_color, int sq,
 }
 
 std::string load(const std::string &path);
+std::string load_embedded_default();
 bool is_loaded();
 bool is_enabled();
 void set_enabled(bool enabled);
