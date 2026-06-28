@@ -4,10 +4,10 @@
 #include "move.h"
 #include "types.h"
 
-#include <vector>
-
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
 namespace SHAYVERI {
 
@@ -28,8 +28,14 @@ struct TTEntry {
 
 static constexpr int TT_BUCKET_SIZE = 4;
 
+struct TTSlot {
+    std::atomic<U64> key{0};
+    std::atomic<U64> data{0};
+    std::atomic<U64> meta{0};
+};
+
 struct TTBucket {
-    TTEntry entries[TT_BUCKET_SIZE];
+    TTSlot entries[TT_BUCKET_SIZE];
 };
 
 class TranspositionTable {
@@ -39,15 +45,15 @@ public:
     void new_search();
 
     const TTEntry *probe(U64 key) const;
-    TTEntry       *probe(U64 key);
 
     void store(U64 key, int depth, int score, TTFlag flag, Move best);
     void store_eval(U64 key, int eval);
 
 private:
-    std::vector<TTBucket> table;
-    SIZE_T               mask = 0;
-    U8                   generation = 0;
+    std::unique_ptr<TTBucket[]> table;
+    SIZE_T                     bucket_count = 0;
+    SIZE_T                     mask = 0;
+    std::atomic<U8>            generation{0};
 };
 
 extern TranspositionTable TT;

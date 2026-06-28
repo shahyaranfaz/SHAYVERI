@@ -17,6 +17,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <mutex>
 
 #include <cctype>
 #include <climits>
@@ -101,6 +102,14 @@ struct SearchHeuristics {
         entry += bonus - entry * abs_bonus / Tune::history_max;
     }
 };
+
+static SearchHeuristics persistent_history;
+static std::mutex persistent_history_mutex;
+
+void clear_search_histories() {
+    std::lock_guard<std::mutex> lock(persistent_history_mutex);
+    persistent_history = SearchHeuristics{};
+}
 
 static inline bool search_stopped() {
     return local_node_limited_search ? local_stop : g_stop.load(std::memory_order_relaxed);
@@ -201,8 +210,12 @@ Move uci_to_move(Board& b, const std::string& uci) {
     return MOVE_NONE;
 }
 
-static inline bool is_endgame(const Board &b) {
-    return !(b.bit_boards[WQ] | b.bit_boards[BQ]);
+static inline bool has_non_pawn_material(const Board &b, Colour c) {
+    const int off = (c == WHITE) ? 0 : 6;
+    return (b.bit_boards[Piece(off + WN)] |
+            b.bit_boards[Piece(off + WB)] |
+            b.bit_boards[Piece(off + WR)] |
+            b.bit_boards[Piece(off + WQ)]) != 0;
 }
 
 void make_null_move(Board &b, Undo &u) {
@@ -302,6 +315,27 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
     }
 
     return history_score / 100;
+}
+
+static inline int quiet_history_score(const Board &b, Move m, int ply, const SearchHeuristics &H, StackInfo* ss) {
+    int pt  = static_cast<int>(get_type(b.get_piece(move_from(m))));
+    int to  = static_cast<int>(move_to(m)) & 63;
+    int stm = static_cast<int>(b.side_to_move) & 1;
+
+    int score = H.history[stm][static_cast<int>(move_from(m))][to] * Tune::main_history_weight;
+
+    if (ply >= 1 && ss[-1].move != MOVE_NONE) {
+        int prev_pt = static_cast<int>(get_type(ss[-1].piece));
+        int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
+        score += H.counter_move_history[prev_pt][prev_to][pt][to] * Tune::cmh_weight;
+    }
+    if (ply >= 2 && ss[-2].move != MOVE_NONE) {
+        int prev2_pt = static_cast<int>(get_type(ss[-2].piece));
+        int prev2_to = static_cast<int>(move_to(ss[-2].move)) & 63;
+        score += H.follow_up_history[prev2_pt][prev2_to][pt][to] * Tune::fmh_weight;
+    }
+
+    return score / 100;
 }
 
 // Step by 2 (same side to move), limit search to last half_move plies.
@@ -417,7 +451,8 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
 }
 
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
-                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss) {
+                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss,
+                   bool allow_null = true) {
     if (search_stopped()) return 0;
     count_node();
 
@@ -485,8 +520,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     }
 
     // Null Move Pruning
-    if (!pv_node && !in_check && depth >= 3 && static_eval >= beta && !is_endgame(b) && ss->excluded_move == MOVE_NONE) {
-        const int R = 3 + depth / 4;
+    if (allow_null && !pv_node && !in_check && depth >= 3 && static_eval >= beta + 18 * depth
+        && has_non_pawn_material(b, b.side_to_move) && ss->excluded_move == MOVE_NONE) {
+        const int R = std::clamp(3 + depth / 4 + (static_eval - beta) / 200, 3, 6);
         Undo u;
         (ss + 1)->acc = ss->acc;
         make_null_move(b, u);
@@ -496,7 +532,19 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         unmake_null_move(b, u);
 
         if (search_stopped()) return 0;
-        if (score >= beta) return score;
+        if (score >= beta) {
+            if (depth >= 8) {
+                int verify = negamax(b, depth - R, beta - 1, beta, ply, H, rep_stack, rep_len, false, ss, false);
+                if (search_stopped()) return 0;
+                if (verify < beta) {
+                    // Zugzwang-ish high-depth fail highs must survive verification.
+                } else {
+                    return score;
+                }
+            } else {
+                return score;
+            }
+        }
     }
 
     // Singular Extensions
@@ -591,6 +639,11 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
             if (depth >= 3 && is_quiet && m != tt_move && m != H.killers[ply][0]) {
                 reduction = LMR_TABLE[std::min(depth, 63)][std::min(legal_count, 255)];
                 if (!pv_node) reduction++;
+                if (pv_node) reduction--;
+                if (legal_count > 6 && depth >= 6) reduction++;
+                int hist = quiet_history_score(b, m, ply, H, ss);
+                if (hist > 800) reduction--;
+                else if (hist < -800) reduction++;
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
@@ -675,8 +728,18 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                     const std::vector<Move> &search_moves, IterCallback on_iter,
                     bool silent, int root_bias) {
 
-    auto H_ptr = std::make_unique<SearchHeuristics>();
-    SearchHeuristics &H = *H_ptr;
+    SearchHeuristics H;
+    if (!silent && root_bias == 0) {
+        std::lock_guard<std::mutex> lock(persistent_history_mutex);
+        H = persistent_history;
+    }
+
+    auto save_history = [&]() {
+        if (!silent && root_bias == 0) {
+            std::lock_guard<std::mutex> lock(persistent_history_mutex);
+            persistent_history = H;
+        }
+    };
 
     // Stack setup to handle history states (allows up to ss[-2] safely at root)
     StackInfo st[MAX_PLY + 5]{};
@@ -783,6 +846,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             if (legal_root_count == 0) {
                 Square ksq = king_square(b, b.side_to_move);
                 bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
+                save_history();
                 return {MOVE_NONE, MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, 0};
             }
 
@@ -851,6 +915,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         if (search_stopped()) break;
     }
 
+    save_history();
     return {final_best_move, MOVE_NONE, final_best_score, completed_depth, searched_nodes()};
 }
 

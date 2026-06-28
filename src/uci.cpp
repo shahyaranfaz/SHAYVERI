@@ -306,11 +306,11 @@ static SearchResult run_fixed_search(Board b, const std::vector<U64> &rep,
                                      const std::vector<Move> &searchmoves,
                                      int root_depth, int num_threads,
                                      int hash_mb, U64 fixed_nodes) {
+    (void)num_threads;
+    (void)hash_mb;
+
     SearchResult seed_result;
     if (fixed_nodes > 0) {
-        TranspositionTable seed_tt;
-        seed_tt.resize(static_cast<SIZE_T>(hash_mb));
-        active_tt = &seed_tt;
         g_stop = false;
         node_count = 0;
         node_limit = 0;
@@ -319,34 +319,11 @@ static SearchResult run_fixed_search(Board b, const std::vector<U64> &rep,
             rep.data(), static_cast<int>(rep.size()),
             searchmoves,
             nullptr, true);
-        active_tt = &TT;
     }
 
     node_count = 0;
     node_limit = fixed_nodes;
     g_stop     = false;
-
-    std::vector<std::thread> helpers;
-    helpers.reserve(std::max(0, num_threads - 1));
-
-    for (int t = 1; t < num_threads; ++t) {
-        helpers.emplace_back([b, rep, searchmoves, root_depth, hash_mb, t]() mutable {
-            TranspositionTable local_tt;
-            local_tt.resize(static_cast<SIZE_T>(hash_mb));
-            active_tt = &local_tt;
-            std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
-            int helper_depth = std::max(1, root_depth - (t % 4));
-            search(b, helper_depth,
-                   rep.data(), static_cast<int>(rep.size()),
-                   searchmoves, nullptr, true, t);
-            active_tt = &TT;
-        });
-    }
-
-    TranspositionTable local_tt;
-    local_tt.resize(static_cast<SIZE_T>(hash_mb));
-    active_tt = &local_tt;
-    local_tt.new_search();
 
     SearchResult result = search(
         b, root_depth,
@@ -356,9 +333,6 @@ static SearchResult run_fixed_search(Board b, const std::vector<U64> &rep,
 
     active_tt = &TT;
     g_stop    = true;
-
-    for (auto &t : helpers)
-        if (t.joinable()) t.join();
 
     node_limit = 0;
     if (result.best_move == MOVE_NONE && seed_result.best_move != MOVE_NONE)
@@ -485,8 +459,10 @@ int main(int argc, char **argv) {
 
             if      (opt_name == "Hash")
                 resize_hash_option(value);
-            else if (opt_name == "Clear Hash")
+            else if (opt_name == "Clear Hash") {
                 TT.clear();
+                clear_search_histories();
+            }
             else if (opt_name == "Threads") {
                 int threads = 0;
                 if (parse_spin(value, 1, 512, threads))
@@ -499,16 +475,19 @@ int main(int argc, char **argv) {
             else if (opt_name == "UseNNUE") {
                 NNUE::set_enabled(parse_bool(value));
                 TT.clear();
+                clear_search_histories();
             }
             else if (opt_name == NNUE::UCI_OPTION_NAME) {
                 g_eval_file = value;
                 if (is_hce_eval_file(g_eval_file)) {
                     NNUE::set_enabled(false);
                     TT.clear();
+                    clear_search_histories();
                 } else if (!g_eval_file.empty()) {
                     NNUE::load(g_eval_file);
                     NNUE::set_enabled(true);
                     TT.clear();
+                    clear_search_histories();
                     NNUE::print_info();
                 }
             }
@@ -539,6 +518,7 @@ int main(int argc, char **argv) {
             hash_history.push_back(b.hash);
             move_history.clear();
             TT.clear();
+            clear_search_histories();
             g_ponder_move = MOVE_NONE;
             g_pondering.store(false);
         }
@@ -698,16 +678,15 @@ int main(int argc, char **argv) {
                 continue;
             }
 
-            // Lazy SMP helper threads.
+            // Lazy SMP helper threads share the global atomic TT. Their final
+            // root result is discarded; their contribution is the hash they
+            // populate for the main thread.
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
-                    std::thread([b_copy, rep, t, searchmoves, root_depth, hash_mb]() mutable {
-                        TranspositionTable local_tt;
-                        local_tt.resize(static_cast<SIZE_T>(hash_mb));
-                        active_tt = &local_tt;
+                    std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
+                        active_tt = &TT;
                         std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
-                        int helper_depth = std::max(1, root_depth - (t % 4));
-                        search(b_copy, helper_depth,
+                        search(b_copy, root_depth,
                                rep.data(), static_cast<int>(rep.size()),
                                searchmoves, nullptr, true, t);
                         active_tt = &TT;
@@ -718,11 +697,8 @@ int main(int argc, char **argv) {
             // Main search thread.
             smp_threads.insert(
                 smp_threads.begin(),
-                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth, hash_mb]() mutable {
-                    TranspositionTable local_tt;
-                    local_tt.resize(static_cast<SIZE_T>(hash_mb));
-                    active_tt = &local_tt;
-                    local_tt.new_search();
+                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth]() mutable {
+                    active_tt = &TT;
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
 

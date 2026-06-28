@@ -41,6 +41,7 @@ SearchResult search_nodes(Board &b, U64 max_nodes,
                           int root_bias = 0);
 
 int qsearch_score(Board &b);
+void clear_search_histories();
 
 } // namespace SHAYVERI
 

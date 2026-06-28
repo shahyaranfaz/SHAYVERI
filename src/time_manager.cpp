@@ -33,15 +33,18 @@ void TimeManager::init(const TimeControl &tc) {
         return;
     }
 
-    int moves_to_go = (tc.moves_to_go > 0) ? std::clamp(tc.moves_to_go, 1, 80) : 20;
+    int moves_to_go = (tc.moves_to_go > 0)
+        ? std::clamp(tc.moves_to_go, 1, 80)
+        : (my_inc > 0 ? 24 : 32);
 
-    // Base: spend one time-control slice plus half increment.
-    I64 base    = my_time / moves_to_go + my_inc / 2;
-    I64 ceiling = static_cast<I64>(my_time * 0.80) - tc.move_overhead;
+    // Base: spend one time-control slice plus useful increment, while keeping
+    // enough bank for sudden-death controls.
+    I64 base    = my_time / moves_to_go + (my_inc * 3) / 4;
+    I64 ceiling = static_cast<I64>(my_time * 0.82) - tc.move_overhead;
     if (ceiling < 1) ceiling = 1;
 
     soft_ms_ = std::min(base,       ceiling);
-    hard_ms_ = std::min(base * 3,   ceiling);
+    hard_ms_ = std::min(base * 4,   ceiling);
 
     if (soft_ms_ < 5)  soft_ms_ = 5;
     if (hard_ms_ < 10) hard_ms_ = 10;
@@ -64,6 +67,7 @@ bool TimeManager::hard_expired() const {
 bool TimeManager::on_iter(int depth, Move best_move, int score) {
     const I64 elapsed = elapsed_ms();
 
+    const bool best_changed = score_inited_ && best_move != prev_best_;
     if (best_move == prev_best_) {
         ++stable_iters_;
     } else {
@@ -80,6 +84,7 @@ bool TimeManager::on_iter(int depth, Move best_move, int score) {
     double scale = 1.0;
     if (stable_iters_ >= 4) scale *= 0.80;
     if (stable_iters_ >= 8) scale *= 0.80;
+    if (best_changed && depth >= 6) scale *= 1.35;
     if (depth >= 6) {
         if (score_drop >= 30) scale *= 1.50;
         if (score_drop >= 60) scale *= 1.50;
