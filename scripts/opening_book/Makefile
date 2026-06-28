@@ -29,6 +29,10 @@ INCLUDES := -I../../include
 LDFLAGS := -lpthread $(LTO)
 
 DUMP_KEYS_BIN := dump_keys
+ARTIFACTS_DIR := artifacts
+ZOBRIST_KEYS := $(ARTIFACTS_DIR)/zobrist_keys.json
+TABLE_CSV := $(ARTIFACTS_DIR)/table.csv
+BOOK_HEADER := ../../include/opening_book.h
 
 DUMP_KEYS_SRC := \
 	dump_zobrist_keys.cpp \
@@ -44,12 +48,37 @@ DUMP_KEYS_SRC := \
 	../../src/see.cpp \
 	../../src/time_manager.cpp
 
+all: book
+
+run_all: book
+
+book: $(BOOK_HEADER)
+
+artifacts:
+	mkdir -p $(ARTIFACTS_DIR)
+
+fetch:
+	bash fetch_twic.sh
+
+table: $(TABLE_CSV)
+
+keys: $(ZOBRIST_KEYS)
+
 dump_keys: $(DUMP_KEYS_BIN)
 
 $(DUMP_KEYS_BIN): $(DUMP_KEYS_SRC) ../../include/*.h
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(DUMP_KEYS_SRC) $(LDFLAGS)
 
+$(ZOBRIST_KEYS): $(DUMP_KEYS_BIN) | artifacts
+	./$(DUMP_KEYS_BIN) $(ZOBRIST_KEYS)
+
+$(TABLE_CSV): build_table.py fetch_twic.sh | artifacts
+	python3 build_table.py
+
+$(BOOK_HEADER): build_header.py $(TABLE_CSV) $(ZOBRIST_KEYS) | artifacts
+	python3 build_header.py
+
 clean:
 	rm -f $(DUMP_KEYS_BIN)
 
-.PHONY: dump_keys clean
+.PHONY: all run_all book artifacts fetch table keys dump_keys clean
