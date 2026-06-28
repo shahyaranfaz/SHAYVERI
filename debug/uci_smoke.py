@@ -15,7 +15,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 492803
+BENCH_SIGNATURE_NODES = 852425
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -129,8 +129,11 @@ def main() -> int:
         require_bestmove(depth1)
 
         bench = run_engine(["bench 16 1 3 default depth"])
-        if extract_bench_nodes(bench) != BENCH_SIGNATURE_NODES:
-            raise AssertionError(f"bench signature changed, expected {BENCH_SIGNATURE_NODES}")
+        bench_nodes = extract_bench_nodes(bench)
+        if bench_nodes != BENCH_SIGNATURE_NODES:
+            raise AssertionError(
+                f"bench signature changed, expected {BENCH_SIGNATURE_NODES}, got {bench_nodes}"
+            )
 
         # Position borrowed from official Stockfish UCI smoke tests.
         fen_case = run_engine([

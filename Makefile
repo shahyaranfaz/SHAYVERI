@@ -98,21 +98,13 @@ $(BIN_MACOS): $(SRC) $(HEADERS)
 	$(CXX_MACOS) $(CXXFLAGS_MACOS) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS_MACOS)
 
 clean:
-	rm -f $(BIN) $(BIN_WIN) $(BIN_MACOS) dump_keys
+	rm -f $(BIN) $(BIN_WIN) $(BIN_MACOS)
+	$(MAKE) -C debug clean
 
-dump_keys: \
-	scripts/opening_book/dump_zobrist_keys.cpp \
-	src/board.cpp \
-	src/fen.cpp \
-	src/attacks.cpp \
-	src/make.cpp \
-	src/move_gen.cpp \
-	src/evaluate.cpp \
-	src/search.cpp \
-	src/zobrist.cpp \
-	src/tt.cpp \
-	src/see.cpp \
-	src/time_manager.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS)
+test: $(BIN)
+	$(MAKE) -C debug test
 
-.PHONY: all windows macos clean
+release_test: $(BIN)
+	$(MAKE) -C debug release_test
+
+.PHONY: all windows macos clean test release_test
