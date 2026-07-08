@@ -776,7 +776,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                     const std::vector<Move> &search_moves, IterCallback on_iter,
                     bool silent, int root_bias) {
 
-    SearchHeuristics H;
+    auto H_storage = std::make_unique<SearchHeuristics>();
+    SearchHeuristics& H = *H_storage;
     if (!silent && root_bias == 0) {
         std::lock_guard<std::mutex> lock(persistent_history_mutex);
         H = persistent_history;
@@ -790,8 +791,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     };
 
     // Stack setup to handle history states (allows up to ss[-2] safely at root)
-    StackInfo st[MAX_PLY + 5]{};
-    StackInfo* ss = st + 2;
+    auto st = std::make_unique<StackInfo[]>(MAX_PLY + 5);
+    StackInfo* ss = st.get() + 2;
     ss->acc.refresh(b);
 
     Move final_best_move  = MOVE_NONE;
@@ -925,16 +926,29 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         std::string pv_line;
         Board b_pv = b;
         Move pv_move = final_best_move;
-        for (int i = 0; i < depth && pv_move != MOVE_NONE; ++i) {
-            Undo u_pv;
-            if (make_move(b_pv, pv_move, u_pv)) {
-                if (!pv_line.empty()) pv_line += " ";
-                pv_line += move_to_uci(pv_move);
+        U64 pv_rep_stack[MAX_PLY * 2];
+        int pv_rep_len = std::min(rep_len, MAX_PLY * 2);
+        for (int i = 0; i < pv_rep_len; ++i) pv_rep_stack[i] = rep_stack[i];
 
-                if (const TTEntry* e = tt().probe(b_pv.hash)) {
-                    pv_move = e->best;
-                } else break;
-            } else break;
+        for (int i = 0; i < depth && pv_move != MOVE_NONE; ++i) {
+            if (b_pv.half_move >= 100) break;
+            if (pv_rep_len > 1 && is_repetition(b_pv.hash, pv_rep_stack, pv_rep_len - 1, b_pv.half_move))
+                break;
+
+            Undo u_pv;
+            if (!make_move(b_pv, pv_move, u_pv)) break;
+
+            if (!pv_line.empty()) pv_line += " ";
+            pv_line += move_to_uci(pv_move);
+
+            if (pv_rep_len < MAX_PLY * 2) pv_rep_stack[pv_rep_len++] = b_pv.hash;
+            else {
+                std::memmove(pv_rep_stack, pv_rep_stack + 1, sizeof(U64) * (MAX_PLY * 2 - 1));
+                pv_rep_stack[MAX_PLY * 2 - 1] = b_pv.hash;
+            }
+
+            if (const TTEntry* e = tt().probe(b_pv.hash)) pv_move = e->best;
+            else break;
         }
 
         std::string score_str;
