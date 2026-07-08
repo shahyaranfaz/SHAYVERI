@@ -26,36 +26,49 @@ static constexpr int INF        = 1000000;
 static constexpr int MATE_SCORE =  900000;
 
 // Aspiration window.
-static constexpr int ASP_DELTA = 36;
+inline int ASP_DELTA = 36;
 
 // Singular extensions
-static constexpr int se_min_depth       =  9;
-static constexpr int se_depth_margin    =  2;
-static constexpr int se_margin          = 58;
-static constexpr int se_reduction_denom =  4;
+inline int se_min_depth       =  9;
+inline int se_depth_margin    =  2;
+inline int se_margin          = 58;
+inline int se_reduction_denom =  4;
 
 // History gravity / bonus
-static constexpr int history_max           = 16384;
-static constexpr int history_bonus_mult    =   468;
-static constexpr int history_bonus_sub     =   165;
-static constexpr int history_bonus_limit   =  3090;
+inline int history_max           = 16384;
+inline int history_bonus_mult    =   468;
+inline int history_bonus_sub     =   165;
+inline int history_bonus_limit   =  3090;
 
 // History blending weights, divided by 100 before accumulation.
-static constexpr int main_history_weight = 85;
-static constexpr int cmh_weight          = 75;
-static constexpr int fmh_weight          = 30;
+inline int main_history_weight = 85;
+inline int cmh_weight          = 75;
+inline int fmh_weight          = 30;
 
 // Pruning margins
-static constexpr int rfp_margin_mult    =   60;
-static constexpr int fp_base            =  220;
-static constexpr int fp_mult            =  693;
-static constexpr int lmp_base           =    3;
-static constexpr int lmp_mult           =    1;
-static constexpr int see_pruning_margin = -252;
+inline int rfp_margin_mult    =   60;
+inline int fp_base            =  220;
+inline int fp_mult            =  693;
+inline int lmp_base           =    3;
+inline int lmp_mult           =    1;
+inline int see_pruning_margin = -252;
+inline int qs_delta_margin    =  150;
+
+// Null-move pruning.
+inline int nmp_margin_mult    =   18;
+inline int nmp_eval_divisor   =  200;
+inline int nmp_base_reduction =    3;
+inline int nmp_depth_divisor  =    4;
+
+// Static eval correction history.
+inline int corrhist_scale       = 256;
+inline int corrhist_bonus_mult  =  32;
+inline int corrhist_bonus_limit = 768;
+inline int corrhist_max         = 8192;
 
 // LMR reduction formula.
-static constexpr double lmr_base  = 1.18093;
-static constexpr double lmr_scale = 1.82857;
+inline double lmr_base  = 1.18093;
+inline double lmr_scale = 1.82857;
 
 // ===== PIECE VALUES =====
 
@@ -356,30 +369,38 @@ struct TuningOption {
 };
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
-/*
     // Core search
-    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    80,  "35"}},
-    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.17017"}}, // DOUBLE ignores min/max
-    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.77385"}}, // DOUBLE ignores min/max
-    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    30,   120,  "62"}},
-    {"FP_Base",             {&fp_base,                TuningOption::INT,   80,   350,  "215"}},
-    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   300,   1000,  "672"}},
+    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    80,  "36"}},
+    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.18093"}}, // DOUBLE ignores min/max
+    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.82857"}}, // DOUBLE ignores min/max
+    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    30,   120,  "60"}},
+    {"FP_Base",             {&fp_base,                TuningOption::INT,   80,   350,  "220"}},
+    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   300,   1000,  "693"}},
     {"LMP_Base",            {&lmp_base,               TuningOption::INT,     1,     8,   "3"}},
-    {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     3,   "1"}},   // Skipped pass 2
-    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -600,  -40, "-259"}},
+    {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     3,   "1"}},
+    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -600,  -40, "-252"}},
+    {"QS_Delta_Margin",     {&qs_delta_margin,        TuningOption::INT,    50,   350, "150"}},
+    {"NMP_Margin_Mult",     {&nmp_margin_mult,        TuningOption::INT,     0,    60,  "18"}},
+    {"NMP_Eval_Divisor",    {&nmp_eval_divisor,       TuningOption::INT,    80,   500, "200"}},
+    {"NMP_Base_Reduction",  {&nmp_base_reduction,     TuningOption::INT,     2,     5,   "3"}},
+    {"NMP_Depth_Divisor",   {&nmp_depth_divisor,      TuningOption::INT,     2,     8,   "4"}},
     {"SE_Min_Depth",        {&se_min_depth,           TuningOption::INT,     1,    16,   "9"}},
     {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     8,   "2"}},
-    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "56"}},
+    {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "58"}},
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     2,     6,   "4"}},
+    {"CorrHist_Scale",      {&corrhist_scale,         TuningOption::INT,    64,   512, "256"}},
+    {"CorrHist_Bonus_Mult", {&corrhist_bonus_mult,    TuningOption::INT,     4,   128,  "32"}},
+    {"CorrHist_Bonus_Limit",{&corrhist_bonus_limit,   TuningOption::INT,   128,  4096, "768"}},
+    {"CorrHist_Max",        {&corrhist_max,           TuningOption::INT,  2048, 32768, "8192"}},
 
     // History
-    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "460"}},
-    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "170"}},
-    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "3063"}},
+    {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "468"}},
+    {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "165"}},
+    {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "3090"}},
     {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "85"}},
-    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "74"}},
-    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "35"}},
-
+    {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "75"}},
+    {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "30"}},
+/*
     // Eval , misc
     {"Tempo_Bonus_MG",      {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
     {"Tempo_Bonus_EG",      {&TEMPO_BONUS_EG,         TuningOption::INT,     4,    48,   "22"}},
@@ -484,13 +505,10 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT,   4,   42,  "18"}},
     {"Pin_Bonus_MG",              {&PIN_BONUS_MG,                 TuningOption::INT,  10,   65,  "36"}},
     {"Pin_Bonus_EG",              {&PIN_BONUS_EG,                 TuningOption::INT,   5,   45,  "18"}},
-    {"Pin_Bonus",                 {&PIN_BONUS_MG,                 TuningOption::INT,  10,   65,  "36"}},
-    {"Overloaded_Defender_Bonus_MG", {&OVERLOADED_DEFENDER_BONUS_MG, TuningOption::INT, 0, 30, "4"}}, // Skipped pass 2
-    {"Overloaded_Defender_Bonus_EG", {&OVERLOADED_DEFENDER_BONUS_EG, TuningOption::INT, 0, 25, "2"}}, // Skipped pass 2
-    {"Overloaded_Defender_Bonus", {&OVERLOADED_DEFENDER_BONUS_MG, TuningOption::INT, 0, 30, "4"}}, // Legacy MG alias
+    {"Overloaded_Defender_Bonus_MG", {&OVERLOADED_DEFENDER_BONUS_MG, TuningOption::INT, 0, 30, "4"}},
+    {"Overloaded_Defender_Bonus_EG", {&OVERLOADED_DEFENDER_BONUS_EG, TuningOption::INT, 0, 25, "2"}},
     {"Unrec_Pressure_Bonus_MG",   {&UNRECIPROCATED_PRESSURE_BONUS_MG,TuningOption::INT,0,   18,   "5"}},
     {"Unrec_Pressure_Bonus_EG",   {&UNRECIPROCATED_PRESSURE_BONUS_EG,TuningOption::INT,0,   18,   "2"}},
-    {"Unrec_Pressure_Bonus",      {&UNRECIPROCATED_PRESSURE_BONUS_MG,TuningOption::INT,0,   18,   "5"}},
     {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,     TuningOption::INT,  15,  130,  "66"}},
 
     // Threats
@@ -513,7 +531,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Threat_Rook_EG",        {&THREAT_BY_ROOK_EG,    TuningOption::INT,   8,  100,  "48"}},
     // Hanging
     {"Hanging_Penalty_MG",    {&HANGING_BASE_PENALTY_MG, TuningOption::INT,  15,  110,  "54"}},
-    {"Hanging_Penalty_EG",    {&HANGING_BASE_PENALTY_EG, TuningOption::INT,   0,   40,   "6"}}, // Skipped pass 2
+    {"Hanging_Penalty_EG",    {&HANGING_BASE_PENALTY_EG, TuningOption::INT,   0,   40,   "6"}},
     {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT,   4,   90,  "21"}},
 
     // Outposts

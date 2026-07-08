@@ -37,23 +37,13 @@ thread_local bool local_stop = false;
 thread_local U64 local_node_count = 0;
 thread_local U64 local_node_limit = 0;
 
-// Precomputed LMR table.
-static int LMR_TABLE[64][256];
-
-struct InitLMR {
-    InitLMR() {
-        for (int d = 0; d < 64; ++d) {
-            for (int moves = 0; moves < 256; ++moves) {
-                if (d < 2 || moves < 2) LMR_TABLE[d][moves] = 0;
-                else {
-                    double d_d = static_cast<double>(d), moves_d = static_cast<double>(moves);
-                    LMR_TABLE[d][moves] = static_cast<int>(
-                    Tune::lmr_base + std::log(d_d) * std::log(moves_d) / Tune::lmr_scale);
-                }
-            }
-        }
-    }
-} init_lmr;
+static inline int lmr_reduction_base(int depth, int moves) {
+    if (depth < 2 || moves < 2) return 0;
+    const double d = static_cast<double>(depth);
+    const double m = static_cast<double>(moves);
+    const double scale = std::max(0.01, Tune::lmr_scale);
+    return static_cast<int>(Tune::lmr_base + std::log(d) * std::log(m) / scale);
+}
 
 struct ScoredMove {
     Move m;
@@ -69,6 +59,8 @@ struct StackInfo {
 };
 
 struct SearchHeuristics {
+    static constexpr int CORRECTION_HISTORY_SIZE = 16384;
+
     Move killers[MAX_PLY][2];
     Move counter_moves[7][64];
     int history[2][64][64]; // [side_to_move][from][to]
@@ -80,6 +72,9 @@ struct SearchHeuristics {
     // Capture history, indexed by [attacker_pt][to_sq][captured_pt].
     int capture_history[7][64][7];
 
+    // Static eval correction history, indexed by side and pawn-structure key.
+    int correction_history[2][CORRECTION_HISTORY_SIZE];
+
     SearchHeuristics() {
         std::memset(killers, 0, sizeof(killers));
         std::memset(counter_moves, 0, sizeof(counter_moves));
@@ -87,6 +82,7 @@ struct SearchHeuristics {
         std::memset(counter_move_history, 0, sizeof(counter_move_history));
         std::memset(follow_up_history, 0, sizeof(follow_up_history));
         std::memset(capture_history, 0, sizeof(capture_history));
+        std::memset(correction_history, 0, sizeof(correction_history));
     }
 
     inline void store_killer(int ply, Move m) {
@@ -105,6 +101,44 @@ struct SearchHeuristics {
 
 static SearchHeuristics persistent_history;
 static std::mutex persistent_history_mutex;
+
+static inline int correction_history_index(const Board& b) {
+    const U64 wp = b.bit_boards[WP];
+    const U64 bp = b.bit_boards[BP];
+    const U64 bp_rot = (bp << 32) | (bp >> 32);
+    U64 key = wp * 0x9E3779B97F4A7C15ULL;
+    key ^= bp_rot * 0xBF58476D1CE4E5B9ULL;
+    return static_cast<int>(key & (SearchHeuristics::CORRECTION_HISTORY_SIZE - 1));
+}
+
+static inline int corrected_static_eval(const Board& b, int raw_eval, const SearchHeuristics& H) {
+    const int stm = static_cast<int>(b.side_to_move) & 1;
+    const int entry = H.correction_history[stm][correction_history_index(b)];
+    return raw_eval + entry / std::max(1, Tune::corrhist_scale);
+}
+
+static inline void update_correction_history(const Board& b, SearchHeuristics& H,
+                                             int raw_eval, int score, int depth, int bound) {
+    if (std::abs(score) >= MATE_SCORE - MAX_PLY) return;
+
+    const bool useful =
+        bound == TT_EXACT ||
+        (bound == TT_LOWER && score > raw_eval) ||
+        (bound == TT_UPPER && score < raw_eval);
+    if (!useful) return;
+
+    const int stm = static_cast<int>(b.side_to_move) & 1;
+    int& entry = H.correction_history[stm][correction_history_index(b)];
+    const int max_entry = std::max(1, Tune::corrhist_max);
+    const int diff = std::clamp(score - raw_eval, -max_entry, max_entry);
+    const int depth_weight = std::min(depth, 16);
+    const int bonus_limit = std::max(1, Tune::corrhist_bonus_limit);
+    const int bonus = std::clamp(diff * Tune::corrhist_bonus_mult * depth_weight / 16,
+                                 -bonus_limit, bonus_limit);
+    int abs_bonus = bonus < 0 ? -bonus : bonus;
+    entry += bonus - entry * abs_bonus / max_entry;
+    entry = std::clamp(entry, -max_entry, max_entry);
+}
 
 void clear_search_histories() {
     std::lock_guard<std::mutex> lock(persistent_history_mutex);
@@ -427,7 +461,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
             int victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_move(m) ? PTYPE_VALUES[PAWN] : 0);
             if (move_promo(m) != NONE_PTYPE) victim_val += PTYPE_VALUES[move_promo(m)];
 
-            if (stand_pat + victim_val + 150 < alpha)
+            if (stand_pat + victim_val + Tune::qs_delta_margin < alpha)
                 continue;
         }
 
@@ -503,14 +537,18 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
     if (in_check && ply < MAX_PLY - 1) depth++;
 
+    int raw_static_eval = 0;
     int static_eval = 0;
+    bool have_static_eval = false;
     if (!in_check) {
         if (tt_has_eval) {
-            static_eval = tt_eval;
+            raw_static_eval = tt_eval;
         } else {
-            static_eval = evaluate_position(b, ss);
-            tt().store_eval(key, static_eval);
+            raw_static_eval = evaluate_position(b, ss);
+            tt().store_eval(key, raw_static_eval);
         }
+        static_eval = corrected_static_eval(b, raw_static_eval, H);
+        have_static_eval = true;
     }
 
     // Reverse Futility Pruning
@@ -520,9 +558,13 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     }
 
     // Null Move Pruning
-    if (allow_null && !pv_node && !in_check && depth >= 3 && static_eval >= beta + 18 * depth
+    if (allow_null && !pv_node && !in_check && depth >= 3
+        && static_eval >= beta + Tune::nmp_margin_mult * depth
         && has_non_pawn_material(b, b.side_to_move) && ss->excluded_move == MOVE_NONE) {
-        const int R = std::clamp(3 + depth / 4 + (static_eval - beta) / 200, 3, 6);
+        const int eval_divisor = std::max(1, Tune::nmp_eval_divisor);
+        const int depth_divisor = std::max(1, Tune::nmp_depth_divisor);
+        const int R = std::clamp(Tune::nmp_base_reduction + depth / depth_divisor +
+                                 (static_eval - beta) / eval_divisor, 3, 6);
         Undo u;
         (ss + 1)->acc = ss->acc;
         make_null_move(b, u);
@@ -637,7 +679,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         } else {
             int reduction = 0;
             if (depth >= 3 && is_quiet && m != tt_move && m != H.killers[ply][0]) {
-                reduction = LMR_TABLE[std::min(depth, 63)][std::min(legal_count, 255)];
+                reduction = lmr_reduction_base(depth, legal_count);
                 if (!pv_node) reduction++;
                 if (pv_node) reduction--;
                 if (legal_count > 6 && depth >= 6) reduction++;
@@ -658,6 +700,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (search_stopped()) return 0;
 
         if (score >= beta) {
+            if (have_static_eval && !in_check && ss->excluded_move == MOVE_NONE)
+                update_correction_history(b, H, raw_static_eval, score, depth, TT_LOWER);
             if (ss->excluded_move == MOVE_NONE) {
                 int tt_s = (score > MATE_SCORE - MAX_PLY) ? score + ply : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
                 tt().store(key, depth, tt_s, TT_LOWER, m);
@@ -717,6 +761,10 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     if (legal_count == 0) return in_check ? -MATE_SCORE + ply : 0;
 
     if (ss->excluded_move == MOVE_NONE) {
+        if (have_static_eval && !in_check) {
+            const int bound = (alpha <= original_alpha) ? TT_UPPER : TT_EXACT;
+            update_correction_history(b, H, raw_static_eval, alpha, depth, bound);
+        }
         int tt_s = (alpha > MATE_SCORE - MAX_PLY) ? alpha + ply : (alpha < -MATE_SCORE + MAX_PLY ? alpha - ply : alpha);
         tt().store(key, depth, tt_s, (alpha <= original_alpha) ? TT_UPPER : TT_EXACT, best_move);
     }
