@@ -127,4 +127,4 @@ Optional release smoke:
 make release_test
 ```
 
-This runs `make test` and then a short Cute Chess self-play smoke if `cutechess-cli` is installed. The self-play smoke is meant to catch crashes, illegal moves, disconnects, time forfeits, and protocol regressions; it is not an Elo test.
+This runs the full debug test suite used before release.

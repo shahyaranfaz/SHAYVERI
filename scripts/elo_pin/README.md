@@ -4,7 +4,7 @@ Elo pin harness
 Purpose
 =======
 
-Coordinate multi-worker cutechess matches for a properly pinned Elo run.
+Coordinate multi-worker fastchess matches for a properly pinned Elo run.
 
 Flow
 ====

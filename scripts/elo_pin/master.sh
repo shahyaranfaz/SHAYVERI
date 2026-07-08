@@ -30,7 +30,7 @@ write_config() {
   write_env BOOK "$BOOK"
   write_env ANCHORS "$ANCHORS"
   write_env ORDO "$ORDO"
-  write_env CUTECHESS "$CUTECHESS"
+  write_env FASTCHESS "$FASTCHESS"
   write_env TC "$TC"
   write_env TC_LABEL "$TC_LABEL"
   write_env TC_VALUE "$TC_VALUE"
@@ -55,7 +55,7 @@ write_config
 
 require_file "$BOOK"
 require_file "$ANCHORS"
-require_exe "$CUTECHESS"
+require_exe "$FASTCHESS"
 [[ -x "$ORDO" ]] || log "warning: ORDO not executable at $ORDO; master will skip Ordo if still missing at end"
 cp "$ANCHORS" "$RUN_DIR/anchors"
 if [[ -x "$ORDO" ]]; then

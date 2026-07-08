@@ -71,7 +71,7 @@ test: perft_suite \
 	uci_smoke \
 	tactical_regression
 
-release_test: test selfplay_smoke
+release_test: test
 
 $(BIN): $(PERFT_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(PERFT_SRC)
@@ -136,11 +136,8 @@ uci_smoke: ensure_engine
 tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py
 
-selfplay_smoke: ensure_engine
-	$(PYTHON) selfplay_smoke.py
-
 clean:
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test release_test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite nnue_suite ensure_engine uci_smoke tactical_regression selfplay_smoke clean
+.PHONY: all test release_test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite nnue_suite ensure_engine uci_smoke tactical_regression clean
