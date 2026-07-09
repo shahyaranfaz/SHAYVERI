@@ -22,6 +22,7 @@ scripts/opening_book/eval_cache.json
 scripts/opening_book/table.csv
 scripts/opening_book/zobrist_keys.json
 scripts/opening_book/artifacts/
+scripts/spsa/output/
 
 # Prerequisites
 *.d

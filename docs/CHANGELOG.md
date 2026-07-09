@@ -211,7 +211,10 @@ self-generated corpus/labels were the blocker.
   fixed-depth, fixed-node, and datagen searches remain deterministic.
 - Added persistent history across searches and cleared it on new-game or eval
   changes.
+- Added static-evaluation correction history with exposed tuning knobs.
 - Tightened null-move pruning, LMR, and time allocation.
+- Retuned the first search batch with CMA-ES, promoting the validated pruning
+  and reduction constants.
 - Updated the bench signature and test harness after the search changes.
 - Initial same-net A/B checks with `SHAYVERI2_5_0.nnue` showed the new search
   clearly ahead of the old binary: `199-52-149` at 1 thread and `102-3-45` at

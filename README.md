@@ -58,6 +58,7 @@ go movetime 1000
 - Check extensions
 - SEE (Static Exchange Evaluation) for move ordering
 - Killer moves, gravity-based history tables, and two-ply continuation histories
+- Static-evaluation correction history
 - Atomic 4-entry bucketed transposition table with Zobrist hashing
 - Repetition detection (2-fold during search, 3-fold draw claim)
 - Lazy SMP with shared TT for timed multi-threaded search

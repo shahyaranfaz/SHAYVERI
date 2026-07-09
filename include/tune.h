@@ -26,7 +26,7 @@ static constexpr int INF        = 1000000;
 static constexpr int MATE_SCORE =  900000;
 
 // Aspiration window.
-inline int ASP_DELTA = 36;
+inline int ASP_DELTA = 42;
 
 // Singular extensions
 inline int se_min_depth       =  9;
@@ -46,13 +46,13 @@ inline int cmh_weight          = 75;
 inline int fmh_weight          = 30;
 
 // Pruning margins
-inline int rfp_margin_mult    =   60;
-inline int fp_base            =  220;
-inline int fp_mult            =  693;
-inline int lmp_base           =    3;
+inline int rfp_margin_mult    =   65;
+inline int fp_base            =  216;
+inline int fp_mult            =  719;
+inline int lmp_base           =    2;
 inline int lmp_mult           =    1;
-inline int see_pruning_margin = -252;
-inline int qs_delta_margin    =  150;
+inline int see_pruning_margin = -248;
+inline int qs_delta_margin    =  196;
 
 // Null-move pruning.
 inline int nmp_margin_mult    =   18;
@@ -67,8 +67,8 @@ inline int corrhist_bonus_limit = 768;
 inline int corrhist_max         = 8192;
 
 // LMR reduction formula.
-inline double lmr_base  = 1.18093;
-inline double lmr_scale = 1.82857;
+inline double lmr_base  = 1.28644;
+inline double lmr_scale = 1.89303;
 
 // ===== PIECE VALUES =====
 
@@ -370,16 +370,16 @@ struct TuningOption {
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     // Core search
-    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    80,  "36"}},
-    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.18093"}}, // DOUBLE ignores min/max
-    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.82857"}}, // DOUBLE ignores min/max
-    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    30,   120,  "60"}},
-    {"FP_Base",             {&fp_base,                TuningOption::INT,   80,   350,  "220"}},
-    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   300,   1000,  "693"}},
-    {"LMP_Base",            {&lmp_base,               TuningOption::INT,     1,     8,   "3"}},
+    {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    80,  "42"}},
+    {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.28644"}}, // DOUBLE ignores min/max
+    {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.89303"}}, // DOUBLE ignores min/max
+    {"RFP_Margin",          {&rfp_margin_mult,        TuningOption::INT,    30,   120,  "65"}},
+    {"FP_Base",             {&fp_base,                TuningOption::INT,   80,   350,  "216"}},
+    {"FP_Mult",             {&fp_mult,                TuningOption::INT,   300,   1000,  "719"}},
+    {"LMP_Base",            {&lmp_base,               TuningOption::INT,     1,     8,   "2"}},
     {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     3,   "1"}},
-    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -600,  -40, "-252"}},
-    {"QS_Delta_Margin",     {&qs_delta_margin,        TuningOption::INT,    50,   350, "150"}},
+    {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -600,  -40, "-248"}},
+    {"QS_Delta_Margin",     {&qs_delta_margin,        TuningOption::INT,    50,   350, "196"}},
     {"NMP_Margin_Mult",     {&nmp_margin_mult,        TuningOption::INT,     0,    60,  "18"}},
     {"NMP_Eval_Divisor",    {&nmp_eval_divisor,       TuningOption::INT,    80,   500, "200"}},
     {"NMP_Base_Reduction",  {&nmp_base_reduction,     TuningOption::INT,     2,     5,   "3"}},
