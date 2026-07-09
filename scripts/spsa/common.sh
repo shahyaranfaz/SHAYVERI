@@ -16,13 +16,12 @@ else
 fi
 
 PASS_NAME="${PASS_NAME:-pass_v2_6}"
-RUN_NAME="${RUN_NAME:-pass2_pruning_stc}"
 BATCH_ID="${BATCH_ID:-4}"
 BATCH_NAME="${BATCH_NAME:-batch${BATCH_ID}}"
 
-ROOT_DIR="${ROOT_DIR:-scripts/spsa/output/$PASS_NAME/$RUN_NAME}"
+ROOT_DIR="${ROOT_DIR:-scripts/spsa/output/$PASS_NAME}"
 SHARED_DIR="${SHARED_DIR:-$ROOT_DIR/shared}"
-BATCH_DIR="${BATCH_DIR:-scripts/spsa/output/$PASS_NAME/$BATCH_NAME}"
+BATCH_DIR="${BATCH_DIR:-$ROOT_DIR/$BATCH_NAME}"
 
 MASTER_JOBS="${MASTER_JOBS:-6}"
 WORKER_NAME="${WORKER_NAME:-$(hostname)-$$}"

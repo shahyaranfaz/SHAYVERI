@@ -31,7 +31,7 @@ scripts/spsa/output/<PASS_NAME>/
   batch1/
   batch2/
   ...
-  <RUN_NAME>/shared/.lakas_dist/
+  shared/.lakas_dist/
 ```
 
 `results.txt` is the pass-level tracker. Batch directories hold CMAES artifacts
@@ -43,10 +43,9 @@ Defaults
 Defaults are intentionally centralized in `common.sh`.
 
 - `PASS_NAME=pass_v2_6`
-- `RUN_NAME=pass2_pruning_stc`
 - `BATCH_ID=4`
 - `BATCH_NAME=batch${BATCH_ID}`
-- `BUDGET=400`
+- `BUDGET=400` total evaluated CMAES candidates for the batch
 - `MASTER_JOBS=6`
 - `WORKER_JOBS=23`
 - `JOB_CLAIMS=1`
@@ -72,6 +71,10 @@ Typical current continuation:
 ```bash
 BATCH_ID=4 BUDGET=800 bash scripts/spsa/master.sh
 ```
+
+`BUDGET` is a total target, not an additive per-invocation count. If a resumed
+`batch4.dat` already contains 400 evaluated candidates, `BUDGET=800` schedules
+roughly 400 more candidates and then stops.
 
 Worker defaults are usually enough:
 

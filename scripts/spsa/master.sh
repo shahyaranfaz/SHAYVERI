@@ -7,8 +7,8 @@ source "$SCRIPT_DIR/common.sh"
 mkdir -p "$SPSA_REPO_ROOT/$ROOT_DIR" "$SPSA_REPO_ROOT/$BATCH_DIR"
 cd "$SPSA_REPO_ROOT"
 
-printf 'master pass=%s run=%s batch=%s root=%s master_jobs=%s tc=%s+%s games=%s fastchess=%s\n' \
-  "$PASS_NAME" "$RUN_NAME" "$BATCH_NAME" "$ROOT_DIR" "$MASTER_JOBS" \
+printf 'master pass=%s batch=%s root=%s shared=%s master_jobs=%s tc=%s+%s games=%s fastchess=%s\n' \
+  "$PASS_NAME" "$BATCH_NAME" "$ROOT_DIR" "$SHARED_DIR" "$MASTER_JOBS" \
   "$BASE_TIME_SEC" "$INC_TIME_SEC" "$GAMES_PER_BUDGET" "$FASTCHESS"
 
 python3 "$SPSA_LAKAS_NNUE" \

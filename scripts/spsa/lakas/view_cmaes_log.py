@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json, sys, math
+from collections import OrderedDict
 from statistics import mean, median, stdev
 
 DROP_KEYS = (
@@ -31,21 +32,35 @@ def fmt(x):
 
 path = sys.argv[1] if len(sys.argv) > 1 else "cma.jsonl"
 
-rows = []
+raw_rows = []
 with open(path, "r", encoding="utf-8") as f:
     for line in f:
         line = line.strip()
         if not line:
             continue
-        rows.append(json.loads(line))
+        raw_rows.append(json.loads(line))
 
-rows = [r for r in rows if "#loss" in r]
+rows = [r for r in raw_rows if "#loss" in r]
+deduped = OrderedDict()
+for i, r in enumerate(rows):
+    key = r.get("#uid")
+    if key is None:
+        key = (
+            r.get("#num-tell"),
+            r.get("#loss"),
+            tuple((k, r[k]) for k in sorted(r) if is_param(k, r[k])),
+            i,
+        )
+    deduped[key] = r
+rows = list(deduped.values())
 rows.sort(key=lambda r: r["#loss"])
 
 params = [k for k, v in rows[0].items() if is_param(k, v)]
 losses = [r["#loss"] for r in rows]
 
 print(f"rows: {len(rows)}")
+if len(rows) != len([r for r in raw_rows if "#loss" in r]):
+    print(f"raw_rows: {len([r for r in raw_rows if '#loss' in r])}")
 print(f"params: {len(params)}")
 print()
 print("LOSS SUMMARY")

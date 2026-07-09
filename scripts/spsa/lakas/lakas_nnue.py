@@ -309,12 +309,38 @@ def lakas_cmaes(instrum, name, input_data_file, budget=100):
     if input_data_file is not None:
         loaded_optimizer = ng.optimizers.ParametrizedCMA()
         optimizer = loaded_optimizer.load(input_data_file)
+        clear_optimizer_callbacks(optimizer)
         logger.info(f'optimizer: {name}, previous budget: {optimizer.num_ask}\n')
     else:
         logger.info(f'optimizer: {name}\n')
         my_opt = ng.optimizers.ParametrizedCMA()
         optimizer = my_opt(parametrization=instrum, budget=budget)
     return optimizer
+
+
+def clear_optimizer_callbacks(optimizer):
+    for attr in ("_callbacks", "callbacks"):
+        callbacks = getattr(optimizer, attr, None)
+        if isinstance(callbacks, dict):
+            for key in list(callbacks.keys()):
+                callbacks[key] = []
+            logger.info(f"cleared stale optimizer callbacks from {attr}")
+            return
+
+
+def optimizer_eval_count(optimizer):
+    for attr in ("num_tell", "_num_tell"):
+        val = getattr(optimizer, attr, None)
+        if isinstance(val, int):
+            return val
+
+    es = getattr(optimizer, "_es", None)
+    if es is not None:
+        val = getattr(es, "countevals", None)
+        if isinstance(val, int):
+            return val
+
+    return 0
 
 
 # --------------------------
@@ -545,7 +571,17 @@ def master_run(args, p: DistPaths):
                 return copy.deepcopy(best_param)
             return copy.deepcopy(init_param)
 
-        for _ in range(args.budget):
+        completed_evals = optimizer_eval_count(optimizer)
+        remaining_budget = max(0, int(args.budget) - completed_evals)
+        logger.info(
+            f"[master] budget target={args.budget}, "
+            f"completed={completed_evals}, remaining={remaining_budget}"
+        )
+
+        if remaining_budget <= 0:
+            logger.info("[master] budget target already reached")
+
+        for _ in range(remaining_budget):
             # keep pipeline filled
             while len(in_flight) < max_outstanding:
                 x = optimizer.ask()

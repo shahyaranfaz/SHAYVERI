@@ -25,7 +25,6 @@ size_of() {
 }
 
 printf '== spsa %s / %s ==\n' "$PASS_NAME" "$BATCH_NAME"
-printf '%-16s %s\n' "run:" "$RUN_NAME"
 printf '%-16s %s\n' "shared:" "$SHARED_DIR"
 printf '%-16s %s\n' "batch_dir:" "$BATCH_DIR"
 printf '%-16s %s\n' "tc:" "${BASE_TIME_SEC}+${INC_TIME_SEC}"
