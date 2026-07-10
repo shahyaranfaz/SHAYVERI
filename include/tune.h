@@ -5,6 +5,7 @@
 
 #include "types.h"
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <unordered_map>
@@ -21,9 +22,14 @@ namespace Tune {
 // ===== SEARCH CONSTANTS =====
 
 // Compile-time limits.
-static constexpr int MAX_PLY    =     128;
-static constexpr int INF        = 1000000;
-static constexpr int MATE_SCORE =  900000;
+static constexpr int MAX_PLY                 =     128;
+static constexpr int INF                     = 1000000;
+static constexpr int MATE_SCORE              =  900000;
+static constexpr int CORRHIST_TABLE_SIZE =   16384;
+
+// Internal SEE and move-ordering values. These are not evaluation terms.
+static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330, 500, 900, 20000 };
+static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
 
 // Aspiration window.
 inline int ASP_DELTA = 42;
@@ -65,12 +71,57 @@ inline int corrhist_scale       = 256;
 inline int corrhist_bonus_mult  =  32;
 inline int corrhist_bonus_limit = 768;
 inline int corrhist_max         = 8192;
+inline int corrhist_depth_cap   =  16;
 
 // LMR reduction formula.
 inline double lmr_base  = 1.28644;
 inline double lmr_scale = 1.89303;
 
-// ===== PIECE VALUES =====
+// Future search gates. These retain the current search behavior until a
+// focused tuning batch adopts them.
+inline int qsearch_start_depth         =  8;
+inline int qsearch_min_depth           = -6;
+inline int rfp_max_depth               =  5;
+inline int nmp_min_depth               =  3;
+inline int nmp_reduction_min           =  3;
+inline int nmp_reduction_max           =  6;
+inline int nmp_verify_min_depth        =  8;
+inline int iir_min_depth               =  4;
+inline int futility_max_depth          =  4;
+inline int see_pruning_max_depth       =  8;
+inline int lmr_min_depth               =  3;
+inline int lmr_extra_move_threshold    =  6;
+inline int lmr_extra_min_depth         =  6;
+inline int lmr_good_history_threshold  = 800;
+inline int lmr_bad_history_threshold   = -800;
+inline int aspiration_min_depth        =  4;
+inline int aspiration_growth           =  2;
+inline int capture_history_weight      = 100;
+
+// Future time-management policy. These retain the current time behavior.
+inline int    time_no_clock_ms              = 100;
+inline int    time_moves_to_go_min          =   1;
+inline int    time_moves_to_go_max          =  80;
+inline int    time_default_moves_with_inc   =  24;
+inline int    time_default_moves_no_inc     =  32;
+inline double time_increment_fraction       = 0.75;
+inline double time_bank_ceiling_fraction    = 0.82;
+inline double time_hard_bound_multiplier    = 4.0;
+inline int    time_soft_min_ms              =   5;
+inline int    time_hard_min_ms              =  10;
+inline int    time_stable_first_iterations  =   4;
+inline int    time_stable_second_iterations =   8;
+inline double time_stable_first_scale       = 0.80;
+inline double time_stable_second_scale      = 0.80;
+inline int    time_best_change_min_depth    =   6;
+inline double time_best_change_scale        = 1.35;
+inline int    time_eval_drop_min_depth      =   6;
+inline int    time_eval_drop_first_cp       =  30;
+inline int    time_eval_drop_second_cp      =  60;
+inline double time_eval_drop_first_scale    = 1.50;
+inline double time_eval_drop_second_scale   = 1.50;
+
+// ===== EVALUATION CONSTANTS =====
 
 // Per-piece MG and EG values, indexed by Piece.
 static constexpr int PIECE_VALUES_MG[PIECE_COUNT] = {
@@ -81,11 +132,6 @@ static constexpr int PIECE_VALUES_EG[PIECE_COUNT] = {
     0, 100, 290, 294, 539, 855, 0,
        100, 290, 294, 539, 855, 0,
 };
-
-// King value is high for SEE termination.
-static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330, 500, 900, 20000 };
-// King value is zero for MVV-LVA and capture ordering.
-static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
 
 // ===== PHASE =====
 
@@ -235,8 +281,6 @@ static constexpr int PST_KING_EG[64] = {
 
 };
 
-// ===== EVALUATION PARAMETERS =====
-
 // Misc
 static constexpr int TEMPO_BONUS_MG       = 21;
 static constexpr int TEMPO_BONUS_EG       = 10;
@@ -369,7 +413,7 @@ struct TuningOption {
 };
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
-    // Core search
+    // Batch 1: pruning / reduction core
     {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    80,  "42"}},
     {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.28644"}}, // DOUBLE ignores min/max
     {"LMR_Scale",           {&lmr_scale,              TuningOption::DOUBLE,  0,     0,   "1.89303"}}, // DOUBLE ignores min/max
@@ -380,6 +424,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     3,   "1"}},
     {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -600,  -40, "-248"}},
     {"QS_Delta_Margin",     {&qs_delta_margin,        TuningOption::INT,    50,   350, "196"}},
+    // Batch 2: null move / singular extensions
     {"NMP_Margin_Mult",     {&nmp_margin_mult,        TuningOption::INT,     0,    60,  "18"}},
     {"NMP_Eval_Divisor",    {&nmp_eval_divisor,       TuningOption::INT,    80,   500, "200"}},
     {"NMP_Base_Reduction",  {&nmp_base_reduction,     TuningOption::INT,     2,     5,   "3"}},
@@ -388,168 +433,64 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     8,   "2"}},
     {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "58"}},
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     2,     6,   "4"}},
-    {"CorrHist_Scale",      {&corrhist_scale,         TuningOption::INT,    64,   512, "256"}},
-    {"CorrHist_Bonus_Mult", {&corrhist_bonus_mult,    TuningOption::INT,     4,   128,  "32"}},
-    {"CorrHist_Bonus_Limit",{&corrhist_bonus_limit,   TuningOption::INT,   128,  4096, "768"}},
-    {"CorrHist_Max",        {&corrhist_max,           TuningOption::INT,  2048, 32768, "8192"}},
-
-    // History
+    // Batch 3: history / move ordering
     {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "468"}},
     {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "165"}},
     {"History_Bonus_Limit", {&history_bonus_limit,    TuningOption::INT,  1500,  4500, "3090"}},
     {"Main_History_Weight", {&main_history_weight,    TuningOption::INT,    25,   160,   "85"}},
     {"CMH_Weight",          {&cmh_weight,             TuningOption::INT,    15,   160,   "75"}},
     {"FMH_Weight",          {&fmh_weight,             TuningOption::INT,     0,   130,   "30"}},
-/*
-    // Eval , misc
-    {"Tempo_Bonus_MG",      {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
-    {"Tempo_Bonus_EG",      {&TEMPO_BONUS_EG,         TuningOption::INT,     4,    48,   "22"}},
-    {"Tempo_Bonus",         {&TEMPO_BONUS_MG,         TuningOption::INT,     4,    48,   "22"}},
-    {"Bishop_Pair_Bonus_MG", {&BISHOP_PAIR_BONUS_MG,  TuningOption::INT,     8,    55,   "22"}},
-    {"Bishop_Pair_Bonus_EG", {&BISHOP_PAIR_BONUS_EG,  TuningOption::INT,     4,    40,   "11"}},
-    {"Bishop_Pair_Bonus",    {&BISHOP_PAIR_BONUS_MG,  TuningOption::INT,     8,    55,   "22"}},
-    {"Development_Bonus",   {&DEVELOPMENT_BONUS,      TuningOption::INT,     0,    28,   "12"}},
-    {"Castled_Bonus",       {&CASTLED_BONUS,          TuningOption::INT,     0,    38,    "5"}},
 
-    // Mobility
-    {"Mobility_Knight_MG",  {&MOBILITY_KNIGHT_MG,     TuningOption::INT,     0,    16,    "6"}},
-    {"Mobility_Bishop_MG",  {&MOBILITY_BISHOP_MG,     TuningOption::INT,     2,    22,   "10"}},
-    {"Mobility_Rook_MG",    {&MOBILITY_ROOK_MG,       TuningOption::INT,     0,    14,    "5"}},
-    {"Mobility_Queen_MG",   {&MOBILITY_QUEEN_MG,      TuningOption::INT,     0,    12,    "4"}},
-    {"Mobility_Knight_EG",  {&MOBILITY_KNIGHT_EG,     TuningOption::INT,     0,    16,    "5"}},
-    {"Mobility_Bishop_EG",  {&MOBILITY_BISHOP_EG,     TuningOption::INT,     0,    16,    "4"}},
-    {"Mobility_Rook_EG",    {&MOBILITY_ROOK_EG,       TuningOption::INT,     0,    12,    "2"}},
-    {"Mobility_Queen_EG",   {&MOBILITY_QUEEN_EG,      TuningOption::INT,     0,     8,    "1"}},
+    // Batch 4: correction history
+    {"CorrHist_Scale",      {&corrhist_scale,         TuningOption::INT,    64,   512, "256"}},
+    {"CorrHist_Bonus_Mult", {&corrhist_bonus_mult,    TuningOption::INT,     0,   128,  "32"}},
+    {"CorrHist_Bonus_Limit",{&corrhist_bonus_limit,   TuningOption::INT,   128,  4096, "768"}},
+    {"CorrHist_Max",        {&corrhist_max,           TuningOption::INT,  2048, 32768, "8192"}},
 
-    // Pawn structure
-    {"Isolated_MG",         {&ISOLATED_PAWN_PENALTY_MG, TuningOption::INT, -35,     0,   "-15"}},
-    {"Isolated_EG",         {&ISOLATED_PAWN_PENALTY_EG, TuningOption::INT, -28,     0,   "-20"}},
-    {"Doubled_MG",          {&DOUBLED_PAWN_PENALTY_MG,  TuningOption::INT, -45,     0,  "-12"}},
-    {"Doubled_EG",          {&DOUBLED_PAWN_PENALTY_EG,  TuningOption::INT, -30,     0,   "-9"}},
-    {"Backward_MG",         {&BACKWARD_PAWN_PENALTY_MG, TuningOption::INT, -40,     0,  "-13"}},
-    {"Backward_EG",         {&BACKWARD_PAWN_PENALTY_EG, TuningOption::INT, -25,     0,   "-8"}},
-    {"Supported_Pawn_MG",   {&SUPPORTED_PAWN_BONUS_MG,  TuningOption::INT,   3,    38,   "14"}},
-    {"Supported_Pawn_EG",   {&SUPPORTED_PAWN_BONUS_EG,  TuningOption::INT,   3,    38,   "7"}},
-    {"Weak_Pawn_MG",        {&WEAK_PAWN_PENALTY_MG,     TuningOption::INT, -50,    -3,  "-18"}},
-    {"Weak_Pawn_EG",        {&WEAK_PAWN_PENALTY_EG,     TuningOption::INT, -50,    -3,  "-9"}},
-    {"Pawn_Island_MG",      {&PAWN_ISLAND_PENALTY_MG,   TuningOption::INT, -60,    -5,  "-32"}},
-    {"Pawn_Island_EG",      {&PAWN_ISLAND_PENALTY_EG,   TuningOption::INT, -25,     0,   "-5"}},
-    {"Pawn_Storm_Base",     {&PAWN_STORM_BASE,          TuningOption::INT,   0,    16,    "2"}},
-    {"Pawn_Storm_Rank_Mult",{&PAWN_STORM_RANK_MULT,     TuningOption::INT,   0,     9,    "1"}},
+    // Future / ungrouped search gates
+    {"CorrHist_Depth_Cap",      {&corrhist_depth_cap,          TuningOption::INT,     1,    32,  "16"}},
+    {"QSearch_Start_Depth",     {&qsearch_start_depth,         TuningOption::INT,     1,    16,   "8"}},
+    {"QSearch_Min_Depth",       {&qsearch_min_depth,           TuningOption::INT,   -16,     0,  "-6"}},
+    {"RFP_Max_Depth",           {&rfp_max_depth,               TuningOption::INT,     1,    12,   "5"}},
+    {"NMP_Min_Depth",           {&nmp_min_depth,               TuningOption::INT,     1,    12,   "3"}},
+    {"NMP_Reduction_Min",       {&nmp_reduction_min,           TuningOption::INT,     1,     8,   "3"}},
+    {"NMP_Reduction_Max",       {&nmp_reduction_max,           TuningOption::INT,     2,    12,   "6"}},
+    {"NMP_Verify_Min_Depth",    {&nmp_verify_min_depth,        TuningOption::INT,     2,    20,   "8"}},
+    {"IIR_Min_Depth",           {&iir_min_depth,               TuningOption::INT,     1,    12,   "4"}},
+    {"Futility_Max_Depth",      {&futility_max_depth,          TuningOption::INT,     1,    12,   "4"}},
+    {"SEE_Pruning_Max_Depth",   {&see_pruning_max_depth,       TuningOption::INT,     1,    16,   "8"}},
+    {"LMR_Min_Depth",           {&lmr_min_depth,               TuningOption::INT,     1,    12,   "3"}},
+    {"LMR_Extra_Move_Threshold",{&lmr_extra_move_threshold,    TuningOption::INT,     1,    32,   "6"}},
+    {"LMR_Extra_Min_Depth",     {&lmr_extra_min_depth,         TuningOption::INT,     1,    16,   "6"}},
+    {"LMR_Good_History",        {&lmr_good_history_threshold,  TuningOption::INT,     0,  4096, "800"}},
+    {"LMR_Bad_History",         {&lmr_bad_history_threshold,   TuningOption::INT, -4096,     0,"-800"}},
+    {"Aspiration_Min_Depth",    {&aspiration_min_depth,        TuningOption::INT,     1,    12,   "4"}},
+    {"Aspiration_Growth",       {&aspiration_growth,           TuningOption::INT,     2,     4,   "2"}},
+    {"Capture_History_Weight",  {&capture_history_weight,      TuningOption::INT,     0,   400, "100"}},
+    {"History_Max",             {&history_max,                 TuningOption::INT,  1024, 32768,"16384"}},
 
-    // Passed pawns (ranks 1-6; ranks 0 and 7 are always 0)
-    // Note: Moved to Texel tuning. Ranges kept as original.
-    {"PassedMG_R1",         {&PASSED_PAWN_BONUS_MG[1], TuningOption::INT,  0,   20,   "5"}},
-    {"PassedMG_R2",         {&PASSED_PAWN_BONUS_MG[2], TuningOption::INT,  0,   30,   "10"}},
-    {"PassedMG_R3",         {&PASSED_PAWN_BONUS_MG[3], TuningOption::INT,  0,   50,   "20"}},
-    {"PassedMG_R4",         {&PASSED_PAWN_BONUS_MG[4], TuningOption::INT,  0,   80,   "30"}},
-    {"PassedMG_R5",         {&PASSED_PAWN_BONUS_MG[5], TuningOption::INT,  0,   120,  "50"}},
-    {"PassedMG_R6",         {&PASSED_PAWN_BONUS_MG[6], TuningOption::INT,  0,   150,  "70"}},
-    {"PassedEG_R1",         {&PASSED_PAWN_BONUS_EG[1], TuningOption::INT,  0,   30,   "10"}},
-    {"PassedEG_R2",         {&PASSED_PAWN_BONUS_EG[2], TuningOption::INT,  0,   50,   "20"}},
-    {"PassedEG_R3",         {&PASSED_PAWN_BONUS_EG[3], TuningOption::INT,  0,   80,   "40"}},
-    {"PassedEG_R4",         {&PASSED_PAWN_BONUS_EG[4], TuningOption::INT,  0,   130,  "60"}},
-    {"PassedEG_R5",         {&PASSED_PAWN_BONUS_EG[5], TuningOption::INT,  0,   180,  "90"}},
-    {"PassedEG_R6",         {&PASSED_PAWN_BONUS_EG[6], TuningOption::INT,  0,   220, "120"}},
-    {"Candidate_Pawn_MG",   {&CANDIDATE_PAWN_BONUS_MG,   TuningOption::INT, 0,  30,   "8"}},
-    {"Candidate_Pawn_EG",   {&CANDIDATE_PAWN_BONUS_EG,   TuningOption::INT, 0,  40,   "12"}},
-    {"Connected_Passed_MG", {&CONNECTED_PASSED_BONUS_MG, TuningOption::INT, 0,  30,   "10"}},
-    {"Connected_Passed_EG", {&CONNECTED_PASSED_BONUS_EG, TuningOption::INT, 0,  50,   "18"}},
-    {"Outside_Passed_MG",   {&OUTSIDE_PASSED_BONUS_MG,   TuningOption::INT, 0,  30,   "8"}},
-    {"Outside_Passed_EG",   {&OUTSIDE_PASSED_BONUS_EG,   TuningOption::INT, 0,  60,   "20"}},
-
-    // King safety
-    {"King_Shield_Penalty",    {&KING_SHIELD_MISSING_PENALTY, TuningOption::INT, -60,    -5,  "-27"}},
-    {"King_Open_File_Penalty", {&KING_OPEN_FILE_PENALTY,      TuningOption::INT, -55,    -5,  "-29"}},
-    {"King_SemiOpen_Penalty",  {&KING_SEMI_OPEN_FILE_PENALTY, TuningOption::INT, -25,     0,   "-6"}},
-    {"King_Escape_Bonus",      {&KING_ESCAPE_BONUS,           TuningOption::INT,   0,    20,    "4"}},
-    {"King_Danger_Divisor",    {&KING_DANGER_DIVISOR,         TuningOption::INT,   2,    22,    "10"}},
-    {"King_Danger_Max",        {&KING_DANGER_MAX,             TuningOption::INT, 250,  1100,  "641"}},
-    // Attacker weights, indices 2-5 (0,1,6 are always 0)
-    {"King_Attacker_Knight",   {&KING_ATTACKER_WEIGHT[2],     TuningOption::INT,   0,    12,    "2"}},
-    {"King_Attacker_Bishop",   {&KING_ATTACKER_WEIGHT[3],     TuningOption::INT,   0,    14,    "3"}},
-    {"King_Attacker_Rook",     {&KING_ATTACKER_WEIGHT[4],     TuningOption::INT,   0,    14,    "4"}},
-    {"King_Attacker_Queen",    {&KING_ATTACKER_WEIGHT[5],     TuningOption::INT,   4,    28,   "11"}},
-    // Attack count bonus, indices 2-7 (0,1 are always 0)
-    {"KingAtk_2",              {&KING_ATTACK_COUNT_BONUS[2],  TuningOption::INT,   0,    22,    "7"}},
-    {"KingAtk_3",              {&KING_ATTACK_COUNT_BONUS[3],  TuningOption::INT,   4,    55,   "25"}},
-    {"KingAtk_4",              {&KING_ATTACK_COUNT_BONUS[4],  TuningOption::INT,   8,    80,   "33"}},
-    {"KingAtk_5",              {&KING_ATTACK_COUNT_BONUS[5],  TuningOption::INT,  12,    95,   "44"}},
-    {"KingAtk_6",              {&KING_ATTACK_COUNT_BONUS[6],  TuningOption::INT,   0,    90,   "27"}},
-    {"KingAtk_7",              {&KING_ATTACK_COUNT_BONUS[7],  TuningOption::INT,   0,    90,   "16"}},
-
-    // Territory
-    {"Seventh_Rank_MG",       {&SEVENTH_RANK_BONUS_MG, TuningOption::INT,   3,    38,   "16"}},
-    {"Seventh_Rank_EG",       {&SEVENTH_RANK_BONUS_EG, TuningOption::INT,   6,    65,   "22"}},
-    {"Queen_Seventh_MG",      {&QUEEN_SEVENTH_RANK_BONUS_MG, TuningOption::INT,  0, 30,  "8"}},
-    {"Queen_Seventh_EG",      {&QUEEN_SEVENTH_RANK_BONUS_EG, TuningOption::INT,  0, 40,  "11"}},
-
-    // Coordination
-    {"Defended_Piece_Bonus_MG",       {&DEFENDED_PIECE_BONUS_MG,       TuningOption::INT,   0,   18,   "3"}},
-    {"Defended_Piece_Bonus_EG",       {&DEFENDED_PIECE_BONUS_EG,       TuningOption::INT,   0,   18,   "3"}},
-    {"Defended_Piece_Bonus",          {&DEFENDED_PIECE_BONUS_MG,       TuningOption::INT,   0,   18,   "3"}},
-    {"Shared_Target_Bonus_MG",        {&SHARED_TARGET_BONUS_MG,        TuningOption::INT,   0,   32,   "8"}},
-    {"Shared_Target_Bonus_EG",        {&SHARED_TARGET_BONUS_EG,        TuningOption::INT,   0,   32,   "8"}},
-    {"Shared_Target_Bonus",           {&SHARED_TARGET_BONUS_MG,        TuningOption::INT,   0,   32,   "8"}},
-    {"Battery_Rook_Queen_MG",         {&BATTERY_ROOK_QUEEN_BONUS_MG,   TuningOption::INT,   0,   40,  "10"}},
-    {"Battery_Rook_Queen_EG",         {&BATTERY_ROOK_QUEEN_BONUS_EG,   TuningOption::INT,   0,   40,  "10"}},
-    {"Battery_Rook_Queen",            {&BATTERY_ROOK_QUEEN_BONUS_MG,   TuningOption::INT,   0,   40,  "10"}},
-    {"Battery_Bishop_Queen_MG",       {&BATTERY_BISHOP_QUEEN_BONUS_MG, TuningOption::INT,   0,   30,  "11"}},
-    {"Battery_Bishop_Queen_EG",       {&BATTERY_BISHOP_QUEEN_BONUS_EG, TuningOption::INT,   0,   30,  "11"}},
-    {"Battery_Bishop_Queen",          {&BATTERY_BISHOP_QUEEN_BONUS_MG, TuningOption::INT,   0,   30,  "11"}},
-    {"Support_Chain_Bonus_MG",        {&SUPPORT_CHAIN_BONUS_MG,        TuningOption::INT,   0,   24,   "5"}},
-    {"Support_Chain_Bonus_EG",        {&SUPPORT_CHAIN_BONUS_EG,        TuningOption::INT,   0,   24,   "5"}},
-    {"Support_Chain_Bonus",           {&SUPPORT_CHAIN_BONUS_MG,        TuningOption::INT,   0,   24,   "5"}},
-
-    // Tactical pressure
-    {"Undefended_Attack_Bonus",   {&UNDEFENDED_ATTACK_BONUS,      TuningOption::INT,   4,   42,  "18"}},
-    {"Pin_Bonus_MG",              {&PIN_BONUS_MG,                 TuningOption::INT,  10,   65,  "36"}},
-    {"Pin_Bonus_EG",              {&PIN_BONUS_EG,                 TuningOption::INT,   5,   45,  "18"}},
-    {"Overloaded_Defender_Bonus_MG", {&OVERLOADED_DEFENDER_BONUS_MG, TuningOption::INT, 0, 30, "4"}},
-    {"Overloaded_Defender_Bonus_EG", {&OVERLOADED_DEFENDER_BONUS_EG, TuningOption::INT, 0, 25, "2"}},
-    {"Unrec_Pressure_Bonus_MG",   {&UNRECIPROCATED_PRESSURE_BONUS_MG,TuningOption::INT,0,   18,   "5"}},
-    {"Unrec_Pressure_Bonus_EG",   {&UNRECIPROCATED_PRESSURE_BONUS_EG,TuningOption::INT,0,   18,   "2"}},
-    {"Undefended_Value_Div",      {&UNDEFENDED_VALUE_DIVISOR,     TuningOption::INT,  15,  130,  "66"}},
-
-    // Threats
-    // Pawn threats vs piece types 2-5 (knight/bishop/rook/queen)
-    {"Threat_Pawn_Knight_MG", {&THREAT_BY_PAWN_MG[2], TuningOption::INT,  12,  100,  "42"}},
-    {"Threat_Pawn_Bishop_MG", {&THREAT_BY_PAWN_MG[3], TuningOption::INT,  35,  145,  "89"}},
-    {"Threat_Pawn_Rook_MG",   {&THREAT_BY_PAWN_MG[4], TuningOption::INT,  55,  160, "113"}},
-    {"Threat_Pawn_Queen_MG",  {&THREAT_BY_PAWN_MG[5], TuningOption::INT,  40,  160,  "89"}},
-    {"Threat_Pawn_Knight_EG", {&THREAT_BY_PAWN_EG[2], TuningOption::INT,  30,  140,  "77"}},
-    {"Threat_Pawn_Bishop_EG", {&THREAT_BY_PAWN_EG[3], TuningOption::INT,  40,  155,  "94"}},
-    {"Threat_Pawn_Rook_EG",   {&THREAT_BY_PAWN_EG[4], TuningOption::INT,   8,  100,  "39"}},
-    {"Threat_Pawn_Queen_EG",  {&THREAT_BY_PAWN_EG[5], TuningOption::INT,  25,  140,  "71"}},
-    // Minor threats vs rook/queen
-    {"Threat_Minor_Rook_MG",  {&THREAT_BY_MINOR_MG[4], TuningOption::INT,   0,   70,  "26"}},
-    {"Threat_Minor_Queen_MG", {&THREAT_BY_MINOR_MG[5], TuningOption::INT,   0,   65,  "11"}},
-    {"Threat_Minor_Rook_EG",  {&THREAT_BY_MINOR_EG[4], TuningOption::INT,   0,   60,  "10"}},
-    {"Threat_Minor_Queen_EG", {&THREAT_BY_MINOR_EG[5], TuningOption::INT,  12,  110,  "54"}},
-    // Rook threatens queen
-    {"Threat_Rook_MG",        {&THREAT_BY_ROOK_MG,    TuningOption::INT,  15,  120,  "58"}},
-    {"Threat_Rook_EG",        {&THREAT_BY_ROOK_EG,    TuningOption::INT,   8,  100,  "48"}},
-    // Hanging
-    {"Hanging_Penalty_MG",    {&HANGING_BASE_PENALTY_MG, TuningOption::INT,  15,  110,  "54"}},
-    {"Hanging_Penalty_EG",    {&HANGING_BASE_PENALTY_EG, TuningOption::INT,   0,   40,   "6"}},
-    {"Hanging_Value_Div",     {&HANGING_VALUE_DIVISOR,   TuningOption::INT,   4,   90,  "21"}},
-
-    // Outposts
-    {"Knight_Outpost_MG",  {&KNIGHT_OUTPOST_MG, TuningOption::INT,   0,   45,  "18"}},
-    {"Knight_Outpost_EG",  {&KNIGHT_OUTPOST_EG, TuningOption::INT,   0,   35,   "10"}},
-    {"Bishop_Outpost_MG",  {&BISHOP_OUTPOST_MG, TuningOption::INT,   0,   38,  "10"}},
-    {"Bishop_Outpost_EG",  {&BISHOP_OUTPOST_EG, TuningOption::INT,   0,   32,  "20"}},
-    {"Rook_Outpost_MG",    {&ROOK_OUTPOST_MG,   TuningOption::INT,   0,   55,  "28"}},
-    {"Rook_Outpost_EG",    {&ROOK_OUTPOST_EG,   TuningOption::INT,   0,   38,  "12"}},
-    {"Queen_Outpost_MG",   {&QUEEN_OUTPOST_MG,  TuningOption::INT,   0,   30,   "4"}},
-    {"Queen_Outpost_EG",   {&QUEEN_OUTPOST_EG,  TuningOption::INT,   0,   25,   "8"}},
-
-    // File / diagonal openness
-    {"Open_File_Mult",         {&OPEN_FILE_MULTIPLIER,          TuningOption::INT, 100,  165, "121"}},
-    {"Semi_Open_File_Mult",    {&SEMI_OPEN_FILE_MULTIPLIER,     TuningOption::INT, 100,  140, "117"}},
-    {"Bishop_Openness_Max",    {&BISHOP_OPENNESS_MAX_BONUS,     TuningOption::INT,   5,   80,  "34"}},
-    {"Bishop_Openness_SqWt",   {&BISHOP_OPENNESS_SQUARE_WEIGHT, TuningOption::INT,   0,    8,   "2"}},
-*/
+    // Future / ungrouped time management
+    {"Time_No_Clock_MS",        {&time_no_clock_ms,              TuningOption::INT,     10,  1000, "100"}},
+    {"Time_Moves_To_Go_Min",    {&time_moves_to_go_min,          TuningOption::INT,      1,    20,   "1"}},
+    {"Time_Moves_To_Go_Max",    {&time_moves_to_go_max,          TuningOption::INT,     10,   120,  "80"}},
+    {"Time_Default_Moves_Inc",  {&time_default_moves_with_inc,   TuningOption::INT,      4,    80,  "24"}},
+    {"Time_Default_Moves_NoInc",{&time_default_moves_no_inc,     TuningOption::INT,      4,    80,  "32"}},
+    {"Time_Increment_Fraction", {&time_increment_fraction,       TuningOption::DOUBLE,   0,     0,"0.75"}},
+    {"Time_Bank_Ceiling",       {&time_bank_ceiling_fraction,    TuningOption::DOUBLE,   0,     0,"0.82"}},
+    {"Time_Hard_Bound_Mult",    {&time_hard_bound_multiplier,    TuningOption::DOUBLE,   0,     0,"4.0"}},
+    {"Time_Soft_Min_MS",        {&time_soft_min_ms,              TuningOption::INT,      1,   200,   "5"}},
+    {"Time_Hard_Min_MS",        {&time_hard_min_ms,              TuningOption::INT,      1,   500,  "10"}},
+    {"Time_Stable_First_Iters", {&time_stable_first_iterations,  TuningOption::INT,      1,    20,   "4"}},
+    {"Time_Stable_Second_Iters",{&time_stable_second_iterations, TuningOption::INT,      1,    30,   "8"}},
+    {"Time_Stable_First_Scale", {&time_stable_first_scale,       TuningOption::DOUBLE,   0,     0,"0.80"}},
+    {"Time_Stable_Second_Scale",{&time_stable_second_scale,      TuningOption::DOUBLE,   0,     0,"0.80"}},
+    {"Time_Best_Change_Depth",  {&time_best_change_min_depth,    TuningOption::INT,      1,    20,   "6"}},
+    {"Time_Best_Change_Scale",  {&time_best_change_scale,        TuningOption::DOUBLE,   0,     0,"1.35"}},
+    {"Time_Eval_Drop_Depth",    {&time_eval_drop_min_depth,      TuningOption::INT,      1,    20,   "6"}},
+    {"Time_Eval_Drop_First_CP", {&time_eval_drop_first_cp,       TuningOption::INT,      1,   500,  "30"}},
+    {"Time_Eval_Drop_Second_CP",{&time_eval_drop_second_cp,      TuningOption::INT,      1,  1000,  "60"}},
+    {"Time_Eval_Drop_First_Scale", {&time_eval_drop_first_scale, TuningOption::DOUBLE,   0,     0,"1.50"}},
+    {"Time_Eval_Drop_Second_Scale",{&time_eval_drop_second_scale,TuningOption::DOUBLE,   0,     0,"1.50"}},
 };
 
 // Applies a UCI setoption value.
@@ -557,10 +498,12 @@ inline void handle_setoption(const std::string& name, const std::string& value) 
     auto it = tuning_registry.find(name);
     if (it == tuning_registry.end()) return;
     auto& opt = it->second;
-    if (opt.type == TuningOption::INT)
-        *static_cast<int*>(opt.ptr) = std::stoi(value);
-    else
+    if (opt.type == TuningOption::INT) {
+        const int parsed = std::stoi(value);
+        *static_cast<int*>(opt.ptr) = std::clamp(parsed, opt.min_val, opt.max_val);
+    } else {
         *static_cast<double*>(opt.ptr) = std::stod(value);
+    }
 }
 
 #ifndef coefficients_t

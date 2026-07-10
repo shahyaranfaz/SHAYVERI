@@ -59,8 +59,6 @@ struct StackInfo {
 };
 
 struct SearchHeuristics {
-    static constexpr int CORRECTION_HISTORY_SIZE = 16384;
-
     Move killers[MAX_PLY][2];
     Move counter_moves[7][64];
     int history[2][64][64]; // [side_to_move][from][to]
@@ -73,7 +71,7 @@ struct SearchHeuristics {
     int capture_history[7][64][7];
 
     // Static eval correction history, indexed by side and pawn-structure key.
-    int correction_history[2][CORRECTION_HISTORY_SIZE];
+    int correction_history[2][Tune::CORRHIST_TABLE_SIZE];
 
     SearchHeuristics() {
         std::memset(killers, 0, sizeof(killers));
@@ -108,7 +106,7 @@ static inline int correction_history_index(const Board& b) {
     const U64 bp_rot = (bp << 32) | (bp >> 32);
     U64 key = wp * 0x9E3779B97F4A7C15ULL;
     key ^= bp_rot * 0xBF58476D1CE4E5B9ULL;
-    return static_cast<int>(key & (SearchHeuristics::CORRECTION_HISTORY_SIZE - 1));
+    return static_cast<int>(key & (Tune::CORRHIST_TABLE_SIZE - 1));
 }
 
 static inline int corrected_static_eval(const Board& b, int raw_eval, const SearchHeuristics& H) {
@@ -131,9 +129,10 @@ static inline void update_correction_history(const Board& b, SearchHeuristics& H
     int& entry = H.correction_history[stm][correction_history_index(b)];
     const int max_entry = std::max(1, Tune::corrhist_max);
     const int diff = std::clamp(score - raw_eval, -max_entry, max_entry);
-    const int depth_weight = std::min(depth, 16);
+    const int depth_cap = std::max(1, Tune::corrhist_depth_cap);
+    const int depth_weight = std::min(depth, depth_cap);
     const int bonus_limit = std::max(1, Tune::corrhist_bonus_limit);
-    const int bonus = std::clamp(diff * Tune::corrhist_bonus_mult * depth_weight / 16,
+    const int bonus = std::clamp(diff * Tune::corrhist_bonus_mult * depth_weight / depth_cap,
                                  -bonus_limit, bonus_limit);
     int abs_bonus = bonus < 0 ? -bonus : bonus;
     entry += bonus - entry * abs_bonus / max_entry;
@@ -313,7 +312,8 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
             int attacker_pt = static_cast<int>(get_type(b.get_piece(move_from(m))));
             PieceType victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(to));
             if (victim_pt != NONE_PTYPE)
-                ch = H.capture_history[attacker_pt][to][static_cast<int>(victim_pt)] / 100;
+                ch = H.capture_history[attacker_pt][to][static_cast<int>(victim_pt)]
+                     * Tune::capture_history_weight / 100;
         }
         if (see_val >= 0) return 1000000 + (see_val * 100) + cap + ch;
         return 700000 + (see_val * 100) + cap + ch;
@@ -423,7 +423,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         if (stand_pat > alpha) alpha = stand_pat;
         if (depth <= 0) return alpha;
     } else {
-        if (depth < -6) return evaluate_position(b, ss);
+        if (depth < Tune::qsearch_min_depth) return evaluate_position(b, ss);
     }
 
     MoveList moves;
@@ -531,7 +531,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    if (depth <= 0) return qsearch(b, alpha, beta, 8, ply, ss);
+    if (depth <= 0) return qsearch(b, alpha, beta, Tune::qsearch_start_depth, ply, ss);
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
@@ -552,19 +552,22 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     }
 
     // Reverse Futility Pruning
-    if (!pv_node && !in_check && depth <= 5 && ss->excluded_move == MOVE_NONE) {
+    if (!pv_node && !in_check && depth <= Tune::rfp_max_depth && ss->excluded_move == MOVE_NONE) {
         if (static_eval - (Tune::rfp_margin_mult * depth) >= beta)
             return static_eval;
     }
 
     // Null Move Pruning
-    if (allow_null && !pv_node && !in_check && depth >= 3
+    if (allow_null && !pv_node && !in_check && depth >= Tune::nmp_min_depth
         && static_eval >= beta + Tune::nmp_margin_mult * depth
         && has_non_pawn_material(b, b.side_to_move) && ss->excluded_move == MOVE_NONE) {
         const int eval_divisor = std::max(1, Tune::nmp_eval_divisor);
         const int depth_divisor = std::max(1, Tune::nmp_depth_divisor);
+        const int reduction_min = std::min(Tune::nmp_reduction_min, Tune::nmp_reduction_max);
+        const int reduction_max = std::max(Tune::nmp_reduction_min, Tune::nmp_reduction_max);
         const int R = std::clamp(Tune::nmp_base_reduction + depth / depth_divisor +
-                                 (static_eval - beta) / eval_divisor, 3, 6);
+                                 (static_eval - beta) / eval_divisor,
+                                 reduction_min, reduction_max);
         Undo u;
         (ss + 1)->acc = ss->acc;
         make_null_move(b, u);
@@ -575,7 +578,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
         if (search_stopped()) return 0;
         if (score >= beta) {
-            if (depth >= 8) {
+            if (depth >= Tune::nmp_verify_min_depth) {
                 int verify = negamax(b, depth - R, beta - 1, beta, ply, H, rep_stack, rep_len, false, ss, false);
                 if (search_stopped()) return 0;
                 if (verify < beta) {
@@ -608,7 +611,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     // IIR: when no TT move exists, do a cheaper search by reducing depth by 1.
     // This encourages us to search a reduced-depth iteration first, which then
     // populates the TT for a subsequent re-search at full depth.
-    if (depth >= 4 && tt_move == MOVE_NONE && ss->excluded_move == MOVE_NONE) {
+    if (depth >= Tune::iir_min_depth && tt_move == MOVE_NONE && ss->excluded_move == MOVE_NONE) {
         depth--;
     }
 
@@ -645,8 +648,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         // Pruning (LMP, Futility)
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
             if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
-            if (is_quiet && depth <= 4 && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
-            if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= 8 &&
+            if (is_quiet && depth <= Tune::futility_max_depth && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
+            if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_pruning_max_depth &&
                 see(b, m) < Tune::see_pruning_margin * depth)
                 continue;
         }
@@ -678,14 +681,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
             score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, pv_node, ss + 1);
         } else {
             int reduction = 0;
-            if (depth >= 3 && is_quiet && m != tt_move && m != H.killers[ply][0]) {
+            if (depth >= Tune::lmr_min_depth && is_quiet && m != tt_move && m != H.killers[ply][0]) {
                 reduction = lmr_reduction_base(depth, legal_count);
                 if (!pv_node) reduction++;
                 if (pv_node) reduction--;
-                if (legal_count > 6 && depth >= 6) reduction++;
+                if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth) reduction++;
                 int hist = quiet_history_score(b, m, ply, H, ss);
-                if (hist > 800) reduction--;
-                else if (hist < -800) reduction++;
+                if (hist > Tune::lmr_good_history_threshold) reduction--;
+                else if (hist < Tune::lmr_bad_history_threshold) reduction++;
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
@@ -818,7 +821,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         int window_beta  = INF;
         int delta = Tune::ASP_DELTA;
 
-        if (depth >= 4 && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
+        if (depth >= Tune::aspiration_min_depth && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
             window_alpha = std::max(-INF, final_best_score - delta);
             window_beta  = std::min(INF, final_best_score + delta);
         }
@@ -901,11 +904,11 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
             if (best_score_this_depth <= window_alpha && window_alpha > -INF) {
                 window_alpha = std::max(-INF, window_alpha - delta);
-                delta *= 2;
+                delta *= Tune::aspiration_growth;
                 continue;
             } else if (best_score_this_depth >= window_beta && window_beta < INF) {
                 window_beta = std::min(INF, window_beta + delta);
-                delta *= 2;
+                delta *= Tune::aspiration_growth;
                 continue;
             }
 
@@ -1012,7 +1015,7 @@ int qsearch_score(Board &b) {
     StackInfo st[MAX_PLY + 5]{};
     StackInfo *ss = st + 2;
     ss->acc.refresh(b);
-    return qsearch(b, -INF, INF, 8, 0, ss);
+    return qsearch(b, -INF, INF, Tune::qsearch_start_depth, 0, ss);
 }
 
 } // namespace SHAYVERI
