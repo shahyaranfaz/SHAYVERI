@@ -19,19 +19,15 @@ The v2.6 NNUE configuration is about +451.2 Elo over HCE-classical at STC and +4
 
 ## How to build
 
-The default target builds a native Linux binary named `SHAYVERI`:
+Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support. 
+The engine binary can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
 
 ```bash
 make
-```
-Other targets:
-
-```bash
 make windows
 make macos
 make clean
 ```
-Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support. The engine binary can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
 
 The default net, `SHAYVERI2_5_0.nnue`, is automatically embedded into the binary.
 Hence, the `.nnue` file must be at root-level while building.
@@ -102,7 +98,7 @@ make -C scripts/opening_book dump_keys
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
 - `UseNNUE`: enable or disable NNUE evaluation without changing the configured network path.
-- `EvalFile`: NNUE network path. set an explicit path to load an external network.
+- `EvalFile`: NNUE network path. Set an explicit path to load an external network.
 - `Move Overhead`: GUI/network delay reserve, in milliseconds.
 
 ## Verification
