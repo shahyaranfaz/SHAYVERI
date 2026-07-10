@@ -34,7 +34,7 @@ make clean
 Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support. The engine binary can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
 
 The default net, `SHAYVERI2_5_0.nnue`, is automatically embedded into the binary.
-Hence, the netfile must be at root-level while building.
+Hence, the `.nnue` file must be at root-level while building.
 Once built, the `.nnue` file is no longer necessary.
 An external network can be loaded through the `EvalFile` UCI option.
 
