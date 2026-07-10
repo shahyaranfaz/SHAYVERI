@@ -118,7 +118,4 @@ clean:
 test: $(BIN)
 	$(MAKE) -C debug test
 
-release_test: $(BIN)
-	$(MAKE) -C debug release_test
-
-.PHONY: all windows macos clean test release_test
+.PHONY: all windows macos clean test
