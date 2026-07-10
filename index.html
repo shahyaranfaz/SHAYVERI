@@ -465,7 +465,7 @@
           <article class="card">
             <h3>Pruning</h3>
             <ul>
-              <li>Null move pruning, IIR, LMR, LMP, futility pruning, reverse futility pruning, and delta pruning.</li>
+              <li>Null move pruning, IIR, late move reductions including improving and cut-node-aware reductions, LMP, futility pruning, reverse futility pruning, and delta pruning.</li>
               <li>Singular extensions and SEE-backed move decisions.</li>
             </ul>
           </article>
@@ -523,7 +523,7 @@ go movetime 1000</code></pre>
     <section id="tests">
       <div class="wrap">
         <h2>Verification</h2>
-        <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, UCI smoke tests, opening-book behavior, deterministic single-thread search, and tactical mate-in-1 regression positions.</p>
+        <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, UCI checks, opening-book behavior, deterministic single-thread search, and tactical mate-in-1 regression positions.</p>
         <pre><code>make test</code></pre>
       </div>
     </section>

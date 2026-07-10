@@ -52,9 +52,11 @@ struct ScoredMove {
 
 // Tracks per-ply state for histories and extensions.
 struct StackInfo {
-    Move move;
-    Piece piece;
-    Move excluded_move;
+    Move move = MOVE_NONE;
+    Piece piece = NONE_PIECE;
+    Move excluded_move = MOVE_NONE;
+    int static_eval = 0;
+    bool has_static_eval = false;
     NNUE::Accumulator acc;
 };
 
@@ -485,7 +487,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
 }
 
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
-                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss,
+                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, bool cut_node, StackInfo* ss,
                    bool allow_null = true) {
     if (search_stopped()) return 0;
     count_node();
@@ -540,6 +542,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     int raw_static_eval = 0;
     int static_eval = 0;
     bool have_static_eval = false;
+    ss->has_static_eval = false;
     if (!in_check) {
         if (tt_has_eval) {
             raw_static_eval = tt_eval;
@@ -549,7 +552,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
         static_eval = corrected_static_eval(b, raw_static_eval, H);
         have_static_eval = true;
+        ss->static_eval = static_eval;
+        ss->has_static_eval = true;
     }
+
+    // Compare against the previous same-side node. In-check ancestors do not
+    // carry a meaningful static evaluation and therefore do not trigger it.
+    const bool improving = have_static_eval && ss[-2].has_static_eval &&
+                           static_eval >= ss[-2].static_eval;
 
     // Reverse Futility Pruning
     if (!pv_node && !in_check && depth <= Tune::rfp_max_depth && ss->excluded_move == MOVE_NONE) {
@@ -573,13 +583,15 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         make_null_move(b, u);
         ss->move = MOVE_NONE;
         ss->piece = NONE_PIECE;
-        int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1, H, rep_stack, rep_len, false, ss + 1);
+        int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1,
+                             H, rep_stack, rep_len, false, !cut_node, ss + 1);
         unmake_null_move(b, u);
 
         if (search_stopped()) return 0;
         if (score >= beta) {
             if (depth >= Tune::nmp_verify_min_depth) {
-                int verify = negamax(b, depth - R, beta - 1, beta, ply, H, rep_stack, rep_len, false, ss, false);
+                int verify = negamax(b, depth - R, beta - 1, beta, ply,
+                                     H, rep_stack, rep_len, false, cut_node, ss, false);
                 if (search_stopped()) return 0;
                 if (verify < beta) {
                     // Zugzwang-ish high-depth fail highs must survive verification.
@@ -602,7 +614,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         int se_depth = (depth - 1) / Tune::se_reduction_denom;
 
         ss->excluded_move = tt_move;
-        int score = negamax(b, se_depth, r_beta - 1, r_beta, ply, H, rep_stack, rep_len, false, ss);
+        int score = negamax(b, se_depth, r_beta - 1, r_beta, ply,
+                            H, rep_stack, rep_len, false, cut_node, ss);
         ss->excluded_move = MOVE_NONE;
 
         if (score < r_beta) extension = 1;
@@ -678,13 +691,16 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
         // PVS Logic with LMR
         if (legal_count == 1) {
-            score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, pv_node, ss + 1);
+            const bool child_cut_node = pv_node ? false : !cut_node;
+            score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1,
+                             H, rep_stack, rep_len + 1, pv_node, child_cut_node, ss + 1);
         } else {
             int reduction = 0;
             if (depth >= Tune::lmr_min_depth && is_quiet && m != tt_move && m != H.killers[ply][0]) {
                 reduction = lmr_reduction_base(depth, legal_count);
-                if (!pv_node) reduction++;
-                if (pv_node) reduction--;
+                reduction += pv_node ? Tune::lmr_pv_offset : Tune::lmr_nonpv_offset;
+                if (cut_node) reduction += Tune::cutnode_lmr_reduction;
+                if (improving) reduction -= Tune::improving_lmr_reduction;
                 if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth) reduction++;
                 int hist = quiet_history_score(b, m, ply, H, ss);
                 if (hist > Tune::lmr_good_history_threshold) reduction--;
@@ -692,11 +708,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
-            score = -negamax(b, depth - 1 - reduction + d_ext, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false, ss + 1);
+            score = -negamax(b, depth - 1 - reduction + d_ext, -alpha - 1, -alpha, ply + 1,
+                             H, rep_stack, rep_len + 1, false, !cut_node, ss + 1);
             if (score > alpha && reduction > 0)
-                score = -negamax(b, depth - 1 + d_ext, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false, ss + 1);
+                score = -negamax(b, depth - 1 + d_ext, -alpha - 1, -alpha, ply + 1,
+                                 H, rep_stack, rep_len + 1, false, !cut_node, ss + 1);
             if (pv_node && score > alpha && score < beta)
-                score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, true, ss + 1);
+                score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1,
+                                 H, rep_stack, rep_len + 1, true, false, ss + 1);
         }
 
         unmake_move(b, m, u);
@@ -873,11 +892,14 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
                 int score;
                 if (legal_root_count == 1) {
-                    score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true, ss + 1);
+                    score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1,
+                                     H, rep_stack, rep_len + 1, true, false, ss + 1);
                 } else {
-                    score = -negamax(b, depth - 1, -current_alpha - 1, -current_alpha, 1, H, rep_stack, rep_len + 1, false, ss + 1);
+                    score = -negamax(b, depth - 1, -current_alpha - 1, -current_alpha, 1,
+                                     H, rep_stack, rep_len + 1, false, true, ss + 1);
                     if (score > current_alpha && score < current_beta) {
-                        score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true, ss + 1);
+                        score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1,
+                                         H, rep_stack, rep_len + 1, true, false, ss + 1);
                     }
                 }
 

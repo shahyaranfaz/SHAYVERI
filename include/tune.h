@@ -77,6 +77,16 @@ inline int corrhist_depth_cap   =  16;
 inline double lmr_base  = 1.28644;
 inline double lmr_scale = 1.89303;
 
+// V2.7 phase 1: position-state-aware LMR.
+// Set either adjustment to zero for a direct feature ablation.
+inline int improving_lmr_reduction = 1;
+inline int cutnode_lmr_reduction   = 1;
+
+// Node-type offsets preserve the established reduction policy. Keep them with
+// the other LMR terms for a future focused tuning pass.
+inline int lmr_pv_offset    = -1;
+inline int lmr_nonpv_offset =  1;
+
 // Future search gates. These retain the current search behavior until a
 // focused tuning batch adopts them.
 inline int qsearch_start_depth         =  8;
@@ -424,6 +434,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"LMP_Mult",            {&lmp_mult,               TuningOption::INT,     1,     3,   "1"}},
     {"SEE_Pruning_Margin",  {&see_pruning_margin,     TuningOption::INT,  -600,  -40, "-248"}},
     {"QS_Delta_Margin",     {&qs_delta_margin,        TuningOption::INT,    50,   350, "196"}},
+
     // Batch 2: null move / singular extensions
     {"NMP_Margin_Mult",     {&nmp_margin_mult,        TuningOption::INT,     0,    60,  "18"}},
     {"NMP_Eval_Divisor",    {&nmp_eval_divisor,       TuningOption::INT,    80,   500, "200"}},
@@ -433,6 +444,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"SE_Depth_Margin",     {&se_depth_margin,        TuningOption::INT,     1,     8,   "2"}},
     {"SE_Margin",           {&se_margin,              TuningOption::INT,    25,    100,  "58"}},
     {"SE_Reduction_Denom",  {&se_reduction_denom,     TuningOption::INT,     2,     6,   "4"}},
+
     // Batch 3: history / move ordering
     {"History_Bonus_Mult",  {&history_bonus_mult,     TuningOption::INT,   280,   720,  "468"}},
     {"History_Bonus_Sub",   {&history_bonus_sub,      TuningOption::INT,    60,   340,  "165"}},
@@ -446,6 +458,12 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"CorrHist_Bonus_Mult", {&corrhist_bonus_mult,    TuningOption::INT,     0,   128,  "32"}},
     {"CorrHist_Bonus_Limit",{&corrhist_bonus_limit,   TuningOption::INT,   128,  4096, "768"}},
     {"CorrHist_Max",        {&corrhist_max,           TuningOption::INT,  2048, 32768, "8192"}},
+
+    // New: v2.7.1
+    {"Improving_LMR_Reduction", {&improving_lmr_reduction, TuningOption::INT,  0,     3,         "1"}},
+    {"CutNode_LMR_Reduction",   {&cutnode_lmr_reduction,   TuningOption::INT,  0,     3,         "1"}},
+    {"LMR_PV_Offset",           {&lmr_pv_offset,           TuningOption::INT, -3,     0,        "-1"}},
+    {"LMR_NonPV_Offset",        {&lmr_nonpv_offset,        TuningOption::INT,  0,     3,         "1"}},
 
     // Future / ungrouped search gates
     {"CorrHist_Depth_Cap",      {&corrhist_depth_cap,          TuningOption::INT,     1,    32,  "16"}},

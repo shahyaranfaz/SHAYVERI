@@ -51,7 +51,7 @@ go movetime 1000
 - Quiescence search
 - Null move pruning
 - Internal iterative reductions (IIR)
-- Late move reductions (LMR)
+- Late move reductions (LMR), including improving and cut-node-aware reductions
 - Late move pruning (LMP)
 - Singular extensions
 - Futility pruning and reverse futility pruning
@@ -136,5 +136,5 @@ make test
 - SEE regression checks.
 - Evaluation symmetry checks on vertically mirrored, color-swapped positions.
 - Transposition-table safety checks.
-- UCI smoke tests covering handshake, fixed-depth search, bench node signature, opening-book on/off behavior, and deterministic `Threads=1` search.
+- UCI checks covering handshake, fixed-depth search, bench node signature, opening-book on/off behavior, and deterministic `Threads=1` search.
 - Tactical mate-in-1 regression positions adapted from `StuartRiffle/JaglavakTestData`.

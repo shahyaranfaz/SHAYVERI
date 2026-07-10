@@ -68,7 +68,7 @@ test: perft_suite \
 	eval_symmetry_suite \
 	tt_safety_suite \
 	nnue_suite \
-	uci_smoke \
+	uci_check \
 	tactical_regression
 
 $(BIN): $(PERFT_SRC)
@@ -128,8 +128,8 @@ nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 ensure_engine:
 	@if [ ! -x ../SHAYVERI ]; then $(MAKE) -C ..; fi
 
-uci_smoke: ensure_engine
-	$(PYTHON) uci_smoke.py
+uci_check: ensure_engine
+	$(PYTHON) uci_check.py
 
 tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py
@@ -138,4 +138,4 @@ clean:
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite nnue_suite ensure_engine uci_smoke tactical_regression clean
+.PHONY: all test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite nnue_suite ensure_engine uci_check tactical_regression clean

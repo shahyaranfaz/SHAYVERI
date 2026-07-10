@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-UCI smoke checks borrowed from the style of:
+UCI checks borrowed from the style of:
 - official-stockfish/Stockfish/tests/instrumented.py
 """
 
@@ -114,8 +114,16 @@ def main() -> int:
         handshake = run_engine(["uci", "isready"])
         require(handshake, "uciok")
         require(handshake, "readyok")
+        require(handshake, "option name Improving_LMR_Reduction type spin")
+        require(handshake, "option name CutNode_LMR_Reduction type spin")
+        require(handshake, "option name LMR_PV_Offset type spin")
+        require(handshake, "option name LMR_NonPV_Offset type spin")
 
         startpos = run_engine([
+            "setoption name Improving_LMR_Reduction value 0",
+            "setoption name CutNode_LMR_Reduction value 0",
+            "setoption name LMR_PV_Offset value -1",
+            "setoption name LMR_NonPV_Offset value 1",
             "setoption name OwnBook value false",
             "ucinewgame",
             "position startpos",
@@ -135,7 +143,7 @@ def main() -> int:
                 f"bench signature changed, expected {BENCH_SIGNATURE_NODES}, got {bench_nodes}"
             )
 
-        # Position borrowed from official Stockfish UCI smoke tests.
+        # Position borrowed from official Stockfish UCI checks.
         fen_case = run_engine([
             "ucinewgame",
             "position fen 5rk1/1K4p1/8/8/3B4/8/8/8 b - - 0 1",
@@ -183,10 +191,10 @@ def main() -> int:
                 f"determinism failure: run1 bestmove={bm1} pv={pv1!r}, run2 bestmove={bm2} pv={pv2!r}"
             )
 
-        print("UCI smoke tests passed (flow + bench signature + book probe + determinism).")
+        print("UCI checks passed (flow + bench signature + book probe + determinism).")
         return 0
     except Exception as exc:
-        print(f"UCI smoke tests failed: {exc}", file=sys.stderr)
+        print(f"UCI checks failed: {exc}", file=sys.stderr)
         traceback.print_exc()
         return 2
 

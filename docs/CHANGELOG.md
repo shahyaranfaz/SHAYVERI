@@ -225,6 +225,17 @@ self-generated corpus/labels were the blocker.
   `3136.5 +/-28.9` LTC.
 - Standardized release docs on `HCE-classical` for the handcrafted evaluator.
 
+## v2.7 Search Refinement
+
+- Added an improving heuristic to LMR using the same-side static evaluation
+  from two plies earlier.
+- Added cut-node-aware LMR and propagated cut-node state through the relevant
+  PVS, null-move, and singular-search paths.
+- Exposed the improving, cut-node, PV, and non-PV LMR adjustments as UCI
+  tuning knobs. Their defaults preserve the accepted phase-1 policy.
+- The phase-1 pair finished ahead in an STC ablation, with `p11` scoring
+  `466-417-717` against `p00` at `3+0.03`.
+
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 
 Version 3.0 starts the serious self-looping NNUE line: train a KB16 network
