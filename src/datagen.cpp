@@ -397,8 +397,6 @@ bool play_twic_book_opening(Board &b,
         Undo u;
         if (!make_move(b, chosen, u)) return false;
         history.push_back(b.hash);
-
-        if (terminal_result(b, history).end != GameEnd::None) return false;
     }
 
     return true;
@@ -612,12 +610,13 @@ void datagen_worker(int id,
             int qscore_white = score_to_white_pov(b, qsearch_score(b));
             SearchResult search_result = fixed_node_search(b, history, options.search_nodes);
 
-            MoveList legal = generate_legal_moves(b);
             Move chosen = search_result.best_move;
-            if (chosen == MOVE_NONE && legal.count > 0) chosen = legal.moves[0];
             if (chosen == MOVE_NONE) {
-                result = terminal_result(b, history);
-                if (result.end == GameEnd::None) result = {GameEnd::Draw, 1};
+                MoveList legal = generate_legal_moves(b);
+                if (legal.count > 0) chosen = legal.moves[0];
+            }
+            if (chosen == MOVE_NONE) {
+                result = {GameEnd::Draw, 1};
                 break;
             }
 

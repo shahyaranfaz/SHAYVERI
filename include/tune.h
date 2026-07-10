@@ -77,8 +77,7 @@ inline int corrhist_depth_cap   =  16;
 inline double lmr_base  = 1.28644;
 inline double lmr_scale = 1.89303;
 
-// V2.7 phase 1: position-state-aware LMR.
-// Set either adjustment to zero for a direct feature ablation.
+// V2.7 phase 1: position-state-aware LMR adjustments.
 inline int improving_lmr_reduction = 1;
 inline int cutnode_lmr_reduction   = 1;
 

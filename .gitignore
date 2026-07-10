@@ -10,6 +10,7 @@ debug/see_tests
 debug/eval_symmetry
 debug/tt_safety
 debug/nnue_test
+debug/nnue_*_test.nnue
 debug/__pycache__
 
 nnue/v*/

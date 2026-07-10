@@ -1,10 +1,10 @@
 CXX := g++
+PYTHON ?= python3
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
 
 DEFAULT_NNUE := ../SHAYVERI2_5_0.nnue
-EMBED_NNUE := ../build/embed_nnue
-EMBEDDED_NNUE_SRC := ../build/embedded_nnue.cpp
+DEBUG_EMBEDDED_NNUE_SRC := embedded_nnue_stub.cpp
 
 COMMON_SRC := \
 	../src/board.cpp \
@@ -15,7 +15,7 @@ COMMON_SRC := \
 	../src/evaluate.cpp \
 	../src/search.cpp \
 	../src/nnue.cpp \
-	$(EMBEDDED_NNUE_SRC) \
+	$(DEBUG_EMBEDDED_NNUE_SRC) \
 	../src/nnue_avx2.cpp \
 	../src/nnue_update.cpp \
 	../src/zobrist.cpp \
@@ -36,7 +36,7 @@ NNUE_TEST_SRC := \
 	../src/make.cpp \
 	../src/move_gen.cpp \
 	../src/nnue.cpp \
-	$(EMBEDDED_NNUE_SRC) \
+	$(DEBUG_EMBEDDED_NNUE_SRC) \
 	../src/nnue_avx2.cpp \
 	../src/nnue_update.cpp \
 	../src/zobrist.cpp \
@@ -52,13 +52,6 @@ TT_SAFETY_BIN := tt_safety
 NNUE_TEST_BIN := nnue_test
 
 all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN)
-
-$(EMBED_NNUE): ../src/tools/embed_nnue.cpp
-	mkdir -p ../build
-	$(CXX) -std=c++20 -O2 -Wall -Wextra -Wpedantic -o $@ ../src/tools/embed_nnue.cpp
-
-$(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) $(EMBED_NNUE)
-	$(EMBED_NNUE) $(DEFAULT_NNUE) $@ SHAYVERI2_5_0.nnue
 
 test: perft_suite \
 	fen_state_suite \
@@ -95,10 +88,11 @@ $(TT_SAFETY_BIN): $(TT_SAFETY_SRC)
 $(NNUE_TEST_BIN): $(NNUE_TEST_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(NNUE_TEST_SRC)
 
-nnue_classic_test.nnue nnue_kb8_test.nnue:
-	$(PYTHON) -c "import struct; h=256; magic=0x4E4E5545; \
-open('nnue_classic_test.nnue','wb').write(struct.pack('<II', magic, 2) + bytes(768*h*2) + bytes(h*2) + bytes(h*2*2) + bytes(4)); \
-open('nnue_kb8_test.nnue','wb').write(struct.pack('<III', magic, 3, 8) + bytes(768*8*h*2) + bytes(h*2) + bytes(h*2*2) + bytes(4))"
+nnue_classic_test.nnue:
+	$(PYTHON) -c "import struct; h=256; magic=0x4E4E5545; open('nnue_classic_test.nnue','wb').write(struct.pack('<II', magic, 2) + bytes(768*h*2) + bytes(h*2) + bytes(h*2*2) + bytes(4))"
+
+nnue_kb8_test.nnue:
+	$(PYTHON) -c "import struct; h=256; magic=0x4E4E5545; open('nnue_kb8_test.nnue','wb').write(struct.pack('<III', magic, 3, 8) + bytes(768*8*h*2) + bytes(h*2) + bytes(h*2*2) + bytes(4))"
 
 perft_suite: $(BIN)
 	./$(BIN) suite
@@ -121,9 +115,10 @@ eval_symmetry_suite: $(EVAL_SYM_BIN)
 tt_safety_suite: $(TT_SAFETY_BIN)
 	./$(TT_SAFETY_BIN)
 
-nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
+nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue $(DEFAULT_NNUE)
 	./$(NNUE_TEST_BIN) nnue_classic_test.nnue
 	./$(NNUE_TEST_BIN) nnue_kb8_test.nnue
+	./$(NNUE_TEST_BIN) $(DEFAULT_NNUE)
 
 ensure_engine:
 	@if [ ! -x ../SHAYVERI ]; then $(MAKE) -C ..; fi

@@ -54,33 +54,33 @@ Piece promoted_piece(Colour stm, PieceType promo) {
 } // namespace
 
 void update_accumulator(Accumulator &child, const Accumulator &parent,
-                        const Board &b, Move m) {
+                        const Board &post, Move m, const Undo &u) {
     child = parent;
 
     Square from = move_from(m);
     Square to = move_to(m);
-    Piece moved = b.get_piece(from);
-    Piece captured = b.get_piece(to);
     PieceType promo = move_promo(m);
-    Colour stm = b.side_to_move;
-    Square white_king_sq = king_square(b, WHITE);
-    Square black_king_sq = king_square(b, BLACK);
+    Colour stm = flip(post.side_to_move);
+    Piece moved = promo != NONE_PTYPE
+                    ? (stm == WHITE ? WP : BP)
+                    : post.get_piece(to);
+    Piece captured = u.captured;
+    Square white_king_sq = king_square(post, WHITE);
+    Square black_king_sq = king_square(post, BLACK);
 
     if (get_type(moved) == KING && has_king_buckets()) {
-        Board post = b;
-        Undo u;
-        if (!make_move(post, m, u)) {
-            child = parent;
-            return;
-        }
         child.refresh(post);
         return;
     }
 
+    if (get_type(moved) == KING) {
+        if (stm == WHITE) white_king_sq = from;
+        else              black_king_sq = from;
+    }
+
     if (is_ep_move(m)) {
         Square cap_sq = (stm == WHITE) ? to - 8 : to + 8;
-        Piece ep_pawn = b.get_piece(cap_sq);
-        acc_sub(child, ep_pawn, cap_sq, white_king_sq, black_king_sq);
+        acc_sub(child, captured, cap_sq, white_king_sq, black_king_sq);
         acc_sub(child, moved, from, white_king_sq, black_king_sq);
         acc_add(child, moved, to, white_king_sq, black_king_sq);
         return;
@@ -116,7 +116,7 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
         return;
     }
 
-    if (captured != NONE_PIECE)
+    if (captured != NONE_PIECE && !u.was_ep)
         acc_sub(child, captured, to, white_king_sq, black_king_sq);
 
     acc_sub(child, moved, from, white_king_sq, black_king_sq);

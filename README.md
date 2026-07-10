@@ -48,7 +48,7 @@ go movetime 1000
 
 - Negamax with alpha-beta pruning and Principal Variation Search
 - Iterative deepening with aspiration windows
-- Quiescence search
+- Quiescence search with legal check evasions at the depth floor
 - Null move pruning
 - Internal iterative reductions (IIR)
 - Late move reductions (LMR), including improving and cut-node-aware reductions
@@ -111,7 +111,7 @@ make -C scripts/opening_book dump_keys
 
 - `Hash`: transposition table size in MB.
 - `Clear Hash`: clear the transposition table.
-- `Threads`: number of search threads.
+- `Threads`: requested search threads, bounded by detected hardware capacity.
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
 - `UseNNUE`: enable or disable NNUE evaluation without changing the configured network path.

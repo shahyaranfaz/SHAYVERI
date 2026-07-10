@@ -15,7 +15,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 852425
+BENCH_SIGNATURE_NODES = 344477
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -120,8 +120,8 @@ def main() -> int:
         require(handshake, "option name LMR_NonPV_Offset type spin")
 
         startpos = run_engine([
-            "setoption name Improving_LMR_Reduction value 0",
-            "setoption name CutNode_LMR_Reduction value 0",
+            "setoption name Improving_LMR_Reduction value 1",
+            "setoption name CutNode_LMR_Reduction value 1",
             "setoption name LMR_PV_Offset value -1",
             "setoption name LMR_NonPV_Offset value 1",
             "setoption name OwnBook value false",

@@ -98,11 +98,10 @@ static int check_position(Board &b) {
         Board copy = b;
 
         NNUE::Accumulator child;
-        NNUE::update_accumulator(child, parent, copy, m);
-
         Undo u;
         if (!make_move(copy, m, u))
             continue;
+        NNUE::update_accumulator(child, parent, copy, m, u);
 
         NNUE::Accumulator refreshed;
         refreshed.refresh(copy);

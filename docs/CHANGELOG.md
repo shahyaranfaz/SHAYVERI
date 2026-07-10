@@ -233,8 +233,20 @@ self-generated corpus/labels were the blocker.
   PVS, null-move, and singular-search paths.
 - Exposed the improving, cut-node, PV, and non-PV LMR adjustments as UCI
   tuning knobs. Their defaults preserve the accepted phase-1 policy.
-- The phase-1 pair finished ahead in an STC ablation, with `p11` scoring
-  `466-417-717` against `p00` at `3+0.03`.
+- The phase-1 pair finished ahead in an STC ablation, with new scoring
+  `466-417-717` against old at `3+0.03`.
+- Hardened UCI option changes by stopping active searches before mutating TT,
+  NNUE, thread, or tuning state, and bounded active SMP to detected hardware
+  capacity.
+- Fixed qsearch so checked positions continue through legal evasions at the
+  depth floor instead of receiving a normal static evaluation.
+- Removed repeated hot-path logarithms from LMR, reused SEE results for
+  pruning, and avoided NNUE accumulator work for illegal candidate moves.
+- Removed redundant legal move generation from the datagen opening and
+  fallback paths.
+- Validated the audit fixes against the previous binary in a 1,600-game
+  Fastchess regression: new scored `454-419-727` vs old, equivalent to
+  `+7.6 +/- 12.6 Elo`, consistent with no measurable regression.
 
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 

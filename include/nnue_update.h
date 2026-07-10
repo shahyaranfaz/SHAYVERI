@@ -2,6 +2,7 @@
 #define NNUE_UPDATE_H
 
 #include "board.h"
+#include "make.h"
 #include "move.h"
 #include "nnue.h"
 
@@ -9,7 +10,7 @@ namespace SHAYVERI {
 namespace NNUE {
 
 void update_accumulator(Accumulator &child, const Accumulator &parent,
-                        const Board &b, Move m);
+                        const Board &post, Move m, const Undo &u);
 
 } // namespace NNUE
 

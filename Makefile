@@ -1,5 +1,3 @@
-MAKEFLAGS += -j$(shell nproc)
-
 CXX := g++
 CXX_WIN := x86_64-w64-mingw32-g++
 CXX_MACOS := clang++

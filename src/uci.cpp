@@ -50,6 +50,10 @@ static std::atomic<bool> g_pondering{false};  // currently in ponder search
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
 
+static int active_thread_limit() {
+    return static_cast<int>(std::max(1u, std::thread::hardware_concurrency()));
+}
+
 static void stop_search() {
     g_stop = true;
     for (auto &t : smp_threads)
@@ -458,6 +462,9 @@ int main(int argc, char **argv) {
 
         // ===== SETOPTION =====
         else if (token == "setoption") {
+            // Options may mutate TT, NNUE, or tuning state. Never change them
+            // while a search thread is reading the same state.
+            stop_search();
             std::string skip;
             iss >> skip; // "name"
             std::string opt_name;
@@ -665,7 +672,10 @@ int main(int argc, char **argv) {
             std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
 
             Board b_copy    = b;
-            int   num_thr   = g_num_threads;
+            int   num_thr   = std::min(g_num_threads, active_thread_limit());
+            if (num_thr != g_num_threads)
+                std::cout << "info string Threads clamped to " << num_thr
+                          << " by hardware capacity\n";
             I64   hard_ms   = g_time_manager.hard_ms();
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;

@@ -39,15 +39,30 @@ thread_local U64 local_node_limit = 0;
 
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
-    const double d = static_cast<double>(depth);
-    const double m = static_cast<double>(moves);
+    static const auto depth_log = [] {
+        std::array<double, MAX_PLY + 1> values{};
+        for (int i = 2; i <= MAX_PLY; ++i)
+            values[i] = std::log(static_cast<double>(i));
+        return values;
+    }();
+    static const auto move_log = [] {
+        std::array<double, 256> values{};
+        for (int i = 2; i < static_cast<int>(values.size()); ++i)
+            values[i] = std::log(static_cast<double>(i));
+        return values;
+    }();
+
+    const int bounded_depth = std::min(depth, MAX_PLY);
+    const int bounded_moves = std::min(moves, 255);
     const double scale = std::max(0.01, Tune::lmr_scale);
-    return static_cast<int>(Tune::lmr_base + std::log(d) * std::log(m) / scale);
+    return static_cast<int>(Tune::lmr_base +
+                            depth_log[bounded_depth] * move_log[bounded_moves] / scale);
 }
 
 struct ScoredMove {
     Move m;
     int score;
+    int see_value = 0;
 };
 
 // Tracks per-ply state for histories and extensions.
@@ -303,10 +318,12 @@ static inline bool is_capture_or_promo(const Board& b, Move m) {
     return b.get_piece(move_to(m)) != NONE_PIECE;
 }
 
-static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H, StackInfo* ss) {
+static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H,
+                              StackInfo* ss, int *see_value_out = nullptr) {
     int cap = capture_order_score(b, m);
     if (cap != 0) {
         int see_val = see(b, m);
+        if (see_value_out != nullptr) *see_value_out = see_val;
         // Add capture history bonus for non-promotion captures to fine-tune ordering
         int ch = 0;
         if (move_promo(m) == NONE_PTYPE) {
@@ -425,7 +442,10 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         if (stand_pat > alpha) alpha = stand_pat;
         if (depth <= 0) return alpha;
     } else {
-        if (depth < Tune::qsearch_min_depth) return evaluate_position(b, ss);
+        // A checked node must search legal evasions even at the qsearch floor.
+        // Bound pathological checking sequences before the fixed search stack
+        // can be exhausted. Never return a normal static evaluation in check.
+        if (ply >= MAX_PLY - 2) return alpha;
     }
 
     MoveList moves;
@@ -468,8 +488,8 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         }
 
         Undo u;
-        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
         if (!make_move(b, m, u)) continue;
+        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
         legal_count++;
 
         int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1, ss + 1);
@@ -632,9 +652,10 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
     ScoredMove ordered[256];
     for (int i = 0; i < pseudo.count; ++i) {
         Move m = pseudo.moves[i];
-        int s  = order_score(b, m, ply, H, ss);
+        int see_value = 0;
+        int s  = order_score(b, m, ply, H, ss, &see_value);
         if (tt_move != MOVE_NONE && m == tt_move) s += 2000000;
-        ordered[i] = {m, s};
+        ordered[i] = {m, s, see_value};
     }
     int ordered_count = pseudo.count;
 
@@ -663,7 +684,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
             if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
             if (is_quiet && depth <= Tune::futility_max_depth && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
             if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_pruning_max_depth &&
-                see(b, m) < Tune::see_pruning_margin * depth)
+                ordered[i].see_value < Tune::see_pruning_margin * depth)
                 continue;
         }
 
@@ -676,8 +697,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
 
         Undo u;
-        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
         if (!make_move(b, m, u)) continue;
+        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
 
         legal_count++;
         if (is_quiet) quiets_played[quiet_count++] = m;
@@ -882,8 +903,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
                 Undo u;
                 Piece root_piece = b.get_piece(move_from(m));
-                NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
                 if (!make_move(b, m, u)) continue;
+                NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
                 legal_root_count++;
                 rep_stack[rep_len] = b.hash;
 
