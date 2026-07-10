@@ -33,6 +33,11 @@ make clean
 ```
 Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support. The engine binary can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
 
+The default net, `SHAYVERI2_5_0.nnue`, is automatically embedded into the binary.
+Hence, the netfile must be at root-level while building.
+Once built, the `.nnue` file is no longer necessary.
+An external network can be loaded through the `EvalFile` UCI option.
+
 ## How to use
 
 SHAYVERI implements the UCI protocol. Load it as an engine in any UCI-compatible GUI, or run it directly and communicate via stdin/stdout:
@@ -66,8 +71,6 @@ go movetime 1000
 
 ## Evaluation paths
 
-Current builds embed `SHAYVERI2_5_0.nnue` and use it by default. External networks can still be loaded through `EvalFile`. The original handcrafted evaluator remains available as `HCE-classical` through `UseNNUE=false`.
-
 The current public NNUE line was trained using external Stockfish/RobotMoon-style position corpora; those corpora are not included in this repository.
 
 ## Handcrafted evaluation
@@ -99,7 +102,7 @@ make -C scripts/opening_book dump_keys
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
 - `UseNNUE`: enable or disable NNUE evaluation without changing the configured network path.
-- `EvalFile`: NNUE network path. Defaults to the embedded `SHAYVERI2_5_0.nnue`; set an explicit path to load an external network.
+- `EvalFile`: NNUE network path. set an explicit path to load an external network.
 - `Move Overhead`: GUI/network delay reserve, in milliseconds.
 
 ## Verification
