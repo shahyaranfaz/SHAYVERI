@@ -336,7 +336,7 @@
     <section id="overview">
       <div class="wrap">
         <h2>Overview</h2>
-        <p class="lead">SHAYVERI is a native chess engine written in C++. The README describes a full classical search and evaluation stack, with parameters tuned by SPSA and Texel tuning on self-play datasets. Current builds embed <code>SHAYVERI2_5_0.nnue</code>, while the classical handcrafted evaluator remains available through <code>UseNNUE=false</code>.</p>
+        <p class="lead">SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and an embedded NNUE evaluation path.</p>
         <div class="card-grid">
           <article class="card">
             <h3>Protocol</h3>
@@ -348,7 +348,7 @@
           </article>
           <article class="card">
             <h3>Book</h3>
-            <p>Includes an embedded opening book built from 2600+ rated TWIC games with precomputed cached evaluations.</p>
+            <p>Includes an embedded opening book built from 2600+ rated TWIC games. Its cached Stockfish evaluations are only for consistency in chess GUIs that display engine evaluation and are not used by SHAYVERI.</p>
             <pre><code>make -C scripts/opening_book dump_keys</code></pre>
           </article>
         </div>
@@ -424,7 +424,7 @@
     <section id="evaluation">
       <div class="wrap">
         <h2>Evaluation Paths</h2>
-        <p class="lead">SHAYVERI has two evaluation paths: HCE-classical and NNUE. Current builds embed <code>SHAYVERI2_5_0.nnue</code> and can still load external networks through <code>EvalFile</code>. The current public NNUE line was trained using external Stockfish/RobotMoon-style position corpora, which are not included in this repository.</p>
+        <p class="lead">There are two available evaluation paths: <code>NNUE</code> and <code>HCE-classical</code>, which can be chosen between with the <code>UseNNUE</code> UCI option.</p>
         <div class="split">
           <article class="card">
             <h3>Handcrafted Evaluation</h3>
@@ -439,9 +439,11 @@
             <h3>NNUE</h3>
             <ul>
               <li>Embedded default network: <code>SHAYVERI2_5_0.nnue</code>.</li>
-              <li>Used by search when the network is successfully loaded.</li>
+              <li>KB16x512: Chess768 features, 16 mirrored king buckets, 512 hidden units, and SCReLU.</li>
+              <li>Incremental two-perspective accumulators during search.</li>
               <li>Pinned at +451.2 Elo STC and +417.7 Elo LTC over HCE-classical.</li>
-              <li>External network files can still be loaded through <code>EvalFile</code>.</li>
+              <li>Compatible external Chess768, KB8, and KB16 networks can be loaded through <code>EvalFile</code>.</li>
+              <li>Trained from external Stockfish/RobotMoon-style corpora, not included here.</li>
             </ul>
           </article>
         </div>
@@ -463,14 +465,14 @@
           <article class="card">
             <h3>Pruning</h3>
             <ul>
-              <li>Null move pruning, LMR, LMP, futility pruning, reverse futility pruning, and delta pruning.</li>
+              <li>Null move pruning, IIR, LMR, LMP, futility pruning, reverse futility pruning, and delta pruning.</li>
               <li>Singular extensions and SEE-backed move decisions.</li>
             </ul>
           </article>
           <article class="card">
             <h3>State</h3>
             <ul>
-              <li>Killer moves, gravity-based history tables, and two-ply continuation histories.</li>
+              <li>Killer moves, gravity-based main, continuation, capture, and correction histories.</li>
               <li>Atomic bucketed TT, repetition detection, Lazy SMP with shared TT, and dynamic time management.</li>
             </ul>
           </article>
@@ -497,6 +499,7 @@ position startpos moves e2e4 e7e5
 go movetime 1000</code></pre>
           </article>
         </div>
+        <p class="note">The default net, <code>SHAYVERI2_5_0.nnue</code>, is automatically embedded into the binary. Hence, the <code>.nnue</code> file must be at root-level only while building. An external network can be loaded through the <code>EvalFile</code> UCI option.</p>
       </div>
     </section>
 
@@ -509,7 +512,9 @@ go movetime 1000</code></pre>
           <div class="card"><h3>Ponder</h3><p>Enable ponder output and search support.</p></div>
           <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
           <div class="card"><h3>UseNNUE</h3><p>Enable or disable NNUE evaluation without changing the configured network path.</p></div>
-          <div class="card"><h3>EvalFile</h3><p>NNUE network path. Defaults to the embedded <code>SHAYVERI2_5_0.nnue</code>.</p></div>
+          <div class="card"><h3>EvalFile</h3><p>Set an explicit network path to load an external NNUE file.</p></div>
+          <div class="card"><h3>Clear Hash</h3><p>Clear the transposition table.</p></div>
+          <div class="card"><h3>Minimum Thinking Time</h3><p>Minimum move time in milliseconds.</p></div>
           <div class="card"><h3>Move Overhead</h3><p>GUI or network delay reserve in milliseconds.</p></div>
         </div>
       </div>
@@ -519,8 +524,7 @@ go movetime 1000</code></pre>
       <div class="wrap">
         <h2>Verification</h2>
         <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, UCI smoke tests, opening-book behavior, deterministic single-thread search, and tactical mate-in-1 regression positions.</p>
-        <pre><code>make test
-make release_test</code></pre>
+        <pre><code>make test</code></pre>
       </div>
     </section>
   </main>

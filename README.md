@@ -4,7 +4,7 @@
 
 SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and an embedded NNUE evaluation path. The current public strength numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850` and `SF3000`, and should not be read as universal CCRL ratings.
 
-Release labels separate the engine version, evaluator, and network. The current release is `SHAYVERI v2.6 / NNUE SHAYVERI2_5_0`.
+Release labels separate the SHAYVERI source version, evaluator, and network. The current release is `SHAYVERI v2.6 / NNUE SHAYVERI2_5_0`.
 
 ## Elo results
 
@@ -20,7 +20,7 @@ The v2.6 NNUE configuration is about +451.2 Elo over HCE-classical at STC and +4
 ## How to build
 
 Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support. 
-The engine binary can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
+SHAYVERI can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
 
 ```bash
 make
@@ -30,8 +30,7 @@ make clean
 ```
 
 The default net, `SHAYVERI2_5_0.nnue`, is automatically embedded into the binary.
-Hence, the `.nnue` file must be at root-level while building.
-Once built, the `.nnue` file is no longer necessary.
+Hence, the `.nnue` file must be at root-level only while building.
 An external network can be loaded through the `EvalFile` UCI option.
 
 ## How to use
@@ -51,6 +50,7 @@ go movetime 1000
 - Iterative deepening with aspiration windows
 - Quiescence search
 - Null move pruning
+- Internal iterative reductions (IIR)
 - Late move reductions (LMR)
 - Late move pruning (LMP)
 - Singular extensions
@@ -58,7 +58,7 @@ go movetime 1000
 - Delta pruning
 - Check extensions
 - SEE (Static Exchange Evaluation) for move ordering
-- Killer moves, gravity-based history tables, and two-ply continuation histories
+- Killer moves, gravity-based main, continuation, and capture histories
 - Static-evaluation correction history
 - Atomic 4-entry bucketed transposition table with Zobrist hashing
 - Repetition detection (2-fold during search, 3-fold draw claim)
@@ -67,7 +67,8 @@ go movetime 1000
 
 ## Evaluation paths
 
-The current public NNUE line was trained using external Stockfish/RobotMoon-style position corpora; those corpora are not included in this repository.
+There are two available evaluation paths: `NNUE` and `HCE-classical`, which can be chosen between
+with the `UseNNUE` UCI option.
 
 ## Handcrafted evaluation
 
@@ -81,9 +82,24 @@ The current public NNUE line was trained using external Stockfish/RobotMoon-styl
 - Tempo and initiative bonuses
 - All evaluation parameters tuned via SPSA and Texel tuning
 
+## NNUE evaluation
+
+The embedded default, `SHAYVERI2_5_0.nnue`, is a `KB16x512` network: Chess768
+features split across 16 mirrored king buckets, a 512-wide hidden layer, and
+SCReLU activation. Search keeps both perspectives in incrementally updated
+accumulators as moves are made and unmade.
+
+The runtime also accepts compatible external classic Chess768 and KB8/KB16
+networks with 256 or 512 hidden units. Select one through `EvalFile`. Changing
+the network clears the transposition table and persistent search histories.
+
+The current public NNUE line was trained using external Stockfish/RobotMoon-style
+position corpora, which are not included in this repository.
+
 ## Opening book
 
-Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluations are precomputed and cached.
+Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluations are precomputed with Stockfish
+and cached. These evaluations are not used by SHAYVERI, but are included for consistency in Chess GUIs that display engine evaluation.
 
 Opening-book helper tools live in `scripts/opening_book/`:
 
@@ -94,11 +110,13 @@ make -C scripts/opening_book dump_keys
 ## UCI options
 
 - `Hash`: transposition table size in MB.
+- `Clear Hash`: clear the transposition table.
 - `Threads`: number of search threads.
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
 - `UseNNUE`: enable or disable NNUE evaluation without changing the configured network path.
 - `EvalFile`: NNUE network path. Set an explicit path to load an external network.
+- `Minimum Thinking Time`: minimum move time, in milliseconds.
 - `Move Overhead`: GUI/network delay reserve, in milliseconds.
 
 ## Verification

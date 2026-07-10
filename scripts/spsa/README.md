@@ -105,4 +105,4 @@ Runtime copy layout
 
 In the repository, Python helpers live in `scripts/spsa/lakas/`. On a trainer
 box, `lakas_nnue.py` may instead be copied side-by-side with `master.sh`,
-`worker.sh`, and `common.sh`; the scripts check for that flat layout first.
+`worker.sh`, and `common.sh`. The scripts check for that flat layout first.

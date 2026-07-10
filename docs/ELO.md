@@ -2,16 +2,16 @@
 
 These ratings are from local multi-engine round-robin gauntlets analyzed with
 Ordo. They are pool-relative and anchored to fixed-strength `SF2850=2850` and
-`SF3000=3000`; they are not universal CCRL ratings.
+`SF3000=3000`. They are not universal CCRL ratings.
 
-Version labels now separate engine/source, evaluator, and network:
+Version labels now separate SHAYVERI source, evaluator, and network:
 
-- Engine release: `SHAYVERI v2.6`.
+- SHAYVERI source release: `SHAYVERI v2.6`.
 - NNUE evaluator: `NNUE`, using network `SHAYVERI2_5_0`.
 - Classical evaluator: `HCE-classical`, the handcrafted evaluation path with
   `UseNNUE=false`.
 
-The classical evaluator is not an engine version.
+`HCE-classical` is not a SHAYVERI version.
 
 ## Current Public Ratings
 
@@ -99,8 +99,8 @@ Draw rate: `45.77% +/- 1.15`
 
 ## Release Notes
 
-- Engine/source release: `SHAYVERI v2.6`.
+- SHAYVERI source release: `SHAYVERI v2.6`.
 - Embedded default network: `SHAYVERI2_5_0.nnue`.
 - External network files can still be loaded through `EvalFile`.
 - HCE-classical is retained as a debug and comparison evaluator, not as a
-  separate engine version.
+  separate SHAYVERI version.

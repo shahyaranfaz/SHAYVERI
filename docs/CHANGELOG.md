@@ -4,13 +4,13 @@
 
 This line is the final handcrafted-evaluation baseline before NNUE development.
 Current documentation refers to the evaluation path as `HCE-classical` so it is
-not confused with engine/source versioning.
+not confused with SHAYVERI source versioning.
 
-### Engine Strength
+### SHAYVERI Strength
 
 - Completed the final classical tuning cycle.
 - Froze the `spsa_f3` parameter set as the strongest HCE-classical line.
-- Validated the final engine through large self-play and Stockfish reference matches.
+- Validated SHAYVERI through large self-play and Stockfish reference matches.
 - Repaired the final search tuning after discovering some tuned search parameters were not actually wired into search behavior.
 - Retuned search after activating the missing LMR, aspiration, and SEE-pruning parameters.
 
@@ -34,32 +34,32 @@ not confused with engine/source versioning.
 - Added Texel-tuned material values and piece-square tables.
 - Added bishop pair, tempo, and development/initiative terms.
 - Added detailed pawn structure evaluation:
-  - passed pawns;
-  - candidate passers;
-  - connected and outside passers;
-  - isolated, doubled, backward, weak, and supported pawns;
-  - pawn islands;
-  - pawn storms.
+  - passed pawns
+  - candidate passers
+  - connected and outside passers
+  - isolated, doubled, backward, weak, and supported pawns
+  - pawn islands
+  - pawn storms
 - Added king safety:
-  - pawn shield;
-  - open/semi-open files near the king;
-  - king-zone attack pressure;
-  - escape squares;
-  - nonlinear danger scaling.
+  - pawn shield
+  - open/semi-open files near the king
+  - king-zone attack pressure
+  - escape squares
+  - nonlinear danger scaling
 - Added piece activity terms:
-  - mobility;
-  - seventh-rank bonuses;
-  - file/diagonal openness scaling.
+  - mobility
+  - seventh-rank bonuses
+  - file/diagonal openness scaling
 - Added coordination terms:
-  - defended pieces;
-  - shared targets;
-  - rook/queen and bishop/queen batteries;
-  - support chains.
+  - defended pieces
+  - shared targets
+  - rook/queen and bishop/queen batteries
+  - support chains
 - Added tactical pressure terms:
-  - undefended-piece pressure;
-  - pins and x-ray pressure;
-  - overloaded defenders;
-  - unreciprocated pressure.
+  - undefended-piece pressure
+  - pins and x-ray pressure
+  - overloaded defenders
+  - unreciprocated pressure
 - Added explicit threat evaluation for pawn, minor-piece, rook, and hanging-piece threats.
 - Added knight, bishop, rook, and queen outpost terms.
 - Added a pawn hash.
@@ -68,16 +68,16 @@ not confused with engine/source versioning.
 ### Tuning
 
 - Added SPSA/CMA-ES tuning infrastructure.
-- Centralized engine parameters in `tune.h`.
+- Centralized SHAYVERI parameters in `tune.h`.
 - Ran multiple SPSA passes over search and evaluation parameters.
 - Added Texel tuning support and scripts.
 - Generated and used a large quiet-filtered position set for Texel tuning.
 - Ran phased Texel tuning:
-  - PST/material phase;
-  - pawn/eval phase;
-  - king PST phase;
-  - king safety/tactical phase;
-  - final refinement phase.
+  - PST/material phase
+  - pawn/eval phase
+  - king PST phase
+  - king safety/tactical phase
+  - final refinement phase
 - Normalized piece values and PSTs after Texel.
 - Archived tuning logs and result notes outside the release-facing source tree.
 - Disabled the tuning registry for release UCI output.
@@ -92,23 +92,23 @@ not confused with engine/source versioning.
 ### UCI And Compatibility
 
 - Implemented core UCI commands:
-  - `uci`;
-  - `isready`;
-  - `ucinewgame`;
-  - `position`;
-  - `go`;
-  - `stop`;
-  - `ponderhit`;
-  - `quit`;
-  - `bench`.
+  - `uci`
+  - `isready`
+  - `ucinewgame`
+  - `position`
+  - `go`
+  - `stop`
+  - `ponderhit`
+  - `quit`
+  - `bench`
 - Added UCI options:
-  - `Hash`;
-  - `Clear Hash`;
-  - `Threads`;
-  - `Ponder`;
-  - `OwnBook`;
-  - `Minimum Thinking Time`;
-  - `Move Overhead`.
+  - `Hash`
+  - `Clear Hash`
+  - `Threads`
+  - `Ponder`
+  - `OwnBook`
+  - `Minimum Thinking Time`
+  - `Move Overhead`
 - Added `searchmoves` support.
 - Added PV output, mate score output, nodes, NPS, and time reporting.
 - Added ponder move output.
@@ -118,12 +118,12 @@ not confused with engine/source versioning.
 
 ### Infrastructure
 
-- Added the C++ engine core:
-  - board representation;
-  - FEN parsing;
-  - move generation;
-  - make/unmake;
-  - perft-oriented foundations.
+- Added the C++ SHAYVERI core:
+  - board representation
+  - FEN parsing
+  - move generation
+  - make/unmake
+  - perft-oriented foundations
 - Added Zobrist hashing.
 - Added transposition tables.
 - Added repetition detection.
@@ -141,7 +141,7 @@ external-corpus bootstrap work: classic Chess768/256 Marlinflow nets, KB8/KB16
 Bullet experiments, data scheduling fixes, and the final diagnosis that the
 self-generated corpus/labels were the blocker.
 
-### Engine And Tooling
+### Runtime And Tooling
 
 - Added NNUE evaluation support.
 - Added `EvalFile` loading through UCI.
@@ -185,9 +185,9 @@ self-generated corpus/labels were the blocker.
 - Trained persistent 500M, 1B, and fullmove-8-plus filtered Board768 / 256
   views through the patched Marlinflow path.
 - Best observed HCE-classical transfer from this corpus was only around score 0.25 vs HCE-classical,
-  roughly -190 Elo; the fullmove-8-plus slice was worse.
+  roughly -190 Elo. The fullmove-8-plus slice was worse.
 - Concluded failure was not tiny data volume, streaming churn, or checkpoint
-  selection; the blocker was generated data distribution and/or labels.
+  selection. The blocker was generated data distribution and/or labels.
 
 ### v2.5: External Corpus Experiments
 
