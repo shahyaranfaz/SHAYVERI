@@ -133,7 +133,7 @@ def main() -> int:
 
         startpos = run_engine([
             "setoption name Improving_LMR_Reduction value 1",
-            "setoption name CutNode_LMR_Reduction value 1",
+            "setoption name CutNode_LMR_Reduction value 3",
             "setoption name LMR_PV_Offset value -1",
             "setoption name LMR_NonPV_Offset value 1",
             "setoption name OwnBook value false",

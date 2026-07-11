@@ -440,7 +440,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         }
         if (stand_pat >= beta) return stand_pat;
         if (stand_pat > alpha) alpha = stand_pat;
-        if (depth <= 0) return alpha;
+        if (depth <= Tune::qs_min_depth) return alpha;
     } else {
         // A checked node must search legal evasions even at the qsearch floor.
         // Bound pathological checking sequences before the fixed search stack
@@ -576,7 +576,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    if (depth <= 0) return qsearch(b, alpha, beta, Tune::qsearch_start_depth, ply, ss);
+    if (depth <= 0) return qsearch(b, alpha, beta, Tune::qs_start_depth, ply, ss);
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
@@ -606,7 +606,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
     // Reverse Futility Pruning
     if (!pv_node && !in_check && depth <= Tune::rfp_max_depth && ss->excluded_move == MOVE_NONE) {
-        if (static_eval - (Tune::rfp_margin_mult * depth) >= beta)
+        if (static_eval - (Tune::rfp_margin * depth) >= beta)
             return static_eval;
     }
 
@@ -702,7 +702,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         && std::abs(tt_score) < MATE_SCORE - MAX_PLY) {
 
         int r_beta = tt_score - Tune::se_margin;
-        int se_depth = (depth - 1) / Tune::se_reduction_denom;
+        int se_depth = (depth - 1) / std::max(1, Tune::se_reduction_denom);
 
         ss->excluded_move = tt_move;
         int score = negamax(b, se_depth, r_beta - 1, r_beta, ply,
@@ -754,9 +754,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         // Pruning (LMP, futility, and promoted quiet SEE).
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
             if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
-            if (is_quiet && depth <= Tune::futility_max_depth && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
-            if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_pruning_max_depth &&
-                ordered[i].see_value < Tune::see_pruning_margin * depth)
+            if (is_quiet && depth <= Tune::fp_max_depth && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
+            if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_max_depth &&
+                ordered[i].see_value < Tune::see_margin * depth)
                 continue;
 
             if (is_quiet
@@ -819,8 +819,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 if (cut_node) reduction += Tune::cutnode_lmr_reduction;
                 if (improving) reduction -= Tune::improving_lmr_reduction;
                 if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth) reduction++;
-                if (move_history > Tune::lmr_good_history_threshold) reduction--;
-                else if (move_history < Tune::lmr_bad_history_threshold) reduction++;
+                if (move_history > Tune::lmr_good_history) reduction--;
+                else if (move_history < Tune::lmr_bad_history) reduction++;
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
@@ -954,9 +954,9 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     for (int depth = 1; depth <= max_depth; ++depth) {
         int window_alpha = -INF;
         int window_beta  = INF;
-        int delta = Tune::ASP_DELTA;
+        int delta = Tune::asp_delta;
 
-        if (depth >= Tune::aspiration_min_depth && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
+        if (depth >= Tune::asp_min_depth && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
             window_alpha = std::max(-INF, final_best_score - delta);
             window_beta  = std::min(INF, final_best_score + delta);
         }
@@ -1042,11 +1042,11 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
             if (best_score_this_depth <= window_alpha && window_alpha > -INF) {
                 window_alpha = std::max(-INF, window_alpha - delta);
-                delta *= Tune::aspiration_growth;
+                delta *= Tune::asp_growth;
                 continue;
             } else if (best_score_this_depth >= window_beta && window_beta < INF) {
                 window_beta = std::min(INF, window_beta + delta);
-                delta *= Tune::aspiration_growth;
+                delta *= Tune::asp_growth;
                 continue;
             }
 
@@ -1153,7 +1153,7 @@ int qsearch_score(Board &b) {
     StackInfo st[MAX_PLY + 5]{};
     StackInfo *ss = st + 2;
     ss->acc.refresh(b);
-    return qsearch(b, -INF, INF, Tune::qsearch_start_depth, 0, ss);
+    return qsearch(b, -INF, INF, Tune::qs_start_depth, 0, ss);
 }
 
 } // namespace SHAYVERI

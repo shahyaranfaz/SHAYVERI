@@ -46,7 +46,7 @@ case "$BATCH_ID" in
 'FP_Mult':             {'init': 693,     'lower': 400,  'upper': 900},
 'LMP_Base':            {'init': 3,       'lower': 1,    'upper': 8},
 'LMP_Mult':            {'init': 1,       'lower': 1,    'upper': 3},
-'SEE_Pruning_Margin':  {'init': -252,    'lower': -600, 'upper': -40},
+'SEE_Margin':          {'init': -252,    'lower': -600, 'upper': -40},
 'QS_Delta_Margin':     {'init': 150,     'lower': 50,   'upper': 350}
 }"
     ;;

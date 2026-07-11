@@ -250,11 +250,14 @@ self-generated corpus/labels were the blocker.
 
 ## v2.7.2 Search Refinement
 
-- Promoted richer qsearch SEE pruning, quiet-move PVS SEE pruning, and
-  capture-only ProbCut with fixed production settings of QS SEE 100, PVS SEE
-  125, and ProbCut margin 50 with reduction 3.
-- Retained qsearch futility and late history pruning as source-disabled
-  experiments with zero defaults, pending longer-time-control testing.
+- Added five search-refinement experiments: richer qsearch SEE pruning,
+  qsearch futility pruning, late history pruning, quiet-move PVS SEE pruning,
+  and capture-only ProbCut.
+- Evaluated the features separately at short and longer experimental time
+  controls, then kept source-level defaults for the useful features and
+  disabled qsearch futility and late history pruning after their regressions.
+- The branch has no v2.7.2 Elo pin or public release yet. The current public
+  release remains v2.6.
 
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 
