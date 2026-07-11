@@ -58,6 +58,7 @@ go movetime 1000
 - Delta pruning
 - Check extensions
 - SEE (Static Exchange Evaluation) for move ordering
+- Conservative quiescence SEE pruning for non-promotion captures
 - Killer moves, gravity-based main, continuation, and capture histories
 - Static-evaluation correction history
 - Atomic 4-entry bucketed transposition table with Zobrist hashing

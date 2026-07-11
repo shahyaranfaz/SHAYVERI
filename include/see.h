@@ -7,8 +7,7 @@
 namespace SHAYVERI {
 
 int  see(const Board &b, Move m);
-
-inline bool see_ge_zero(const Board &b, Move m) { return see(b, m) >= 0; }
+int  quiet_see(const Board &b, Move m);
 
 } // namespace SHAYVERI
 

@@ -248,6 +248,14 @@ self-generated corpus/labels were the blocker.
   Fastchess regression: new scored `454-419-727` vs old, equivalent to
   `+7.6 +/- 12.6 Elo`, consistent with no measurable regression.
 
+## v2.7.2 Search Refinement
+
+- Promoted richer qsearch SEE pruning, quiet-move PVS SEE pruning, and
+  capture-only ProbCut with fixed production settings of QS SEE 100, PVS SEE
+  125, and ProbCut margin 50 with reduction 3.
+- Retained qsearch futility and late history pruning as source-disabled
+  experiments with zero defaults, pending longer-time-control testing.
+
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 
 Version 3.0 starts the serious self-looping NNUE line: train a KB16 network

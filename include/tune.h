@@ -59,6 +59,8 @@ inline int lmp_base           =    2;
 inline int lmp_mult           =    1;
 inline int see_pruning_margin = -248;
 inline int qs_delta_margin    =  196;
+inline int qs_see_margin      =  100;
+inline int qs_futility_margin =    0;
 
 // Null-move pruning.
 inline int nmp_margin_mult    =   18;
@@ -106,6 +108,22 @@ inline int lmr_bad_history_threshold   = -800;
 inline int aspiration_min_depth        =  4;
 inline int aspiration_growth           =  2;
 inline int capture_history_weight      = 100;
+
+// Retained for a later long-time-control search pass. A zero threshold keeps
+// history pruning disabled in the current production baseline.
+inline int history_pruning_threshold = 0;
+inline int history_pruning_min_depth = 3;
+inline int history_pruning_min_moves = 2;
+
+// V2.7.2 promoted pruning settings. These are source-level settings and are
+// intentionally not exposed as runtime ablation controls.
+inline int pvs_see_margin              =  125;
+inline int pvs_see_min_depth           =    3;
+inline int pvs_see_min_moves           =    2;
+inline int probcut_margin              =   50;
+inline int probcut_reduction           =    3;
+inline int probcut_min_depth           =    5;
+inline int probcut_max_captures        =    3;
 
 // Future time-management policy. These retain the current time behavior.
 inline int    time_no_clock_ms              = 100;
@@ -463,6 +481,20 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"CutNode_LMR_Reduction",   {&cutnode_lmr_reduction,   TuningOption::INT,  0,     3,         "1"}},
     {"LMR_PV_Offset",           {&lmr_pv_offset,           TuningOption::INT, -3,     0,        "-1"}},
     {"LMR_NonPV_Offset",        {&lmr_nonpv_offset,        TuningOption::INT,  0,     3,         "1"}},
+
+    // V2.7.2: search-refinement experiments
+    {"QS_SEE_Margin",            {&qs_see_margin,             TuningOption::INT,     0,   200, "100"}},
+    {"QS_Futility_Margin",       {&qs_futility_margin,        TuningOption::INT,     0,   300,   "0"}},  // test at longer TC
+    {"History_Pruning_Threshold",{&history_pruning_threshold, TuningOption::INT,     0,  1200,   "0"}},  // test at longer TC
+    {"History_Pruning_Min_Depth",{&history_pruning_min_depth, TuningOption::INT,     1,     8,   "3"}},
+    {"History_Pruning_Min_Moves",{&history_pruning_min_moves, TuningOption::INT,     1,    16,   "2"}},
+    {"PVS_SEE_Margin",           {&pvs_see_margin,            TuningOption::INT,     0,   200, "125"}},
+    {"PVS_SEE_Min_Depth",        {&pvs_see_min_depth,         TuningOption::INT,     1,    12,   "3"}},
+    {"PVS_SEE_Min_Moves",        {&pvs_see_min_moves,         TuningOption::INT,     1,    16,   "2"}},
+    {"ProbCut_Margin",           {&probcut_margin,            TuningOption::INT,     0,   300,  "50"}},
+    {"ProbCut_Reduction",        {&probcut_reduction,         TuningOption::INT,     1,     5,   "3"}},
+    {"ProbCut_Min_Depth",        {&probcut_min_depth,         TuningOption::INT,     3,    12,   "5"}},
+    {"ProbCut_Max_Captures",     {&probcut_max_captures,      TuningOption::INT,     1,     8,   "3"}},
 
     // Future / ungrouped search gates
     {"CorrHist_Depth_Cap",      {&corrhist_depth_cap,          TuningOption::INT,     1,    32,  "16"}},

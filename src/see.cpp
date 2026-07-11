@@ -119,4 +119,42 @@ int see(const Board &b, Move m) {
     return gain[0];
 }
 
+int quiet_see(const Board &b, Move m) {
+    if (move_promo(m) != NONE_PTYPE || is_ep_move(m)
+        || b.get_piece(move_to(m)) != NONE_PIECE)
+        return 0;
+
+    Board post = b;
+    Undo u;
+    if (!make_move(post, m, u)) return 0;
+
+    // Checking moves remain visible to the full search and are never treated
+    // as losing quiet exchanges by this approximation.
+    const Square king = king_square(post, post.side_to_move);
+    if (is_square_attacked(post, king, flip(post.side_to_move)))
+        return MATE_SCORE;
+
+    const Square target = move_to(m);
+    U64 attackers = attackers_to(post, target, post.occupied)
+        & post.occupancies[post.side_to_move];
+    int best_gain = 0;
+    while (attackers) {
+        Piece attacker_piece;
+        U64 attacker = pick_least_valuable_attacker(post, post.side_to_move,
+                                                     attackers, attacker_piece);
+        if (!attacker) break;
+        attackers &= ~attacker;
+
+        const Square from = static_cast<Square>(__builtin_ctzll(attacker));
+        Move reply = create_move(from, target);
+
+        Board reply_board = post;
+        Undo reply_undo;
+        if (!make_move(reply_board, reply, reply_undo)) continue;
+        best_gain = std::max(best_gain, see(post, reply));
+    }
+
+    return -best_gain;
+}
+
 } // namespace SHAYVERI

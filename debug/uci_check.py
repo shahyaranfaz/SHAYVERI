@@ -15,7 +15,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 344477
+BENCH_SIGNATURE_NODES = 303080
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -118,6 +118,18 @@ def main() -> int:
         require(handshake, "option name CutNode_LMR_Reduction type spin")
         require(handshake, "option name LMR_PV_Offset type spin")
         require(handshake, "option name LMR_NonPV_Offset type spin")
+        require(handshake, "option name QS_SEE_Margin type spin")
+        require(handshake, "option name QS_Futility_Margin type spin")
+        require(handshake, "option name History_Pruning_Threshold type spin")
+        require(handshake, "option name History_Pruning_Min_Depth type spin")
+        require(handshake, "option name History_Pruning_Min_Moves type spin")
+        require(handshake, "option name PVS_SEE_Margin type spin")
+        require(handshake, "option name PVS_SEE_Min_Depth type spin")
+        require(handshake, "option name PVS_SEE_Min_Moves type spin")
+        require(handshake, "option name ProbCut_Margin type spin")
+        require(handshake, "option name ProbCut_Reduction type spin")
+        require(handshake, "option name ProbCut_Min_Depth type spin")
+        require(handshake, "option name ProbCut_Max_Captures type spin")
 
         startpos = run_engine([
             "setoption name Improving_LMR_Reduction value 1",

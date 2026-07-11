@@ -474,21 +474,44 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         for (int j = i + 1; j < noisy_count; ++j)
             if (noisy[j].score > noisy[i].score) std::swap(noisy[i], noisy[j]);
         Move m = noisy[i].m;
+        bool qs_see_reject = false;
+        int victim_val = 0;
 
         if (!in_check) {
-            if (!is_promo(m) && b.get_piece(move_to(m)) != NONE_PIECE && !see_ge_zero(b, m))
-                continue;
-
             Piece vp = b.get_piece(move_to(m));
-            int victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_move(m) ? PTYPE_VALUES[PAWN] : 0);
+            victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_move(m) ? PTYPE_VALUES[PAWN] : 0);
             if (move_promo(m) != NONE_PTYPE) victim_val += PTYPE_VALUES[move_promo(m)];
 
-            if (stand_pat + victim_val + Tune::qs_delta_margin < alpha)
+            const bool non_promotion_capture = move_promo(m) == NONE_PTYPE
+                && b.get_piece(move_to(m)) != NONE_PIECE;
+            qs_see_reject = non_promotion_capture
+                && see(b, m) < std::max(0, Tune::qs_see_margin);
+
+            const bool qs_delta_reject =
+                stand_pat + victim_val + Tune::qs_delta_margin < alpha;
+            if (qs_delta_reject && !qs_see_reject)
                 continue;
         }
 
         Undo u;
         if (!make_move(b, m, u)) continue;
+        if (qs_see_reject) {
+            const Square king = king_square(b, b.side_to_move);
+            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
+            if (!gives_check) {
+                unmake_move(b, m, u);
+                continue;
+            }
+        }
+        if (Tune::qs_futility_margin > 0 && move_promo(m) == NONE_PTYPE) {
+            const Square king = king_square(b, b.side_to_move);
+            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
+            if (!gives_check
+                && stand_pat + victim_val + Tune::qs_futility_margin < alpha) {
+                unmake_move(b, m, u);
+                continue;
+            }
+        }
         NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
         legal_count++;
 
@@ -624,6 +647,54 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
+    // ProbCut: use a reduced capture-only search to prove a high fail-high.
+    // Reduced searches do not write a full-depth TT bound because the proof
+    // depth is shallower.
+    if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE
+        && depth >= Tune::probcut_min_depth) {
+        const int margin = Tune::probcut_margin;
+        const int max_reduction = std::max(1, depth - 2);
+        const int reduction = std::clamp(Tune::probcut_reduction, 1, max_reduction);
+        const int reduced_depth = depth - 1 - reduction;
+        const int pc_beta = std::min(beta + margin, MATE_SCORE - ply - 1);
+
+        if (reduced_depth > 0 && pc_beta > beta) {
+            MoveList pc_moves = generate_pseudo_legal_captures(b);
+            ScoredMove pc_ordered[256];
+            for (int i = 0; i < pc_moves.count; ++i)
+                pc_ordered[i] = {pc_moves.moves[i], capture_order_score(b, pc_moves.moves[i]), 0};
+
+            int pc_tried = 0;
+            const int pc_limit = std::max(1, Tune::probcut_max_captures);
+            for (int i = 0; i < pc_moves.count && pc_tried < pc_limit; ++i) {
+                for (int j = i + 1; j < pc_moves.count; ++j)
+                    if (pc_ordered[j].score > pc_ordered[i].score)
+                        std::swap(pc_ordered[i], pc_ordered[j]);
+
+                Move m = pc_ordered[i].m;
+                if (m == ss->excluded_move) continue;
+                if (move_promo(m) == NONE_PTYPE && see(b, m) < 0) continue;
+
+                Piece moved_piece = b.get_piece(move_from(m));
+                Undo u;
+                if (!make_move(b, m, u)) continue;
+                NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
+                if (rep_len < MAX_PLY) rep_stack[rep_len] = b.hash;
+                ss->move = m;
+                ss->piece = moved_piece;
+                ++pc_tried;
+
+                const int score = -negamax(b, reduced_depth, -pc_beta, -pc_beta + 1,
+                                            ply + 1, H, rep_stack, rep_len + 1,
+                                            false, true, ss + 1);
+                unmake_move(b, m, u);
+
+                if (search_stopped()) return 0;
+                if (score >= pc_beta) return score;
+            }
+        }
+    }
+
     // Singular Extensions
     int extension = 0;
     if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::se_min_depth
@@ -678,13 +749,23 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (m == ss->excluded_move) continue;
 
         bool is_quiet = !is_capture_or_promo(b, m);
+        const int move_history = is_quiet ? quiet_history_score(b, m, ply, H, ss) : 0;
 
-        // Pruning (LMP, Futility)
+        // Pruning (LMP, futility, and promoted quiet SEE).
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
             if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
             if (is_quiet && depth <= Tune::futility_max_depth && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
             if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_pruning_max_depth &&
                 ordered[i].see_value < Tune::see_pruning_margin * depth)
+                continue;
+
+            if (is_quiet
+                && Tune::pvs_see_margin > 0
+                && depth >= Tune::pvs_see_min_depth
+                && legal_count + 1 >= Tune::pvs_see_min_moves
+                && m != tt_move
+                && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
+                && quiet_see(b, m) < -Tune::pvs_see_margin)
                 continue;
         }
 
@@ -692,17 +773,32 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
         // Pre-compute victim piece type for capture history (before make_move modifies the board)
         PieceType cap_victim_pt = NONE_PTYPE;
-        if (!is_quiet && move_promo(m) == NONE_PTYPE) {
+        if (!is_quiet && move_promo(m) == NONE_PTYPE)
             cap_victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(move_to(m)));
-        }
 
         Undo u;
         if (!make_move(b, m, u)) continue;
+        if (Tune::history_pruning_threshold > 0
+            && is_quiet
+            && depth >= Tune::history_pruning_min_depth
+            && legal_count + 1 >= Tune::history_pruning_min_moves
+            && m != tt_move
+            && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
+            && move_history < Tune::history_pruning_threshold) {
+            const Square king = king_square(b, b.side_to_move);
+            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
+            if (!gives_check) {
+                unmake_move(b, m, u);
+                continue;
+            }
+        }
+
         NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
 
         legal_count++;
         if (is_quiet) quiets_played[quiet_count++] = m;
-        else if (cap_victim_pt != NONE_PTYPE) captures_tried[capture_tried_count++] = {m, cap_victim_pt, get_type(moved_piece)};
+        else if (cap_victim_pt != NONE_PTYPE)
+            captures_tried[capture_tried_count++] = {m, cap_victim_pt, get_type(moved_piece)};
         rep_stack[rep_len] = b.hash;
         ss->move = m;
         ss->piece = moved_piece;
@@ -723,9 +819,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 if (cut_node) reduction += Tune::cutnode_lmr_reduction;
                 if (improving) reduction -= Tune::improving_lmr_reduction;
                 if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth) reduction++;
-                int hist = quiet_history_score(b, m, ply, H, ss);
-                if (hist > Tune::lmr_good_history_threshold) reduction--;
-                else if (hist < Tune::lmr_bad_history_threshold) reduction++;
+                if (move_history > Tune::lmr_good_history_threshold) reduction--;
+                else if (move_history < Tune::lmr_bad_history_threshold) reduction++;
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
