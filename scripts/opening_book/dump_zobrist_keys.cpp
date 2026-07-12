@@ -17,7 +17,7 @@ using namespace SHAYVERI;
 //   "en_passants": [...8...]
 // }
 static void write_u64(std::ostream& os, std::uint64_t v) {
-    os << v; // decimal; Python int() reads it fine
+    os << v; // Python int() reads the decimal representation directly.
 }
 
 int main(int argc, char** argv) {

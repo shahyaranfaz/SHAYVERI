@@ -313,7 +313,7 @@ struct Trace {
     I32 island[2];
     I32 storm_base[2];         // count of storm pawns near enemy king
     I32 storm_rank[2];         // sum of rank advancements for storm pawns
-    // Passed pawns (rank indices 1-6 used; 0 and 7 always zero)
+    // Passed pawns use rank indices 1-6. Indices 0 and 7 are always zero.
     I32 passed_rank[8][2];
     I32 candidate[2];
     I32 connected_passed[2];
@@ -572,8 +572,8 @@ static Trace trace_evaluate(const Board& b) {
     }
 
     // Tactical pressure
-    // Note: undefended attack and value-weighted hanging penalties are nonlinear
-    // and are excluded from the trace; they appear in additional_score instead.
+    // Note: undefended attack and value-weighted hanging penalties are nonlinear.
+    // They are excluded from the trace and appear in additional_score instead.
     for (int ci = 0; ci < 2; ++ci) {
         Colour c  = (ci == 0) ? WHITE : BLACK;
         const AInfo& atk = (c == WHITE) ? wa : ba;
@@ -631,7 +631,7 @@ static Trace trace_evaluate(const Board& b) {
         tmp = b.bit_boards[eq] & atk.by_type[ROOK];
         if (tmp) tr.threat_rook[ci] += pcnt(tmp);
 
-        // Hanging pieces (base penalty only; value term remains nonlinear)
+        // Hanging pieces use only the base penalty. The value term remains nonlinear.
         Piece own_king = (c == WHITE) ? WK : BK;
         U64 hanging = b.occupancies[c] & ea.all & ~atk.all;
         while (hanging) {

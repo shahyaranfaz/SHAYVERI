@@ -396,7 +396,7 @@ def write_json_atomic(path: Path, obj: dict):
 
 
 def claim_one_job(p: DistPaths, worker_name: str) -> Path | None:
-    # Find any job file; claim with atomic rename
+    # Find a job file and claim it with an atomic rename.
     for job_path in sorted(p.jobs.glob("*.json")):
         claimed = p.working / job_path.name
         try:
@@ -563,7 +563,7 @@ def master_run(args, p: DistPaths):
             best_loss = optimizer.current_bests["average"].mean
 
             if args.output_data_file is not None:
-                # master only writes dumps; no need for lock besides master lock, but keep atomic
+                # Only the master writes dumps, so the master lock is sufficient. Keep the write atomic too.
                 tmp = Path(args.output_data_file).with_suffix(Path(args.output_data_file).suffix + f".tmp.{os.getpid()}")
                 optimizer.dump(str(tmp))
                 os.replace(tmp, args.output_data_file)

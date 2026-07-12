@@ -740,8 +740,8 @@ int main(int argc, char **argv) {
             }
 
             // Lazy SMP helper threads share the global atomic TT. Their final
-            // root result is discarded; their contribution is the hash they
-            // populate for the main thread.
+            // root result is discarded because they contribute by populating
+            // the hash for the main thread.
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
