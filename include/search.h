@@ -14,7 +14,8 @@ extern std::atomic<bool> g_stop;
 extern std::atomic<U64>  node_count;
 extern std::atomic<U64>  node_limit;
 
-using IterCallback = std::function<void(int, Move, int, U64, I64)>;
+// depth, best move, score, total nodes, elapsed ms, best-root-move node share
+using IterCallback = std::function<void(int, Move, int, U64, I64, double)>;
 
 struct SearchResult {
     Move best_move  = MOVE_NONE;

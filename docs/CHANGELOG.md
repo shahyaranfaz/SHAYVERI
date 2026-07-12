@@ -228,14 +228,14 @@ self-generated corpus/labels were the blocker.
   `3136.5 +/-28.9` LTC.
 - Standardized release docs on `HCE-classical` for the handcrafted evaluator.
 
-## v2.7 Search Refinement
+## v2.7 Search Refinement (Unreleased)
 
 - Added an improving heuristic to LMR using the same-side static evaluation
   from two plies earlier.
 - Added cut-node-aware LMR and propagated cut-node state through the relevant
   PVS, null-move, and singular-search paths.
-- Exposed the improving, cut-node, PV, and non-PV LMR adjustments as UCI
-  tuning knobs. Their defaults preserve the accepted phase-1 policy.
+- Added experimental tuning controls for the improving, cut-node, PV, and
+  non-PV LMR adjustments. Their defaults preserve the accepted phase-1 policy.
 - The phase-1 pair finished ahead in an STC ablation, with new scoring
   `466-417-717` against old at `3+0.03`.
 - Hardened UCI option changes by stopping active searches before mutating TT,
@@ -250,17 +250,26 @@ self-generated corpus/labels were the blocker.
 - Validated the audit fixes against the previous binary in a 1,600-game
   Fastchess regression: new scored `454-419-727` vs old, equivalent to
   `+7.6 +/- 12.6 Elo`, consistent with no measurable regression.
-
-## v2.7.2 Search Refinement
-
 - Added five search-refinement experiments: richer qsearch SEE pruning,
   qsearch futility pruning, late history pruning, quiet-move PVS SEE pruning,
   and capture-only ProbCut.
 - Evaluated the features separately at short and longer experimental time
   controls, then kept source-level defaults for the useful features and
   disabled qsearch futility and late history pruning after their regressions.
-- The branch has no v2.7.2 Elo pin or public release yet. The current public
-  release remains v2.6.
+- Disabled check extensions after direct ablation and froze the remaining
+  extension and reduction controls that did not justify further tuning.
+- Added root best-move node-share time scaling and deeper multi-iteration
+  evaluation-stability scaling.
+- Ablated both time-scaling features independently and together across
+  multiple time controls, then froze the accepted combined policy.
+- Enforced configured soft, hard, and minimum-thinking limits below the final
+  safe clock ceiling.
+- Added critically low-clock survival behavior for no-increment controls and
+  made timer waits respect the actual remaining hard time.
+- Fixed ponder-hit time-manager initialization ordering and added timed Lazy
+  SMP, ponder-hit, and ponder-stop integration coverage.
+- The current public release remains v2.6. These changes will be released
+  together as v2.7 after final tuning and Elo validation.
 
 ## v3.0 Datagen And KB16 Self-Loop Foundation
 

@@ -763,8 +763,24 @@ int main(int argc, char **argv) {
                     active_tt = &TT;
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
+                    auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);
 
-                    std::thread timer([hard_ms, real_tc, pondering, timer_active]() {
+                    std::thread timer([hard_ms, real_tc, pondering, timer_active, clock_ready]() {
+                        const auto wait_for_limit = [timer_active](I64 limit_ms) {
+                            using namespace std::chrono;
+                            const auto deadline = steady_clock::now()
+                                + milliseconds(std::max<I64>(0, limit_ms));
+                            while (timer_active->load()) {
+                                const I64 remaining = duration_cast<milliseconds>(
+                                    deadline - steady_clock::now()).count();
+                                if (remaining <= 0)
+                                    break;
+                                std::this_thread::sleep_for(
+                                    milliseconds(std::min<I64>(5, remaining)));
+                            }
+                            return timer_active->load();
+                        };
+
                         if (pondering) {
                             while (*timer_active && g_pondering.load() && !g_stop.load())
                                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -772,28 +788,25 @@ int main(int argc, char **argv) {
                                 return;
 
                             g_time_manager.init(real_tc);
+                            clock_ready->store(true);
                             const I64 ponderhit_hard_ms = g_time_manager.hard_ms();
-                            const I64 slice = 5;
-                            I64 slept = 0;
-                            while (*timer_active && slept < ponderhit_hard_ms) {
-                                std::this_thread::sleep_for(std::chrono::milliseconds(slice));
-                                slept += slice;
-                            }
-                            if (*timer_active) g_stop = true;
+                            const I64 ponderhit_remaining_ms = std::max<I64>(
+                                0, ponderhit_hard_ms - g_time_manager.elapsed_ms());
+                            if (wait_for_limit(ponderhit_remaining_ms)) g_stop = true;
                             return;
                         }
 
-                        const I64 slice = 5;
-                        I64 slept = 0;
-                        while (*timer_active && slept < hard_ms) {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(slice));
-                            slept += slice;
-                        }
-                        if (*timer_active) g_stop = true;
+                        const I64 remaining_ms = std::max<I64>(
+                            0, hard_ms - g_time_manager.elapsed_ms());
+                        if (wait_for_limit(remaining_ms)) g_stop = true;
                     });
 
-                    IterCallback on_iter = [](int depth, Move best, int score, U64, I64) {
-                        if (!g_pondering.load() && g_time_manager.on_iter(depth, best, score))
+                    IterCallback on_iter = [clock_ready](int depth, Move best, int score,
+                                                        U64, I64,
+                                                        double best_move_node_fraction) {
+                        if (clock_ready->load()
+                            && g_time_manager.on_iter(depth, best, score,
+                                                      best_move_node_fraction))
                             g_stop = true;
                     };
 
@@ -803,6 +816,12 @@ int main(int argc, char **argv) {
                         searchmoves,
                         on_iter, false);
 
+                    // A ponder search that finishes naturally, for example on
+                    // a terminal position, must still wait for ponderhit or
+                    // stop before returning a move.
+                    while (pondering && g_pondering.load() && !g_stop.load())
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
                     *timer_active = false;
                     g_stop        = true;
                     timer.join();
@@ -811,9 +830,6 @@ int main(int argc, char **argv) {
                         result.best_move = book_move;
                     else if (!is_legal_root_move(b_copy, result.best_move))
                         result.best_move = first_legal_move(b_copy);
-
-                    while (pondering && g_pondering.load() && !g_stop.load())
-                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
                     std::string ponder_str = ponder_suffix(b_copy, result.best_move);
 

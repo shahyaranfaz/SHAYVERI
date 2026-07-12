@@ -36,6 +36,7 @@ thread_local bool local_node_limited_search = false;
 thread_local bool local_stop = false;
 thread_local U64 local_node_count = 0;
 thread_local U64 local_node_limit = 0;
+thread_local U64 thread_node_count = 0;
 
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
@@ -63,6 +64,7 @@ struct ScoredMove {
     Move m;
     int score;
     int see_value = 0;
+    U64 effort = 0;
 };
 
 // Tracks per-ply state for histories and extensions.
@@ -177,6 +179,7 @@ static inline U64 searched_nodes() {
 }
 
 static inline void count_node() {
+    ++thread_node_count;
     if (local_node_limited_search) {
         ++local_node_count;
         if (local_node_limit != 0 && local_node_count >= local_node_limit)
@@ -981,6 +984,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                     const std::vector<Move> &search_moves, IterCallback on_iter,
                     bool silent, int root_bias) {
 
+    thread_node_count = 0;
+
     auto H_storage = std::make_unique<SearchHeuristics>();
     SearchHeuristics& H = *H_storage;
     if (!silent && root_bias == 0) {
@@ -1067,6 +1072,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                 Undo u;
                 Piece root_piece = b.get_piece(move_from(m));
                 if (!make_move(b, m, u)) continue;
+                const U64 nodes_before = thread_node_count;
                 NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
                 legal_root_count++;
                 rep_stack[rep_len] = b.hash;
@@ -1088,6 +1094,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
                 }
 
                 unmake_move(b, m, u);
+                ordered[i].effort += thread_node_count - nodes_before;
 
                 if (search_stopped()) break;
 
@@ -1125,6 +1132,17 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         }
 
         if (search_stopped()) break;
+
+        U64 root_effort = 0;
+        U64 best_move_effort = 0;
+        for (int i = 0; i < root_count; ++i) {
+            root_effort += ordered[i].effort;
+            if (ordered[i].m == final_best_move)
+                best_move_effort = ordered[i].effort;
+        }
+        const double best_move_node_fraction = root_effort > 0
+            ? static_cast<double>(best_move_effort) / static_cast<double>(root_effort)
+            : 0.0;
 
         auto now = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
@@ -1180,7 +1198,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             std::cout.flush();
 
             if (on_iter && !search_stopped())
-                on_iter(depth, final_best_move, final_best_score, nodes, ms);
+                on_iter(depth, final_best_move, final_best_score, nodes, ms,
+                        best_move_node_fraction);
         }
 
         if (search_stopped()) break;

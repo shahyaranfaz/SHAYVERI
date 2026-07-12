@@ -142,5 +142,7 @@ make test
 - SEE regression checks.
 - Evaluation symmetry checks on vertically mirrored, color-swapped positions.
 - Transposition-table safety checks.
-- UCI checks covering handshake, fixed-depth search, bench node signature, opening-book on/off behavior, and deterministic `Threads=1` search.
+- Time-manager policy checks covering adaptive scaling, safe clock ceilings, and no-increment survival.
+- UCI checks covering handshake, fixed-depth search, the mandatory bench node signature, opening-book on/off behavior, and deterministic `Threads=1` search.
+- Timed Lazy SMP and ponder integration checks covering `ponderhit` and `stop`.
 - Tactical mate-in-1 regression positions adapted from `StuartRiffle/JaglavakTestData`.

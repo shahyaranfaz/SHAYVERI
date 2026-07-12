@@ -508,15 +508,15 @@ go movetime 1000</code></pre>
         <h2>UCI Options</h2>
         <div class="metric-grid">
           <div class="card"><h3>Hash</h3><p>Transposition table size in MB.</p></div>
-          <div class="card"><h3>Threads</h3><p>Requested search threads, bounded by detected hardware capacity.</p></div>
-          <div class="card"><h3>Ponder</h3><p>Enable ponder output and search support.</p></div>
-          <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
-          <div class="card"><h3>Book_Info_Depth</h3><p>Search only the selected book move and report normal depth-by-depth information. Set to <code>0</code> for the fast path.</p></div>
-          <div class="card"><h3>UseNNUE</h3><p>Enable or disable NNUE evaluation without changing the configured network path.</p></div>
-          <div class="card"><h3>EvalFile</h3><p>Set an explicit network path to load an external NNUE file.</p></div>
           <div class="card"><h3>Clear Hash</h3><p>Clear the transposition table.</p></div>
-          <div class="card"><h3>Minimum Thinking Time</h3><p>Minimum move time in milliseconds.</p></div>
-          <div class="card"><h3>Move Overhead</h3><p>GUI or network delay reserve in milliseconds.</p></div>
+          <div class="card"><h3>Threads</h3><p>Requested search threads, bounded by detected hardware capacity.</p></div>
+          <div class="card"><h3>Ponder</h3><p>Enable ponder output/search support.</p></div>
+          <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
+          <div class="card"><h3>Book_Info_Depth</h3><p>Depth for optional book-move evaluation output. Set to <code>0</code> for the fast path.</p></div>
+          <div class="card"><h3>UseNNUE</h3><p>Enable or disable NNUE evaluation without changing the configured network path.</p></div>
+          <div class="card"><h3>EvalFile</h3><p>NNUE network path. Set an explicit path to load an external network.</p></div>
+          <div class="card"><h3>Minimum Thinking Time</h3><p>Minimum move time, in milliseconds.</p></div>
+          <div class="card"><h3>Move Overhead</h3><p>GUI/network delay reserve, in milliseconds.</p></div>
         </div>
       </div>
     </section>
@@ -524,7 +524,7 @@ go movetime 1000</code></pre>
     <section id="tests">
       <div class="wrap">
         <h2>Verification</h2>
-        <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, UCI checks, opening-book behavior, deterministic single-thread search, and tactical mate-in-1 regression positions.</p>
+        <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, time-manager policy, UCI handshake and mandatory bench-signature checks, opening-book behavior, deterministic single-thread search, timed Lazy SMP, ponder-hit and ponder-stop behavior, and tactical mate-in-1 regression positions.</p>
         <pre><code>make test</code></pre>
       </div>
     </section>
