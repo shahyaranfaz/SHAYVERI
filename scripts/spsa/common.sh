@@ -19,7 +19,7 @@ PASS_NAME="${PASS_NAME:-pass_v2_7}"
 BATCH_ID="${BATCH_ID:-1}"
 BATCH_NAME="${BATCH_NAME:-batch${BATCH_ID}}"
 
-ROOT_DIR="${ROOT_DIR:-scripts/spsa/output/$PASS_NAME}"
+ROOT_DIR="${ROOT_DIR:-scripts/spsa/outputs/$PASS_NAME}"
 SHARED_DIR="${SHARED_DIR:-$ROOT_DIR/shared}"
 BATCH_DIR="${BATCH_DIR:-$ROOT_DIR/$BATCH_NAME}"
 

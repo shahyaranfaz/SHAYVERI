@@ -17,7 +17,7 @@ Layout
 - `watcher.sh`: prints queue and artifact status.
 - `build_book.sh`: helper for constructing a mixed tuning book.
 - `lakas/`: Python tuning and inspection helpers.
-- `output/`: ignored generated output, organized by pass and batch.
+- `outputs/`: ignored generated output, organized by pass and batch.
 
 Output shape
 ------------
@@ -25,7 +25,7 @@ Output shape
 Generated files live under:
 
 ```text
-scripts/spsa/output/<PASS_NAME>/
+scripts/spsa/outputs/<PASS_NAME>/
   results.txt
   batch1/
   batch2/
@@ -131,7 +131,7 @@ bash scripts/spsa/sweep_v2_7_1.sh
 The sweep uses 1+0.1, 400 games per engine pairing, one thread per engine, and
 23-way Fastchess concurrency. It compares the current value against the other
 discrete values in the local LMR range. Logs and PGNs go under
-`scripts/spsa/output/pass_v2_7_1/sweep/`.
+`scripts/spsa/outputs/pass_v2_7_1/sweep/`.
 
 The grid is a coarse behavioral sweep, not a claim that these are final CMAES
 bounds:

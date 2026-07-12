@@ -200,7 +200,8 @@ def get_match_commands(engine_file, test_options, base_options,
                        concurrency, base_time_sec, inc_time_sec, match_manager,
                        match_manager_path,
                        variant, fastchess_debug, fastchess_wait,
-                       move_time, nodes, protocol, timemargin):
+                       move_time, nodes, protocol, timemargin,
+                       engine_options=HARDCODE_ENGINE_OPTIONS):
     if match_manager == 'fastchess':
         tour_manager = Path(match_manager_path)
     else:
@@ -240,8 +241,8 @@ def get_match_commands(engine_file, test_options, base_options,
             elif depth is not None:
                 command += f' -each tc=inf depth={depth} timemargin={timemargin}'
 
-        command += f' -engine cmd={engine_file} name={test_name} proto={protocol} {HARDCODE_ENGINE_OPTIONS} {test_options}'
-        command += f' -engine cmd={engine_file} name={base_name} proto={protocol} {HARDCODE_ENGINE_OPTIONS} {base_options}'
+        command += f' -engine cmd={engine_file} name={test_name} proto={protocol} {engine_options} {test_options}'
+        command += f' -engine cmd={engine_file} name={base_name} proto={protocol} {engine_options} {base_options}'
         command += f' -rounds {games//2} -games 2 -repeat'
         command += ' -recover'
         command += f' -wait {fastchess_wait}'
@@ -261,14 +262,15 @@ def engine_match(engine_file, test_options, base_options, opening_file,
                  variant='normal', fastchess_debug=False,
                  fastchess_wait=5000, move_time=None, nodes=None,
                  protocol='uci',
-                 timemargin=50) -> float:
+                 timemargin=50,
+                 engine_options=HARDCODE_ENGINE_OPTIONS) -> float:
     result = ''
 
     tour_manager, command = get_match_commands(
         engine_file, test_options, base_options, opening_file,
         opening_file_format, games, depth, concurrency, base_time_sec,
         inc_time_sec, match_manager, match_manager_path, variant, fastchess_debug,
-        fastchess_wait, move_time, nodes, protocol, timemargin)
+        fastchess_wait, move_time, nodes, protocol, timemargin, engine_options)
     logger2.info("command: %s", str(tour_manager) + command)
 
     if os_name.lower() == 'windows':
@@ -435,6 +437,17 @@ def worker_loop(args, p: DistPaths):
         test_param = job["test_param"]
         base_param = job["base_param"]
 
+        job_opening_file = job.get("opening_file", opening_file)
+        job_opening_file_format = Path(job_opening_file).suffix[1:]
+        if job_opening_file_format in ("fen", "epd"):
+            job_opening_file_format = "epd"
+        elif job_opening_file_format == "":
+            job_opening_file_format = "pgn"
+
+        job_engine_options = job.get("engine_options", HARDCODE_ENGINE_OPTIONS)
+        job_base_time_sec = job.get("base_time_sec", base_time_sec)
+        job_inc_time_sec = job.get("inc_time_sec", inc_time_sec)
+
         test_options = " ".join([f"option.{k}={v}" for k, v in test_param.items()]).strip()
         base_options = " ".join([f"option.{k}={v}" for k, v in base_param.items()]).strip()
 
@@ -443,13 +456,13 @@ def worker_loop(args, p: DistPaths):
                 engine_file=engine_file,
                 test_options=test_options,
                 base_options=base_options,
-                opening_file=opening_file,
-                opening_file_format=opening_file_format,
+                opening_file=job_opening_file,
+                opening_file_format=job_opening_file_format,
                 games=games_per_budget,
                 depth=job.get("depth"),
                 concurrency=args.concurrency,
-                base_time_sec=base_time_sec,
-                inc_time_sec=inc_time_sec,
+                base_time_sec=job_base_time_sec,
+                inc_time_sec=job_inc_time_sec,
                 match_manager=job["match_manager"],
                 match_manager_path=match_manager_path,
                 variant=job["variant"],
@@ -459,6 +472,7 @@ def worker_loop(args, p: DistPaths):
                 nodes=job.get("nodes"),
                 protocol=job["protocol"],
                 timemargin=job["timemargin"],
+                engine_options=job_engine_options,
             )
             loss = 1.0 - float(result)
             out = {"job_id": job_id, "ok": True, "result": float(result), "loss": float(loss)}
@@ -605,6 +619,10 @@ def master_run(args, p: DistPaths):
                     "fastchess_wait": args.fastchess_wait,
                     "protocol": args.protocol,
                     "timemargin": args.time_margin,
+                    "base_time_sec": HARDCODE_BASE_TIME_SEC,
+                    "inc_time_sec": HARDCODE_INC_TIME_SEC,
+                    "opening_file": HARDCODE_OPENING_FILE,
+                    "engine_options": HARDCODE_ENGINE_OPTIONS,
                 }
 
                 job_path = p.jobs / f"{job_id}.json"
