@@ -99,13 +99,15 @@ position corpora, which are not included in this repository.
 
 ## Opening book
 
-Built from 2600+ rated games sourced from The Week in Chess (TWIC). Book evaluations are precomputed with Stockfish
-and cached. These evaluations are not used by SHAYVERI, but are included for consistency in Chess GUIs that display engine evaluation.
+Built from 2600+ rated games sourced from The Week in Chess (TWIC). The pipeline keeps 24-ply
+lines from standard-chess games where both players are rated at least 2600, aggregates observed
+move counts, and compiles the majority move for positions reaching at least five weighted plays.
+The compiled book stores only the selected move and does not embed evaluator-specific metadata.
 
 Opening-book helper tools live in `scripts/opening_book/`:
 
 ```bash
-make -C scripts/opening_book dump_keys
+make -C scripts/opening_book run_all
 ```
 
 ## UCI options

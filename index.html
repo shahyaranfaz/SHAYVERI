@@ -348,8 +348,8 @@
           </article>
           <article class="card">
             <h3>Book</h3>
-            <p>Includes an embedded opening book built from 2600+ rated TWIC games. Its cached Stockfish evaluations are only for consistency in chess GUIs that display engine evaluation and are not used by SHAYVERI.</p>
-            <pre><code>make -C scripts/opening_book dump_keys</code></pre>
+            <p>Built from 2600+ rated games sourced from The Week in Chess (TWIC). The pipeline keeps 24-ply lines from standard-chess games where both players are rated at least 2600, aggregates observed move counts, and compiles the majority move for positions reaching at least five weighted plays. The compiled book stores only the selected move and does not embed evaluator-specific metadata.</p>
+            <pre><code>make -C scripts/opening_book run_all</code></pre>
           </article>
         </div>
       </div>

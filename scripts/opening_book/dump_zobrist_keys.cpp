@@ -6,8 +6,10 @@
 #include <iostream>
 #include <string>
 
+using namespace SHAYVERI;
+
 // Minimal JSON writer (no extra deps)
-// Writes schema expected by build_book.py:
+// Writes schema expected by build_header.py:
 // {
 //   "pieces": [[...64...], ... 13 ...],
 //   "sides": <u64>,
@@ -19,7 +21,7 @@ static void write_u64(std::ostream& os, std::uint64_t v) {
 }
 
 int main(int argc, char** argv) {
-    std::string out_path = "zobrist_keys.json";
+    std::string out_path = "outputs/zobrist_keys.json";
     if (argc >= 2) out_path = argv[1];
 
     Zobrist::init();

@@ -86,7 +86,8 @@ not confused with SHAYVERI source versioning.
 
 - Added compiled opening book support.
 - Added opening book generation/writer tooling.
-- Added precomputed book evaluations.
+- Added deterministic weighted-majority move selection from qualifying high-rated corpus lines.
+- Compiled only the selected move for each position, without evaluator-specific metadata.
 - Added `OwnBook` UCI option.
 
 ### UCI And Compatibility

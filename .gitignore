@@ -17,14 +17,9 @@ nnue/v*/
 nnue/extra_nets
 nnue/README.md
 
-scripts/elo_pin/results
-scripts/elo_pin/runs
-scripts/opening_book/eval_cache.json
-scripts/opening_book/table.csv
-scripts/opening_book/zobrist_keys.json
-scripts/opening_book/artifacts/
-scripts/spsa/output/
-scripts/ablation/output/
+scripts/elo_pin/outputs
+scripts/opening_book/outputs/
+scripts/spsa/outputs/
 scripts/ablation/outputs/
 
 # Prerequisites

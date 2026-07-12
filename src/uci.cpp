@@ -86,6 +86,16 @@ static Move first_legal_move(Board b) {
     return legal.count > 0 ? legal.moves[0] : MOVE_NONE;
 }
 
+static std::string uci_score(int score) {
+    if (std::abs(score) > Tune::MATE_SCORE - Tune::MAX_PLY) {
+        int mate_dist = Tune::MATE_SCORE - std::abs(score);
+        int mate_moves = (mate_dist + 1) / 2;
+        if (score < 0) mate_moves = -mate_moves;
+        return "mate " + std::to_string(mate_moves);
+    }
+    return "cp " + std::to_string(score);
+}
+
 static bool parse_bool(const std::string &value) {
     std::string v = value;
     std::transform(v.begin(), v.end(), v.begin(),
@@ -602,11 +612,7 @@ int main(int argc, char **argv) {
                         g_stop     = false;
                         node_count = 0;
 
-                        int book_eval_cp = static_cast<int>(entry->evaluation * 100.0f);
-                        if (b.side_to_move == BLACK) book_eval_cp = -book_eval_cp;
-
-                        std::cout << "info depth 8 score cp " << book_eval_cp
-                                  << " pv " << move_to_uci(m) << " \n"
+                        std::cout << "info string book\n"
                                   << "bestmove " << move_to_uci(m)
                                   << ponder_suffix(b, m) << "\n";
                         std::cout.flush();
@@ -682,13 +688,24 @@ int main(int argc, char **argv) {
             int   hash_mb    = g_hash_mb;
 
             if (fixed_nodes > 0 || fixed_depth > 0) {
+                const auto search_start = std::chrono::steady_clock::now();
                 SearchResult result = run_fixed_search(
                     b_copy, rep, searchmoves,
                     root_depth, num_thr, hash_mb, fixed_nodes);
+                const auto search_end = std::chrono::steady_clock::now();
+                const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    search_end - search_start).count();
+                const U64 elapsed_for_nps = static_cast<U64>(std::max<I64>(1, elapsed_ms));
+                const U64 nps = result.nodes * 1000 / elapsed_for_nps;
 
                 if (!is_legal_root_move(b_copy, result.best_move))
                     result.best_move = first_legal_move(b_copy);
 
+                std::cout << "info depth " << result.depth
+                          << " score " << uci_score(result.score)
+                          << " time " << elapsed_ms
+                          << " nodes " << result.nodes
+                          << " nps " << nps << "\n";
                 std::string ponder_str = ponder_suffix(b_copy, result.best_move);
                 std::cout << "bestmove " << move_to_uci(result.best_move)
                           << ponder_str << "\n";

@@ -2,26 +2,20 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ARTIFACTS_DIR="${SCRIPT_DIR}/artifacts"
-ZIPDIR="${ARTIFACTS_DIR}/zips"
-DBDIR="${ARTIFACTS_DIR}/db"
+OUTPUTS_DIR="${SCRIPT_DIR}/outputs"
+ZIPDIR="${OUTPUTS_DIR}/zips"
 IDFILE="${ZIPDIR}/.last_id"
 ADDR="http://www.theweekinchess.com/zips/"
 WOPTS=""
-PGNFILE="${DBDIR}/twic.pgn"
-TEMPFILE="${DBDIR}/temp.pgn"
+PGNFILE="${OUTPUTS_DIR}/twic.pgn"
+TEMPFILE="${OUTPUTS_DIR}/temp.pgn"
 
-mkdir -p "$(dirname "$PGNFILE")"
+mkdir -p "$OUTPUTS_DIR"
 
 if [ ! -d "$ZIPDIR" ]; then
 	echo "Creating folder \"${ZIPDIR}/\""
 	mkdir -p "$ZIPDIR"
 fi
-if [ ! -d "$DBDIR" ]; then
-	echo "Creating folder \"${DBDIR}/\""
-	mkdir -p "$DBDIR"
-fi
-
 ## the first known issue of TWIC
 i=210
 ## a very high number which will not be reached
@@ -52,6 +46,8 @@ if [ "$#" -eq 3 ]; then
     PGNFILE=$3
     TEMPFILE="${PGNFILE}.temp"
     mkdir -p "$(dirname "$PGNFILE")"
+    # Explicit ranges are full rebuilds, so never append duplicate games.
+    : > "$PGNFILE"
 fi
 
 echo -e "Downloading issues \033[31m$i \033[0mto \033[31m${last_i}\033[0m"
@@ -62,16 +58,28 @@ CONT="true"
 while [ "$CONT" == "true" ]; do
     echo -ne "\033[33m downloading TWIC issue \033[31m$i\033[33m...."
     dest_name="twic${i}.zip"
-    wget -q $WOPTS "$ADDR/twic${i}g.zip" -O - > "${ZIPDIR}/twic${i}.zip" || true
-    SIZE=$(stat -c "%s" "${ZIPDIR}/${dest_name}")
-    if [ "$SIZE" != "0" ]; then
+    zip_path="${ZIPDIR}/${dest_name}"
+
+    if [ -s "$zip_path" ] && unzip -tq "$zip_path" >/dev/null 2>&1; then
+        echo -e "\033[36m cached"
+        DOWNLOADED="${DOWNLOADED} ${dest_name}"
+        i=$(($i + 1))
+        if [ $i -gt ${last_i} ]; then
+            CONT="false"
+        fi
+        continue
+    fi
+
+    rm -f "$zip_path"
+    wget -q $WOPTS "$ADDR/twic${i}g.zip" -O - > "$zip_path" || true
+    if [ -s "$zip_path" ] && unzip -tq "$zip_path" >/dev/null 2>&1; then
         CONT="true"
         echo -e "\033[32m done!"
         DOWNLOADED="${DOWNLOADED} ${dest_name}"
         i=$(($i+ 1))
     else
-        echo -e "\033[31m failed!"
-        rm "${ZIPDIR}/${dest_name}"
+        echo -e "\033[31m failed or invalid archive!"
+        rm -f "$zip_path"
 	echo $(($i -1)) > "$IDFILE"
         CONT="false"
     fi
@@ -89,12 +97,12 @@ for fname in ${DOWNLOADED}; do
     # Extract to temporary file
     unzip -c "$ZIPDIR/${fname}" > "$TEMPFILE"
     
-    # Filter games where both players are rated > 2600
+    # Filter games where both players are rated 2600+
     awk '
     BEGIN { game = ""; white_elo = 0; black_elo = 0; in_game = 0 }
     
     /^\[Event / { 
-        if (in_game && white_elo > 2600 && black_elo > 2600) {
+        if (in_game && white_elo >= 2600 && black_elo >= 2600) {
             print game
         }
         game = $0 "\n"
@@ -121,7 +129,7 @@ for fname in ${DOWNLOADED}; do
     in_game { game = game $0 "\n" }
     
     END {
-        if (in_game && white_elo > 2600 && black_elo > 2600) {
+        if (in_game && white_elo >= 2600 && black_elo >= 2600) {
             print game
         }
     }
