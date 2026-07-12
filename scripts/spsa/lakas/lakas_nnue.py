@@ -599,9 +599,10 @@ def master_run(args, p: DistPaths):
         if remaining_budget <= 0:
             logger.info("[master] budget target already reached")
 
-        for _ in range(remaining_budget):
+        remaining_to_schedule = remaining_budget
+        while remaining_to_schedule > 0 or in_flight:
             # keep pipeline filled
-            while len(in_flight) < max_outstanding:
+            while remaining_to_schedule > 0 and len(in_flight) < max_outstanding:
                 x = optimizer.ask()
                 test_param = dict(x.kwargs)
 
@@ -629,6 +630,10 @@ def master_run(args, p: DistPaths):
                 write_json_atomic(job_path, job)
                 in_flight[job_id] = (x, job_path)
                 pending_results.add(job_id)
+                remaining_to_schedule -= 1
+
+            if not in_flight:
+                break
 
             # wait for at least one result
             while True:

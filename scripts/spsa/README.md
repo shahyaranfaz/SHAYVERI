@@ -119,32 +119,6 @@ Worker semantics
 - The default is one claimed eval per worker process, with that eval using local
   cores through fastchess.
 
-V2.7.1 coarse sweep
---------------------
-
-Before CMAES, sweep the four v2.7.1 LMR knobs independently with:
-
-```bash
-bash scripts/spsa/sweep_v2_7_1.sh
-```
-
-The sweep uses 1+0.1, 400 games per engine pairing, one thread per engine, and
-23-way Fastchess concurrency. It compares the current value against the other
-discrete values in the local LMR range. Logs and PGNs go under
-`scripts/spsa/outputs/pass_v2_7_1/sweep/`.
-
-The grid is a coarse behavioral sweep, not a claim that these are final CMAES
-bounds:
-
-- `Improving_LMR_Reduction`: `0, 1, 2, 3`
-- `CutNode_LMR_Reduction`: `0, 1, 2, 3`
-- `LMR_PV_Offset`: `-3, -2, -1, 0`
-- `LMR_NonPV_Offset`: `0, 1, 2, 3`
-
-The script writes a combined `summary.txt` containing the final pairwise score
-for every pairing and the final ranking table for each sweep. With the default
-400 games per pairing, the four four-engine sweeps total 9,600 games.
-
 Runtime copy layout
 -------------------
 

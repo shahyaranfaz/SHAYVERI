@@ -8,6 +8,34 @@ TranspositionTable TT;
 thread_local TranspositionTable *active_tt = &TT;
 static thread_local TTEntry probe_scratch;
 
+class BucketWriteGuard {
+public:
+    explicit BucketWriteGuard(TTBucket &bucket) : bucket_(bucket) {
+        U64 expected = bucket_.sequence.load(std::memory_order_relaxed);
+        while (true) {
+            if ((expected & 1ULL) == 0
+                && bucket_.sequence.compare_exchange_weak(
+                    expected, expected + 1,
+                    std::memory_order_acquire,
+                    std::memory_order_relaxed))
+                break;
+            expected = bucket_.sequence.load(std::memory_order_relaxed);
+        }
+        stable_sequence_ = expected;
+    }
+
+    ~BucketWriteGuard() {
+        bucket_.sequence.store(stable_sequence_ + 2, std::memory_order_release);
+    }
+
+    BucketWriteGuard(const BucketWriteGuard &) = delete;
+    BucketWriteGuard &operator=(const BucketWriteGuard &) = delete;
+
+private:
+    TTBucket &bucket_;
+    U64 stable_sequence_ = 0;
+};
+
 TranspositionTable &tt() {
     return *active_tt;
 }
@@ -81,7 +109,9 @@ void TranspositionTable::resize(SIZE_T mb) {
 void TranspositionTable::clear() {
     if (!table) return;
     for (SIZE_T i = 0; i < bucket_count; ++i) {
-        for (TTSlot &slot : table[i].entries) {
+        TTBucket &bucket = table[i];
+        BucketWriteGuard guard(bucket);
+        for (TTSlot &slot : bucket.entries) {
             slot.key.store(0, std::memory_order_relaxed);
             slot.data.store(0, std::memory_order_relaxed);
             slot.meta.store(0, std::memory_order_relaxed);
@@ -98,12 +128,30 @@ const TTEntry *TranspositionTable::probe(U64 key) const {
     if (!table || bucket_count == 0) return nullptr;
 
     const TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
-    TTEntry entry;
-    for (const TTSlot &slot : bucket.entries) {
-        if (read_slot(slot, entry) && entry.key == key) {
-            probe_scratch = entry;
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        const U64 sequence_before = bucket.sequence.load(std::memory_order_acquire);
+        if (sequence_before & 1ULL) continue;
+
+        TTEntry match;
+        bool found = false;
+        for (const TTSlot &slot : bucket.entries) {
+            TTEntry entry;
+            if (read_slot(slot, entry) && entry.key == key) {
+                match = entry;
+                found = true;
+                break;
+            }
+        }
+
+        const U64 sequence_after = bucket.sequence.load(std::memory_order_acquire);
+        if (sequence_before != sequence_after || (sequence_after & 1ULL))
+            continue;
+
+        if (found) {
+            probe_scratch = match;
             return &probe_scratch;
         }
+        return nullptr;
     }
     return nullptr;
 }
@@ -112,6 +160,7 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
     if (!table || bucket_count == 0 || key == 0) return;
 
     TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
+    BucketWriteGuard guard(bucket);
     const U8 age = generation.load(std::memory_order_relaxed);
 
     TTEntry entry;
@@ -172,6 +221,7 @@ void TranspositionTable::store_eval(U64 key, int eval) {
     if (!table || bucket_count == 0 || key == 0) return;
 
     TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
+    BucketWriteGuard guard(bucket);
     const U8 age = generation.load(std::memory_order_relaxed);
 
     TTEntry entry;

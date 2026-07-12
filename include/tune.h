@@ -123,7 +123,7 @@ inline int corrhist_max         = 8192;
 inline int corrhist_depth_cap   =    4;
 
 // PVS SEE pruning.
-inline int pvs_see_margin    = 125;
+inline int pvs_see_margin    = -125;
 inline int pvs_see_min_depth =   3;
 inline int pvs_see_min_moves =   2;
 
@@ -544,7 +544,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {              "LMR_PV_Offset", {                &lmr_pv_offset,    TuningOption::INT,    -3,     0,      "-1"}},
     {              "NMP_Min_Depth", {                &nmp_min_depth,    TuningOption::INT,     1,    12,       "3"}},
     {       "NMP_Verify_Min_Depth", {         &nmp_verify_min_depth,    TuningOption::INT,     2,    20,       "8"}},
-    {             "PVS_SEE_Margin", {               &pvs_see_margin,    TuningOption::INT,     0,   200,     "125"}},
+    {             "PVS_SEE_Margin", {               &pvs_see_margin,    TuningOption::INT,  -200,     0,    "-125"}},
     {          "PVS_SEE_Min_Depth", {            &pvs_see_min_depth,    TuningOption::INT,     1,    12,       "3"}},
     {          "PVS_SEE_Min_Moves", {            &pvs_see_min_moves,    TuningOption::INT,     1,    16,       "2"}},
     {             "QS_Start_Depth", {               &qs_start_depth,    TuningOption::INT,     1,    16,       "8"}},
@@ -554,7 +554,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     /* DO NOT ENABLE - CATASTROPHIC RESULTS WHEN NON-ZERO -- all untuned:
     {  "History_Pruning_Min_Depth", {    &history_pruning_min_depth,    TuningOption::INT,     0,     8,       "0"}},
     {  "History_Pruning_Min_Moves", {    &history_pruning_min_moves,    TuningOption::INT,     0,    16,       "0"}},
-    {  "History_Pruning_Threshold", {    &history_pruning_threshold,    TuningOption::INT,     0,  1200,       "0"}},
+    {  "History_Pruning_Threshold", {    &history_pruning_threshold,    TuningOption::INT, -1200,     0,       "0"}},
     {         "QS_Futility_Margin", {           &qs_futility_margin,    TuningOption::INT,     0,   300,       "0"}},
     */
 };

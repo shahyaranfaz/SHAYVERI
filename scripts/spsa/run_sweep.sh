@@ -1,7 +1,7 @@
 cd ~/chess_arena/chess_bot
 
 FASTCHESS="${FASTCHESS:-$HOME/chess_arena/fastchess/fastchess}"
-OUT=interior_sweeps_10s
+OUT="${OUT:-interior_sweeps_10s}"
 mkdir -p "$OUT"
 
 run_sweep() {
@@ -10,6 +10,11 @@ run_sweep() {
   values="$3"
   log="$OUT/${label}.txt"
   pgn="$OUT/${label}.pgn"
+
+  extra_each_options=()
+  if [ -n "${RUN_SWEEP_EACH_OPTIONS:-}" ]; then
+    read -r -a extra_each_options <<< "$RUN_SWEEP_EACH_OPTIONS"
+  fi
 
   args=(
     -engine name=base cmd=./SHAYVERI dir=. proto=uci
@@ -28,6 +33,7 @@ run_sweep() {
     -tournament roundrobin \
     -each proto=uci tc=10+0.1 timemargin=100 option.Threads=1 \
       option.OwnBook=false option.Book_Info_Depth=0 \
+      "${extra_each_options[@]}" \
     -openings file=../books/final_search_mix_shuf.epd format=epd order=random plies=16 \
     -games 2 -rounds 100 -repeat \
     -concurrency 23 -recover \

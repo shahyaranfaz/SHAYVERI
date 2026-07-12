@@ -268,6 +268,40 @@ static inline bool has_non_pawn_material(const Board &b, Colour c) {
             b.bit_boards[Piece(off + WQ)]) != 0;
 }
 
+static inline bool has_search_insufficient_material(const Board &b) {
+    if (b.bit_boards[WP] | b.bit_boards[BP]
+        | b.bit_boards[WR] | b.bit_boards[BR]
+        | b.bit_boards[WQ] | b.bit_boards[BQ])
+        return false;
+
+    const U64 knights = b.bit_boards[WN] | b.bit_boards[BN];
+    U64 bishops = b.bit_boards[WB] | b.bit_boards[BB];
+    if (__builtin_popcountll(knights | bishops) <= 1)
+        return true;
+    if (knights != 0 || bishops == 0)
+        return false;
+
+    const Square first = static_cast<Square>(__builtin_ctzll(bishops));
+    const int square_colour = (static_cast<int>(get_file(first))
+        + static_cast<int>(get_rank(first))) & 1;
+    while (bishops) {
+        const Square sq = pop_lsb(bishops);
+        const int colour = (static_cast<int>(get_file(sq))
+            + static_cast<int>(get_rank(sq))) & 1;
+        if (colour != square_colour)
+            return false;
+    }
+    return true;
+}
+
+static int rule_draw_score(Board &b, int ply) {
+    const Square king = king_square(b, b.side_to_move);
+    const bool in_check = is_square_attacked(b, king, flip(b.side_to_move));
+    if (in_check && generate_legal_moves(b).count == 0)
+        return -MATE_SCORE + ply;
+    return 0;
+}
+
 void make_null_move(Board &b, Undo &u) {
     u.hash       = b.hash;
     u.en_passant = b.en_passant;
@@ -406,13 +440,29 @@ static inline int evaluate_position(const Board &b, const StackInfo *ss) {
     return evaluate(b);
 }
 
-static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo *ss) {
+static int max_ply_score(Board &b, int alpha, int ply, const StackInfo *ss) {
+    const Square king = king_square(b, b.side_to_move);
+    const bool in_check = is_square_attacked(b, king, flip(b.side_to_move));
+    if (!in_check)
+        return evaluate_position(b, ss);
+
+    const MoveList legal = generate_legal_moves(b);
+    return legal.count == 0 ? -MATE_SCORE + ply : alpha;
+}
+
+static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo *ss,
+                   U64 *rep_stack, int rep_len) {
     if (search_stopped()) return 0;
     count_node();
+
+    if (has_search_insufficient_material(b)) return 0;
+    if (b.half_move >= 100) return rule_draw_score(b, ply);
+    if (rep_len > 1 && is_repetition(b.hash, rep_stack, rep_len - 1, b.half_move)) return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
     if (alpha >= beta) return alpha;
+    if (ply >= MAX_PLY - 1) return max_ply_score(b, alpha, ply, ss);
 
     const TTEntry *tte = tt().probe(b.hash);
 
@@ -443,9 +493,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         if (depth <= Tune::qs_min_depth) return alpha;
     } else {
         // A checked node must search legal evasions even at the qsearch floor.
-        // Bound pathological checking sequences before the fixed search stack
-        // can be exhausted. Never return a normal static evaluation in check.
-        if (ply >= MAX_PLY - 2) return alpha;
+        // The absolute ply guard above bounds pathological checking sequences.
     }
 
     MoveList moves;
@@ -475,6 +523,7 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
             if (noisy[j].score > noisy[i].score) std::swap(noisy[i], noisy[j]);
         Move m = noisy[i].m;
         bool qs_see_reject = false;
+        bool qs_delta_reject = false;
         int victim_val = 0;
 
         if (!in_check) {
@@ -487,15 +536,16 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
             qs_see_reject = non_promotion_capture
                 && see(b, m) < std::max(0, Tune::qs_see_margin);
 
-            const bool qs_delta_reject =
-                stand_pat + victim_val + Tune::qs_delta_margin < alpha;
-            if (qs_delta_reject && !qs_see_reject)
-                continue;
+            qs_delta_reject = stand_pat + victim_val + Tune::qs_delta_margin < alpha;
         }
 
         Undo u;
         if (!make_move(b, m, u)) continue;
-        if (qs_see_reject) {
+        const bool qs_futility_reject = !in_check
+            && Tune::qs_futility_margin > 0
+            && move_promo(m) == NONE_PTYPE
+            && stand_pat + victim_val + Tune::qs_futility_margin < alpha;
+        if (qs_see_reject || qs_delta_reject || qs_futility_reject) {
             const Square king = king_square(b, b.side_to_move);
             const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
             if (!gives_check) {
@@ -503,19 +553,12 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
                 continue;
             }
         }
-        if (Tune::qs_futility_margin > 0 && move_promo(m) == NONE_PTYPE) {
-            const Square king = king_square(b, b.side_to_move);
-            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
-            if (!gives_check
-                && stand_pat + victim_val + Tune::qs_futility_margin < alpha) {
-                unmake_move(b, m, u);
-                continue;
-            }
-        }
         NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
         legal_count++;
+        rep_stack[rep_len] = b.hash;
 
-        int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1, ss + 1);
+        int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1, ss + 1,
+                             rep_stack, rep_len + 1);
         unmake_move(b, m, u);
 
         if (search_stopped()) return 0;
@@ -537,13 +580,16 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
     const U64 key = b.hash;
 
-    // Basic Draw Detection
-    if (b.half_move >= 100) return 0;
+    // Basic draw detection. Checkmate takes precedence if the mating move also
+    // reaches the reversible-move limit.
+    if (has_search_insufficient_material(b)) return 0;
+    if (b.half_move >= 100) return rule_draw_score(b, ply);
     if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1, b.half_move)) return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
     if (alpha >= beta) return alpha;
+    if (ply >= MAX_PLY - 1) return max_ply_score(b, alpha, ply, ss);
 
     const int original_alpha = alpha;
     Move tt_move = MOVE_NONE;
@@ -576,7 +622,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    if (depth <= 0) return qsearch(b, alpha, beta, Tune::qs_start_depth, ply, ss);
+    if (depth <= 0)
+        return qsearch(b, alpha, beta, Tune::qs_start_depth, ply, ss,
+                       rep_stack, rep_len);
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
@@ -625,10 +673,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         Undo u;
         (ss + 1)->acc = ss->acc;
         make_null_move(b, u);
+        const Move saved_move = ss->move;
+        const Piece saved_piece = ss->piece;
         ss->move = MOVE_NONE;
         ss->piece = NONE_PIECE;
         int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1,
-                             H, rep_stack, rep_len, false, !cut_node, ss + 1);
+                             H, rep_stack, rep_len, false, !cut_node, ss + 1, false);
+        ss->move = saved_move;
+        ss->piece = saved_piece;
         unmake_null_move(b, u);
 
         if (search_stopped()) return 0;
@@ -680,7 +732,7 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 Undo u;
                 if (!make_move(b, m, u)) continue;
                 NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
-                if (rep_len < MAX_PLY) rep_stack[rep_len] = b.hash;
+                if (rep_len < MAX_PLY * 2) rep_stack[rep_len] = b.hash;
                 ss->move = m;
                 ss->piece = moved_piece;
                 ++pc_tried;
@@ -751,23 +803,30 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
         bool is_quiet = !is_capture_or_promo(b, m);
         const int move_history = is_quiet ? quiet_history_score(b, m, ply, H, ss) : 0;
+        bool lmp_reject = false;
+        bool futility_reject = false;
+        bool see_reject = false;
+        bool pvs_see_reject = false;
 
         // Pruning (LMP, futility, and promoted quiet SEE).
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
-            if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
-            if (is_quiet && depth <= Tune::fp_max_depth && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
-            if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_max_depth &&
-                ordered[i].see_value < Tune::see_margin * depth)
-                continue;
+            lmp_reject = is_quiet
+                && legal_count > Tune::lmp_base + Tune::lmp_mult * depth * depth;
+            futility_reject = is_quiet
+                && depth <= Tune::fp_max_depth
+                && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha;
+            see_reject = !is_quiet
+                && move_promo(m) == NONE_PTYPE
+                && depth <= Tune::see_max_depth
+                && ordered[i].see_value < Tune::see_margin * depth;
 
-            if (is_quiet
-                && Tune::pvs_see_margin > 0
+            pvs_see_reject = is_quiet
+                && Tune::pvs_see_margin < 0
                 && depth >= Tune::pvs_see_min_depth
                 && legal_count + 1 >= Tune::pvs_see_min_moves
                 && m != tt_move
                 && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
-                && quiet_see(b, m) < -Tune::pvs_see_margin)
-                continue;
+                && quiet_see(b, m) < Tune::pvs_see_margin;
         }
 
         Piece moved_piece = b.get_piece(move_from(m));
@@ -779,13 +838,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
         Undo u;
         if (!make_move(b, m, u)) continue;
-        if (Tune::history_pruning_threshold > 0
+        const bool history_reject = Tune::history_pruning_threshold < 0
             && is_quiet
             && depth >= Tune::history_pruning_min_depth
             && legal_count + 1 >= Tune::history_pruning_min_moves
             && m != tt_move
             && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
-            && move_history < Tune::history_pruning_threshold) {
+            && move_history < Tune::history_pruning_threshold;
+        if (lmp_reject || futility_reject || see_reject || pvs_see_reject || history_reject) {
             const Square king = king_square(b, b.side_to_move);
             const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
             if (!gives_check) {
@@ -900,7 +960,10 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    if (legal_count == 0) return in_check ? -MATE_SCORE + ply : 0;
+    if (legal_count == 0) {
+        if (ss->excluded_move != MOVE_NONE) return alpha;
+        return in_check ? -MATE_SCORE + ply : 0;
+    }
 
     if (ss->excluded_move == MOVE_NONE) {
         if (have_static_eval && !in_check) {
@@ -946,7 +1009,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
     if (rep_init && rep_init_len > 0) {
         rep_len = std::min(rep_init_len, MAX_PLY);
-        for (int i = 0; i < rep_len; ++i) rep_stack[i] = rep_init[i];
+        const int rep_offset = rep_init_len - rep_len;
+        for (int i = 0; i < rep_len; ++i) rep_stack[i] = rep_init[rep_offset + i];
     }
     if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
         if (rep_len < MAX_PLY) rep_stack[rep_len++] = b.hash;
@@ -1157,7 +1221,9 @@ int qsearch_score(Board &b) {
     StackInfo st[MAX_PLY + 5]{};
     StackInfo *ss = st + 2;
     ss->acc.refresh(b);
-    return qsearch(b, -INF, INF, Tune::qs_start_depth, 0, ss);
+    U64 rep_stack[MAX_PLY * 2]{};
+    rep_stack[0] = b.hash;
+    return qsearch(b, -INF, INF, Tune::qs_start_depth, 0, ss, rep_stack, 1);
 }
 
 } // namespace SHAYVERI

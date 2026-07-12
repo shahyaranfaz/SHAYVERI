@@ -158,7 +158,9 @@ int main(int argc, char **argv) {
         fail("only " + std::to_string(available_records) +
              " records available, need " + std::to_string(target_records));
 
-    fs::create_directories(options.output.parent_path());
+    const fs::path output_parent = options.output.parent_path();
+    if (!output_parent.empty())
+        fs::create_directories(output_parent);
     const fs::path tmp_dir = options.output.parent_path() / ("." + options.output.filename().string() + ".blocks");
     if (fs::exists(tmp_dir))
         fail("temporary block directory already exists: " + tmp_dir.string());

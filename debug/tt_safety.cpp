@@ -1,6 +1,9 @@
 #include "tt.h"
 
+#include <atomic>
 #include <iostream>
+#include <thread>
+#include <vector>
 
 using SHAYVERI::MOVE_NONE;
 using SHAYVERI::TT_EXACT;
@@ -55,6 +58,36 @@ int main() {
     const TTEntry *ee = tt.probe(eval_only_key);
     if (!require(ee != nullptr, "probe eval-only key")) ++failures;
     if (ee && !require(ee->has_eval && ee->eval == -19, "eval-only payload mismatch")) ++failures;
+
+    // Multiple search threads share the TT. A probe must never observe the
+    // score/depth pair from two different writers as one entry.
+    const U64 shared_key = 0x55AA55AA55AA55AAULL;
+    std::atomic<bool> start{false};
+    std::atomic<bool> bad_payload{false};
+    std::vector<std::thread> writers;
+    for (int id = 0; id < 4; ++id) {
+        writers.emplace_back([&, id] {
+            while (!start.load(std::memory_order_acquire)) {
+            }
+            const int depth = 20 + id;
+            const int score = 1000 + id;
+            for (int i = 0; i < 50000; ++i)
+                tt.store(shared_key, depth, score, TT_EXACT, MOVE_NONE);
+        });
+    }
+
+    start.store(true, std::memory_order_release);
+    for (int i = 0; i < 200000; ++i) {
+        const TTEntry *shared = tt.probe(shared_key);
+        if (!shared) continue;
+        const int id = shared->depth - 20;
+        if (id < 0 || id >= 4 || shared->score != 1000 + id) {
+            bad_payload.store(true, std::memory_order_relaxed);
+            break;
+        }
+    }
+    for (auto &writer : writers) writer.join();
+    if (!require(!bad_payload.load(), "concurrent writers produced mixed payload")) ++failures;
 
     if (failures == 0) {
         std::cout << "TT safety suite passed\n";

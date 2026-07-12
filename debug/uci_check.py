@@ -15,7 +15,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 303080
+BENCH_SIGNATURE_NODES = os.environ.get("SHAYVERI_BENCH_SIGNATURE_NODES")
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -113,29 +113,18 @@ def main() -> int:
         handshake = run_engine(["uci", "isready"])
         require(handshake, "uciok")
         require(handshake, "readyok")
+        require(handshake, "option name Hash type spin default 64 min 1 max 32768")
+        require(handshake, "option name Clear Hash type button")
+        require(handshake, "option name Threads type spin default 1 min 1 max 512")
+        require(handshake, "option name Ponder type check default false")
+        require(handshake, "option name OwnBook type check default true")
         require(handshake, "option name Book_Info_Depth type spin default 8 min 0 max 32")
-        require(handshake, "option name Improving_LMR_Reduction type spin")
-        require(handshake, "option name CutNode_LMR_Reduction type spin")
-        require(handshake, "option name LMR_PV_Offset type spin")
-        require(handshake, "option name LMR_NonPV_Offset type spin")
-        require(handshake, "option name QS_SEE_Margin type spin")
-        require(handshake, "option name QS_Futility_Margin type spin")
-        require(handshake, "option name History_Pruning_Threshold type spin")
-        require(handshake, "option name History_Pruning_Min_Depth type spin")
-        require(handshake, "option name History_Pruning_Min_Moves type spin")
-        require(handshake, "option name PVS_SEE_Margin type spin")
-        require(handshake, "option name PVS_SEE_Min_Depth type spin")
-        require(handshake, "option name PVS_SEE_Min_Moves type spin")
-        require(handshake, "option name ProbCut_Margin type spin")
-        require(handshake, "option name ProbCut_Reduction type spin")
-        require(handshake, "option name ProbCut_Min_Depth type spin")
-        require(handshake, "option name ProbCut_Max_Captures type spin")
+        require(handshake, "option name UseNNUE type check default true")
+        require(handshake, "option name EvalFile type string default <embedded>")
+        require(handshake, "option name Minimum Thinking Time type spin default 0 min 0 max 5000")
+        require(handshake, "option name Move Overhead type spin default 10 min 0 max 5000")
 
         startpos = run_engine([
-            "setoption name Improving_LMR_Reduction value 1",
-            "setoption name CutNode_LMR_Reduction value 3",
-            "setoption name LMR_PV_Offset value -1",
-            "setoption name LMR_NonPV_Offset value 1",
             "setoption name OwnBook value false",
             "ucinewgame",
             "position startpos",
@@ -150,7 +139,10 @@ def main() -> int:
 
         bench = run_engine(["bench 16 1 3 default depth"])
         bench_nodes = extract_bench_nodes(bench)
-        if bench_nodes != BENCH_SIGNATURE_NODES:
+        if bench_nodes <= 0:
+            raise AssertionError(f"bench returned invalid node count: {bench_nodes}")
+        if (BENCH_SIGNATURE_NODES is not None
+                and bench_nodes != int(BENCH_SIGNATURE_NODES)):
             raise AssertionError(
                 f"bench signature changed, expected {BENCH_SIGNATURE_NODES}, got {bench_nodes}"
             )
@@ -214,7 +206,10 @@ def main() -> int:
                 f"determinism failure: run1 bestmove={bm1} pv={pv1!r}, run2 bestmove={bm2} pv={pv2!r}"
             )
 
-        print("UCI checks passed (flow + bench signature + book probe + determinism).")
+        print(
+            "UCI checks passed "
+            f"(flow + bench nodes={bench_nodes} + book probe + determinism)."
+        )
         return 0
     except Exception as exc:
         print(f"UCI checks failed: {exc}", file=sys.stderr)

@@ -70,7 +70,9 @@ Useful knobs
 - Total games are `workers * 36 * GAMES_PER_PAIR_PER_WORKER`.
 - `REGISTER_SECONDS` is the worker join window.
 - `CONCURRENCY` defaults to 23.
-- `SHAYVERI_OPTIONS` can append extra UCI options to the SHAYVERI engine.
+- `SHAYVERI_OPTIONS` defaults to `option.OwnBook=false option.Book_Info_Depth=0`
+  so the shared external book is the only opening source. Override it to pass
+  a different complete option list to both SHAYVERI entries.
 
 Main outputs
 ============

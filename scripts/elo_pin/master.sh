@@ -12,7 +12,7 @@ RUN_ID="${RUN_NAME_ID}_${TC_LABEL}_$(date +%Y%m%d_%H%M%S)"
 RUN_DIR="$(run_dir "$RUN_ID")"
 
 mkdir -p "$PIN_ROOT/results" "$RUN_DIR"/{workers,games,done,failed,state,logs}
-printf '%s\n' "$RUN_ID" > "$PIN_ROOT/current_run_id"
+rm -f "$PIN_ROOT/current_run_id"
 
 LOG="$RUN_DIR/master.log"
 touch "$LOG"
@@ -62,6 +62,10 @@ if [[ -x "$ORDO" ]]; then
   cp "$ORDO" "$RUN_DIR/ordo"
   chmod +x "$RUN_DIR/ordo"
 fi
+
+RUN_POINTER_TMP="$PIN_ROOT/current_run_id.tmp.$$"
+printf '%s\n' "$RUN_ID" > "$RUN_POINTER_TMP"
+mv "$RUN_POINTER_TMP" "$PIN_ROOT/current_run_id"
 
 log "run_id=$RUN_ID"
 log "run_dir=$RUN_DIR"
