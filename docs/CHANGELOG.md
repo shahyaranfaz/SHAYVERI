@@ -88,6 +88,7 @@ not confused with SHAYVERI source versioning.
 - Added opening book generation/writer tooling.
 - Added deterministic weighted-majority move selection from qualifying high-rated corpus lines.
 - Compiled only the selected move for each position, without evaluator-specific metadata.
+- Added optional book-move info searches through `Book_Info_Depth`, with `0` preserving the fast path.
 - Added `OwnBook` UCI option.
 
 ### UCI And Compatibility
@@ -108,6 +109,7 @@ not confused with SHAYVERI source versioning.
   - `Threads`
   - `Ponder`
   - `OwnBook`
+  - `Book_Info_Depth`
   - `Minimum Thinking Time`
   - `Move Overhead`
 - Added `searchmoves` support.

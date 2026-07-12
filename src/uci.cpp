@@ -40,6 +40,7 @@ static int  g_hash_mb       = 64;
 static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
+static int  g_book_info_depth = 8;
 static int  g_min_think_ms  = 0;
 static std::string g_eval_file = "<embedded>";
 
@@ -451,6 +452,7 @@ int main(int argc, char **argv) {
                 << "option name Threads type spin default 1 min 1 max 512\n"
                 << "option name Ponder type check default false\n"
                 << "option name OwnBook type check default true\n"
+                << "option name Book_Info_Depth type spin default 8 min 0 max 32\n"
                 << "option name UseNNUE type check default true\n"
                 << "option name " << NNUE::UCI_OPTION_NAME
                 << " type string default " << g_eval_file << "\n"
@@ -503,6 +505,11 @@ int main(int argc, char **argv) {
                 g_ponder = parse_bool(value);
             else if (opt_name == "OwnBook")
                 g_own_book = parse_bool(value);
+            else if (opt_name == "Book_Info_Depth") {
+                int book_info_depth = 0;
+                if (parse_spin(value, 0, 32, book_info_depth))
+                    g_book_info_depth = book_info_depth;
+            }
             else if (opt_name == "UseNNUE") {
                 NNUE::set_enabled(parse_bool(value));
                 TT.clear();
@@ -594,7 +601,6 @@ int main(int argc, char **argv) {
 
         // ===== GO =====
         else if (token == "go") {
-            // Book probe for normal searches.
             bool is_ponder_search = false;
             {
                 std::istringstream check(line);
@@ -602,29 +608,6 @@ int main(int argc, char **argv) {
                 while (check >> t)
                     if (t == "ponder") { is_ponder_search = true; break; }
             }
-
-            if (!is_ponder_search && g_own_book) {
-                const BookEntry *entry = probe_book(b.hash);
-                if (entry) {
-                    Move m = uci_to_move(b, entry->move);
-                    if (m != MOVE_NONE) {
-                        stop_search();
-                        g_stop     = false;
-                        node_count = 0;
-
-                        std::cout << "info string book\n"
-                                  << "bestmove " << move_to_uci(m)
-                                  << ponder_suffix(b, m) << "\n";
-                        std::cout.flush();
-                        continue;
-                    }
-                }
-            }
-
-            stop_search();
-            g_stop     = false;
-            node_count = 0;
-            TT.new_search();
 
             // Parse go parameters.
             TimeControl tc;
@@ -660,6 +643,43 @@ int main(int argc, char **argv) {
                 }
             }
 
+            Move book_move = MOVE_NONE;
+            bool book_hit = false;
+            if (!is_ponder_search && g_own_book) {
+                if (const BookEntry *entry = probe_book(b.hash)) {
+                    Move candidate = uci_to_move(b, entry->move);
+                    bool allowed = searchmoves.empty();
+                    for (Move sm : searchmoves)
+                        if (sm == candidate) allowed = true;
+
+                    if (is_legal_root_move(b, candidate) && allowed) {
+                        book_move = candidate;
+                        book_hit = true;
+                    }
+                }
+            }
+
+            stop_search();
+            g_stop     = false;
+            node_count = 0;
+
+            if (book_hit && g_book_info_depth == 0) {
+                std::cout << "info string book\n"
+                          << "bestmove " << move_to_uci(book_move)
+                          << ponder_suffix(b, book_move) << "\n";
+                std::cout.flush();
+                continue;
+            }
+
+            bool book_info_search = book_hit && g_book_info_depth > 0;
+            if (book_info_search) {
+                std::cout << "info string book\n";
+                searchmoves.clear();
+                searchmoves.push_back(book_move);
+            }
+
+            TT.new_search();
+
             // Ponder searches run until ponderhit supplies the real clock.
             if (is_ponder_search) {
                 g_pondering.store(true);
@@ -685,6 +705,10 @@ int main(int argc, char **argv) {
             I64   hard_ms   = g_time_manager.hard_ms();
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
+            if (book_info_search)
+                root_depth = fixed_depth > 0
+                    ? std::min(fixed_depth, g_book_info_depth)
+                    : g_book_info_depth;
             int   hash_mb    = g_hash_mb;
 
             if (fixed_nodes > 0 || fixed_depth > 0) {
@@ -698,7 +722,9 @@ int main(int argc, char **argv) {
                 const U64 elapsed_for_nps = static_cast<U64>(std::max<I64>(1, elapsed_ms));
                 const U64 nps = result.nodes * 1000 / elapsed_for_nps;
 
-                if (!is_legal_root_move(b_copy, result.best_move))
+                if (book_info_search)
+                    result.best_move = book_move;
+                else if (!is_legal_root_move(b_copy, result.best_move))
                     result.best_move = first_legal_move(b_copy);
 
                 std::cout << "info depth " << result.depth
@@ -732,7 +758,8 @@ int main(int argc, char **argv) {
             // Main search thread.
             smp_threads.insert(
                 smp_threads.begin(),
-                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth]() mutable {
+                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
+                             book_info_search, book_move]() mutable {
                     active_tt = &TT;
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
@@ -780,7 +807,9 @@ int main(int argc, char **argv) {
                     g_stop        = true;
                     timer.join();
 
-                    if (!is_legal_root_move(b_copy, result.best_move))
+                    if (book_info_search)
+                        result.best_move = book_move;
+                    else if (!is_legal_root_move(b_copy, result.best_move))
                         result.best_move = first_legal_move(b_copy);
 
                     while (pondering && g_pondering.load() && !g_stop.load())

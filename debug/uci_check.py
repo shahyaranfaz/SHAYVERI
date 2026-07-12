@@ -94,12 +94,11 @@ def extract_max_info_nodes(text: str) -> int:
         raise AssertionError(f"missing info nodes in output: {text[-TAIL_CHARS:]}")
     return max(nodes)
 
-def looks_like_book_probe(text: str) -> bool:
-    info_lines = [line for line in text.splitlines() if line.startswith("info depth ")]
-    if len(info_lines) != 1:
-        return False
-    line = info_lines[0]
-    return (" score cp " in line) and (" pv " in line) and (" nodes " not in line)
+def has_book_marker(text: str) -> bool:
+    return "info string book" in text
+
+def has_depth_info(text: str) -> bool:
+    return bool(re.search(r"^info depth \d+ .*\bscore\s+(?:cp|-?\d+|mate)\s+", text, flags=re.MULTILINE))
 
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
@@ -114,6 +113,7 @@ def main() -> int:
         handshake = run_engine(["uci", "isready"])
         require(handshake, "uciok")
         require(handshake, "readyok")
+        require(handshake, "option name Book_Info_Depth type spin default 8 min 0 max 32")
         require(handshake, "option name Improving_LMR_Reduction type spin")
         require(handshake, "option name CutNode_LMR_Reduction type spin")
         require(handshake, "option name LMR_PV_Offset type spin")
@@ -163,23 +163,34 @@ def main() -> int:
         ], wait_for_bestmove=True)
         require_bestmove(fen_case)
 
-        with_book = run_engine([
+        book_info = run_engine([
             "setoption name OwnBook value true",
+            "setoption name Book_Info_Depth value 2",
             "ucinewgame",
             "position startpos",
-            "go movetime 10",
+            "go depth 2",
+        ], wait_for_bestmove=True)
+        fast_book = run_engine([
+            "setoption name OwnBook value true",
+            "setoption name Book_Info_Depth value 0",
+            "ucinewgame",
+            "position startpos",
+            "go depth 2",
         ], wait_for_bestmove=True)
         without_book = run_engine([
             "setoption name OwnBook value false",
             "ucinewgame",
             "position startpos",
-            "go movetime 10",
+            "go depth 2",
         ], wait_for_bestmove=True)
-        require_bestmove(with_book)
+        require_bestmove(book_info)
+        require_bestmove(fast_book)
         require_bestmove(without_book)
-        if not looks_like_book_probe(with_book):
-            raise AssertionError("opening book probe did not trigger on startpos with OwnBook=true")
-        if looks_like_book_probe(without_book):
+        if not has_book_marker(book_info) or not has_depth_info(book_info):
+            raise AssertionError("book info search did not emit book marker and depth info")
+        if not has_book_marker(fast_book) or has_depth_info(fast_book):
+            raise AssertionError("Book_Info_Depth=0 did not preserve the fast book path")
+        if has_book_marker(without_book):
             raise AssertionError("opening book probe still triggered with OwnBook=false")
 
         determinism_1 = run_engine([
