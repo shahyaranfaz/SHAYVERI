@@ -71,26 +71,34 @@ inline int nmp_reduction_max    =   6;
 inline int nmp_verify_min_depth =   8;
 
 // Singular extensions.
+inline int se_extension       =  1;
 inline int se_min_depth       =  9;
 inline int se_depth_margin    =  2;
 inline int se_margin          = 58;
 inline int se_reduction_denom =  4;
 
+// Check extensions.
+inline int check_extension = 1;
+
 // Internal iterative reduction.
+inline int iir_reduction = 1;
 inline int iir_min_depth = 4;
 
 // Late move reductions.
-inline double lmr_base              = 1.28644;
-inline double lmr_scale             = 1.89303;
-inline int improving_lmr_reduction  =       1;
-inline int cutnode_lmr_reduction    =       3;
-inline int lmr_pv_offset            =      -1;
-inline int lmr_nonpv_offset         =       1;
-inline int lmr_min_depth            =       3;
-inline int lmr_extra_move_threshold =       6;
-inline int lmr_extra_min_depth      =       6;
-inline int lmr_good_history         =     800;
-inline int lmr_bad_history          =    -800;
+inline double lmr_base                = 1.28644;
+inline double lmr_scale               = 1.89303;
+inline int improving_lmr_reduction    =       1;
+inline int cutnode_lmr_reduction      =       3;
+inline int lmr_pv_offset              =      -1;
+inline int lmr_nonpv_offset           =       1;
+inline int lmr_min_depth              =       3;
+inline int lmr_extra_move_threshold   =       6;
+inline int lmr_extra_min_depth        =       6;
+inline int lmr_good_history           =     800;
+inline int lmr_bad_history            =    -800;
+inline int lmr_extra_reduction        =       1;
+inline int lmr_good_history_reduction =       1;
+inline int lmr_bad_history_reduction  =       1;
 
 // History gravity and blending weights, divided by 100 before accumulation.
 inline int history_max            = 16384;
@@ -521,12 +529,17 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     /* DO NOT TUNE - no signal at 5s / 10s -- all untuned except first marked:
     {                 "ASP_Growth", {                   &asp_growth,    TuningOption::INT,     2,     4,       "2"}},
     {     "Capture_History_Weight", {       &capture_history_weight,    TuningOption::INT,     0,   400,     "100"}},
+    {            "Check_Extension", {              &check_extension,    TuningOption::INT,     0,     2,       "1"}}, // untuned
     {       "CorrHist_Bonus_Limit", {         &corrhist_bonus_limit,    TuningOption::INT,   128,  4096,     "768"}}, // tuned
     {        "CorrHist_Bonus_Mult", {          &corrhist_bonus_mult,    TuningOption::INT,     0,   128,      "32"}}, // tuned
     {               "CorrHist_Max", {                 &corrhist_max,    TuningOption::INT,  2048, 32768,    "8192"}}, // tuned
     {             "CorrHist_Scale", {               &corrhist_scale,    TuningOption::INT,    64,   512,     "256"}}, // critical at both TC, tuned
     {      "CutNode_LMR_Reduction", {        &cutnode_lmr_reduction,    TuningOption::INT,     0,     3,       "3"}},
+    {              "IIR_Reduction", {                &iir_reduction,    TuningOption::INT,     0,     2,       "1"}}, // untuned
     {    "Improving_LMR_Reduction", {      &improving_lmr_reduction,    TuningOption::INT,     0,     3,       "1"}},
+    {  "LMR_Bad_History_Reduction", {    &lmr_bad_history_reduction,    TuningOption::INT,     0,     2,       "1"}}, // untuned
+    {        "LMR_Extra_Reduction", {          &lmr_extra_reduction,    TuningOption::INT,     0,     2,       "1"}}, // untuned
+    {  "LMR_Good_History_Reduction",{   &lmr_good_history_reduction,    TuningOption::INT,     0,     2,       "1"}}, // untuned
     {           "LMR_NonPV_Offset", {             &lmr_nonpv_offset,    TuningOption::INT,     0,     3,       "1"}},
     {              "LMR_PV_Offset", {                &lmr_pv_offset,    TuningOption::INT,    -3,     0,      "-1"}},
     {              "NMP_Min_Depth", {                &nmp_min_depth,    TuningOption::INT,     1,    12,       "3"}},
@@ -535,6 +548,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {          "PVS_SEE_Min_Depth", {            &pvs_see_min_depth,    TuningOption::INT,     1,    12,       "3"}},
     {          "PVS_SEE_Min_Moves", {            &pvs_see_min_moves,    TuningOption::INT,     1,    16,       "2"}},
     {             "QS_Start_Depth", {               &qs_start_depth,    TuningOption::INT,     1,    16,       "8"}},
+    {               "SE_Extension", {                 &se_extension,    TuningOption::INT,     0,     2,       "1"}}, // untuned
     */
 
     /* DO NOT ENABLE - CATASTROPHIC RESULTS WHEN NON-ZERO -- all untuned:

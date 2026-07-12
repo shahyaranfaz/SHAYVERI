@@ -580,7 +580,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
-    if (in_check && ply < MAX_PLY - 1) depth++;
+    if (in_check && ply < MAX_PLY - Tune::check_extension)
+        depth += Tune::check_extension;
 
     int raw_static_eval = 0;
     int static_eval = 0;
@@ -709,14 +710,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                             H, rep_stack, rep_len, false, cut_node, ss);
         ss->excluded_move = MOVE_NONE;
 
-        if (score < r_beta) extension = 1;
+        if (score < r_beta) extension = Tune::se_extension;
     }
 
-    // IIR: when no TT move exists, do a cheaper search by reducing depth by 1.
+    // IIR: when no TT move exists, do a cheaper search by reducing depth.
     // This encourages us to search a reduced-depth iteration first, which then
     // populates the TT for a subsequent re-search at full depth.
     if (depth >= Tune::iir_min_depth && tt_move == MOVE_NONE && ss->excluded_move == MOVE_NONE) {
-        depth--;
+        depth -= Tune::iir_reduction;
     }
 
     MoveList pseudo = generate_pseudo_legal_moves(b);
@@ -818,9 +819,12 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 reduction += pv_node ? Tune::lmr_pv_offset : Tune::lmr_nonpv_offset;
                 if (cut_node) reduction += Tune::cutnode_lmr_reduction;
                 if (improving) reduction -= Tune::improving_lmr_reduction;
-                if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth) reduction++;
-                if (move_history > Tune::lmr_good_history) reduction--;
-                else if (move_history < Tune::lmr_bad_history) reduction++;
+                if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth)
+                    reduction += Tune::lmr_extra_reduction;
+                if (move_history > Tune::lmr_good_history)
+                    reduction -= Tune::lmr_good_history_reduction;
+                else if (move_history < Tune::lmr_bad_history)
+                    reduction += Tune::lmr_bad_history_reduction;
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
