@@ -40,6 +40,10 @@ import psutil
 # --------------------------
 HARDCODE_OPTIMIZER = "cmaes"
 HARDCODE_MATCH_MANAGER_PATH = os.environ.get("FASTCHESS", "fastchess")
+HARDCODE_ENGINE_OPTIONS = os.environ.get(
+    "SPSA_ENGINE_OPTIONS",
+    "option.OwnBook=false option.Book_Info_Depth=0",
+)
 HARDCODE_BASE_TIME_SEC = float(os.environ.get("BASE_TIME_SEC", "3"))
 HARDCODE_INC_TIME_SEC = float(os.environ.get("INC_TIME_SEC", "0.03"))
 HARDCODE_GAMES_PER_BUDGET = int(os.environ.get("GAMES_PER_BUDGET", "300"))
@@ -236,8 +240,8 @@ def get_match_commands(engine_file, test_options, base_options,
             elif depth is not None:
                 command += f' -each tc=inf depth={depth} timemargin={timemargin}'
 
-        command += f' -engine cmd={engine_file} name={test_name} proto={protocol} {test_options}'
-        command += f' -engine cmd={engine_file} name={base_name} proto={protocol} {base_options}'
+        command += f' -engine cmd={engine_file} name={test_name} proto={protocol} {HARDCODE_ENGINE_OPTIONS} {test_options}'
+        command += f' -engine cmd={engine_file} name={base_name} proto={protocol} {HARDCODE_ENGINE_OPTIONS} {base_options}'
         command += f' -rounds {games//2} -games 2 -repeat'
         command += ' -recover'
         command += f' -wait {fastchess_wait}'

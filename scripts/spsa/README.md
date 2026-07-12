@@ -52,6 +52,11 @@ Defaults are intentionally centralized in `common.sh`.
 - `GAMES_PER_BUDGET=300`
 - `OPENING_FILE=../books/final_search_mix_shuf.epd`
 - `FASTCHESS=$HOME/chess_arena/fastchess/fastchess`
+- `SPSA_ENGINE_OPTIONS=option.OwnBook=false option.Book_Info_Depth=0`
+
+SPSA matches disable the embedded book and book-info search so tuning measures
+the configured search parameters rather than opening-book behavior or book-info
+overhead.
 
 Usage
 -----

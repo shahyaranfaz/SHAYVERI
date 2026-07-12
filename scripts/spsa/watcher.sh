@@ -44,8 +44,3 @@ for ext in dat log html; do
   printf '%-12s %-8s %s\n' "$ext" "$(size_of "$path")" "$path"
 done
 
-if [ -f "$BATCH_DIR/$BATCH_NAME.log" ]; then
-  echo
-  echo "latest log:"
-  tail -n 3 "$BATCH_DIR/$BATCH_NAME.log"
-fi
