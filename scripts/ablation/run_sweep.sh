@@ -1,6 +1,9 @@
-cd ~/chess_arena/chess_bot
+ABLATION_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ABLATION_REPO_ROOT="$(cd "$ABLATION_SCRIPT_DIR/../.." && pwd)"
+cd "$ABLATION_REPO_ROOT"
 
 FASTCHESS="${FASTCHESS:-$HOME/chess_arena/fastchess/fastchess}"
+OPENING_FILE="${OPENING_FILE:-$HOME/chess_arena/books/final_search_mix_shuf.epd}"
 OUT="${OUT:-interior_sweeps_10s}"
 mkdir -p "$OUT"
 
@@ -10,6 +13,15 @@ run_sweep() {
   values="$3"
   log="$OUT/${label}.txt"
   pgn="$OUT/${label}.pgn"
+
+  if [ ! -x "$FASTCHESS" ]; then
+    echo "fastchess not executable: $FASTCHESS" >&2
+    return 2
+  fi
+  if [ ! -f "$OPENING_FILE" ]; then
+    echo "opening file not found: $OPENING_FILE" >&2
+    return 2
+  fi
 
   extra_each_options=()
   if [ -n "${RUN_SWEEP_EACH_OPTIONS:-}" ]; then
@@ -29,18 +41,25 @@ run_sweep() {
     i=$((i + 1))
   done
 
-  "$FASTCHESS" "${args[@]}" \
+  echo "===== running $label ====="
+  if "$FASTCHESS" "${args[@]}" \
     -tournament roundrobin \
     -each proto=uci tc=10+0.1 timemargin=100 option.Threads=1 \
       option.OwnBook=false option.Book_Info_Depth=0 \
       "${extra_each_options[@]}" \
-    -openings file=../books/final_search_mix_shuf.epd format=epd order=random plies=16 \
+    -openings file="$OPENING_FILE" format=epd order=random plies=16 \
     -games 2 -rounds 100 -repeat \
     -concurrency 23 -recover \
     -output format=cutechess \
     -pgnout file="$pgn" min=true \
-    -ratinginterval 0 \
-    > "$log" 2>&1
+    -ratinginterval 0 > "$log" 2>&1; then
+    :
+  else
+    status=$?
+    echo "sweep failed: $label (exit $status)" >&2
+    tail -n 40 "$log" >&2
+    return "$status"
+  fi
 
   echo "===== $label ====="
   grep -E '^(Score of|Rank Name|Elo difference:|Finished match)' "$log"

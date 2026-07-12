@@ -56,7 +56,6 @@ go movetime 1000
 - Singular extensions
 - Futility pruning and reverse futility pruning
 - Delta pruning
-- Check extensions
 - SEE (Static Exchange Evaluation) for move ordering
 - Conservative quiescence SEE pruning for non-promotion captures
 - Killer moves, gravity-based main, continuation, and capture histories
