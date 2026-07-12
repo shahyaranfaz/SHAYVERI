@@ -27,10 +27,10 @@ Generated files live under:
 ```text
 scripts/spsa/output/<PASS_NAME>/
   results.txt
-  batch0/
   batch1/
   batch2/
   ...
+  batch5/
   shared/.lakas_dist/
 ```
 
@@ -42,15 +42,13 @@ Defaults
 
 Defaults are intentionally centralized in `common.sh`.
 
-- `PASS_NAME=pass_v2_6`
-- `BATCH_ID=4`
+- `PASS_NAME=pass_v2_7`
+- `BATCH_ID=1`
 - `BATCH_NAME=batch${BATCH_ID}`
 - `BUDGET=400` total evaluated CMAES candidates for the batch
 - `MASTER_JOBS=6`
 - `WORKER_JOBS=23`
 - `JOB_CLAIMS=1`
-- `BASE_TIME_SEC=3`
-- `INC_TIME_SEC=0.03`
 - `GAMES_PER_BUDGET=300`
 - `OPENING_FILE=../books/final_search_mix_shuf.epd`
 - `FASTCHESS=$HOME/chess_arena/fastchess/fastchess`
@@ -69,12 +67,28 @@ bash scripts/spsa/watcher.sh
 Typical current continuation:
 
 ```bash
-BATCH_ID=4 BUDGET=800 bash scripts/spsa/master.sh
+PASS_NAME=pass_v2_7 BATCH_ID=1 BUDGET=400 bash scripts/spsa/master.sh
 ```
 
 `BUDGET` is a total target, not an additive per-invocation count. If a resumed
-`batch4.dat` already contains 400 evaluated candidates, `BUDGET=800` schedules
+`batch1.dat` already contains 400 evaluated candidates, `BUDGET=800` schedules
 roughly 400 more candidates and then stops.
+
+Batch controls
+--------------
+
+The batch time controls match the comments in `include/tune.h`:
+
+| Batch | Time control | Games per candidate |
+| --- | --- | ---: |
+| 1 | `5+0.05` | 300 |
+| 2 | `10+0.1` | 300 |
+| 3 | `5+0.05` | 300 |
+| 4 | `5+0.05` | 300 |
+| 5 | `10+0.1` | 300 |
+
+`common.sh` selects the time control from `BATCH_ID`. `BASE_TIME_SEC` and
+`INC_TIME_SEC` can still be overridden explicitly for diagnostics.
 
 Worker defaults are usually enough:
 

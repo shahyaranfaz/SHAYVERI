@@ -42,7 +42,7 @@ HARDCODE_OPTIMIZER = "cmaes"
 HARDCODE_MATCH_MANAGER_PATH = os.environ.get("FASTCHESS", "fastchess")
 HARDCODE_BASE_TIME_SEC = float(os.environ.get("BASE_TIME_SEC", "3"))
 HARDCODE_INC_TIME_SEC = float(os.environ.get("INC_TIME_SEC", "0.03"))
-HARDCODE_GAMES_PER_BUDGET = int(os.environ.get("GAMES_PER_BUDGET", "160"))
+HARDCODE_GAMES_PER_BUDGET = int(os.environ.get("GAMES_PER_BUDGET", "300"))
 HARDCODE_ENGINE = "./SHAYVERI"
 HARDCODE_OPENING_FILE = os.environ.get(
     "OPENING_FILE",

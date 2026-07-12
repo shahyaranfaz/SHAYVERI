@@ -15,8 +15,8 @@ else
   SPSA_LAKAS_NNUE="$SPSA_SCRIPT_DIR/lakas/lakas_nnue.py"
 fi
 
-PASS_NAME="${PASS_NAME:-pass_v2_6}"
-BATCH_ID="${BATCH_ID:-4}"
+PASS_NAME="${PASS_NAME:-pass_v2_7}"
+BATCH_ID="${BATCH_ID:-1}"
 BATCH_NAME="${BATCH_NAME:-batch${BATCH_ID}}"
 
 ROOT_DIR="${ROOT_DIR:-scripts/spsa/output/$PASS_NAME}"
@@ -30,54 +30,82 @@ JOB_CLAIMS="${JOB_CLAIMS:-1}"
 
 OPENING_FILE="${OPENING_FILE:-../books/final_search_mix_shuf.epd}"
 FASTCHESS="${FASTCHESS:-$HOME/chess_arena/fastchess/fastchess}"
-BASE_TIME_SEC="${BASE_TIME_SEC:-3}"
-INC_TIME_SEC="${INC_TIME_SEC:-0.03}"
 GAMES_PER_BUDGET="${GAMES_PER_BUDGET:-300}"
 BUDGET="${BUDGET:-400}"
 
 case "$BATCH_ID" in
   1)
+    BASE_TIME_SEC="${BASE_TIME_SEC:-5}"
+    INC_TIME_SEC="${INC_TIME_SEC:-0.05}"
     PARAM_BATCH="{
-'ASP_Delta':           {'init': 36,      'lower': 16,   'upper': 80},
-'LMR_Base':            {'init': 1.18093, 'lower': 0.90, 'upper': 1.55},
-'LMR_Scale':           {'init': 1.82857, 'lower': 1.40, 'upper': 2.30},
-'RFP_Margin':          {'init': 60,      'lower': 30,   'upper': 120},
-'FP_Base':             {'init': 220,     'lower': 100,  'upper': 330},
-'FP_Mult':             {'init': 693,     'lower': 400,  'upper': 900},
-'LMP_Base':            {'init': 3,       'lower': 1,    'upper': 8},
-'LMP_Mult':            {'init': 1,       'lower': 1,    'upper': 3},
-'SEE_Margin':          {'init': -252,    'lower': -600, 'upper': -40},
-'QS_Delta_Margin':     {'init': 150,     'lower': 50,   'upper': 350}
+'ASP_Delta':         {'init': 42,      'lower': 16,   'upper': 80},
+'FP_Base':           {'init': 216,     'lower': 80,   'upper': 350},
+'FP_Max_Depth':      {'init': 4,       'lower': 1,    'upper': 12},
+'FP_Mult':           {'init': 719,     'lower': 300,  'upper': 1000},
+'IIR_Min_Depth':     {'init': 4,       'lower': 1,    'upper': 12},
+'LMP_Base':          {'init': 2,       'lower': 1,    'upper': 8},
+'LMP_Mult':          {'init': 1,       'lower': 1,    'upper': 3},
+'LMR_Base':          {'init': 1.28644, 'lower': 0.90, 'upper': 1.55},
+'LMR_Scale':         {'init': 1.89303, 'lower': 1.40, 'upper': 2.30},
+'QS_Delta_Margin':   {'init': 196,     'lower': 50,   'upper': 350},
+'RFP_Margin':        {'init': 65,      'lower': 30,   'upper': 120},
+'RFP_Max_Depth':     {'init': 5,       'lower': 1,    'upper': 12},
+'SEE_Margin':        {'init': -248,    'lower': -600, 'upper': -40}
 }"
     ;;
   2)
+    BASE_TIME_SEC="${BASE_TIME_SEC:-10}"
+    INC_TIME_SEC="${INC_TIME_SEC:-0.1}"
     PARAM_BATCH="{
-'NMP_Margin_Mult':     {'init': 18,  'lower': 0,  'upper': 60},
-'NMP_Eval_Divisor':    {'init': 200, 'lower': 80, 'upper': 500},
-'NMP_Base_Reduction':  {'init': 3,   'lower': 2,  'upper': 5},
-'NMP_Depth_Divisor':   {'init': 4,   'lower': 2,  'upper': 8},
-'SE_Min_Depth':        {'init': 9,   'lower': 1,  'upper': 16},
-'SE_Depth_Margin':     {'init': 2,   'lower': 1,  'upper': 8},
-'SE_Margin':           {'init': 58,  'lower': 25, 'upper': 100},
-'SE_Reduction_Denom':  {'init': 4,   'lower': 2,  'upper': 6}
+'ASP_Min_Depth':            {'init': 4,    'lower': 1,    'upper': 12},
+'CorrHist_Depth_Cap':       {'init': 4,    'lower': 1,    'upper': 32},
+'LMR_Bad_History':          {'init': -800, 'lower': -4096,'upper': 0},
+'LMR_Extra_Min_Depth':      {'init': 6,    'lower': 1,    'upper': 16},
+'LMR_Extra_Move_Threshold': {'init': 6,    'lower': 1,    'upper': 32},
+'LMR_Good_History':         {'init': 800,  'lower': 0,    'upper': 4096},
+'LMR_Min_Depth':            {'init': 3,    'lower': 1,    'upper': 12},
+'NMP_Reduction_Min':        {'init': 0,    'lower': 0,    'upper': 16},
+'QS_Min_Depth':             {'init': -6,   'lower': -16,  'upper': 0},
+'QS_SEE_Margin':            {'init': 100,  'lower': 0,    'upper': 200},
+'SEE_Max_Depth':            {'init': 4,    'lower': 1,    'upper': 16}
 }"
     ;;
   3)
+    BASE_TIME_SEC="${BASE_TIME_SEC:-5}"
+    INC_TIME_SEC="${INC_TIME_SEC:-0.05}"
     PARAM_BATCH="{
-'History_Bonus_Mult':  {'init': 468,  'lower': 280,  'upper': 720},
-'History_Bonus_Sub':   {'init': 165,  'lower': 60,   'upper': 340},
-'History_Bonus_Limit': {'init': 3090, 'lower': 1500, 'upper': 4500},
-'Main_History_Weight': {'init': 85,   'lower': 25,   'upper': 160},
-'CMH_Weight':          {'init': 75,   'lower': 15,   'upper': 160},
-'FMH_Weight':          {'init': 30,   'lower': 0,    'upper': 130}
+'NMP_Base_Reduction': {'init': 3,   'lower': 2,  'upper': 5},
+'NMP_Depth_Divisor':  {'init': 4,   'lower': 2,  'upper': 8},
+'NMP_Eval_Divisor':   {'init': 200, 'lower': 80, 'upper': 500},
+'NMP_Margin_Mult':    {'init': 18,  'lower': 0,  'upper': 60},
+'NMP_Reduction_Max':  {'init': 6,   'lower': 2,  'upper': 12},
+'SE_Depth_Margin':    {'init': 2,   'lower': 1,  'upper': 8},
+'SE_Margin':          {'init': 58,  'lower': 25, 'upper': 100},
+'SE_Min_Depth':       {'init': 9,   'lower': 1,  'upper': 16},
+'SE_Reduction_Denom': {'init': 4,   'lower': 2,  'upper': 6}
 }"
     ;;
   4)
+    BASE_TIME_SEC="${BASE_TIME_SEC:-5}"
+    INC_TIME_SEC="${INC_TIME_SEC:-0.05}"
     PARAM_BATCH="{
-'CorrHist_Scale':       {'init': 256,  'lower': 64,   'upper': 512},
-'CorrHist_Bonus_Mult':  {'init': 32,   'lower': 4,    'upper': 128},
-'CorrHist_Bonus_Limit': {'init': 768,  'lower': 128,  'upper': 4096},
-'CorrHist_Max':         {'init': 8192, 'lower': 2048, 'upper': 32768}
+'CMH_Weight':          {'init': 75,    'lower': 15,   'upper': 160},
+'FMH_Weight':          {'init': 30,    'lower': 0,    'upper': 130},
+'History_Bonus_Limit': {'init': 3090,  'lower': 1500, 'upper': 4500},
+'History_Bonus_Mult':  {'init': 468,   'lower': 280,  'upper': 720},
+'History_Bonus_Sub':   {'init': 165,   'lower': 60,   'upper': 340},
+'History_Max':         {'init': 16384, 'lower': 1024, 'upper': 32768},
+'Main_History_Weight': {'init': 85,    'lower': 25,   'upper': 160}
+}"
+    ;;
+  5)
+    BASE_TIME_SEC="${BASE_TIME_SEC:-10}"
+    INC_TIME_SEC="${INC_TIME_SEC:-0.1}"
+    PARAM_BATCH="{
+'ProbCut_Margin':       {'init': 50, 'lower': 0, 'upper': 300},
+'ProbCut_Max_Captures': {'init': 3,  'lower': 1, 'upper': 8},
+'ProbCut_Min_Depth':    {'init': 5,  'lower': 3, 'upper': 12},
+'ProbCut_Reduction':    {'init': 3,  'lower': 1, 'upper': 5}
 }"
     ;;
   *)
