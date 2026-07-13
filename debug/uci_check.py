@@ -15,7 +15,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = os.environ.get("SHAYVERI_BENCH_SIGNATURE_NODES")
+BENCH_SIGNATURE_NODES = 394902
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -141,8 +141,7 @@ def main() -> int:
         bench_nodes = extract_bench_nodes(bench)
         if bench_nodes <= 0:
             raise AssertionError(f"bench returned invalid node count: {bench_nodes}")
-        if (BENCH_SIGNATURE_NODES is not None
-                and bench_nodes != int(BENCH_SIGNATURE_NODES)):
+        if bench_nodes != BENCH_SIGNATURE_NODES:
             raise AssertionError(
                 f"bench signature changed, expected {BENCH_SIGNATURE_NODES}, got {bench_nodes}"
             )

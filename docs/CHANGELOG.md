@@ -135,7 +135,7 @@ not confused with SHAYVERI source versioning.
 - Added Linux and Windows build targets.
 - Added macOS Makefile target.
 - Fixed Makefile header dependencies so header-only changes trigger rebuilds.
-- Added bench/smoke validation flow.
+- Added bench and basic validation flows.
 
 ## v2.0 NNUE Development Line
 

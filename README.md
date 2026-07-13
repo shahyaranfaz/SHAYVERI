@@ -143,6 +143,8 @@ make test
 - Evaluation symmetry checks on vertically mirrored, color-swapped positions.
 - Transposition-table safety checks.
 - Time-manager policy checks covering adaptive scaling, safe clock ceilings, and no-increment survival.
+- Search regression checks covering terminal positions, draw rules, checked qsearch, `searchmoves`, fixed-node limits, and root node-share callbacks.
+- Datagen checks covering CLI execution, summaries, completion markers, and plain/Bullet record integrity.
 - UCI checks covering handshake, fixed-depth search, the mandatory bench node signature, opening-book on/off behavior, and deterministic `Threads=1` search.
 - Timed Lazy SMP and ponder integration checks covering `ponderhit` and `stop`.
 - Tactical mate-in-1 regression positions adapted from `StuartRiffle/JaglavakTestData`.

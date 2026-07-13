@@ -29,6 +29,8 @@ MAKE_UNMAKE_SRC := $(COMMON_SRC) make_unmake.cpp
 SEE_TESTS_SRC := $(COMMON_SRC) see_tests.cpp
 EVAL_SYM_SRC := $(COMMON_SRC) eval_symmetry.cpp
 TT_SAFETY_SRC := ../src/tt.cpp tt_safety.cpp
+TIME_MANAGER_SRC := ../src/time_manager.cpp time_manager_test.cpp
+SEARCH_REGRESSION_SRC := $(COMMON_SRC) search_regression_test.cpp
 NNUE_TEST_SRC := \
 	../src/attacks.cpp \
 	../src/board.cpp \
@@ -49,9 +51,11 @@ MAKE_UNMAKE_BIN := make_unmake
 SEE_TESTS_BIN := see_tests
 EVAL_SYM_BIN := eval_symmetry
 TT_SAFETY_BIN := tt_safety
+TIME_MANAGER_BIN := time_manager
+SEARCH_REGRESSION_BIN := search_regression
 NNUE_TEST_BIN := nnue_test
 
-all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN)
+all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN)
 
 test: perft_suite \
 	fen_state_suite \
@@ -60,8 +64,12 @@ test: perft_suite \
 	see_suite \
 	eval_symmetry_suite \
 	tt_safety_suite \
+	time_manager_suite \
+	search_regression_suite \
 	nnue_suite \
+	datagen_check \
 	uci_check \
+	time_control_integration \
 	tactical_regression
 
 $(BIN): $(PERFT_SRC)
@@ -84,6 +92,12 @@ $(EVAL_SYM_BIN): $(EVAL_SYM_SRC)
 
 $(TT_SAFETY_BIN): $(TT_SAFETY_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(TT_SAFETY_SRC)
+
+$(TIME_MANAGER_BIN): $(TIME_MANAGER_SRC)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(TIME_MANAGER_SRC)
+
+$(SEARCH_REGRESSION_BIN): $(SEARCH_REGRESSION_SRC)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SEARCH_REGRESSION_SRC)
 
 $(NNUE_TEST_BIN): $(NNUE_TEST_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(NNUE_TEST_SRC)
@@ -115,10 +129,19 @@ eval_symmetry_suite: $(EVAL_SYM_BIN)
 tt_safety_suite: $(TT_SAFETY_BIN)
 	./$(TT_SAFETY_BIN)
 
+time_manager_suite: $(TIME_MANAGER_BIN)
+	./$(TIME_MANAGER_BIN)
+
+search_regression_suite: $(SEARCH_REGRESSION_BIN)
+	./$(SEARCH_REGRESSION_BIN)
+
 nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue $(DEFAULT_NNUE)
 	./$(NNUE_TEST_BIN) nnue_classic_test.nnue
 	./$(NNUE_TEST_BIN) nnue_kb8_test.nnue
 	./$(NNUE_TEST_BIN) $(DEFAULT_NNUE)
+
+datagen_check: ensure_engine
+	$(PYTHON) datagen_check.py
 
 ensure_engine:
 	@if [ ! -x ../SHAYVERI ]; then $(MAKE) -C ..; fi
@@ -126,11 +149,14 @@ ensure_engine:
 uci_check: ensure_engine
 	$(PYTHON) uci_check.py
 
+time_control_integration: ensure_engine
+	$(PYTHON) time_control_integration.py
+
 tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py
 
 clean:
-	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
+	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite nnue_suite ensure_engine uci_check tactical_regression clean
+.PHONY: all test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration tactical_regression clean
