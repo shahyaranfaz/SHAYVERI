@@ -31,16 +31,31 @@ while true; do
     fi
 
     job_id="$(basename "$claimed_file" .job)"
-    IFS='|' read -r suite base_time increment rounds label option value < "$claimed_file"
+    IFS='|' read -r suite base_time increment rounds label base_option_spec candidate_option_spec < "$claimed_file"
     log="$RESULTS_DIR/${job_id}.txt"
     pgn="$RESULTS_DIR/${job_id}.pgn"
     status="$RESULTS_DIR/${job_id}.status"
 
-    echo "[$WORKER_NAME] $job_id: $option=$value tc=${base_time}+${increment} games=$((rounds * 2))"
+    echo "[$WORKER_NAME] $job_id: tc=${base_time}+${increment} games=$((rounds * 2))"
+    base_options=()
+    if [ "$base_option_spec" != "-" ]; then
+        IFS=',' read -r -a assignments <<< "$base_option_spec"
+        for assignment in "${assignments[@]}"; do
+            base_options+=("option.$assignment")
+        done
+    fi
+    candidate_options=()
+    if [ "$candidate_option_spec" != "-" ]; then
+        IFS=',' read -r -a assignments <<< "$candidate_option_spec"
+        for assignment in "${assignments[@]}"; do
+            candidate_options+=("option.$assignment")
+        done
+    fi
     if "$FASTCHESS" \
-        -engine name=base cmd="$ENGINE" dir="$ENGINE_DIR" proto=uci \
-        -engine name="$label" cmd="$ENGINE" dir="$ENGINE_DIR" proto=uci \
-            "option.$option=$value" \
+        -engine name="$BASE_NAME" cmd="$BASE_ENGINE" dir="$ENGINE_DIR" proto=uci \
+            "${base_options[@]}" \
+        -engine name="$label" cmd="$CANDIDATE_ENGINE" dir="$ENGINE_DIR" proto=uci \
+            "${candidate_options[@]}" \
         -each proto=uci tc="${base_time}+${increment}" timemargin=100 option.Threads="$THREADS" \
         -openings file="$OPENING_FILE" format=epd order=random plies=16 \
         -games 2 -rounds "$rounds" -repeat \

@@ -38,6 +38,42 @@ thread_local U64 local_node_count = 0;
 thread_local U64 local_node_limit = 0;
 thread_local U64 thread_node_count = 0;
 
+SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(
+    int singular_score, int singular_beta, int beta, int tt_score, bool cut_node) {
+    if (singular_score < singular_beta) {
+        int       extension        = Tune::se_extension;
+        const int double_margin    = std::max(0, Tune::se_double_margin);
+        const int double_extension = std::max(extension, Tune::se_double_extension);
+        const int triple_margin = Tune::se_double_extensions
+            ? std::max(double_margin, Tune::se_triple_margin)
+            : std::max(0, Tune::se_triple_margin);
+        const int triple_extension = Tune::se_double_extensions
+            ? std::max(double_extension, Tune::se_triple_extension)
+            : std::max(extension, Tune::se_triple_extension);
+        if (Tune::se_triple_extensions
+            && singular_score < singular_beta - triple_margin) {
+            extension = triple_extension;
+        } else if (Tune::se_double_extensions
+                   && singular_score < singular_beta - double_margin) {
+            extension = double_extension;
+        }
+        return {extension, false};
+    }
+
+    const bool non_mate_score = std::abs(singular_score) < MATE_SCORE - MAX_PLY;
+    if (Tune::se_multicut && singular_score >= beta && non_mate_score)
+        return {0, true};
+
+    if (Tune::se_negative_extensions) {
+        if (tt_score >= beta)
+            return {Tune::se_negative_tt_extension, false};
+        if (cut_node)
+            return {Tune::se_negative_cutnode_extension, false};
+    }
+
+    return {};
+}
+
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
     static const auto depth_log = [] {
@@ -751,7 +787,9 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    // Singular Extensions
+    // Singular search. The excluded-move result decides whether the TT move is
+    // singular, whether several moves prove a cutoff, or whether the TT move
+    // should be searched at a reduced depth.
     int extension = 0;
     if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::se_min_depth
         && tt_move != MOVE_NONE && tt_bound != TT_UPPER && tt_depth >= depth - Tune::se_depth_margin
@@ -765,7 +803,14 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                             H, rep_stack, rep_len, false, cut_node, ss);
         ss->excluded_move = MOVE_NONE;
 
-        if (score < r_beta) extension = Tune::se_extension;
+        if (search_stopped()) return 0;
+
+        const SearchDetail::SingularSearchDecision decision =
+            SearchDetail::classify_singular_search(
+                score, r_beta, beta, tt_score, cut_node);
+        if (decision.multicut)
+            return score;
+        extension = decision.extension;
     }
 
     // IIR: when no TT move exists, do a cheaper search by reducing depth.
@@ -881,11 +926,11 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
                 reduction = lmr_reduction_base(depth, legal_count);
                 reduction += pv_node ? Tune::lmr_pv_offset : Tune::lmr_nonpv_offset;
                 if (cut_node) reduction += Tune::cutnode_lmr_reduction;
-                if (improving) reduction -= Tune::improving_lmr_reduction;
+                if (improving) reduction += Tune::improving_lmr_reduction;
                 if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth)
                     reduction += Tune::lmr_extra_reduction;
                 if (move_history > Tune::lmr_good_history)
-                    reduction -= Tune::lmr_good_history_reduction;
+                    reduction += Tune::lmr_good_history_reduction;
                 else if (move_history < Tune::lmr_bad_history)
                     reduction += Tune::lmr_bad_history_reduction;
                 reduction = std::clamp(reduction, 0, depth - 2);

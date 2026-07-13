@@ -164,6 +164,92 @@ void test_iteration_callback() {
     expect(result.nodes > 0, "search callback test visited no nodes");
 }
 
+void test_singular_search_decisions() {
+    using SearchDetail::classify_singular_search;
+
+    const int singular_beta       = 100;
+    const int beta                = 150;
+    const int saved_multicut      = Tune::se_multicut;
+    const int saved_negative      = Tune::se_negative_extensions;
+    const int saved_negative_tt   = Tune::se_negative_tt_extension;
+    const int saved_negative_cut  = Tune::se_negative_cutnode_extension;
+    const int saved_double        = Tune::se_double_extensions;
+    const int saved_double_margin = Tune::se_double_margin;
+    const int saved_double_amount = Tune::se_double_extension;
+    const int saved_triple        = Tune::se_triple_extensions;
+    const int saved_triple_margin = Tune::se_triple_margin;
+    const int saved_triple_amount = Tune::se_triple_extension;
+
+    Tune::se_multicut                   =  1;
+    Tune::se_negative_extensions        =  1;
+    Tune::se_negative_tt_extension      = -3;
+    Tune::se_negative_cutnode_extension = -1;
+    Tune::se_double_extensions          =  1;
+    Tune::se_double_margin              = 100;
+    Tune::se_double_extension           =  2;
+    Tune::se_triple_extensions          =  1;
+    Tune::se_triple_margin              = 200;
+    Tune::se_triple_extension           =  3;
+
+    expect(classify_singular_search(-101, singular_beta, beta, 180, false).extension
+               == Tune::se_triple_extension,
+           "deep singular fail-low did not select the triple extension");
+    expect(classify_singular_search(-1, singular_beta, beta, 180, false).extension
+               == Tune::se_double_extension,
+           "singular fail-low did not select the double extension");
+    expect(classify_singular_search(99, singular_beta, beta, 180, false).extension
+               == Tune::se_extension,
+           "shallow singular fail-low did not select the base extension");
+
+    const auto multicut = classify_singular_search(150, singular_beta, beta, 180, false);
+    expect(multicut.multicut && multicut.extension == 0,
+           "excluded-move fail-high did not select multicut");
+    expect(!classify_singular_search(
+                Tune::MATE_SCORE - 1, singular_beta, beta, 180, false).multicut,
+           "mate-range excluded-move score incorrectly selected multicut");
+
+    expect(classify_singular_search(120, singular_beta, beta, 180, false).extension
+               == Tune::se_negative_tt_extension,
+           "TT fail-high did not select its negative extension");
+    expect(classify_singular_search(120, singular_beta, beta, 140, true).extension
+               == Tune::se_negative_cutnode_extension,
+           "cut node did not select its negative extension");
+
+    Tune::se_double_extensions = 0;
+    Tune::se_triple_extensions = 1;
+    Tune::se_triple_margin = 50;
+    expect(classify_singular_search(40, singular_beta, beta, 180, false).extension
+               == Tune::se_triple_extension,
+           "disabled double extensions constrained the triple margin");
+    Tune::se_double_extensions = 1;
+    Tune::se_triple_extensions = 1;
+    Tune::se_triple_margin = 200;
+
+    Tune::se_multicut = 0;
+    Tune::se_negative_extensions = 0;
+    Tune::se_double_extensions = 0;
+    Tune::se_triple_extensions = 0;
+
+    expect(!classify_singular_search(150, singular_beta, beta, 180, false).multicut,
+           "disabled multicut still produced a cutoff");
+    expect(classify_singular_search(120, singular_beta, beta, 180, true).extension == 0,
+           "disabled negative extensions still reduced the TT move");
+    expect(classify_singular_search(-101, singular_beta, beta, 180, false).extension
+               == Tune::se_extension,
+           "disabled large extensions did not fall back to the base extension");
+
+    Tune::se_multicut                   = saved_multicut;
+    Tune::se_negative_extensions        = saved_negative;
+    Tune::se_negative_tt_extension      = saved_negative_tt;
+    Tune::se_negative_cutnode_extension = saved_negative_cut;
+    Tune::se_double_extensions          = saved_double;
+    Tune::se_double_margin              = saved_double_margin;
+    Tune::se_double_extension           = saved_double_amount;
+    Tune::se_triple_extensions          = saved_triple;
+    Tune::se_triple_margin              = saved_triple_margin;
+    Tune::se_triple_extension           = saved_triple_amount;
+}
+
 } // namespace
 
 int main() {
@@ -186,6 +272,8 @@ int main() {
     std::cout << "[PASS] root board restoration\n";
     test_iteration_callback();
     std::cout << "[PASS] iteration callback\n";
+    test_singular_search_decisions();
+    std::cout << "[PASS] singular search decisions\n";
 
     std::cout << "search regression tests passed\n";
     return 0;

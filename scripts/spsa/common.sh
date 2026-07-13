@@ -58,32 +58,37 @@ case "$BATCH_ID" in
     BASE_TIME_SEC="${BASE_TIME_SEC:-10}"
     INC_TIME_SEC="${INC_TIME_SEC:-0.1}"
     PARAM_BATCH="{
-'ASP_Min_Depth':            {'init': 4,    'lower': 1,    'upper': 12},
-'CorrHist_Depth_Cap':       {'init': 4,    'lower': 1,    'upper': 32},
-'LMR_Bad_History':          {'init': -800, 'lower': -4096,'upper': 0},
-'LMR_Extra_Min_Depth':      {'init': 6,    'lower': 1,    'upper': 16},
-'LMR_Extra_Move_Threshold': {'init': 6,    'lower': 1,    'upper': 32},
-'LMR_Good_History':         {'init': 800,  'lower': 0,    'upper': 4096},
-'LMR_Min_Depth':            {'init': 3,    'lower': 1,    'upper': 12},
-'NMP_Reduction_Min':        {'init': 0,    'lower': 0,    'upper': 16},
-'QS_Min_Depth':             {'init': -6,   'lower': -16,  'upper': 0},
-'QS_SEE_Margin':            {'init': 100,  'lower': 0,    'upper': 200},
-'SEE_Max_Depth':            {'init': 4,    'lower': 1,    'upper': 16}
+'ASP_Min_Depth':            {'init': 4,    'lower': 1,     'upper': 12},
+'CorrHist_Depth_Cap':       {'init': 4,    'lower': 1,     'upper': 32},
+'Improving_LMR_Reduction':  {'init': -2,   'lower': -3,    'upper': 0},
+'LMR_Bad_History':          {'init': -800, 'lower': -4096, 'upper': 0},
+'LMR_Extra_Min_Depth':      {'init': 6,    'lower': 1,     'upper': 16},
+'LMR_Extra_Move_Threshold': {'init': 6,    'lower': 1,     'upper': 32},
+'LMR_Good_History':         {'init': 800,  'lower': 0,     'upper': 4096},
+'LMR_Min_Depth':            {'init': 3,    'lower': 1,     'upper': 12},
+'LMR_NonPV_Offset':         {'init': 0,    'lower': 0,     'upper': 3},
+'LMR_PV_Offset':            {'init': 0,    'lower': -3,    'upper': 0},
+'NMP_Reduction_Min':        {'init': 0,    'lower': 0,     'upper': 16},
+'QS_Min_Depth':             {'init': -6,   'lower': -16,   'upper': 0},
+'QS_SEE_Margin':            {'init': 100,  'lower': 0,     'upper': 200},
+'SEE_Max_Depth':            {'init': 4,    'lower': 1,     'upper': 16}
 }"
     ;;
   3)
     BASE_TIME_SEC="${BASE_TIME_SEC:-5}"
     INC_TIME_SEC="${INC_TIME_SEC:-0.05}"
     PARAM_BATCH="{
-'NMP_Base_Reduction': {'init': 3,   'lower': 2,  'upper': 5},
-'NMP_Depth_Divisor':  {'init': 4,   'lower': 2,  'upper': 8},
-'NMP_Eval_Divisor':   {'init': 200, 'lower': 80, 'upper': 500},
-'NMP_Margin_Mult':    {'init': 18,  'lower': 0,  'upper': 60},
-'NMP_Reduction_Max':  {'init': 6,   'lower': 2,  'upper': 12},
-'SE_Depth_Margin':    {'init': 2,   'lower': 1,  'upper': 8},
-'SE_Margin':          {'init': 58,  'lower': 25, 'upper': 100},
-'SE_Min_Depth':       {'init': 9,   'lower': 1,  'upper': 16},
-'SE_Reduction_Denom': {'init': 4,   'lower': 2,  'upper': 6}
+'NMP_Base_Reduction':   {'init': 3,   'lower': 2,  'upper': 5},
+'NMP_Depth_Divisor':    {'init': 4,   'lower': 2,  'upper': 8},
+'NMP_Eval_Divisor':     {'init': 200, 'lower': 80, 'upper': 500},
+'NMP_Margin_Mult':      {'init': 18,  'lower': 0,  'upper': 60},
+'NMP_Reduction_Max':    {'init': 6,   'lower': 2,  'upper': 12},
+'NMP_Verify_Min_Depth': {'init': 16,  'lower': 8,  'upper': 20},
+'PVS_SEE_Min_Moves':    {'init': 6,   'lower': 1,  'upper': 8},
+'SE_Depth_Margin':      {'init': 2,   'lower': 1,  'upper': 8},
+'SE_Margin':            {'init': 58,  'lower': 25, 'upper': 100},
+'SE_Min_Depth':         {'init': 9,   'lower': 1,  'upper': 16},
+'SE_Reduction_Denom':   {'init': 4,   'lower': 2,  'upper': 6}
 }"
     ;;
   4)

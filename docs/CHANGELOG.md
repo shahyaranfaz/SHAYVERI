@@ -235,7 +235,7 @@ self-generated corpus/labels were the blocker.
 - Added cut-node-aware LMR and propagated cut-node state through the relevant
   PVS, null-move, and singular-search paths.
 - Added experimental tuning controls for the improving, cut-node, PV, and
-  non-PV LMR adjustments. Their defaults preserve the accepted phase-1 policy.
+  non-PV LMR adjustments. Their final values remain pending the v2.7 SPSA pass.
 - The phase-1 pair finished ahead in an STC ablation, with new scoring
   `466-417-717` against old at `3+0.03`.
 - Hardened UCI option changes by stopping active searches before mutating TT,
@@ -268,6 +268,15 @@ self-generated corpus/labels were the blocker.
   made timer waits respect the actual remaining hard time.
 - Fixed ponder-hit time-manager initialization ordering and added timed Lazy
   SMP, ponder-hit, and ponder-stop integration coverage.
+- De-hardcoded singular- and check-extension amounts, then used the excluded-
+  move result to evaluate multi-cut pruning and negative, double, and triple
+  extension policies.
+- Promoted multi-cut pruning after independent sweeps and ablations. Negative,
+  double, and triple extensions remain disabled after neutral results and a
+  correctness audit.
+- Swept the remaining unresolved search gates and selected the starting values
+  for the final v2.7 SPSA batches. Parameters without a useful direction were
+  frozen at their existing defaults.
 - The current public release remains v2.6. These changes will be released
   together as v2.7 after final tuning and Elo validation.
 

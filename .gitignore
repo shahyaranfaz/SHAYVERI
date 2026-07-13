@@ -22,6 +22,8 @@ scripts/opening_book/outputs/
 scripts/spsa/outputs/
 scripts/ablation/outputs/
 
+future_plans.txt
+
 # Prerequisites
 *.d
 

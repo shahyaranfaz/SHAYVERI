@@ -19,7 +19,7 @@ The v2.6 NNUE configuration is about +451.2 Elo over HCE-classical at STC and +4
 
 ## How to build
 
-Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support. 
+Requires a C++ compiler with C++20 support and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT support.
 SHAYVERI can then be loaded into any UCI-compatible GUI such as Arena, Cutechess, or Lichess via the [Lichess bot API](https://lichess.org/api#tag/Bot).
 
 ```bash
@@ -53,7 +53,7 @@ go movetime 1000
 - Internal iterative reductions (IIR)
 - Late move reductions (LMR), including improving and cut-node-aware reductions
 - Late move pruning (LMP)
-- Singular extensions
+- Singular extensions and multi-cut pruning from excluded-move verification
 - Futility pruning and reverse futility pruning
 - Delta pruning
 - SEE (Static Exchange Evaluation) for move ordering
