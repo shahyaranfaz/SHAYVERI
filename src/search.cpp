@@ -255,7 +255,8 @@ std::string move_to_uci(Move m) {
 }
 
 static bool is_uci_square_text(const std::string& uci, int offset) {
-    return uci.size() > static_cast<size_t>(offset + 1) &&
+    return offset >= 0 &&
+           uci.size() > static_cast<size_t>(offset) + 1 &&
            uci[offset] >= 'a' && uci[offset] <= 'h' &&
            uci[offset + 1] >= '1' && uci[offset + 1] <= '8';
 }

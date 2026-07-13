@@ -1,7 +1,48 @@
 CXX := g++
+TIDY ?= clang-tidy
+# Optional platform-specific arguments for clang-tidy itself.  For example,
+# a self-contained LLVM install can use --extra-arg=--gcc-toolchain=/usr.
+TIDY_EXTRA_ARGS ?=
 PYTHON ?= python3
+ENGINE ?= ../SHAYVERI
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
 INCLUDES := -I../include
+
+STRICT_WARN_FLAGS := \
+	-Wshadow=compatible-local \
+	-Wconversion \
+	-Wformat=2 \
+	-Wnull-dereference \
+	-Wduplicated-cond \
+	-Wduplicated-branches \
+	-Wlogical-op
+
+STRICT_CXXFLAGS := $(CXXFLAGS) $(STRICT_WARN_FLAGS) -Werror
+
+SANITIZE_CXXFLAGS := \
+	-std=c++20 \
+	-O1 \
+	-g3 \
+	-Wall \
+	-Wextra \
+	-Wpedantic \
+	-mbmi2 \
+	-march=native \
+	-fno-omit-frame-pointer \
+	-fsanitize=address,undefined \
+	-fno-sanitize-recover=all
+SANITIZE_LDFLAGS := -lpthread -fsanitize=address,undefined
+SANITIZE_BIN := SHAYVERI_sanitize
+# LeakSanitizer cannot run under ptrace, which includes some remote/sandboxed
+# hosts.  Enable it on a compatible machine with SANITIZE_LEAKS=1.
+SANITIZE_LEAKS ?= 0
+SANITIZE_DATAGEN_GAMES ?= 100
+SANITIZE_DATAGEN_THREADS ?= 2
+SANITIZE_CUTECHESS_GAMES ?= 200
+SANITIZE_CUTECHESS_TC ?= 0.3+0.03
+SANITIZE_CUTECHESS_CONCURRENCY ?= 20
+CUTECHESS ?= cutechess-cli
+SANITIZER_ENV := ASAN_OPTIONS=detect_leaks=$(SANITIZE_LEAKS):halt_on_error=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 SHAYVERI_ENGINE=../$(SANITIZE_BIN)
 
 DEFAULT_NNUE := ../SHAYVERI2_5_0.nnue
 DEBUG_EMBEDDED_NNUE_SRC := embedded_nnue_stub.cpp
@@ -44,6 +85,40 @@ NNUE_TEST_SRC := \
 	../src/zobrist.cpp \
 	nnue_test.cpp
 
+STRICT_SRC := \
+	../src/attacks.cpp \
+	../src/board.cpp \
+	../src/datagen.cpp \
+	../src/evaluate.cpp \
+	../src/fen.cpp \
+	../src/make.cpp \
+	../src/move_gen.cpp \
+	../src/nnue.cpp \
+	../src/nnue_avx2.cpp \
+	../src/nnue_update.cpp \
+	../src/search.cpp \
+	../src/see.cpp \
+	../src/texel.cpp \
+	../src/time_manager.cpp \
+	../src/tools/embed_nnue.cpp \
+	../src/tt.cpp \
+	../src/uci.cpp \
+	../src/zobrist.cpp \
+	$(DEBUG_EMBEDDED_NNUE_SRC)
+
+TIDY_SRC := \
+	$(STRICT_SRC) \
+	perft.cpp \
+	legality.cpp \
+	fen_state.cpp \
+	make_unmake.cpp \
+	see_tests.cpp \
+	eval_symmetry.cpp \
+	tt_safety.cpp \
+	time_manager_test.cpp \
+	search_regression_test.cpp \
+	nnue_test.cpp
+
 BIN := perft
 LEGALITY_BIN := legality
 FEN_STATE_BIN := fen_state
@@ -57,7 +132,8 @@ NNUE_TEST_BIN := nnue_test
 
 all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN)
 
-test: perft_suite \
+TEST_TARGETS := \
+	perft_suite \
 	fen_state_suite \
 	make_unmake_suite \
 	legality_suite \
@@ -71,6 +147,38 @@ test: perft_suite \
 	uci_check \
 	time_control_integration \
 	tactical_regression
+
+test:
+	+$(MAKE) strict
+	+$(MAKE) tidy
+	+$(MAKE) $(TEST_TARGETS)
+
+# Full runtime-memory/undefined-behavior gate.  The instrumented engine has a
+# separate name, so the normal release binary is never replaced or deleted.
+sanitize:
+	+$(MAKE) clean
+	+$(MAKE) -C .. BIN="$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" LDFLAGS="$(SANITIZE_LDFLAGS)" all
+	+$(SANITIZER_ENV) $(MAKE) ENGINE="../$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" test
+	+$(SANITIZER_ENV) SHAYVERI_DATAGEN_MATRIX=1 SHAYVERI_DATAGEN_GAMES="$(SANITIZE_DATAGEN_GAMES)" SHAYVERI_DATAGEN_THREADS="$(SANITIZE_DATAGEN_THREADS)" SHAYVERI_DATAGEN_TIMEOUT_SEC=180 $(PYTHON) datagen_check.py
+	+$(MAKE) sanitize_cutechess
+	+$(MAKE) clean
+
+sanitize_cutechess:
+	@command -v "$(CUTECHESS)" >/dev/null || { echo "cutechess executable not found: $(CUTECHESS)" >&2; exit 1; }
+	@test $$(( $(SANITIZE_CUTECHESS_GAMES) % 2 )) -eq 0 || { echo "SANITIZE_CUTECHESS_GAMES must be even" >&2; exit 1; }
+	$(SANITIZER_ENV) $(CUTECHESS) \
+		-engine cmd=../$(SANITIZE_BIN) name=SHAYVERI-sanitize-A option.Threads=1 option.OwnBook=false \
+		-engine cmd=../$(SANITIZE_BIN) name=SHAYVERI-sanitize-B option.Threads=1 option.OwnBook=false \
+		-each proto=uci tc=$(SANITIZE_CUTECHESS_TC) \
+		-games 2 -rounds $$(( $(SANITIZE_CUTECHESS_GAMES) / 2 )) -repeat -concurrency $(SANITIZE_CUTECHESS_CONCURRENCY) \
+		-draw movenumber=20 movecount=5 score=10 \
+		-resign movecount=3 score=800
+
+strict:
+	$(CXX) $(STRICT_CXXFLAGS) $(INCLUDES) -fsyntax-only $(STRICT_SRC)
+
+tidy:
+	$(TIDY) $(TIDY_EXTRA_ARGS) $(TIDY_SRC) -- -std=c++20 $(INCLUDES) -march=native -mbmi2
 
 $(BIN): $(PERFT_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(PERFT_SRC)
@@ -144,7 +252,7 @@ datagen_check: ensure_engine
 	$(PYTHON) datagen_check.py
 
 ensure_engine:
-	@if [ ! -x ../SHAYVERI ]; then $(MAKE) -C ..; fi
+	@if [ ! -x "$(ENGINE)" ]; then echo "engine binary not found: $(ENGINE)" >&2; exit 1; fi
 
 uci_check: ensure_engine
 	$(PYTHON) uci_check.py
@@ -159,4 +267,4 @@ clean:
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration tactical_regression clean
+.PHONY: all test strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration tactical_regression clean

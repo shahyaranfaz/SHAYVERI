@@ -135,6 +135,8 @@ make test
 
 `make test` runs:
 
+- Warning-clean strict compilation across the production, embed-tool, and debug sources.
+- High-signal `clang-tidy` checks, with every diagnostic treated as an error.
 - Perft regression positions from Chessprogramming Wiki, including startpos, Kiwipete, and Position 3.
 - FEN state validation for side to move, castling rights, en-passant square, counters, and key piece placement.
 - Make/unmake roundtrip checks for board state, hash, castling, en-passant, side, and counters.
@@ -148,3 +150,25 @@ make test
 - UCI checks covering handshake, fixed-depth search, the mandatory bench node signature, opening-book on/off behavior, and deterministic `Threads=1` search.
 - Timed Lazy SMP and ponder integration checks covering `ponderhit` and `stop`.
 - Tactical mate-in-1 regression positions adapted from `StuartRiffle/JaglavakTestData`.
+
+Run the deeper ASan/UBSan gate periodically and before meaningful merges:
+
+```bash
+make -C debug sanitize
+```
+
+The sanitizer gate exercises the full test suite, an expanded datagen matrix,
+and a short CuteChess self-play check with a separately named instrumented
+binary.
+
+For measured performance work, use the fixed-workload profiling scripts:
+
+```bash
+scripts/profiling/bench.sh
+scripts/profiling/perf_stat.sh
+scripts/profiling/perf_record.sh
+```
+
+They provide repeated bench timing, hardware-counter measurements, and an
+instruction-level profile. Run them on an otherwise idle machine and compare
+the same compiler, binary settings, CPU pinning, and bench signature.

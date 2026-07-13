@@ -277,6 +277,13 @@ self-generated corpus/labels were the blocker.
 - Swept the remaining unresolved search gates and selected the starting values
   for the final v2.7 SPSA batches. Parameters without a useful direction were
   frozen at their existing defaults.
+- Strengthened the standard verification gate with warning-clean strict
+  compilation, clang-tidy, deterministic search and datagen checks, mandatory
+  bench-signature validation, and broader search, time, ponder, and datagen
+  regression coverage.
+- Added an ASan/UBSan gate with expanded datagen and CuteChess checks, plus
+  repeatable bench, hardware-counter, and instruction-profile scripts for
+  measured performance work.
 - The current public release remains v2.6. These changes will be released
   together as v2.7 after final tuning and Elo validation.
 

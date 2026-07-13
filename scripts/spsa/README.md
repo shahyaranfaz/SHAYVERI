@@ -119,6 +119,32 @@ Worker semantics
 - The default is one claimed eval per worker process, with that eval using local
   cores through fastchess.
 
+Inspecting a run
+----------------
+
+Use the JSONL viewer for measured match outcomes and distribution summaries:
+
+```bash
+python3 scripts/spsa/lakas/view_cmaes_log.py \
+  scripts/spsa/outputs/pass_v2_7/batch1/batch1.log
+```
+
+It excludes the synthetic initialization row and failed-job penalties by
+default. Its lowest-loss and top-percent sections are selection-biased. The
+reported aggregates are unevaluated candidates for direct A/B validation, not
+automatic freeze values.
+
+Use the checkpoint viewer for the live optimizer state and recommendation:
+
+```bash
+python3 scripts/spsa/lakas/view_cmaes_checkpoint.py \
+  scripts/spsa/outputs/pass_v2_7/batch1/batch1.dat --show-best
+```
+
+The checkpoint viewer reports optimizer counters, normalized CMA step size,
+the covariance condition number, and actual CMA stop conditions. Its
+recommendation still needs direct validation before promotion.
+
 Runtime copy layout
 -------------------
 

@@ -58,7 +58,7 @@ void TimeManager::init(const TimeControl &tc) {
         + static_cast<I64>(my_inc * Tune::time_increment_fraction);
 
     soft_ms_ = std::min(base,       ceiling);
-    hard_ms_ = std::min(static_cast<I64>(base * Tune::time_hard_bound_multiplier), ceiling);
+    hard_ms_ = std::min(static_cast<I64>(static_cast<double>(base) * Tune::time_hard_bound_multiplier), ceiling);
 
     if (soft_ms_ < Tune::time_soft_min_ms) soft_ms_ = Tune::time_soft_min_ms;
     if (hard_ms_ < Tune::time_hard_min_ms) hard_ms_ = Tune::time_hard_min_ms;
@@ -113,7 +113,7 @@ bool TimeManager::on_iter(int depth, Move best_move, int score,
     prev_score_   = score;
     score_inited_ = true;
 
-    score_history_[score_history_next_] = score;
+    score_history_[static_cast<std::size_t>(score_history_next_)] = score;
     score_history_next_ = (score_history_next_ + 1) % SCORE_HISTORY_CAPACITY;
     score_history_count_ = std::min(score_history_count_ + 1, SCORE_HISTORY_CAPACITY);
 
@@ -146,8 +146,8 @@ bool TimeManager::on_iter(int depth, Move best_move, int score,
         for (int i = 1; i < eval_window; ++i) {
             const int index = (score_history_next_ - 1 - i + SCORE_HISTORY_CAPACITY)
                 % SCORE_HISTORY_CAPACITY;
-            min_score = std::min(min_score, score_history_[index]);
-            max_score = std::max(max_score, score_history_[index]);
+            min_score = std::min(min_score, score_history_[static_cast<std::size_t>(index)]);
+            max_score = std::max(max_score, score_history_[static_cast<std::size_t>(index)]);
         }
         if (max_score - min_score <= std::max(0, Tune::time_eval_stability_max_range))
             scale *= Tune::time_eval_stability_scale;

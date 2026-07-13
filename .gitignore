@@ -9,7 +9,10 @@ debug/make_unmake
 debug/see_tests
 debug/eval_symmetry
 debug/tt_safety
+debug/time_manager
+debug/search_regression
 debug/nnue_test
+SHAYVERI_sanitize
 debug/nnue_*_test.nnue
 debug/__pycache__
 
@@ -21,6 +24,7 @@ scripts/elo_pin/outputs
 scripts/opening_book/outputs/
 scripts/spsa/outputs/
 scripts/ablation/outputs/
+scripts/profiling/outputs/
 
 future_plans.txt
 

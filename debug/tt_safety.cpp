@@ -65,6 +65,7 @@ int main() {
     std::atomic<bool> start{false};
     std::atomic<bool> bad_payload{false};
     std::vector<std::thread> writers;
+    writers.reserve(4);
     for (int id = 0; id < 4; ++id) {
         writers.emplace_back([&, id] {
             while (!start.load(std::memory_order_acquire)) {

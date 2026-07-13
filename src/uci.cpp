@@ -861,7 +861,15 @@ int main(int argc, char **argv) {
                 "4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 5 20",
             };
 
-            U64  total_nodes = 0;
+            // Bench is a fresh fixed workload. Stop any active UCI search and
+            // discard state that could warm one invocation relative to another.
+            stop_search();
+            TT.clear();
+            clear_search_histories();
+            active_tt = &TT;
+            g_stop   = false;
+
+            U64 total_nodes = 0;
             auto bench_start = std::chrono::steady_clock::now();
             std::cout << "Running bench...\n";
 
@@ -869,18 +877,19 @@ int main(int argc, char **argv) {
                 Board bench_b;
                 set_from_fen(bench_b, fen);
                 std::vector<Move> sm;
+                node_count = 0;
                 SearchResult res = search(bench_b, 10, nullptr, 0, sm);
                 total_nodes += res.nodes;
             }
 
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          std::chrono::steady_clock::now() - bench_start).count();
-            if (ms == 0) ms = 1;
+            auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                  std::chrono::steady_clock::now() - bench_start).count();
+            if (elapsed_us == 0) elapsed_us = 1;
 
             std::cout << "\n===========================\n"
                       << "Nodes: " << total_nodes << "\n"
-                      << "Time : " << ms << " ms\n"
-                      << "NPS  : " << (total_nodes * 1000) / ms << "\n"
+                      << "Time : " << (static_cast<double>(elapsed_us) / 1000.0) << " ms\n"
+                      << "NPS  : " << (total_nodes * 1000000ULL) / static_cast<U64>(elapsed_us) << "\n"
                       << "===========================\n";
         }
 

@@ -524,8 +524,10 @@ go movetime 1000</code></pre>
     <section id="tests">
       <div class="wrap">
         <h2>Verification</h2>
-        <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, time-manager policy, terminal and draw-rule search regressions, checked qsearch, search restrictions and node limits, root node-share callbacks, plain and Bullet datagen output, UCI handshake and mandatory bench-signature checks, opening-book behavior, deterministic single-thread search, timed Lazy SMP, ponder-hit and ponder-stop behavior, and tactical mate-in-1 regression positions.</p>
+        <p class="lead">The debug harness enforces warning-clean strict compilation and high-signal clang-tidy checks. It also covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, time-manager policy, terminal and draw-rule search regressions, checked qsearch, search restrictions and node limits, root node-share callbacks, plain and Bullet datagen output, UCI handshake and mandatory bench-signature checks, opening-book behavior, deterministic single-thread search, timed Lazy SMP, ponder-hit and ponder-stop behavior, and tactical mate-in-1 regression positions.</p>
         <pre><code>make test</code></pre>
+        <p>Run <code>make -C debug sanitize</code> periodically and before meaningful merges for the full ASan/UBSan, expanded datagen, and CuteChess gate.</p>
+        <p>Measured performance work uses <code>scripts/profiling/bench.sh</code>, <code>scripts/profiling/perf_stat.sh</code>, and <code>scripts/profiling/perf_record.sh</code> on an otherwise idle machine.</p>
       </div>
     </section>
   </main>
