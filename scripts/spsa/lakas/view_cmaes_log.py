@@ -286,8 +286,8 @@ def main():
         )
 
     print()
-    print("Use the checkpoint recommendation as the optimizer-state candidate. Treat both log")
-    print("aggregates as alternatives for direct A/B validation, never as automatic freeze values.")
+    print("Use the decoded CMA distribution center as the optimizer-state candidate. Treat both")
+    print("log aggregates as alternatives for direct A/B validation, never as freeze values.")
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument(
         "--show-best",
         action="store_true",
-        help="Print Nevergrad's recommendation and current_bests diagnostics.",
+        help="Print Nevergrad's noisy xbest recommendation and current_bests diagnostics.",
     )
     return parser.parse_args()
 
@@ -68,16 +68,34 @@ def cma_stop_conditions(es):
         return {"inspection_error": str(exc)}
 
 
+def print_parameter(candidate):
+    if candidate.kwargs:
+        for name, value in candidate.kwargs.items():
+            print(f"{name}: {value}")
+    else:
+        print(candidate.value)
+
+
+def print_cma_center(opt, es):
+    try:
+        center = opt.parametrization.spawn_child().set_standardized_data(
+            np.asarray(es.mean, dtype=float),
+            reference=opt.parametrization,
+        )
+        print("\n--- decoded CMA distribution center ---")
+        print("This is the optimizer-state candidate to validate first.")
+        print_parameter(center)
+    except Exception as exc:
+        print(f"[!] CMA center decoding failed: {exc}")
+
+
 def print_recommendation(opt):
     try:
         recommendation = opt.provide_recommendation()
-        print("\n--- optimizer recommendation ---")
-        print("This is the optimizer-state candidate. It still requires direct A/B validation.")
-        if recommendation.kwargs:
-            for name, value in recommendation.kwargs.items():
-                print(f"{name}: {value}")
-        else:
-            print(recommendation.value)
+        print("\n--- Nevergrad xbest recommendation ---")
+        print("For CMA this is the lowest observed single-match result, not the distribution center.")
+        print("Treat it as a winner's-curse diagnostic and do not promote it directly.")
+        print_parameter(recommendation)
     except Exception as exc:
         print(f"[!] recommendation failed: {exc}")
 
@@ -98,16 +116,42 @@ def inspect_dat(dat_file, show_best):
         print("[!] No initialized CMA state found")
         return False
 
-    print("\n--- run counters ---")
-    print(f"optimizer asks: {optimizer_counter(opt, 'num_ask', '_num_ask')}")
-    print(f"optimizer tells: {optimizer_counter(opt, 'num_tell', '_num_tell')}")
-    print(
-        "optimizer tells not asked: "
-        f"{optimizer_counter(opt, 'num_tell_not_asked', '_num_tell_not_asked')}"
+    asks = optimizer_counter(opt, "num_ask", "_num_ask")
+    tells = optimizer_counter(opt, "num_tell", "_num_tell")
+    tells_not_asked = optimizer_counter(
+        opt,
+        "num_tell_not_asked",
+        "_num_tell_not_asked",
     )
+    measured_tells = (
+        tells - tells_not_asked
+        if isinstance(tells, int) and isinstance(tells_not_asked, int)
+        else "n/a"
+    )
+    outstanding_asks = (
+        asks - measured_tells
+        if isinstance(asks, int) and isinstance(measured_tells, int)
+        else "n/a"
+    )
+
+    print("\n--- run counters ---")
+    print(f"optimizer asks: {asks}")
+    print(f"optimizer tells: {tells}")
+    print(f"optimizer tells not asked: {tells_not_asked}")
+    print(f"measured candidate tells: {measured_tells}")
+    print(f"asked candidates not yet told: {outstanding_asks}")
     print(f"CMA iterations: {getattr(es, 'countiter', 'n/a')}")
     print(f"CMA evaluations: {getattr(es, 'countevals', 'n/a')}")
-    print(f"population size: {getattr(es, 'popsize', 'n/a')}")
+    population_size = getattr(es, "popsize", None)
+    print(f"population size: {population_size if population_size is not None else 'n/a'}")
+    cma_evaluations = getattr(es, "countevals", None)
+    if isinstance(cma_evaluations, int) and isinstance(population_size, int):
+        remainder = cma_evaluations % population_size
+        print(f"CMA population remainder: {remainder}")
+        print(
+            "CMA population state: "
+            + ("clean boundary" if remainder == 0 else "partial population")
+        )
 
     try:
         result = es.result
@@ -155,6 +199,7 @@ def inspect_dat(dat_file, show_best):
             print("evolution path norm ||pc||:", np.linalg.norm(es.pc))
         except Exception:
             print("evolution path pc:", es.pc)
+    print_cma_center(opt, es)
 
     stop_conditions = cma_stop_conditions(es)
     print("\n--- CMA termination state ---")

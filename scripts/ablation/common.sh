@@ -46,6 +46,11 @@ mkdir_shared_dirs() {
 
 emit_tests() {
     case "$ABLATION_BATCH" in
+      spsa_batch1_validation)
+        cat <<'TESTS'
+batch1_top10|-|ASP_Delta=41,FP_Base=217,FP_Max_Depth=4,FP_Mult=762,IIR_Min_Depth=4,LMP_Base=2,LMP_Mult=1,LMR_Base=1.25954,LMR_Scale=1.80102,QS_Delta_Margin=204,RFP_Margin=68,RFP_Max_Depth=5,SEE_Margin=-161
+TESTS
+        ;;
       final_gate)
         cat <<'TESTS'
 check_extension|-|Check_Extension=0

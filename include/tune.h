@@ -32,17 +32,17 @@ static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330, 500, 900, 20000 };
 static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
 
 // Aspiration windows.
-inline int asp_delta     = 42;
+inline int asp_delta     = 41;
 inline int asp_min_depth =  4;
 inline int asp_growth    =  2;
 
 // Reverse futility pruning.
-inline int rfp_margin    = 65;
+inline int rfp_margin    = 68;
 inline int rfp_max_depth =  5;
 
 // Futility pruning.
-inline int fp_base      = 216;
-inline int fp_mult      = 719;
+inline int fp_base      = 217;
+inline int fp_mult      = 762;
 inline int fp_max_depth =   4;
 
 // Late move pruning.
@@ -50,11 +50,11 @@ inline int lmp_base = 2;
 inline int lmp_mult = 1;
 
 // Static exchange pruning.
-inline int see_margin    = -248;
+inline int see_margin    = -161;
 inline int see_max_depth =    4;
 
 // Quiescence search.
-inline int qs_delta_margin    = 196;
+inline int qs_delta_margin    = 204;
 inline int qs_see_margin      = 100;
 inline int qs_futility_margin =   0;
 inline int qs_start_depth     =   8;
@@ -95,8 +95,8 @@ inline int iir_reduction = 1;
 inline int iir_min_depth = 4;
 
 // Late move reductions.
-inline double lmr_base                   = 1.28644;
-inline double lmr_scale                  = 1.89303;
+inline double lmr_base                   = 1.25954;
+inline double lmr_scale                  = 1.80102;
 inline int    improving_lmr_reduction    =      -2;
 inline int    cutnode_lmr_reduction      =       3;
 inline int    lmr_pv_offset              =       0;
@@ -474,19 +474,19 @@ struct TuningOption {
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     // Batch 1: 5+0.05
-    {                   "ASP_Delta", {                     &asp_delta,    TuningOption::INT,    16,    80,      "42"}},
-    {                     "FP_Base", {                       &fp_base,    TuningOption::INT,    80,   350,     "216"}},
-    {                "FP_Max_Depth", {                  &fp_max_depth,    TuningOption::INT,     1,    12,       "4"}}, // untuned
-    {                     "FP_Mult", {                       &fp_mult,    TuningOption::INT,   300,  1000,     "719"}},
-    {               "IIR_Min_Depth", {                 &iir_min_depth,    TuningOption::INT,     1,    12,       "4"}}, // untuned
+    {                   "ASP_Delta", {                     &asp_delta,    TuningOption::INT,    16,    80,      "41"}},
+    {                     "FP_Base", {                       &fp_base,    TuningOption::INT,    80,   350,     "217"}},
+    {                "FP_Max_Depth", {                  &fp_max_depth,    TuningOption::INT,     1,    12,       "4"}},
+    {                     "FP_Mult", {                       &fp_mult,    TuningOption::INT,   300,  1000,     "762"}},
+    {               "IIR_Min_Depth", {                 &iir_min_depth,    TuningOption::INT,     1,    12,       "4"}},
     {                    "LMP_Base", {                      &lmp_base,    TuningOption::INT,     1,     8,       "2"}},
     {                    "LMP_Mult", {                      &lmp_mult,    TuningOption::INT,     1,     3,       "1"}},
-    {                    "LMR_Base", {                      &lmr_base, TuningOption::DOUBLE,     0,     0, "1.28644"}},
-    {                   "LMR_Scale", {                     &lmr_scale, TuningOption::DOUBLE,     0,     0, "1.89303"}},
-    {             "QS_Delta_Margin", {               &qs_delta_margin,    TuningOption::INT,    50,   350,     "196"}},
-    {                  "RFP_Margin", {                    &rfp_margin,    TuningOption::INT,    30,   120,      "65"}},
-    {               "RFP_Max_Depth", {                 &rfp_max_depth,    TuningOption::INT,     1,    12,       "5"}}, // untuned
-    {                  "SEE_Margin", {                    &see_margin,    TuningOption::INT,  -600,   -40,    "-248"}},
+    {                    "LMR_Base", {                      &lmr_base, TuningOption::DOUBLE,     0,     0, "1.25954"}},
+    {                   "LMR_Scale", {                     &lmr_scale, TuningOption::DOUBLE,     0,     0, "1.80102"}},
+    {             "QS_Delta_Margin", {               &qs_delta_margin,    TuningOption::INT,    50,   350,     "204"}},
+    {                  "RFP_Margin", {                    &rfp_margin,    TuningOption::INT,    30,   120,      "68"}},
+    {               "RFP_Max_Depth", {                 &rfp_max_depth,    TuningOption::INT,     1,    12,       "5"}},
+    {                  "SEE_Margin", {                    &see_margin,    TuningOption::INT,  -600,   -40,    "-161"}},
 
     // Batch 2: 10+0.1
     {               "ASP_Min_Depth", {                 &asp_min_depth,    TuningOption::INT,     1,    12,       "4"}}, // untuned

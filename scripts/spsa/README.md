@@ -142,8 +142,10 @@ python3 scripts/spsa/lakas/view_cmaes_checkpoint.py \
 ```
 
 The checkpoint viewer reports optimizer counters, normalized CMA step size,
-the covariance condition number, and actual CMA stop conditions. Its
-recommendation still needs direct validation before promotion.
+the covariance condition number, actual CMA stop conditions, and the decoded
+CMA distribution center. Validate that center first. Nevergrad's generic CMA
+recommendation is the lowest observed single-match result, so `--show-best`
+prints it only as a winner's-curse diagnostic.
 
 Runtime copy layout
 -------------------

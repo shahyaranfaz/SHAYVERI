@@ -338,7 +338,13 @@ def optimizer_eval_count(optimizer):
     for attr in ("num_tell", "_num_tell"):
         val = getattr(optimizer, attr, None)
         if isinstance(val, int):
-            return val
+            tells_not_asked = 0
+            for skipped_attr in ("num_tell_not_asked", "_num_tell_not_asked"):
+                skipped = getattr(optimizer, skipped_attr, None)
+                if isinstance(skipped, int):
+                    tells_not_asked = skipped
+                    break
+            return max(0, val - tells_not_asked)
 
     es = getattr(optimizer, "_es", None)
     if es is not None:

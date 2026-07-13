@@ -39,19 +39,19 @@ case "$BATCH_ID" in
     BASE_TIME_SEC="${BASE_TIME_SEC:-5}"
     INC_TIME_SEC="${INC_TIME_SEC:-0.05}"
     PARAM_BATCH="{
-'ASP_Delta':         {'init': 42,      'lower': 16,   'upper': 80},
-'FP_Base':           {'init': 216,     'lower': 80,   'upper': 350},
+'ASP_Delta':         {'init': 41,      'lower': 16,   'upper': 80},
+'FP_Base':           {'init': 217,     'lower': 80,   'upper': 350},
 'FP_Max_Depth':      {'init': 4,       'lower': 1,    'upper': 12},
-'FP_Mult':           {'init': 719,     'lower': 300,  'upper': 1000},
+'FP_Mult':           {'init': 762,     'lower': 300,  'upper': 1000},
 'IIR_Min_Depth':     {'init': 4,       'lower': 1,    'upper': 12},
 'LMP_Base':          {'init': 2,       'lower': 1,    'upper': 8},
 'LMP_Mult':          {'init': 1,       'lower': 1,    'upper': 3},
-'LMR_Base':          {'init': 1.28644, 'lower': 0.90, 'upper': 1.55},
-'LMR_Scale':         {'init': 1.89303, 'lower': 1.40, 'upper': 2.30},
-'QS_Delta_Margin':   {'init': 196,     'lower': 50,   'upper': 350},
-'RFP_Margin':        {'init': 65,      'lower': 30,   'upper': 120},
+'LMR_Base':          {'init': 1.25954, 'lower': 0.90, 'upper': 1.55},
+'LMR_Scale':         {'init': 1.80102, 'lower': 1.40, 'upper': 2.30},
+'QS_Delta_Margin':   {'init': 204,     'lower': 50,   'upper': 350},
+'RFP_Margin':        {'init': 68,      'lower': 30,   'upper': 120},
 'RFP_Max_Depth':     {'init': 5,       'lower': 1,    'upper': 12},
-'SEE_Margin':        {'init': -248,    'lower': -600, 'upper': -40}
+'SEE_Margin':        {'init': -161,    'lower': -600, 'upper': -40}
 }"
     ;;
   2)
