@@ -1,7 +1,10 @@
 
 SHAYVERI.exe
 SHAYVERI
+SHAYVERI_mac
+
 build/
+
 debug/perft
 debug/legality
 debug/fen_state
@@ -20,79 +23,14 @@ nnue/v*/
 nnue/extra_nets
 nnue/README.md
 
-scripts/elo_pin/outputs
-scripts/opening_book/outputs/
-scripts/spsa/outputs/
-scripts/ablation/outputs/
-scripts/profiling/outputs/
+docs/PRERELEASE.md
+
+scripts/*/outputs
 
 future_plans.txt
 
-# Prerequisites
-*.d
-
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
-
-# Linker output
-*.ilk
-*.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
+*.pgn
 *.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# debug information files
-*.dwo
-
 *.xml
 .venv
 .idea
-cmake-build-debug
-*.pgn
-
-# NNUE datagen/training artifacts
-iter*.nnue
-*.plain
-*.bin
-raw/
-data/
