@@ -145,12 +145,35 @@ def inspect_dat(dat_file, show_best):
     population_size = getattr(es, "popsize", None)
     print(f"population size: {population_size if population_size is not None else 'n/a'}")
     cma_evaluations = getattr(es, "countevals", None)
-    if isinstance(cma_evaluations, int) and isinstance(population_size, int):
-        remainder = cma_evaluations % population_size
-        print(f"CMA population remainder: {remainder}")
+    if (
+        isinstance(cma_evaluations, int)
+        and isinstance(measured_tells, int)
+        and isinstance(population_size, int)
+        and population_size > 0
+    ):
+        pending_population_tells = measured_tells - cma_evaluations
+        if 0 <= pending_population_tells < population_size:
+            print(
+                "tells collected toward next CMA update: "
+                f"{pending_population_tells}/{population_size}"
+            )
+            print(
+                "CMA population state: "
+                + (
+                    "clean update boundary"
+                    if pending_population_tells == 0
+                    else "partial population"
+                )
+            )
+        else:
+            print(
+                "CMA population progress: unavailable "
+                f"(measured tells={measured_tells}, internal evaluations={cma_evaluations})"
+            )
+    if isinstance(outstanding_asks, int):
         print(
-            "CMA population state: "
-            + ("clean boundary" if remainder == 0 else "partial population")
+            "evaluation pipeline state: "
+            + ("drained" if outstanding_asks == 0 else "jobs still outstanding")
         )
 
     try:

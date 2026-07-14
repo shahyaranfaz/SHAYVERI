@@ -143,7 +143,9 @@ python3 scripts/spsa/lakas/view_cmaes_checkpoint.py \
 
 The checkpoint viewer reports optimizer counters, normalized CMA step size,
 the covariance condition number, actual CMA stop conditions, and the decoded
-CMA distribution center. Validate that center first. Nevergrad's generic CMA
+CMA distribution center. It distinguishes completed CMA updates, partial
+population tells, and outstanding jobs so a live pipeline is not mistaken for
+a clean stopping boundary. Validate the center first. Nevergrad's generic CMA
 recommendation is the lowest observed single-match result, so `--show-best`
 prints it only as a winner's-curse diagnostic.
 

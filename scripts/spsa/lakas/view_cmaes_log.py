@@ -221,7 +221,10 @@ def main():
     print(f"sessions: {len(sessions)}")
     print(f"optimizer lineages: {len(lineages)}")
     print(f"maximum logged counters: asks={max_ask} tells={max_tell}")
-    print(f"maximum candidate-lineage generation: {max_lineage_generation}")
+    print(
+        "maximum candidate ancestry depth: "
+        f"{max_lineage_generation} (not a CMA generation count)"
+    )
     print(f"params: {len(params)}")
 
     print()

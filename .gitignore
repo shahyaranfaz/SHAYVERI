@@ -23,8 +23,6 @@ nnue/v*/
 nnue/extra_nets
 nnue/README.md
 
-docs/PRERELEASE.md
-
 scripts/*/outputs
 
 future_plans.txt
