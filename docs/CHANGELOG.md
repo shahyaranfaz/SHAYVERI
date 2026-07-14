@@ -1,331 +1,241 @@
 # Changelog
 
-## Early Classical Baseline
+This changelog records SHAYVERI engine releases. Each entry describes changes
+since the previous version. NNUE artifact names are recorded separately from
+engine versions. See [VERSIONING.md](VERSIONING.md).
 
-This line is the final handcrafted-evaluation baseline before NNUE development.
-Current documentation refers to the evaluation path as `HCE-classical` so it is
-not confused with SHAYVERI source versioning.
+## NNUE Era
 
-### SHAYVERI Strength
+### v2.7.0 - Search and Engine Refinement (Unreleased)
 
-- Completed the final classical tuning cycle.
-- Froze the `spsa_f3` parameter set as the strongest HCE-classical line.
-- Validated SHAYVERI through large self-play and Stockfish reference matches.
-- Repaired the final search tuning after discovering some tuned search parameters were not actually wired into search behavior.
-- Retuned search after activating the missing LMR, aspiration, and SEE-pruning parameters.
+**Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
-### Search
+**Candidate range:** `1013ebb1a5c7f312e418f944fb737b44fc85810b` through
+the final validated `search_overhaul` commit. Tag only after SPSA, regression,
+and Elo gates.
 
-- Added and tuned aspiration windows, PVS, LMR, LMP, null move pruning, reverse futility pruning, futility pruning, delta pruning, SEE pruning, singular extensions, internal iterative reduction, and mate-distance pruning.
-- Added qsearch TT probing.
-- Added capture history for capture ordering.
-- Added countermove ordering.
-- Added continuation-style history through counter-move and follow-up history tables.
-- Improved move ordering with TT moves, SEE/MVV-LVA, killers, quiet history, capture history, countermoves, and continuation histories.
-- Added a 4-entry bucketed transposition table with generation aging.
-- Added static-eval caching in TT entries.
-- Added Lazy SMP and dynamic time management.
-- Added support for `movestogo` in time management.
+- Expanded the v2.6.0 tuning surface with configurable improving, cut-node,
+  PV/non-PV LMR, singular-search, extension, pruning, and time-management
+  controls, and removed the remaining hard-coded search constants.
+- Added improving and cut-node-aware LMR and propagated cut-node state through
+  PVS, null-move, and singular-search calls. The initial pair scored
+  `466-417-717` against the preceding configuration at `3+0.03`.
+- Stopped active searches before changing TT, NNUE, thread, or tuning state,
+  and bounded active SMP by detected hardware capacity.
+- Fixed qsearch at the checked-position depth floor so legal evasions are
+  searched instead of returning a normal static evaluation.
+- Removed repeated LMR logarithms, reused SEE results, delayed NNUE accumulator
+  work until legality was known, and removed redundant datagen move generation.
+- Verified the initial audit fixes in a 1,600-game Fastchess regression:
+  `454-419-727`, or `+7.6 +/-12.6` Elo versus the preceding binary.
+- Added and ablated qsearch SEE/futility pruning, late-history pruning,
+  quiet-move PVS SEE pruning, and capture-only ProbCut. Regressing qsearch
+  futility and late-history pruning remain disabled.
+- Corrected repetition, fifty-move, insufficient-material, mate-at-the-rule
+  boundary, maximum-ply, excluded-move, and null-move stack handling.
+- Serialized whole TT-bucket writes so concurrent probes cannot accept a
+  mixed snapshot, and preserved the newest available repetition history.
+- Disabled check extensions after direct testing.
+- Reworked time management with root best-move node-share scaling,
+  multi-iteration evaluation-stability scaling, enforced soft/hard/minimum
+  limits, low-clock survival, and corrected ponder-hit initialization.
+- Extended singular-search handling and promoted multi-cut pruning. Negative,
+  double, and triple extensions remain disabled after testing.
+- Replaced the legacy book, whose compiled entries carried precomputed
+  Stockfish evaluations, with a book rebuilt from qualifying TWIC games. The
+  generator now selects one deterministic weighted-majority move per position
+  and stores moves without evaluator-specific scores.
+- Added `Book_Info_Depth`. A positive value searches the forced book move to
+  emit normal UCI information using SHAYVERI's own evaluation instead of the
+  old stored Stockfish score. A value of `0` keeps the immediate book response.
+- Made `bench` start from clean TT, history, stop, and node-count state and
+  report short-run timing at microsecond resolution.
+- Promoted the first SPSA batch's search-parameter values. Final validation and
+  the release tag remain pending.
 
-### Evaluation
+### v2.6.0 - Atomic Lazy SMP, Embedded NNUE, and Search Tuning
 
-- Completed a large handcrafted evaluation build-out.
-- Added tapered midgame/endgame evaluation.
-- Added Texel-tuned material values and piece-square tables.
-- Added bishop pair, tempo, and development/initiative terms.
-- Added detailed pawn structure evaluation:
-  - passed pawns
-  - candidate passers
-  - connected and outside passers
-  - isolated, doubled, backward, weak, and supported pawns
-  - pawn islands
-  - pawn storms
-- Added king safety:
-  - pawn shield
-  - open/semi-open files near the king
-  - king-zone attack pressure
-  - escape squares
-  - nonlinear danger scaling
-- Added piece activity terms:
-  - mobility
-  - seventh-rank bonuses
-  - file/diagonal openness scaling
-- Added coordination terms:
-  - defended pieces
-  - shared targets
-  - rook/queen and bishop/queen batteries
-  - support chains
-- Added tactical pressure terms:
-  - undefended-piece pressure
-  - pins and x-ray pressure
-  - overloaded defenders
-  - unreciprocated pressure
-- Added explicit threat evaluation for pawn, minor-piece, rook, and hanging-piece threats.
-- Added knight, bishop, rook, and queen outpost terms.
-- Added a pawn hash.
-- Optimized pawn attack generation and pawn-structure helpers.
+**Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
-### Tuning
+- Reworked the shared transposition table into an atomic four-entry bucketed
+  table and fixed timed Lazy SMP sharing. Fixed-depth, fixed-node, and datagen
+  searches remained deterministic.
+- Embedded the default NNUE in the executable while retaining the ability to
+  load `.nnue` files passed through the UCI option `EvalFile`.
+- Added the NNUE search-tuning foundation: live LMR, null-move, qsearch, and
+  static-evaluation correction-history controls.
+- Reduced oversized per-call search-stack allocations.
+- Same-net comparisons against the previous search scored `199-52-149` at one
+  thread and `102-3-45` at four threads. The recorded pins were
+  `3045.7 +/-14.8` STC and `3136.5 +/-28.9` LTC.
 
-- Added SPSA/CMA-ES tuning infrastructure.
-- Centralized SHAYVERI parameters in `tune.h`.
-- Ran multiple SPSA passes over search and evaluation parameters.
-- Added Texel tuning support and scripts.
-- Generated and used a large quiet-filtered position set for Texel tuning.
-- Ran phased Texel tuning:
-  - PST/material phase
-  - pawn/eval phase
-  - king PST phase
-  - king safety/tactical phase
-  - final refinement phase
-- Normalized piece values and PSTs after Texel.
-- Archived tuning logs and result notes outside the release-facing source tree.
-- Disabled the tuning registry for release UCI output.
+### v2.5.0 - KB16x512 External-Corpus Network
 
-### Opening Book
+**Default network:** external `SHAYVERI2_5_0.nnue`.
 
-- Added compiled opening book support.
-- Added opening book generation/writer tooling.
-- Added deterministic weighted-majority move selection from qualifying high-rated corpus lines.
-- Compiled only the selected move for each position, without evaluator-specific metadata.
-- Added optional book-move info searches through `Book_Info_Depth`, with `0` preserving the fast path.
-- Added `OwnBook` UCI option.
+- Added KB16x512 inference and conversion support.
+- Promoted `SHAYVERI2_5_0.nnue`, trained on larger and more diverse
+  RobotMoon/Stockfish corpora.
+- Recorded `2952.4 +/-14.7` STC and `3081.9 +/-28.4` LTC, improvements of
+  +14.1 STC and +35.7 LTC over the previous promoted NNUE in the same pool.
 
-### UCI And Compatibility
+### v2.4.1 - Node Limits and Lazy SMP Fixes
 
-- Implemented core UCI commands:
-  - `uci`
-  - `isready`
-  - `ucinewgame`
-  - `position`
-  - `go`
-  - `stop`
-  - `ponderhit`
-  - `quit`
-  - `bench`
-- Added UCI options:
-  - `Hash`
-  - `Clear Hash`
-  - `Threads`
-  - `Ponder`
-  - `OwnBook`
-  - `Book_Info_Depth`
-  - `Minimum Thinking Time`
-  - `Move Overhead`
-- Added `searchmoves` support.
-- Added PV output, mate score output, nodes, NPS, and time reporting.
-- Added ponder move output.
-- Improved GUI/cutechess compatibility.
-- Added Lichess-oriented support work.
-- Removed Chess960 from the classical target after testing showed it needed a deeper castling/legal-move pass.
+**Default network:** external `SHAYVERI2_2_0.nnue`.
 
-### Infrastructure
+- Correctly wired `go nodes N` through UCI and search.
+- Fixed Lazy SMP behavior discovered after v2.4.0.
 
-- Added the C++ SHAYVERI core:
-  - board representation
-  - FEN parsing
-  - move generation
-  - make/unmake
-  - perft-oriented foundations
-- Added Zobrist hashing.
-- Added transposition tables.
-- Added repetition detection.
-- Added SEE.
-- Added BMI2/PEXT bitboard support.
-- Added Linux and Windows build targets.
-- Added macOS Makefile target.
-- Fixed Makefile header dependencies so header-only changes trigger rebuilds.
-- Added bench and basic validation flows.
+### v2.4.0 - Datagen Repair and Promoted NNUE
 
-## v2.0 NNUE Development Line
+**Default network:** external `SHAYVERI2_2_0.nnue`.
 
-Version 2.0 covers the first SHAYVERI NNUE development line before the later
-external-corpus bootstrap work: classic Chess768/256 Marlinflow nets, KB8/KB16
-Bullet experiments, data scheduling fixes, and the final diagnosis that the
-self-generated corpus/labels were the blocker.
+- Reworked datagen with Stockfish-like quiet-position filters and added direct
+  32-byte `bulletformat` output.
+- Fixed KB8 SCReLU inference and the generated Bullet-network artifacts.
+- The repaired datagen and SHAYVERI-generated corpus failed to produce a
+  strong network.
+- Experiments with an external RobotMoon corpus labeled with Stockfish
+  evaluations produced a strong network.
+- Scaling this corpus from 250M to 500M to 1B positions continued to improve
+  strength.
+- Added the UCI option `UseNNUE` for easy selection between the NNUE and HCE
+  evaluation paths.
+- Promoted `SHAYVERI2_2_0.nnue` and recorded `2938.3 +/-14.9` STC and
+  `3046.2 +/-28.6` LTC.
 
-### Runtime And Tooling
+### v2.3.0 - Architecture and Training Reset
 
-- Added NNUE evaluation support.
-- Added `EvalFile` loading through UCI.
-- Kept handcrafted evaluation available as the no-net/debug path.
-- Added SHAYVERI `.nnue` conversion support for Marlinflow and Bullet artifacts.
-- Built multi-worker generation/training scripts, checkpoint conversion, and
-  cutechess gate scripts.
-- Added the Bullet king-bucket trainer/conversion path for architecture
-  experiments.
+**Default network:** external `net5_final.nnue`.
 
-### v2.1: Classic Chess768 / 256 Progress
+- Completed the net9-net11 KB8 continuation experiments and established that
+  later continuation checkpoints drifted rather than producing a reliable
+  promoted net.
+- Fixed classic-versus-bucketed feature indexing and added KB16 inference,
+  conversion, and trainer support.
+- Ran the net12 KB16/256 experiment. It failed the HCE and net5 anchors and was
+  stopped.
+- Retained the known-good net5 engine path after the experimental net13 line
+  also failed to produce a promotable replacement.
 
-- Built the first working Chess768 NNUE bootstrap from SHAYVERI-generated data.
-- The best classic result was Chess768 / 256, Marlinflow, 1B generated
-  positions, WDL=0.1, 10k-node labels, and mixed HCE-classical/NNUE generation.
-- Lesson: mixed HCE-classical/NNUE data worked, but arrival-order chunk consumption made
-  checkpoint strength noisy and non-monotonic.
+### v2.2.1 - NNUE Legality and Threading Fixes
 
-### v2.2: King Buckets And Bullet
+**Default network:** external `net8_final.nnue`.
 
-- Switched from continuing Chess768 to KB8/Bullet architecture tests.
-- Proved the KB8/Bullet pipeline was legal and viable, but later runs were
-  hurt by disk/queue/truncated chunk issues.
-- Found that KB16 and bucket-only scaling did not produce more strength by
-  themselves.
+- Fixed illegal-move behavior in the NNUE-era engine.
+- Fixed worker threads retaining references to moves from an earlier search.
 
-### v2.3: Deep-Hard Reset
+### v2.2.0 - KB8 and Bullet
 
-- Tried to repair the datagen signal with deeper relabeling instead of just
-  adding more positions.
-- Designed a Chess768 / 256 recovery path around the v2.1 line with deeper
-  SHAYVERI self-distillation and hard-position relabeling.
-- Added a branch matrix over NNUE/HCE-classical baseline and deep-hard lanes.
-- Reinforced that HCE-classical/SF2850 gates need to happen early, before internal
-  pool optimism wastes training time.
+**Default network:** external `net8_final.nnue`.
 
-### v2.4: Persistent SHAYVERI Corpus
+- Added KB8 feature indexing and inference support.
+- Trained and integrated the first working KB8/256 network.
+- Established that the KB8 pipeline produced legal usable networks, although
+  later external gates showed that this line had not surpassed the HCE anchor.
 
-- Built and preserved about 1.7B SHAYVERI-generated positions, mostly 5k-node
-  data plus about 130M earlier 10k-node positions.
-- Trained persistent 500M, 1B, and fullmove-8-plus filtered Board768 / 256
-  views through the patched Marlinflow path.
-- Best observed HCE-classical transfer from this corpus was only around score 0.25 vs HCE-classical,
-  roughly -190 Elo. The fullmove-8-plus slice was worse.
-- Concluded failure was not tiny data volume, streaming churn, or checkpoint
-  selection. The blocker was generated data distribution and/or labels.
+### v2.1.0 - Classic NNUE Iteration
 
-### v2.5: External Corpus Experiments
+**Default network:** external `net5_final.nnue`.
 
-- Started the external-corpus NNUE line after the self-generated v2.x corpora
-  failed to transfer enough strength.
-- Trained on public Stockfish/RobotMoon-style position corpora converted into
-  the SHAYVERI/Bullet training flow.
-- Promoted `SHAYVERI2_5_0.nnue`, a KB16x512 net from the March/June external
-  corpus scale-up.
-- Pinned `SHAYVERI v2.5 / NNUE SHAYVERI2_5_0` at
-  `2952.4 +/-14.7` STC and `3081.9 +/-28.4` LTC.
-- Improved over the previous promoted NNUE baseline by +14.1 Elo at STC and
-  +35.7 Elo at LTC in the same anchor pool.
-- Added GPL-3.0-or-later licensing for SHAYVERI.
+- Trained the classic Chess768/256 net2-net7 sequence from SHAYVERI-generated
+  data and kept net5 as the strongest network.
+- Changed datagen to use NNUE evaluation where configured and fixed the
+  parallel-search thread crash found during generation.
+- Net5 used 1B positions, WDL 0.1, 10k-node labels, and mixed HCE/NNUE data.
+  It beat HCE by `+236.8 +/-24.5` in the recorded STC direct match and
+  `+220.1 +/-42.5` at LTC.
+- Identified arrival-order chunk consumption as the source of noisy,
+  non-monotonic checkpoint strength. Net6 and net7 did not replace net5.
 
-## v2.6 Search Overhaul
+### v2.0.0 - First NNUE Engine
 
-- Reworked the shared transposition table into an atomic 4-entry bucketed table
-  suitable for timed multi-threaded search.
-- Fixed Lazy SMP so timed games share TT information across workers, while
-  fixed-depth, fixed-node, and datagen searches remain deterministic.
-- Added persistent history across searches and cleared it on new-game or eval
-  changes.
-- Added static-evaluation correction history with exposed tuning knobs.
-- Tightened null-move pruning, LMR, and time allocation.
-- Retuned the first search batch with CMA-ES, promoting the validated pruning
-  and reduction constants.
-- Updated the bench signature and test harness after the search changes.
-- Initial same-net A/B checks with `SHAYVERI2_5_0.nnue` showed the new search
-  clearly ahead of the old binary: `199-52-149` at 1 thread and `102-3-45` at
-  4 threads.
-- Embedded `SHAYVERI2_5_0.nnue` as the default release network while preserving
-  explicit external `EvalFile` loading.
-- Pinned `SHAYVERI v2.6 / NNUE SHAYVERI2_5_0` at `3045.7 +/-14.8` STC and
-  `3136.5 +/-28.9` LTC.
-- Standardized release docs on `HCE-classical` for the handcrafted evaluator.
+**Default network:** external `first_net.nnue`.
 
-## v2.7 Search Refinement (Unreleased)
+- Added engine datagen for producing NNUE training positions.
+- Added the UCI option `EvalFile`, NNUE loading, scalar and AVX2 inference,
+  accumulator refresh and incremental updates, and HCE fallback behavior.
+- Integrated the first trained network after correcting conversion scaling and
+  NNUE runtime issues.
 
-- Added an improving heuristic to LMR using the same-side static evaluation
-  from two plies earlier.
-- Added cut-node-aware LMR and propagated cut-node state through the relevant
-  PVS, null-move, and singular-search paths.
-- Added experimental tuning controls for the improving, cut-node, PV, and
-  non-PV LMR adjustments. Their final values remain pending the v2.7 SPSA pass.
-- The phase-1 pair finished ahead in an STC ablation, with new scoring
-  `466-417-717` against old at `3+0.03`.
-- Hardened UCI option changes by stopping active searches before mutating TT,
-  NNUE, thread, or tuning state, and bounded active SMP to detected hardware
-  capacity.
-- Fixed qsearch so checked positions continue through legal evasions at the
-  depth floor instead of receiving a normal static evaluation.
-- Removed repeated hot-path logarithms from LMR, reused SEE results for
-  pruning, and avoided NNUE accumulator work for illegal candidate moves.
-- Removed redundant legal move generation from the datagen opening and
-  fallback paths.
-- Validated the audit fixes against the previous binary in a 1,600-game
-  Fastchess regression: new scored `454-419-727` vs old, equivalent to
-  `+7.6 +/- 12.6 Elo`, consistent with no measurable regression.
-- Added five search-refinement experiments: richer qsearch SEE pruning,
-  qsearch futility pruning, late history pruning, quiet-move PVS SEE pruning,
-  and capture-only ProbCut.
-- Evaluated the features separately at short and longer experimental time
-  controls, then kept source-level defaults for the useful features and
-  disabled qsearch futility and late history pruning after their regressions.
-- Disabled check extensions after direct ablation and froze the remaining
-  extension and reduction controls that did not justify further tuning.
-- Added root best-move node-share time scaling and deeper multi-iteration
-  evaluation-stability scaling.
-- Ablated both time-scaling features independently and together across
-  multiple time controls, then froze the accepted combined policy.
-- Enforced configured soft, hard, and minimum-thinking limits below the final
-  safe clock ceiling.
-- Added critically low-clock survival behavior for no-increment controls and
-  made timer waits respect the actual remaining hard time.
-- Fixed ponder-hit time-manager initialization ordering and added timed Lazy
-  SMP, ponder-hit, and ponder-stop integration coverage.
-- De-hardcoded singular- and check-extension amounts, then used the excluded-
-  move result to evaluate multi-cut pruning and negative, double, and triple
-  extension policies.
-- Promoted multi-cut pruning after independent sweeps and ablations. Negative,
-  double, and triple extensions remain disabled after neutral results and a
-  correctness audit.
-- Swept the remaining unresolved search gates and selected the starting values
-  for the final v2.7 SPSA batches. Parameters without a useful direction were
-  frozen at their existing defaults.
-- Strengthened the standard verification gate with warning-clean strict
-  compilation, clang-tidy, deterministic search and datagen checks, mandatory
-  bench-signature validation, and broader search, time, ponder, and datagen
-  regression coverage.
-- Added an ASan/UBSan gate with expanded datagen and CuteChess checks, plus
-  repeatable bench, hardware-counter, and instruction-profile scripts for
-  measured performance work.
-- The current public release remains v2.6. These changes will be released
-  together as v2.7 after final tuning and Elo validation.
+## HCE Refinement Era
 
-## v3.0 Datagen And KB16 Self-Loop Foundation
+### v1.3.1 - UCI and Input-Safety Fixes
 
-Version 3.0 starts the serious self-looping NNUE line: train a KB16 network
-from stronger SHAYVERI-generated data and fixes the datagen problems that capped
-the v2.x self-generated corpora.
+- Correctly implemented fixed-depth `go depth N` searches.
+- Hardened UCI option parsing with range checks and clamping, handled allocation
+  failures, and rejected invalid search inputs safely.
+- Cleaned the exposed tuning registry without changing the promoted HCE.
 
-### Datagen
+### v1.3.0 - Final HCE Search
 
-- Reworked datagen toward training-ready NNUE data instead of loosely filtered
-  legacy text output.
-- Added direct `bullet-v1` output using the 32-byte `bulletformat` chess record
-  layout.
-- Added TWIC-book rooted starts as the baseline opening distribution.
-- Added qsearch/static-eval labeling so training targets are quieter and not
-  polluted by raw search noise.
-- Added cp3000-compatible filtering before data is written.
-- Added explicit handling for mate-like and tablebase-like scores so sentinel
-  values do not leak into training.
-- Added filtering for illegal, malformed, duplicate-terminal, impossible, in-check,
-  and noisy tactical states when the recipe expects quiet positions.
-- Added deterministic seeds, resumable shard output, `.incomplete` / `DONE`
-  markers, and per-shard summaries.
-- Added per-shard stats for positions written, filtered counts by reason, cp
-  buckets, WDL buckets, side-to-move, phase, source concentration, positions per
-  game, max positions from one game, TWIC-start percentage, and duplicate rate
-  when duplicate tracking is enabled.
-- Added generation controls such as `--positions`, `--games`, and
-  `--print-interval`.
+- Completed the final SPSA cycle and promoted the winning parameter set.
+- Fixed previously unwired LMR, aspiration, and SEE-pruning parameters and
+  retuned the affected search behavior.
+- Improved search speed, quiet and capture move ordering, TT static-evaluation
+  storage, qsearch TT use, capture history, countermoves, and continuation
+  histories.
+- Added Lichess-oriented engine support.
 
-### Training
+### v1.2.0 - Texel-Tuned HCE
 
-- Moved the main NNUE target to KB16.
-- Uses stronger datagen output as the basis for the next promoted net.
-- Keeps HCE-classical as a flavor/debugging reference without letting it dominate
-  training labels.
-- Uses fixed external anchors for promotion instead of trusting internal-family
-  pools alone.
+- Adopted Texel-tuned material and PSTs, pawn/evaluation terms, king PSTs,
+  king-safety and tactical terms, and a final refinement phase.
+- Normalized piece values and PSTs and prepared the resulting HCE for its final
+  SPSA search pass.
 
-## Future Work
+### v1.1.0 - Multi-Pass SPSA
 
-- Scale architecture after the self-loop is stable.
-- Syzygy tablebases and tablebase policy for NNUE.
+- Completed the second through fourth SPSA passes after discarding and
+  restarting a broken second pass.
+- Froze the SPSA result as the input to the subsequent Texel evaluation work.
+
+### v1.0.0 - First HCE Tuning Pass
+
+- Completed the first full SPSA pass over the centralized HCE and search
+  parameter surface.
+- Replaced the initial hand-selected defaults with the first measured tuning
+  result.
+- Renamed the engine and project from ShayBot to SHAYVERI during this tuning
+  line.
+
+## Engine Development Era
+
+### v0.4.0 - Complete Handcrafted Engine
+
+- Added aspiration windows, PVS, LMP, singular extensions, internal iterative
+  reduction, mate-distance pruning, and the completed handcrafted evaluation.
+- Added BMI2/PEXT support, Lazy SMP, dynamic time management, `movestogo`,
+  ponder, UCI options, PV/mate/nodes/NPS output, and GUI compatibility fixes.
+- Rebuilt the compiled opening book with precomputed Stockfish evaluations for
+  its positions, reported those stored scores on book moves, and corrected the
+  engine-side book behavior.
+- Centralized search and evaluation constants in `tune.h` and prepared the
+  engine for SPSA.
+
+### v0.3.0 - Evaluation and Pruning
+
+- Replaced the early evaluation with a tapered HCE covering pawn structure,
+  king safety, mobility, coordination, tactical pressure, threats, and
+  outposts.
+- Added futility pruning, delta pruning, reverse futility pruning, null-move
+  pruning, and LMR.
+- Fixed evaluation parity and early search/GUI correctness issues.
+
+### v0.2.0 - Search Infrastructure
+
+- Added the compiled opening book, piece-square tables, bishop-pair evaluation,
+  square and move ordering, and improved UCI compliance.
+- Added Zobrist hashing, a transposition table, repetition detection, SEE, and
+  check extension support.
+
+### v0.1.0 - First Usable Engine
+
+- Added the C++20 board representation, FEN parser, attack generation, legal
+  move generation, make/unmake, perft foundation, basic HCE, search, UCI loop,
+  and a runnable UCI engine.
+- This was the first working but deliberately low-strength SHAYVERI snapshot.
+
+## Future Era
+
+### v3.0.0 - Undetermined
