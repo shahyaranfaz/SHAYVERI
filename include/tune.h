@@ -591,20 +591,20 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     /* DISABLED AFTER HARMFUL ABLATION:
     {   "History_Pruning_Min_Depth", {     &history_pruning_min_depth,    TuningOption::INT,     0,     8,       "0"}},
     {   "History_Pruning_Min_Moves", {     &history_pruning_min_moves,    TuningOption::INT,     0,    16,       "0"}},
-    {  "History_Pruning_Threshold", {     &history_pruning_threshold,    TuningOption::INT, -1200,     0,       "0"}},
-    {         "QS_Futility_Margin", {            &qs_futility_margin,    TuningOption::INT,     0,   300,       "0"}},
+    {   "History_Pruning_Threshold", {     &history_pruning_threshold,    TuningOption::INT, -1200,     0,       "0"}},
+    {          "QS_Futility_Margin", {            &qs_futility_margin,    TuningOption::INT,     0,   300,       "0"}},
     */
 
     /* DISABLED AFTER ABLATION:
-    {        "SE_Double_Extension", {           &se_double_extension,    TuningOption::INT,     0,     3,       "0"}},
-    {       "SE_Double_Extensions", {          &se_double_extensions,    TuningOption::INT,     0,     1,       "0"}},
-    {           "SE_Double_Margin", {              &se_double_margin,    TuningOption::INT,     0,   400,       "0"}},
-    {  "SE_Negative_Cut_Extension", { &se_negative_cutnode_extension,    TuningOption::INT,    -4,     0,       "0"}},
-    {     "SE_Negative_Extensions", {        &se_negative_extensions,    TuningOption::INT,     0,     1,       "0"}},
-    {   "SE_Negative_TT_Extension", {      &se_negative_tt_extension,    TuningOption::INT,    -4,     0,       "0"}},
-    {        "SE_Triple_Extension", {           &se_triple_extension,    TuningOption::INT,     0,     4,       "0"}},
-    {       "SE_Triple_Extensions", {          &se_triple_extensions,    TuningOption::INT,     0,     1,       "0"}},
-    {           "SE_Triple_Margin", {              &se_triple_margin,    TuningOption::INT,     0,   600,       "0"}},
+    {         "SE_Double_Extension", {           &se_double_extension,    TuningOption::INT,     0,     3,       "0"}},
+    {        "SE_Double_Extensions", {          &se_double_extensions,    TuningOption::INT,     0,     1,       "0"}},
+    {            "SE_Double_Margin", {              &se_double_margin,    TuningOption::INT,     0,   400,       "0"}},
+    {   "SE_Negative_Cut_Extension", { &se_negative_cutnode_extension,    TuningOption::INT,    -4,     0,       "0"}},
+    {      "SE_Negative_Extensions", {        &se_negative_extensions,    TuningOption::INT,     0,     1,       "0"}},
+    {    "SE_Negative_TT_Extension", {      &se_negative_tt_extension,    TuningOption::INT,    -4,     0,       "0"}},
+    {         "SE_Triple_Extension", {           &se_triple_extension,    TuningOption::INT,     0,     4,       "0"}},
+    {        "SE_Triple_Extensions", {          &se_triple_extensions,    TuningOption::INT,     0,     1,       "0"}},
+    {            "SE_Triple_Margin", {              &se_triple_margin,    TuningOption::INT,     0,   600,       "0"}},
     */
 };
 

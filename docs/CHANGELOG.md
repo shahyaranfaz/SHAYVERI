@@ -4,6 +4,16 @@ This changelog records SHAYVERI engine releases. Each entry describes changes
 since the previous version. NNUE artifact names are recorded separately from
 engine versions. See [VERSIONING.md](VERSIONING.md).
 
+### Note
+
+The current versioning scheme was created with v2.5.0 and strengthened through
+v2.6.0 and the development of v2.7.0. Earlier version numbers were assigned to
+historical engine snapshots for consistency. Those releases remain usable
+milestones. Published releases since v2.3.0 include recorded STC and LTC
+strength pins. This distinction concerns versioning and release organization
+and does not necessarily reflect the rigor of testing or Elo pinning performed
+on the engine.
+
 ## NNUE Era
 
 ### v2.7.0 - Search and Engine Refinement (Unreleased)
@@ -53,7 +63,7 @@ and Elo gates.
 - Promoted the first SPSA batch's search-parameter values. Final validation and
   the release tag remain pending.
 
-### v2.6.0 - Atomic Lazy SMP, Embedded NNUE, and Search Tuning
+### v2.6.0 - Atomic Lazy SMP, Embedded NNUE, and Search Refinements
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
@@ -62,49 +72,52 @@ and Elo gates.
   searches remained deterministic.
 - Embedded the default NNUE in the executable while retaining the ability to
   load `.nnue` files passed through the UCI option `EvalFile`.
-- Added the NNUE search-tuning foundation: live LMR, null-move, qsearch, and
-  static-evaluation correction-history controls.
-- Reduced oversized per-call search-stack allocations.
+- Added pawn-structure correction history to adjust static evaluations from
+  prior search results. Search histories now persist between moves and reset
+  with the hash or evaluation state.
+- Reworked null-move pruning with evaluation- and depth-based reductions,
+  non-pawn-material gating, and verification at high depths.
+- Replaced the fixed LMR table with a live formula and added PV, move-count,
+  and quiet-history adjustments.
+- Revised sudden-death time allocation with separate increment and no-increment
+  horizons, a larger hard bound, and extra time after a root best-move change.
+- Moved oversized search histories and stack state off the call stack, and
+  stopped PV reconstruction at repetitions and the fifty-move boundary.
 - Same-net comparisons against the previous search scored `199-52-149` at one
-  thread and `102-3-45` at four threads. The recorded pins were
-  `3045.7 +/-14.8` STC and `3136.5 +/-28.9` LTC.
+  thread and `102-3-45` at four threads.
+- Recorded `3045.7 +/-14.8` STC and `3136.5 +/-28.9` LTC, improvements of
+  +93.3 STC and +54.6 LTC over v2.5.0 in the same pool.
 
-### v2.5.0 - KB16x512 External-Corpus Network
+### v2.5.0 - KB16x512 Network and Expanded Training
 
 **Default network:** external `SHAYVERI2_5_0.nnue`.
 
 - Added KB16x512 inference and conversion support.
 - Promoted `SHAYVERI2_5_0.nnue`, trained on larger and more diverse
   RobotMoon/Stockfish corpora.
+- Implemented `go nodes N` limits through UCI and search.
+- Fixed Lazy SMP issues discovered after v2.4.0.
 - Recorded `2952.4 +/-14.7` STC and `3081.9 +/-28.4` LTC, improvements of
   +14.1 STC and +35.7 LTC over the previous promoted NNUE in the same pool.
 
-### v2.4.1 - Node Limits and Lazy SMP Fixes
-
-**Default network:** external `SHAYVERI2_2_0.nnue`.
-
-- Correctly wired `go nodes N` through UCI and search.
-- Fixed Lazy SMP behavior discovered after v2.4.0.
-
-### v2.4.0 - Datagen Repair and Promoted NNUE
+### v2.4.0 - Datagen Repair and External-Corpus Network
 
 **Default network:** external `SHAYVERI2_2_0.nnue`.
 
 - Reworked datagen with Stockfish-like quiet-position filters and added direct
   32-byte `bulletformat` output.
-- Fixed KB8 SCReLU inference and the generated Bullet-network artifacts.
+- Fixed KB8 SCReLU inference and Bullet conversion output.
 - The repaired datagen and SHAYVERI-generated corpus failed to produce a
   strong network.
 - Experiments with an external RobotMoon corpus labeled with Stockfish
-  evaluations produced a strong network.
-- Scaling this corpus from 250M to 500M to 1B positions continued to improve
-  strength.
+  evaluations produced the strong `SHAYVERI2_2_0.nnue` network, which improved
+  as the corpus scaled from 250M to 500M to 1B positions.
 - Added the UCI option `UseNNUE` for easy selection between the NNUE and HCE
   evaluation paths.
-- Promoted `SHAYVERI2_2_0.nnue` and recorded `2938.3 +/-14.9` STC and
-  `3046.2 +/-28.6` LTC.
+- Recorded `2938.3 +/-14.9` STC and `3046.2 +/-28.6` LTC, improvements of
+  +222.1 STC and +253.9 LTC over the previous promoted NNUE in the same pool.
 
-### v2.3.0 - Architecture and Training Reset
+### v2.3.0 - KB8 Continuation and KB16 Attempt
 
 **Default network:** external `net5_final.nnue`.
 
@@ -117,22 +130,20 @@ and Elo gates.
   stopped.
 - Retained the known-good net5 engine path after the experimental net13 line
   also failed to produce a promotable replacement.
+- Recorded net5 at `2716.2 +/-16.4` STC and `2792.3 +/-41.5` LTC, improvements
+  of +63.5 STC and +57.8 LTC over HCE in the same pool.
 
-### v2.2.1 - NNUE Legality and Threading Fixes
-
-**Default network:** external `net8_final.nnue`.
-
-- Fixed illegal-move behavior in the NNUE-era engine.
-- Fixed worker threads retaining references to moves from an earlier search.
-
-### v2.2.0 - KB8 and Bullet
+### v2.2.0 - King Buckets and Bullet
 
 **Default network:** external `net8_final.nnue`.
 
 - Added KB8 feature indexing and inference support.
-- Trained and integrated the first working KB8/256 network.
+- Trained and integrated the first working KB8/256 network, using Bullet
+  for training.
 - Established that the KB8 pipeline produced legal usable networks, although
-  later external gates showed that this line had not surpassed the HCE anchor.
+  later comparisons showed that this line had not surpassed the HCE anchor.
+- Fixed illegal-move behavior occurring with the NNUE evaluation.
+- Fixed worker threads retaining references to moves from an earlier search.
 
 ### v2.1.0 - Classic NNUE Iteration
 
@@ -143,29 +154,22 @@ and Elo gates.
 - Changed datagen to use NNUE evaluation where configured and fixed the
   parallel-search thread crash found during generation.
 - Net5 used 1B positions, WDL 0.1, 10k-node labels, and mixed HCE/NNUE data.
-  It beat HCE by `+236.8 +/-24.5` in the recorded STC direct match and
-  `+220.1 +/-42.5` at LTC.
 - Identified arrival-order chunk consumption as the source of noisy,
   non-monotonic checkpoint strength. Net6 and net7 did not replace net5.
+- Direct matches measured `+236.8 +/-24.5` STC and `+220.1 +/-42.5` LTC over
+  HCE.
 
 ### v2.0.0 - First NNUE Engine
 
 **Default network:** external `first_net.nnue`.
 
-- Added engine datagen for producing NNUE training positions.
 - Added the UCI option `EvalFile`, NNUE loading, scalar and AVX2 inference,
   accumulator refresh and incremental updates, and HCE fallback behavior.
 - Integrated the first trained network after correcting conversion scaling and
   NNUE runtime issues.
+- Added engine datagen for producing NNUE training positions.
 
-## HCE Refinement Era
-
-### v1.3.1 - UCI and Input-Safety Fixes
-
-- Correctly implemented fixed-depth `go depth N` searches.
-- Hardened UCI option parsing with range checks and clamping, handled allocation
-  failures, and rejected invalid search inputs safely.
-- Cleaned the exposed tuning registry without changing the promoted HCE.
+## HCE Era
 
 ### v1.3.0 - Final HCE Search
 
@@ -176,32 +180,22 @@ and Elo gates.
   storage, qsearch TT use, capture history, countermoves, and continuation
   histories.
 - Added Lichess-oriented engine support.
+- Implemented fixed-depth `go depth N` searches.
+- Hardened UCI option parsing with range checks and clamping, handled allocation
+  failures, and rejected invalid search inputs safely.
 
 ### v1.2.0 - Texel-Tuned HCE
 
 - Adopted Texel-tuned material and PSTs, pawn/evaluation terms, king PSTs,
   king-safety and tactical terms, and a final refinement phase.
-- Normalized piece values and PSTs and prepared the resulting HCE for its final
-  SPSA search pass.
+- Normalized piece values and PSTs.
 
-### v1.1.0 - Multi-Pass SPSA
+### v1.1.0 - SPSA-Tuned HCE
 
-- Completed the second through fourth SPSA passes after discarding and
-  restarting a broken second pass.
-- Froze the SPSA result as the input to the subsequent Texel evaluation work.
+- Completed four SPSA passes over the centralized HCE and search parameters.
+- Replaced the initial hand-selected defaults with the final SPSA result.
 
-### v1.0.0 - First HCE Tuning Pass
-
-- Completed the first full SPSA pass over the centralized HCE and search
-  parameter surface.
-- Replaced the initial hand-selected defaults with the first measured tuning
-  result.
-- Renamed the engine and project from ShayBot to SHAYVERI during this tuning
-  line.
-
-## Engine Development Era
-
-### v0.4.0 - Complete Handcrafted Engine
+### v1.0.0 - Complete Handcrafted Engine
 
 - Added aspiration windows, PVS, LMP, singular extensions, internal iterative
   reduction, mate-distance pruning, and the completed handcrafted evaluation.
@@ -213,6 +207,8 @@ and Elo gates.
 - Centralized search and evaluation constants in `tune.h` and prepared the
   engine for SPSA.
 
+## HCE Development Era
+
 ### v0.3.0 - Evaluation and Pruning
 
 - Replaced the early evaluation with a tapered HCE covering pawn structure,
@@ -222,19 +218,19 @@ and Elo gates.
   pruning, and LMR.
 - Fixed evaluation parity and early search/GUI correctness issues.
 
-### v0.2.0 - Search Infrastructure
+### v0.2.0 - Search and Evaluation Infrastructure
 
-- Added the compiled opening book, piece-square tables, bishop-pair evaluation,
-  square and move ordering, and improved UCI compliance.
 - Added Zobrist hashing, a transposition table, repetition detection, SEE, and
   check extension support.
+- Added the compiled opening book, piece-square tables, bishop-pair evaluation,
+  square and move ordering, and improved UCI compliance.
 
 ### v0.1.0 - First Usable Engine
 
 - Added the C++20 board representation, FEN parser, attack generation, legal
   move generation, make/unmake, perft foundation, basic HCE, search, UCI loop,
   and a runnable UCI engine.
-- This was the first working but deliberately low-strength SHAYVERI snapshot.
+- This was the first working but low-strength SHAYVERI snapshot.
 
 ## Future Era
 

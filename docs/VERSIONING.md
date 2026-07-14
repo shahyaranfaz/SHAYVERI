@@ -9,6 +9,26 @@ SHAYVERI vX.Y.Z
 All three components are required in tags, changelog headings, result labels,
 release archives, and user-facing documentation.
 
+### Note
+
+The current versioning scheme was created with v2.5.0 and strengthened through
+v2.6.0 and the development of v2.7.0. Earlier version numbers were assigned to
+historical engine snapshots for consistency. Those releases remain usable
+milestones. Published releases since v2.3.0 include recorded STC and LTC
+strength pins. This distinction concerns versioning and release organization
+and does not necessarily reflect the rigor of testing or Elo pinning performed
+on the engine.
+
+## Release Scope
+
+Version bumps to `Y` or `Z` are triggered only by engine changes, including
+search, evaluation, time management, protocol behavior, and NNUE runtime
+changes. Documentation, tooling, CI, and other development-infrastructure
+changes do not trigger a version bump and are not recorded in the changelog.
+
+The changelog is a snapshot of published engine behavior, not a record of every
+repository change.
+
 ## X: Development Era
 
 `X` identifies the engine's development era. It is project-defined rather than

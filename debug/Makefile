@@ -19,6 +19,17 @@ STRICT_WARN_FLAGS := \
 
 STRICT_CXXFLAGS := $(CXXFLAGS) $(STRICT_WARN_FLAGS) -Werror
 
+ASAN ?= 1
+UBSAN ?= 1
+LSAN ?= 1
+
+ASAN_FLAG := $(if $(filter 1,$(ASAN)),-fsanitize=address)
+UBSAN_FLAG := $(if $(filter 1,$(UBSAN)),-fsanitize=undefined)
+# AddressSanitizer includes LeakSanitizer.  Link the standalone leak runtime
+# only when leak checks are enabled without AddressSanitizer.
+LSAN_FLAG := $(if $(and $(filter 1,$(LSAN)),$(filter-out 1,$(ASAN))),-fsanitize=leak)
+SANITIZER_FLAGS := $(ASAN_FLAG) $(UBSAN_FLAG) $(LSAN_FLAG)
+
 SANITIZE_CXXFLAGS := \
 	-std=c++20 \
 	-O1 \
@@ -29,20 +40,17 @@ SANITIZE_CXXFLAGS := \
 	-mbmi2 \
 	-march=native \
 	-fno-omit-frame-pointer \
-	-fsanitize=address,undefined \
+	$(SANITIZER_FLAGS) \
 	-fno-sanitize-recover=all
-SANITIZE_LDFLAGS := -lpthread -fsanitize=address,undefined
+SANITIZE_LDFLAGS := -lpthread $(SANITIZER_FLAGS)
 SANITIZE_BIN := SHAYVERI_sanitize
-# LeakSanitizer cannot run under ptrace, which includes some remote/sandboxed
-# hosts.  Enable it on a compatible machine with SANITIZE_LEAKS=1.
-SANITIZE_LEAKS ?= 0
 SANITIZE_DATAGEN_GAMES ?= 100
 SANITIZE_DATAGEN_THREADS ?= 2
 SANITIZE_CUTECHESS_GAMES ?= 200
 SANITIZE_CUTECHESS_TC ?= 0.3+0.03
 SANITIZE_CUTECHESS_CONCURRENCY ?= 20
 CUTECHESS ?= cutechess-cli
-SANITIZER_ENV := ASAN_OPTIONS=detect_leaks=$(SANITIZE_LEAKS):halt_on_error=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 SHAYVERI_ENGINE=../$(SANITIZE_BIN)
+SANITIZER_ENV := ASAN_OPTIONS=detect_leaks=$(LSAN):halt_on_error=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 SHAYVERI_ENGINE=../$(SANITIZE_BIN)
 
 DEFAULT_NNUE := ../SHAYVERI2_5_0.nnue
 DEBUG_EMBEDDED_NNUE_SRC := embedded_nnue_stub.cpp
@@ -156,8 +164,12 @@ test:
 # Full runtime-memory/undefined-behavior gate.  The instrumented engine has a
 # separate name, so the normal release binary is never replaced or deleted.
 sanitize:
+	@test "$(ASAN)" = 0 -o "$(ASAN)" = 1 || { echo "ASAN must be 0 or 1" >&2; exit 1; }
+	@test "$(UBSAN)" = 0 -o "$(UBSAN)" = 1 || { echo "UBSAN must be 0 or 1" >&2; exit 1; }
+	@test "$(LSAN)" = 0 -o "$(LSAN)" = 1 || { echo "LSAN must be 0 or 1" >&2; exit 1; }
+	@test "$(ASAN)$(UBSAN)$(LSAN)" != 000 || { echo "enable at least one sanitizer" >&2; exit 1; }
 	+$(MAKE) clean
-	+$(MAKE) -C .. BIN="$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" LDFLAGS="$(SANITIZE_LDFLAGS)" all
+	+$(MAKE) -B -C .. BIN="$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" LDFLAGS="$(SANITIZE_LDFLAGS)" all
 	+$(SANITIZER_ENV) $(MAKE) ENGINE="../$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" test
 	+$(SANITIZER_ENV) SHAYVERI_DATAGEN_MATRIX=1 SHAYVERI_DATAGEN_GAMES="$(SANITIZE_DATAGEN_GAMES)" SHAYVERI_DATAGEN_THREADS="$(SANITIZE_DATAGEN_THREADS)" SHAYVERI_DATAGEN_TIMEOUT_SEC=180 $(PYTHON) datagen_check.py
 	+$(MAKE) sanitize_cutechess

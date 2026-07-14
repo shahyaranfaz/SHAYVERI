@@ -84,13 +84,13 @@ Batch controls
 
 The batch time controls match the comments in `include/tune.h`:
 
-| Batch | Time control | Games per candidate |
-| --- | --- | ---: |
-| 1 | `5+0.05` | 300 |
-| 2 | `10+0.1` | 300 |
-| 3 | `5+0.05` | 300 |
-| 4 | `5+0.05` | 300 |
-| 5 | `10+0.1` | 300 |
+| Batch |       TC | Games per budget |
+|------:|---------:|-----------------:|
+|     1 | `5+0.05` |              300 |
+|     2 | `10+0.1` |              300 |
+|     3 | `5+0.05` |              300 |
+|     4 | `5+0.05` |              300 |
+|     5 | `10+0.1` |              300 |
 
 `common.sh` selects the time control from `BATCH_ID`. `BASE_TIME_SEC` and
 `INC_TIME_SEC` can still be overridden explicitly for diagnostics.

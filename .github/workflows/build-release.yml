@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           if [[ "$REQUESTED_TAG" == all ]]; then
-            echo 'tags=["v0.1.0","v0.2.0","v0.3.0","v0.4.0","v1.0.0","v1.1.0","v1.2.0","v1.3.0","v1.3.1","v2.0.0","v2.1.0","v2.2.0","v2.2.1","v2.3.0","v2.4.0","v2.4.1","v2.5.0","v2.6.0"]' >> "$GITHUB_OUTPUT"
+            echo 'tags=["v0.1.0","v0.2.0","v0.3.0","v1.0.0","v1.1.0","v1.2.0","v1.3.0","v2.0.0","v2.1.0","v2.2.0","v2.3.0","v2.4.0","v2.5.0","v2.6.0"]' >> "$GITHUB_OUTPUT"
           elif [[ "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             printf 'tags=["%s"]\n' "$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
           else
@@ -60,6 +60,7 @@ jobs:
           sparse-checkout: |
             LICENSE
             .github/scripts/write-release-readme.sh
+            docs/CHANGELOG.md
           sparse-checkout-cone-mode: false
 
       - name: Validate tag
@@ -114,8 +115,8 @@ jobs:
           case "$RELEASE_TAG" in
             v2.0.0) cp first_net.nnue "$package/" ;;
             v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
-            v2.2.0|v2.2.1) cp net8_final.nnue "$package/" ;;
-            v2.4.0|v2.4.1) cp SHAYVERI2_2_0.nnue "$package/" ;;
+            v2.2.0) cp net8_final.nnue "$package/" ;;
+            v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
@@ -167,6 +168,7 @@ jobs:
           sparse-checkout: |
             LICENSE
             .github/scripts/write-release-readme.sh
+            docs/CHANGELOG.md
           sparse-checkout-cone-mode: false
 
       - uses: msys2/setup-msys2@v2
@@ -199,8 +201,8 @@ jobs:
           case "$RELEASE_TAG" in
             v2.0.0) cp first_net.nnue "$package/" ;;
             v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
-            v2.2.0|v2.2.1) cp net8_final.nnue "$package/" ;;
-            v2.4.0|v2.4.1) cp SHAYVERI2_2_0.nnue "$package/" ;;
+            v2.2.0) cp net8_final.nnue "$package/" ;;
+            v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
@@ -243,6 +245,7 @@ jobs:
           sparse-checkout: |
             LICENSE
             .github/scripts/write-release-readme.sh
+            docs/CHANGELOG.md
           sparse-checkout-cone-mode: false
 
       - name: Validate tag
@@ -279,8 +282,8 @@ jobs:
           case "$RELEASE_TAG" in
             v2.0.0) cp first_net.nnue "$package/" ;;
             v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
-            v2.2.0|v2.2.1) cp net8_final.nnue "$package/" ;;
-            v2.4.0|v2.4.1) cp SHAYVERI2_2_0.nnue "$package/" ;;
+            v2.2.0) cp net8_final.nnue "$package/" ;;
+            v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
@@ -321,7 +324,9 @@ jobs:
       - name: Check out release notes
         uses: actions/checkout@v7
         with:
-          sparse-checkout: docs/CHANGELOG.md
+          sparse-checkout: |
+            docs/CHANGELOG.md
+            .github/scripts/write-release-readme.sh
           sparse-checkout-cone-mode: false
 
       - name: Download build artifacts
@@ -362,16 +367,8 @@ jobs:
           title="SHAYVERI ${heading#\#\#\# }"
           printf 'title=%s\n' "$title" >> "$GITHUB_OUTPUT"
 
-          awk -v tag="$RELEASE_TAG" '
-            $0 ~ "^### " tag " " { found=1; next }
-            found && /^### / { exit }
-            found { print }
-          ' docs/CHANGELOG.md > release-notes.md
-
-          if ! grep -q '^- ' release-notes.md; then
-            echo "Changelog entry for $RELEASE_TAG has no release bullets" >&2
-            exit 1
-          fi
+          bash .github/scripts/write-release-readme.sh \
+            --notes release-notes.md "$RELEASE_TAG"
 
       - name: Create or update GitHub release
         shell: bash
