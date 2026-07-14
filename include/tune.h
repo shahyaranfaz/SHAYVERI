@@ -413,6 +413,7 @@ struct TuningOption {
 };
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
+    /*
     // Batch 1: pruning / reduction core
     {"ASP_Delta",           {&ASP_DELTA,              TuningOption::INT,    16,    80,  "42"}},
     {"LMR_Base",            {&lmr_base,               TuningOption::DOUBLE,  0,     0,   "1.28644"}}, // DOUBLE ignores min/max
@@ -491,6 +492,7 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {"Time_Eval_Drop_Second_CP",{&time_eval_drop_second_cp,      TuningOption::INT,      1,  1000,  "60"}},
     {"Time_Eval_Drop_First_Scale", {&time_eval_drop_first_scale, TuningOption::DOUBLE,   0,     0,"1.50"}},
     {"Time_Eval_Drop_Second_Scale",{&time_eval_drop_second_scale,TuningOption::DOUBLE,   0,     0,"1.50"}},
+    */
 };
 
 // Applies a UCI setoption value.
