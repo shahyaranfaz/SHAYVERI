@@ -118,6 +118,9 @@ Worker semantics
   once.
 - The default is one claimed eval per worker process, with that eval using local
   cores through fastchess.
+- The master records the time control, games per evaluation, opening file, and
+  engine options in each job. Long-lived workers therefore do not need a
+  restart when only batch definitions in `common.sh` change.
 
 Inspecting a run
 ----------------

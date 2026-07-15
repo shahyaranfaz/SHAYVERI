@@ -453,6 +453,7 @@ def worker_loop(args, p: DistPaths):
         job_engine_options = job.get("engine_options", HARDCODE_ENGINE_OPTIONS)
         job_base_time_sec = job.get("base_time_sec", base_time_sec)
         job_inc_time_sec = job.get("inc_time_sec", inc_time_sec)
+        job_games_per_budget = int(job.get("games_per_budget", games_per_budget))
 
         test_options = " ".join([f"option.{k}={v}" for k, v in test_param.items()]).strip()
         base_options = " ".join([f"option.{k}={v}" for k, v in base_param.items()]).strip()
@@ -464,7 +465,7 @@ def worker_loop(args, p: DistPaths):
                 base_options=base_options,
                 opening_file=job_opening_file,
                 opening_file_format=job_opening_file_format,
-                games=games_per_budget,
+                games=job_games_per_budget,
                 depth=job.get("depth"),
                 concurrency=args.concurrency,
                 base_time_sec=job_base_time_sec,
@@ -628,6 +629,7 @@ def master_run(args, p: DistPaths):
                     "timemargin": args.time_margin,
                     "base_time_sec": HARDCODE_BASE_TIME_SEC,
                     "inc_time_sec": HARDCODE_INC_TIME_SEC,
+                    "games_per_budget": HARDCODE_GAMES_PER_BUDGET,
                     "opening_file": HARDCODE_OPENING_FILE,
                     "engine_options": HARDCODE_ENGINE_OPTIONS,
                 }
