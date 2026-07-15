@@ -8,14 +8,9 @@ Commands below use `v2.7.0` as the example. Substitute the release being made.
 
 - [ ] Choose the version according to [`VERSIONING.md`](VERSIONING.md).
 - [ ] Confirm the release scope and final production defaults.
-- [ ] Complete the correctness, strength, and performance validation relevant
+- [ ] Complete the tuning, ablation, correctness, and performance work relevant
   to the changes in this release.
 - [ ] Remove temporary gates and disable unfinished experimental behavior.
-- [ ] Preserve the final binary and the match or benchmark evidence used to
-  approve it.
-- [ ] Record the release commit, compiler, build flags, bench signature, and
-  SHA-256 hashes for the final binary, default NNUE, opening book, opponent
-  binaries, anchors, and Ordo executable.
 - [ ] Confirm tuning-only registry options are absent from the production UCI
   handshake.
 
@@ -60,6 +55,9 @@ Commands below use `v2.7.0` as the example. Substitute the release being made.
 - [ ] Confirm every exposed production option is intentional and documented
   consistently in [`README.md`](../README.md) and
   [`index.html`](../index.html).
+- [ ] Preserve the exact verified binary for release strength testing.
+- [ ] Record the compiler, build flags, bench signature, and SHA-256 hashes for
+  the verified binary, default NNUE, and opening book.
 
 ## 3. Run mandatory release strength testing
 
@@ -99,6 +97,8 @@ Commands below use `v2.7.0` as the example. Substitute the release being made.
 - [ ] Match the fixed pool, opponent binaries, anchors, opening book, engine
   settings, adjudication, Ordo configuration, and games per pairing used by
   the comparison release.
+- [ ] Record SHA-256 hashes for the opponent binaries, anchors, and Ordo
+  executable.
 
   Start the STC master. This example expects 10 workers, giving 800 games per
   pairing at 80 games per worker.
@@ -188,8 +188,12 @@ If the default NNUE changed:
 ## 5. Finalize the release commit
 
 - [ ] Review the complete change from the previous public tag.
-- [ ] Confirm the finalized commit is the commit that passed the release gates.
+- [ ] Confirm the finalized engine and build inputs match those that passed the
+  release gates.
+- [ ] If an engine or build input changed after verification, rebuild and rerun
+  every affected gate with the replacement binary.
 - [ ] Confirm the working tree is clean.
+- [ ] Record the final release commit.
 - [ ] Push the finalized release branch.
 
 ## 6. Merge and tag
@@ -201,6 +205,8 @@ If the default NNUE changed:
   ```sh
   git tag -a v2.7.0 -m "SHAYVERI v2.7.0"
   git show --stat v2.7.0
+  test "$(git cat-file -t v2.7.0)" = tag
+  test "$(git rev-parse 'v2.7.0^{}')" = "$(git rev-parse HEAD)"
   ```
 
 - [ ] Push `main` and the tag.
@@ -210,29 +216,12 @@ If the default NNUE changed:
   git push origin v2.7.0
   ```
 
-## 7. Validate release packages
+## 7. Build and publish
 
 The release workflow checks out the requested tag, so the tag must be pushed
 before this step.
 
-- [ ] Run the workflow from `main` without publishing.
-
-  ```sh
-  gh workflow run build-release.yml \
-    --repo shahyaranfaz/SHAYVERI \
-    --ref main \
-    -f tag=v2.7.0 \
-    -f publish=false
-  ```
-
-- [ ] Confirm every platform job succeeds.
-- [ ] Download and inspect every archive and checksum.
-- [ ] Start each packaged binary and verify `uci`, `isready`, the production
-  option list, the default NNUE, and a legal `bestmove`.
-
-## 8. Publish and verify
-
-- [ ] Run the validated workflow with publishing enabled.
+- [ ] Run the workflow from `main` once with publishing enabled.
 
   ```sh
   gh workflow run build-release.yml \
@@ -242,9 +231,22 @@ before this step.
     -f publish=true
   ```
 
-- [ ] Confirm the release uses the correct annotated tag, title, and changelog
-  notes.
-- [ ] Verify the published checksums and source archives.
+- [ ] Confirm every platform job succeeds.
+- [ ] Confirm the publish job succeeds and creates or updates the intended
+  release.
+
+## 8. Verify the published release
+
+- [ ] Download every published archive and checksum from the release page.
+- [ ] Verify every checksum against its corresponding published archive.
+- [ ] Inspect every published archive for the expected binary, `LICENSE`,
+  `README.txt`, and external NNUE where applicable.
+- [ ] Start each published platform binary and verify `uci`, `isready`, the
+  production option list, the default NNUE, and a legal `bestmove`.
+- [ ] Confirm the release uses the correct annotated tag, title, and continuous
+  changelog notes.
+- [ ] Verify the exact tagged source archive is present alongside the platform
+  packages.
 - [ ] Test at least one downloaded package outside the source tree.
 - [ ] Confirm the release page, [`README.md`](../README.md),
   [`ELO.md`](ELO.md), and [`index.html`](../index.html) identify the new release

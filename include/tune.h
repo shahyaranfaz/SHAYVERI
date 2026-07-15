@@ -61,21 +61,21 @@ inline int qs_start_depth     =   8;
 inline int qs_min_depth       =  -6;
 
 // Null-move pruning.
-inline int nmp_margin_mult      =  18;
-inline int nmp_eval_divisor     = 200;
+inline int nmp_margin_mult      =  15;
+inline int nmp_eval_divisor     = 183;
 inline int nmp_base_reduction   =   3;
-inline int nmp_depth_divisor    =   4;
+inline int nmp_depth_divisor    =   3;
 inline int nmp_min_depth        =   3;
 inline int nmp_reduction_min    =   0;
-inline int nmp_reduction_max    =   6;
-inline int nmp_verify_min_depth =  16;
+inline int nmp_reduction_max    =   8;
+inline int nmp_verify_min_depth =  10;
 
 // Singular extensions.
 inline int se_extension                  =   1;
-inline int se_min_depth                  =   9;
+inline int se_min_depth                  =  11;
 inline int se_depth_margin               =   2;
-inline int se_margin                     =  58;
-inline int se_reduction_denom            =   4;
+inline int se_margin                     =  74;
+inline int se_reduction_denom            =   5;
 inline int se_multicut                   =   1;
 inline int se_negative_extensions        =   0;
 inline int se_negative_tt_extension      =   0;
@@ -506,16 +506,16 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
 
     // Batch 3: 5+0.05
     {          "NMP_Base_Reduction", {            &nmp_base_reduction,    TuningOption::INT,     2,     5,       "3"}},
-    {           "NMP_Depth_Divisor", {             &nmp_depth_divisor,    TuningOption::INT,     2,     8,       "4"}},
-    {            "NMP_Eval_Divisor", {              &nmp_eval_divisor,    TuningOption::INT,    80,   500,     "200"}},
-    {             "NMP_Margin_Mult", {               &nmp_margin_mult,    TuningOption::INT,     0,    60,      "18"}},
-    {           "NMP_Reduction_Max", {             &nmp_reduction_max,    TuningOption::INT,     2,    12,       "6"}}, // untuned
-    {        "NMP_Verify_Min_Depth", {          &nmp_verify_min_depth,    TuningOption::INT,     8,    20,      "16"}},
+    {           "NMP_Depth_Divisor", {             &nmp_depth_divisor,    TuningOption::INT,     2,     8,       "3"}},
+    {            "NMP_Eval_Divisor", {              &nmp_eval_divisor,    TuningOption::INT,    80,   500,     "183"}},
+    {             "NMP_Margin_Mult", {               &nmp_margin_mult,    TuningOption::INT,     0,    60,      "15"}},
+    {           "NMP_Reduction_Max", {             &nmp_reduction_max,    TuningOption::INT,     2,    12,       "8"}},
+    {        "NMP_Verify_Min_Depth", {          &nmp_verify_min_depth,    TuningOption::INT,     8,    20,      "10"}},
     {           "PVS_SEE_Min_Moves", {             &pvs_see_min_moves,    TuningOption::INT,     1,     8,       "6"}},
     {             "SE_Depth_Margin", {               &se_depth_margin,    TuningOption::INT,     1,     8,       "2"}},
-    {                   "SE_Margin", {                     &se_margin,    TuningOption::INT,    25,   100,      "58"}},
-    {                "SE_Min_Depth", {                  &se_min_depth,    TuningOption::INT,     1,    16,       "9"}},
-    {          "SE_Reduction_Denom", {            &se_reduction_denom,    TuningOption::INT,     2,     6,       "4"}},
+    {                   "SE_Margin", {                     &se_margin,    TuningOption::INT,    25,   100,      "74"}},
+    {                "SE_Min_Depth", {                  &se_min_depth,    TuningOption::INT,     1,    16,      "11"}},
+    {          "SE_Reduction_Denom", {            &se_reduction_denom,    TuningOption::INT,     2,     6,       "5"}},
 
     // Batch 4: 5+0.05
     {                  "CMH_Weight", {                    &cmh_weight,    TuningOption::INT,    15,   160,      "75"}},
