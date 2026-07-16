@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
@@ -313,7 +314,7 @@ struct Trace {
     I32 island[2];
     I32 storm_base[2];         // count of storm pawns near enemy king
     I32 storm_rank[2];         // sum of rank advancements for storm pawns
-    // Passed pawns (rank indices 1-6 used; 0 and 7 always zero)
+    // Passed pawns use rank indices 1-6. Indices 0 and 7 are always zero.
     I32 passed_rank[8][2];
     I32 candidate[2];
     I32 connected_passed[2];
@@ -371,7 +372,7 @@ static Trace trace_evaluate(const Board& b) {
 
     int wb = 0, bb_cnt = 0;  // bishop counts
     for (int p = 1; p < PIECE_COUNT; ++p) {
-        U64 bb = b.bit_boards[p];
+        U64 bb = b.bit_boards[static_cast<std::size_t>(p)];
         if (!bb) continue;
         Colour    c  = get_colour(Piece(p));
         PieceType pt = get_type(Piece(p));
@@ -572,8 +573,8 @@ static Trace trace_evaluate(const Board& b) {
     }
 
     // Tactical pressure
-    // Note: undefended attack and value-weighted hanging penalties are nonlinear
-    // and are excluded from the trace; they appear in additional_score instead.
+    // Note: undefended attack and value-weighted hanging penalties are nonlinear.
+    // They are excluded from the trace and appear in additional_score instead.
     for (int ci = 0; ci < 2; ++ci) {
         Colour c  = (ci == 0) ? WHITE : BLACK;
         const AInfo& atk = (c == WHITE) ? wa : ba;
@@ -631,7 +632,7 @@ static Trace trace_evaluate(const Board& b) {
         tmp = b.bit_boards[eq] & atk.by_type[ROOK];
         if (tmp) tr.threat_rook[ci] += pcnt(tmp);
 
-        // Hanging pieces (base penalty only; value term remains nonlinear)
+        // Hanging pieces use only the base penalty. The value term remains nonlinear.
         Piece own_king = (c == WHITE) ? WK : BK;
         U64 hanging = b.occupancies[c] & ea.all & ~atk.all;
         while (hanging) {
@@ -994,14 +995,15 @@ void TexelTuner::print_parameters(const parameters_t& p) {
         std::stringstream ss;
         int i = 0;
 
-        auto require = [&]() {
-            if (i >= static_cast<int>(p.size()))
-                throw std::runtime_error("Texel print parameter count mismatch");
+        auto parameter = [&](int idx) -> const pair_t& {
+            if (idx < 0 || static_cast<std::size_t>(idx) >= p.size())
+                throw std::runtime_error("Texel print parameter index out of range");
+            return p[static_cast<std::size_t>(idx)];
         };
-        auto mg = [&](int idx) { return static_cast<int>(std::round(p[idx][0])); };
-        auto eg = [&](int idx) { return static_cast<int>(std::round(p[idx][1])); };
-        auto mg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][0] * 100.0)); };
-        auto eg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][1] * 100.0)); };
+        auto mg = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[0])); };
+        auto eg = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[1])); };
+        auto mg_pct = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[0] * 100.0)); };
+        auto eg_pct = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[1] * 100.0)); };
 
         ss << "// SHAYVERI_TEXEL_PHASE=" << TEXEL_PHASE << "\n";
 
@@ -1037,8 +1039,9 @@ void TexelTuner::print_parameters(const parameters_t& p) {
                 std::array<int, 64> idx{};
                 int next_i = i;
                 for (int sq = 0; sq < 64; ++sq) {
-                    if (skip_pst_param(ptype, sq)) idx[sq] = -1;
-                    else idx[sq] = next_i++;
+                    const auto sq_index = static_cast<std::size_t>(sq);
+                    if (skip_pst_param(ptype, sq)) idx[sq_index] = -1;
+                    else idx[sq_index] = next_i++;
                 }
 
                 ss << "inline int " << pst_names[pt] << "_MG[64] = {\n";
@@ -1046,7 +1049,8 @@ void TexelTuner::print_parameters(const parameters_t& p) {
                     ss << "   ";
                     for (int f = 0; f < 8; ++f) {
                         int sq = r * 8 + f;
-                        int val = (idx[sq] < 0) ? MG_PTAB[ptype][sq] : mg(idx[sq]);
+                        const int parameter_index = idx[static_cast<std::size_t>(sq)];
+                        int val = parameter_index < 0 ? MG_PTAB[ptype][sq] : mg(parameter_index);
                         if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
                         ss << " " << std::setw(4) << val << ",";
                     }
@@ -1058,7 +1062,8 @@ void TexelTuner::print_parameters(const parameters_t& p) {
                     ss << "   ";
                     for (int f = 0; f < 8; ++f) {
                         int sq = r * 8 + f;
-                        int val = (idx[sq] < 0) ? EG_PTAB[ptype][sq] : eg(idx[sq]);
+                        const int parameter_index = idx[static_cast<std::size_t>(sq)];
+                        int val = parameter_index < 0 ? EG_PTAB[ptype][sq] : eg(parameter_index);
                         if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
                         ss << " " << std::setw(4) << val << ",";
                     }
@@ -1070,7 +1075,6 @@ void TexelTuner::print_parameters(const parameters_t& p) {
         }
 
         if constexpr (tune_bishop_pair) {
-            require();
             ss << "inline int BISHOP_PAIR_BONUS_MG = " << mg(i) << ";\n";
             ss << "inline int BISHOP_PAIR_BONUS_EG = " << eg(i) << ";\n";
             i++;
@@ -1086,7 +1090,7 @@ void TexelTuner::print_parameters(const parameters_t& p) {
             ss << "inline int SUPPORTED_PAWN_BONUS_MG  = " << mg(i)  << ";\n";
             ss << "inline int SUPPORTED_PAWN_BONUS_EG  = " << eg(i++)  << ";\n";
             ss << "inline int WEAK_PAWN_PENALTY_MG     = " << mg(i)  << ";\n";
-            ss << "inline int WEAK_PAWN_PENALTY_EG     = " << mg(i++)  << ";\n";
+            ss << "inline int WEAK_PAWN_PENALTY_EG     = " << eg(i++)  << ";\n";
             ss << "inline int PAWN_ISLAND_PENALTY_MG   = " << mg(i)   << ";\n";
             ss << "inline int PAWN_ISLAND_PENALTY_EG   = " << eg(i++)  << ";\n";
         }
@@ -1209,10 +1213,15 @@ void TexelTuner::print_parameters(const parameters_t& p) {
     std::stringstream ss;
 
     int i = 0;
-    auto mg = [&](int idx) { return static_cast<int>(std::round(p[idx][0])); };
-    auto eg = [&](int idx) { return static_cast<int>(std::round(p[idx][1])); };
-    auto mg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][0] * 100.0)); };
-    auto eg_pct = [&](int idx) { return static_cast<int>(std::round(p[idx][1] * 100.0)); };
+    auto parameter = [&](int idx) -> const pair_t& {
+        if (idx < 0 || static_cast<std::size_t>(idx) >= p.size())
+            throw std::runtime_error("Texel print parameter index out of range");
+        return p[static_cast<std::size_t>(idx)];
+    };
+    auto mg = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[0])); };
+    auto eg = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[1])); };
+    auto mg_pct = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[0] * 100.0)); };
+    auto eg_pct = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[1] * 100.0)); };
 
     // Material
     ss << "// Piece values MG\n";
@@ -1242,8 +1251,9 @@ void TexelTuner::print_parameters(const parameters_t& p) {
         std::array<int, 64> idx{};
         int next_i = i;
         for (int sq = 0; sq < 64; ++sq) {
-            if (skip_pst_param(ptype, sq)) idx[sq] = -1;
-            else idx[sq] = next_i++;
+            const auto sq_index = static_cast<std::size_t>(sq);
+            if (skip_pst_param(ptype, sq)) idx[sq_index] = -1;
+            else idx[sq_index] = next_i++;
         }
 
         ss << "inline int " << pst_names[pt] << "_MG[64] = {\n";
@@ -1251,7 +1261,8 @@ void TexelTuner::print_parameters(const parameters_t& p) {
             ss << "   ";
             for (int f = 0; f < 8; ++f) {
                 int sq = r * 8 + f;
-                int val = (idx[sq] < 0) ? MG_PTAB[ptype][sq] : mg(idx[sq]);
+                const int parameter_index = idx[static_cast<std::size_t>(sq)];
+                int val = parameter_index < 0 ? MG_PTAB[ptype][sq] : mg(parameter_index);
                 if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
                 ss << " " << std::setw(4) << val << ",";
             }
@@ -1263,7 +1274,8 @@ void TexelTuner::print_parameters(const parameters_t& p) {
             ss << "   ";
             for (int f = 0; f < 8; ++f) {
                 int sq = r * 8 + f;
-                int val = (idx[sq] < 0) ? EG_PTAB[ptype][sq] : eg(idx[sq]);
+                const int parameter_index = idx[static_cast<std::size_t>(sq)];
+                int val = parameter_index < 0 ? EG_PTAB[ptype][sq] : eg(parameter_index);
                 if (ptype == PAWN && (r == 0 || r == 7)) val = 0;
                 ss << " " << std::setw(4) << val << ",";
             }

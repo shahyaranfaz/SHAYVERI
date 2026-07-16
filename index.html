@@ -61,13 +61,20 @@
         var(--bg);
     }
 
+    header > .wrap {
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
     .wrap {
       width: min(var(--max), calc(100% - 32px));
       margin: 0 auto;
     }
 
     .hero {
-      min-height: 72vh;
+      min-height: 0;
       display: grid;
       align-content: center;
       gap: 34px;
@@ -115,6 +122,28 @@
       text-transform: uppercase;
     }
 
+    .identity {
+      width: max-content;
+      max-width: 100%;
+      margin-bottom: 14px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .version {
+      color: var(--text);
+      font-size: clamp(1.5rem, 3vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: 0;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
     h2 {
       font-size: clamp(2rem, 4vw, 3.5rem);
       margin-bottom: 18px;
@@ -127,11 +156,19 @@
       color: var(--accent-3);
     }
 
-    .tagline {
-      max-width: 760px;
+    .subtitle, .tagline {
       color: var(--muted);
       font-size: clamp(1.1rem, 2vw, 1.45rem);
       margin: 0;
+    }
+
+    .subtitle {
+      color: var(--text);
+      font-size: clamp(1.15rem, 2.07vw, 1.5rem);
+      font-style: italic;
+      font-weight: 400;
+      letter-spacing: 0;
+      margin-bottom: 8px;
       text-wrap: balance;
     }
 
@@ -175,11 +212,81 @@
       color: var(--accent);
       font-size: clamp(1.8rem, 3vw, 2.7rem);
       line-height: 1;
-      margin-bottom: 8px;
       text-shadow: 0 0 26px rgba(125, 240, 176, 0.26);
     }
 
+    .metric-value {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .metric .metric-error {
+      color: var(--accent);
+      font-size: clamp(1rem, 1.55vw, 1.3rem);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .metric .metric-error-sign {
+      color: var(--accent);
+      font-size: clamp(0.83rem, 1.26vw, 1.06rem);
+      font-weight: 700;
+      line-height: 1;
+    }
+
     .metric span, .note, .card p, li {
+      color: var(--muted);
+    }
+
+    .overview-list {
+      border-top: 1px solid var(--line);
+    }
+
+    .overview-item {
+      display: grid;
+      grid-template-columns: minmax(150px, 220px) 1fr;
+      gap: 24px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .overview-item h3, .overview-item p {
+      margin: 0;
+    }
+
+    .search-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .option-group {
+      margin: 28px 0 12px;
+    }
+
+    .option-group:first-of-type {
+      margin-top: 0;
+    }
+
+    .option-list {
+      border-top: 1px solid var(--line);
+    }
+
+    .option-item {
+      display: grid;
+      grid-template-columns: minmax(190px, 250px) 1fr;
+      gap: 24px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .option-item h4, .option-item p {
+      margin: 0;
+    }
+
+    .option-item p {
       color: var(--muted);
     }
 
@@ -189,7 +296,6 @@
     }
 
     .lead {
-      max-width: 840px;
       color: var(--muted);
       font-size: 1.08rem;
       margin: 0 0 24px;
@@ -283,14 +389,24 @@
     }
 
     @media (max-width: 820px) {
-      .hero-grid, .card-grid, .metric-grid, .split {
+      .hero-grid, .card-grid, .metric-grid, .search-grid, .split {
         grid-template-columns: 1fr;
       }
 
+      .overview-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .option-item {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
       .hero {
-        min-height: 78vh;
         padding-top: 44px;
       }
+
     }
   </style>
 </head>
@@ -300,32 +416,37 @@
       <nav aria-label="Primary">
         <a href="#overview">Overview</a>
         <a href="#elo">Elo</a>
-        <a href="#evaluation">Evaluation</a>
         <a href="#search">Search</a>
+        <a href="#evaluation">Evaluation</a>
         <a href="#build">Build</a>
       </nav>
       <div class="hero">
         <div>
-          <h1>SHAYVERI</h1>
-          <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and an embedded NNUE evaluation path.</p>
-          <p class="tagline">Current release: SHAYVERI v2.6 / NNUE SHAYVERI2_5_0.</p>
+          <div class="identity">
+            <div class="title-row">
+              <h1>SHAYVERI</h1>
+              <span class="version">v2.7.0</span>
+            </div>
+            <p class="subtitle">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence</p>
+          </div>
+          <p class="tagline">A C++ Chess Engine.</p>
         </div>
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
-            <strong>3136.5</strong>
-            <span>Anchored Ordo LTC rating for SHAYVERI NNUE</span>
+            <div class="metric-value"><strong>3094.7</strong><span class="metric-error-sign">+/-</span><span class="metric-error">14.9</span></div>
+            <span>Anchored Ordo STC rating for SHAYVERI NNUE Evaluation</span>
           </div>
           <div class="metric">
-            <strong>3045.7</strong>
-            <span>Anchored Ordo STC rating for SHAYVERI NNUE</span>
+            <div class="metric-value"><strong>3235.7</strong><span class="metric-error-sign">+/-</span><span class="metric-error">29.8</span></div>
+            <span>Anchored Ordo LTC rating for SHAYVERI NNUE Evaluation</span>
           </div>
           <div class="metric">
-            <strong>+418</strong>
-            <span>Approximate LTC gain over HCE-classical</span>
+            <div class="metric-value"><strong>+49.0</strong><span class="metric-error-sign">+/-</span><span class="metric-error">21.0</span></div>
+            <span>STC improvement compared to SHAYVERI v2.6.0</span>
           </div>
           <div class="metric">
-            <strong>UCI</strong>
-            <span>Works in Arena, Cutechess, Lichess bot setups, and other UCI GUIs</span>
+            <div class="metric-value"><strong>+99.2</strong><span class="metric-error-sign">+/-</span><span class="metric-error">41.5</span></div>
+            <span>LTC improvement compared to SHAYVERI v2.6.0</span>
           </div>
         </div>
       </div>
@@ -336,21 +457,35 @@
     <section id="overview">
       <div class="wrap">
         <h2>Overview</h2>
-        <p class="lead">SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and an embedded NNUE evaluation path.</p>
-        <div class="card-grid">
-          <article class="card">
+        <div class="overview-list">
+          <div class="overview-item">
             <h3>Protocol</h3>
-            <p>Implements UCI for direct stdin/stdout use or engine loading inside common chess GUIs.</p>
-          </article>
-          <article class="card">
-            <h3>Hardware</h3>
-            <p>Targets modern x86-64 CPUs with BMI/BMI2, LZCNT, and POPCNT support.</p>
-          </article>
-          <article class="card">
-            <h3>Book</h3>
-            <p>Includes an embedded opening book built from 2600+ rated TWIC games. Its cached Stockfish evaluations are only for consistency in chess GUIs that display engine evaluation and are not used by SHAYVERI.</p>
-            <pre><code>make -C scripts/opening_book dump_keys</code></pre>
-          </article>
+            <p>Implements UCI for command-line use and integration with chess GUIs, tournament managers, and bot frameworks.</p>
+          </div>
+          <div class="overview-item">
+            <h3>Configuration</h3>
+            <p>Exposes runtime controls for hash memory, threads, evaluation path and network, opening-book use, pondering, and time allocation.</p>
+          </div>
+          <div class="overview-item">
+            <h3>Search</h3>
+            <p>Combines iterative deepening, Principal Variation Search, transposition-table reuse, selective pruning, extensions, and history-based move ordering.</p>
+          </div>
+          <div class="overview-item">
+            <h3>Evaluation</h3>
+            <p>Provides an embedded KB16x512 NNUE evaluation and an independently tuned HCE-classical evaluation path.</p>
+          </div>
+          <div class="overview-item">
+            <h3>Time And Parallelism</h3>
+            <p>Supports deterministic single-thread search and timed Lazy SMP with adaptive soft and hard time limits.</p>
+          </div>
+          <div class="overview-item">
+            <h3>Opening Book</h3>
+            <p>The self-built embedded book uses standard-chess games from TWIC where both players are rated at least 2600. Its reproducible pipeline keeps the first 24 plies, aggregates observed moves for positions with at least five weighted plays, and compiles the majority move without evaluator-specific metadata.</p>
+          </div>
+          <div class="overview-item">
+            <h3>Platform</h3>
+            <p>Targets modern x86-64 CPUs with BMI/BMI2, LZCNT, and POPCNT support, with build targets for Linux, Windows, and Intel macOS.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -375,105 +510,122 @@
             </thead>
             <tbody>
               <tr>
-                <td>SHAYVERI v2.6</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>HCE-classical</td>
                 <td>none</td>
                 <td>STC 10+0.1</td>
-                <td>2594.5</td>
-                <td>+/-19.8</td>
-                <td>-255.5</td>
-                <td>-405.5</td>
+                <td>2626.5</td>
+                <td>+/-19.3</td>
+                <td>-223.5</td>
+                <td>-373.5</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.6</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>HCE-classical</td>
                 <td>none</td>
                 <td>LTC 90+0.5</td>
-                <td>2718.8</td>
-                <td>+/-33.2</td>
-                <td>-131.2</td>
-                <td>-281.2</td>
+                <td>2751.3</td>
+                <td>+/-32.1</td>
+                <td>-98.7</td>
+                <td>-248.7</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.6</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>NNUE</td>
                 <td>SHAYVERI2_5_0</td>
                 <td>STC 10+0.1</td>
-                <td class="good">3045.7</td>
-                <td>+/-14.8</td>
-                <td>+195.7</td>
-                <td>+45.7</td>
+                <td class="good">3094.7</td>
+                <td>+/-14.9</td>
+                <td>+244.7</td>
+                <td>+94.7</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.6</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>NNUE</td>
                 <td>SHAYVERI2_5_0</td>
                 <td>LTC 90+0.5</td>
-                <td class="good">3136.5</td>
-                <td>+/-28.9</td>
-                <td>+286.5</td>
-                <td>+136.5</td>
+                <td class="good">3235.7</td>
+                <td>+/-29.8</td>
+                <td>+385.7</td>
+                <td>+235.7</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="note">SHAYVERI v2.6 / NNUE improved over HCE-classical by about <span class="warn">+451.2 Elo at STC</span> and <span class="warn">+417.7 Elo at LTC</span> in this anchored pool. It is above SF3000 at both time controls.</p>
-      </div>
-    </section>
-
-    <section id="evaluation">
-      <div class="wrap">
-        <h2>Evaluation Paths</h2>
-        <p class="lead">There are two available evaluation paths: <code>NNUE</code> and <code>HCE-classical</code>, which can be chosen between with the <code>UseNNUE</code> UCI option.</p>
-        <div class="split">
-          <article class="card">
-            <h3>Handcrafted Evaluation</h3>
-            <ul>
-              <li>Piece-square tables with tapered middlegame/endgame interpolation.</li>
-              <li>Pawn structure terms for passed, isolated, doubled, backward, chained, storming, and islanded pawns.</li>
-              <li>King safety, mobility, coordination, tactical pressure, outposts, tempo, and initiative.</li>
-              <li>Parameters tuned with SPSA and Texel tuning.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>NNUE</h3>
-            <ul>
-              <li>Embedded default network: <code>SHAYVERI2_5_0.nnue</code>.</li>
-              <li>KB16x512: Chess768 features, 16 mirrored king buckets, 512 hidden units, and SCReLU.</li>
-              <li>Incremental two-perspective accumulators during search.</li>
-              <li>Pinned at +451.2 Elo STC and +417.7 Elo LTC over HCE-classical.</li>
-              <li>Compatible external Chess768, KB8, and KB16 networks can be loaded through <code>EvalFile</code>.</li>
-              <li>Trained from external Stockfish/RobotMoon-style corpora, not included here.</li>
-            </ul>
-          </article>
-        </div>
+        <p class="note">SHAYVERI v2.7.0 / NNUE improved over HCE-classical by about <span class="warn">+468.2 Elo at STC</span> and <span class="warn">+484.4 Elo at LTC</span> in this anchored pool. It is above SF3000 at both time controls.</p>
       </div>
     </section>
 
     <section id="search">
       <div class="wrap">
         <h2>Search Stack</h2>
-        <div class="card-grid">
+        <div class="search-grid">
           <article class="card">
             <h3>Core</h3>
             <ul>
-              <li>Negamax with alpha-beta pruning and Principal Variation Search.</li>
-              <li>Iterative deepening with aspiration windows.</li>
-              <li>Quiescence search and check extensions.</li>
+              <li>Iterative-deepening negamax with alpha-beta pruning, Principal Variation Search, and aspiration windows.</li>
+              <li>Transposition-table cutoffs, mate-distance pruning, check extensions, and internal iterative reductions.</li>
+              <li>Quiescence search with stand pat, legal check evasions at the depth floor, and TT reuse.</li>
+              <li>Terminal, repetition, fifty-move, and insufficient-material handling inside search.</li>
             </ul>
           </article>
           <article class="card">
             <h3>Pruning</h3>
             <ul>
-              <li>Null move pruning, IIR, LMR, LMP, futility pruning, reverse futility pruning, and delta pruning.</li>
-              <li>Singular extensions and SEE-backed move decisions.</li>
+              <li>Verified null-move pruning, reverse futility pruning, futility pruning, LMP, and history pruning.</li>
+              <li>Capture-only ProbCut searches test likely fail-highs before the full move loop.</li>
+              <li>Late move reductions adapt to PV status, cut nodes, improving positions, move count, and history quality.</li>
+              <li>Singular extensions, double/triple extensions, multi-cut pruning, and reduced TT-move handling use excluded-move verification.</li>
+              <li>SEE, quiet SEE, delta, futility, and promotion-aware gates constrain main search and quiescence pruning.</li>
             </ul>
           </article>
           <article class="card">
-            <h3>State</h3>
+            <h3>Ordering And State</h3>
             <ul>
-              <li>Killer moves, gravity-based main, continuation, capture, and correction histories.</li>
-              <li>Atomic bucketed TT, repetition detection, Lazy SMP with shared TT, and dynamic time management.</li>
+              <li>TT moves, SEE-scored captures, killers, countermoves, and history scores drive lazy move ordering.</li>
+              <li>Gravity-based main, continuation, follow-up, and capture histories reward cutoffs and penalize failed moves.</li>
+              <li>Pawn-keyed correction history adjusts static evaluation and persists between searches.</li>
+              <li>An atomic four-entry bucketed transposition table stores bounds, moves, and reusable static evaluations.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Time Management</h3>
+            <ul>
+              <li>Soft and hard limits account for the remaining clock, increment, moves to go, and move overhead.</li>
+              <li>The soft limit adapts to best-move stability, score drops, root node share, and multi-depth evaluation stability.</li>
+              <li>A hard timer enforces the absolute clock ceiling while low-clock sudden-death controls use an emergency survival cap.</li>
+              <li>Fixed move time, minimum thinking time, pondering, <code>ponderhit</code>, and timed Lazy SMP share the same stop policy.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="evaluation">
+      <div class="wrap">
+        <h2>Evaluation Paths</h2>
+        <p class="lead">To select between the HCE-classical and NNUE evaluation paths, use the UCI option <code>UseNNUE</code>.</p>
+        <div class="split">
+          <article class="card">
+            <h3>Handcrafted Evaluation</h3>
+            <ul>
+              <li>Tapered middlegame/endgame material, piece-square tables, bishop-pair scoring, development, and tempo.</li>
+              <li>Pawn-hash evaluation of passed, isolated, doubled, backward, chained, storming, weak, and islanded pawns.</li>
+              <li>King safety from pawn shields, open files, king-zone pressure, coordinated attackers, and escape squares.</li>
+              <li>Safe mobility with file-openness scaling, piece coordination, batteries, and mutual support.</li>
+              <li>Pins, overloads, undefended pieces, pawn and minor-piece threats, and supported outposts.</li>
+              <li>Evaluation and search parameters refined through Texel tuning and SPSA.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>NNUE Evaluation</h3>
+            <ul>
+              <li>The embedded default is <code>SHAYVERI2_5_0.nnue</code>, a KB16x512 network using SCReLU.</li>
+              <li>Side-relative Chess768 features are split across 16 mirrored king buckets and a 512-unit hidden layer.</li>
+              <li>Two perspective accumulators are refreshed or incrementally updated through make/unmake search.</li>
+              <li>Scalar and AVX2 inference paths evaluate the same network format.</li>
+              <li>The UCI option <code>EvalFile</code> accepts compatible Chess768, KB8, and KB16 networks with 256 or 512 hidden units.</li>
+              <li>The promoted network was trained on external RobotMoon/Stockfish corpora not included in the repository.</li>
             </ul>
           </article>
         </div>
@@ -483,6 +635,7 @@
     <section id="build">
       <div class="wrap">
         <h2>Build And Use</h2>
+        <p class="lead">Builds require C++20 and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT. Keep <code>SHAYVERI2_5_0.nnue</code> at the repository root so it can be embedded during compilation. At runtime, the UCI option <code>EvalFile</code> can select a compatible external network instead.</p>
         <div class="split">
           <article>
             <h3>Build</h3>
@@ -499,23 +652,33 @@ position startpos moves e2e4 e7e5
 go movetime 1000</code></pre>
           </article>
         </div>
-        <p class="note">The default net, <code>SHAYVERI2_5_0.nnue</code>, is automatically embedded into the binary. Hence, the <code>.nnue</code> file must be at root-level only while building. An external network can be loaded through the <code>EvalFile</code> UCI option.</p>
       </div>
     </section>
 
     <section id="options">
       <div class="wrap">
         <h2>UCI Options</h2>
-        <div class="metric-grid">
-          <div class="card"><h3>Hash</h3><p>Transposition table size in MB.</p></div>
-          <div class="card"><h3>Threads</h3><p>Number of search threads.</p></div>
-          <div class="card"><h3>Ponder</h3><p>Enable ponder output and search support.</p></div>
-          <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
-          <div class="card"><h3>UseNNUE</h3><p>Enable or disable NNUE evaluation without changing the configured network path.</p></div>
-          <div class="card"><h3>EvalFile</h3><p>Set an explicit network path to load an external NNUE file.</p></div>
-          <div class="card"><h3>Clear Hash</h3><p>Clear the transposition table.</p></div>
-          <div class="card"><h3>Minimum Thinking Time</h3><p>Minimum move time in milliseconds.</p></div>
-          <div class="card"><h3>Move Overhead</h3><p>GUI or network delay reserve in milliseconds.</p></div>
+        <h3 class="option-group">Resources</h3>
+        <div class="option-list">
+          <div class="option-item"><h4>Hash</h4><p>Sets the transposition-table allocation, in MB.</p></div>
+          <div class="option-item"><h4>ClearHash</h4><p>Clears the transposition table and all persistent search histories.</p></div>
+          <div class="option-item"><h4>Threads</h4><p>Sets the requested search-thread count, bounded by detected hardware capacity.</p></div>
+        </div>
+        <h3 class="option-group">Evaluation</h3>
+        <div class="option-list">
+          <div class="option-item"><h4>UseNNUE</h4><p>Toggles between the NNUE and HCE-classical evaluation paths without changing the configured network path.</p></div>
+          <div class="option-item"><h4>EvalFile</h4><p>Specifies the path to a compatible external NNUE network. The embedded default is used when left unchanged.</p></div>
+        </div>
+        <h3 class="option-group">Opening Book</h3>
+        <div class="option-list">
+          <div class="option-item"><h4>OwnBook</h4><p>Toggles use of SHAYVERI's built-in opening book.</p></div>
+          <div class="option-item"><h4>BookInfoDepth</h4><p>Sets the search depth used to report SHAYVERI's own book-move information. A value of <code>0</code> disables the search.</p></div>
+        </div>
+        <h3 class="option-group">Search Timing</h3>
+        <div class="option-list">
+          <div class="option-item"><h4>Ponder</h4><p>Toggles ponder-move output so a chess GUI can start a <code>go ponder</code> search during the opponent's turn.</p></div>
+          <div class="option-item"><h4>MinimumThinkingTime</h4><p>Sets the minimum time, in milliseconds, allocated to dynamically timed moves.</p></div>
+          <div class="option-item"><h4>MoveOverhead</h4><p>Reserves time for chess GUI and network delay, in milliseconds, before calculating the search limits.</p></div>
         </div>
       </div>
     </section>
@@ -523,7 +686,12 @@ go movetime 1000</code></pre>
     <section id="tests">
       <div class="wrap">
         <h2>Verification</h2>
-        <p class="lead">The debug harness covers perft, FEN validation, make/unmake roundtrips, en-passant edge cases, SEE, evaluation symmetry, transposition-table safety, UCI smoke tests, opening-book behavior, deterministic single-thread search, and tactical mate-in-1 regression positions.</p>
+        <ul class="lead">
+          <li>Rules and state: perft, FEN validation, make/unmake roundtrips, en-passant, SEE, evaluation symmetry, and draw handling.</li>
+          <li>Search: checked quiescence, node and move restrictions, transposition-table safety, time-manager policy, and tactical regressions.</li>
+          <li>Protocol and concurrency: UCI handshake, opening-book behavior, deterministic single-thread search, timed Lazy SMP, and pondering.</li>
+          <li>Tooling: strict warning-clean compilation, focused clang-tidy checks, bench-signature validation, and datagen output checks.</li>
+        </ul>
         <pre><code>make test</code></pre>
       </div>
     </section>
@@ -531,7 +699,7 @@ go movetime 1000</code></pre>
 
   <footer>
     <div class="wrap">
-      SHAYVERI supports normal chess only. Chess960 is not advertised.
+      SHAYVERI v2.7.0, built by Shahyar Anfaz and Averi Wylie.
     </div>
   </footer>
 </body>

@@ -14,7 +14,8 @@ extern std::atomic<bool> g_stop;
 extern std::atomic<U64>  node_count;
 extern std::atomic<U64>  node_limit;
 
-using IterCallback = std::function<void(int, Move, int, U64, I64)>;
+// depth, best move, score, total nodes, elapsed ms, best-root-move node share
+using IterCallback = std::function<void(int, Move, int, U64, I64, double)>;
 
 struct SearchResult {
     Move best_move  = MOVE_NONE;
@@ -23,6 +24,18 @@ struct SearchResult {
     int  depth      = 0;
     U64  nodes      = 0;
 };
+
+namespace SearchDetail {
+
+struct SingularSearchDecision {
+    int  extension = 0;
+    bool multicut  = false;
+};
+
+SingularSearchDecision classify_singular_search(
+    int singular_score, int singular_beta, int beta, int tt_score, bool cut_node);
+
+} // namespace SearchDetail
 
 std::string move_to_uci(Move m);
 Move        uci_to_move(Board &b, const std::string &uci);

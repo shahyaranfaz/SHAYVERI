@@ -1,261 +1,217 @@
-import os
-import threading
+#!/usr/bin/env python3
+"""Build the deterministic majority-move SHAYVERI opening book."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor, FIRST_COMPLETED, wait
-import atexit
+from pathlib import Path
+
 import chess
-import chess.engine
-import pandas as pd
-import orjson
 
-_json_dumps_bytes = lambda obj: orjson.dumps(obj)
-_json_loads = orjson.loads
 
-# --- CONFIGURATION ---
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
-ARTIFACTS_DIR = os.path.join(SCRIPT_DIR, "artifacts")
-
-STOCKFISH_PATH = "./stockfish"
-BOOK_DEPTH = 8
-
-CACHE_FILE = os.path.join(ARTIFACTS_DIR, "eval_cache.json")
-SAVE_INTERVAL = 500
-
-MAX_WORKERS = 24
-STOCKFISH_HASH_MB = 1024
-MAX_LIVE_FUTURES = 96
-
-ZOBRIST_KEYS_FILE = os.path.join(ARTIFACTS_DIR, "zobrist_keys.json")
-
-CSV_FILE = os.path.join(ARTIFACTS_DIR, "table.csv")
-MAX_PLIES_PER_ROW = 30
-
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parents[1]
+OUTPUTS_DIR = SCRIPT_DIR / "outputs"
+U64_MASK = 0xFFFFFFFFFFFFFFFF
 MIN_TOTAL_PLAYS = 5
 
 
-# ---------------- ZOBRIST (EXACT MATCH VIA C++ DUMP) ----------------
-
-def _u64(x) -> int:
-    return int(x) & 0xFFFFFFFFFFFFFFFF
-
-
-def load_zobrist_keys(path: str):
-    if not os.path.exists(path):
-        raise FileNotFoundError(
-            f"{path} not found.\n"
-            f"Generate it with your C++ dump_keys tool first."
-        )
-
-    with open(path, "rb") as f:
-        data = _json_loads(f.read())
-
-    pieces = [[_u64(v) for v in row] for row in data["pieces"]]
-    sides = _u64(data["sides"])
-    castlings = [_u64(v) for v in data["castlings"]]
-    en_passants = [_u64(v) for v in data["en_passants"]]
-
-    if len(pieces) != 13:
-        raise ValueError(f"Expected 13 piece rows (PIECE_COUNT), got {len(pieces)}")
-    if any(len(row) != 64 for row in pieces):
-        raise ValueError("Each pieces[p] row must have 64 entries")
-    if len(castlings) != 16:
-        raise ValueError(f"Expected 16 castling keys, got {len(castlings)}")
-    if len(en_passants) != 8:
-        raise ValueError(f"Expected 8 en-passant file keys, got {len(en_passants)}")
-
+def load_zobrist_keys(path: Path):
+    data = json.loads(path.read_text(encoding="utf-8"))
+    pieces = [[value & U64_MASK for value in row] for row in data["pieces"]]
+    sides = data["sides"] & U64_MASK
+    castlings = [value & U64_MASK for value in data["castlings"]]
+    en_passants = [value & U64_MASK for value in data["en_passants"]]
     return pieces, sides, castlings, en_passants
 
 
-def compute_zobrist_from_cpp_dump(board: chess.Board, pieces, sides, castlings, en_passants) -> int:
-    h = 0
+def book_key(board: chess.Board, keys) -> int:
+    pieces, sides, castlings, en_passants = keys
+    key = 0
 
-    for sq, p in board.piece_map().items():
-        p_idx = p.piece_type + (0 if p.color == chess.WHITE else 6)
-        h ^= pieces[p_idx][sq]
+    for square, piece in board.piece_map().items():
+        piece_index = piece.piece_type + (0 if piece.color == chess.WHITE else 6)
+        key ^= pieces[piece_index][square]
 
     if board.turn == chess.BLACK:
-        h ^= sides
+        key ^= sides
 
-    c = 0
-    if board.has_kingside_castling_rights(chess.WHITE):  c |= 1
-    if board.has_queenside_castling_rights(chess.WHITE): c |= 2
-    if board.has_kingside_castling_rights(chess.BLACK):  c |= 4
-    if board.has_queenside_castling_rights(chess.BLACK): c |= 8
-    h ^= castlings[c & 15]
+    castling = 0
+    if board.has_kingside_castling_rights(chess.WHITE):
+        castling |= 1
+    if board.has_queenside_castling_rights(chess.WHITE):
+        castling |= 2
+    if board.has_kingside_castling_rights(chess.BLACK):
+        castling |= 4
+    if board.has_queenside_castling_rights(chess.BLACK):
+        castling |= 8
+    key ^= castlings[castling & 15]
 
     if board.ep_square is not None:
-        h ^= en_passants[chess.square_file(board.ep_square)]
+        key ^= en_passants[chess.square_file(board.ep_square)]
 
-    return _u64(h)
-
-
-# --- STOCKFISH WORKER ---
-worker_engine = None
+    return key & U64_MASK
 
 
-def init_worker():
-    global worker_engine
-    worker_engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    worker_engine.configure({"Hash": STOCKFISH_HASH_MB, "Threads": 1})
-
-    def cleanup():
-        try:
-            worker_engine.quit()
-        except Exception:
-            pass
-
-    atexit.register(cleanup)
+def _is_legal_uci(board: chess.Board, move: str) -> bool:
+    try:
+        board.parse_uci(move)
+        return True
+    except ValueError:
+        return False
 
 
-def analyze_position(args):
-    key_str, fen = args
-    board = chess.Board(fen)
-    info = worker_engine.analyse(board, chess.engine.Limit(depth=BOOK_DEPTH))
-    score = info["score"].white()
-    if score.is_mate():
-        val = 100.0 if score.mate() > 0 else -100.0
-    else:
-        val = (score.score() or 0) / 100.0
-    return key_str, float(val)
+def build_move_table(table_path: Path, keys, max_plies: int):
+    positions = defaultdict(lambda: {"fen": "", "moves": defaultdict(int)})
+    with table_path.open(newline="", encoding="utf-8-sig") as source:
+        total_rows = sum(1 for _ in csv.DictReader(source))
+    print(f"Processing {total_rows} table rows...")
+    rows_processed = 0
 
-
-# --- CACHE SAVER ---
-_save_lock = threading.Lock()
-
-
-def _atomic_write_bytes(path: str, data: bytes):
-    tmp = path + ".tmp"
-    with open(tmp, "wb") as f:
-        f.write(data)
-    os.replace(tmp, path)
-
-
-def _save_cache_thread(cache_snapshot, path):
-    with _save_lock:
-        _atomic_write_bytes(path, _json_dumps_bytes(cache_snapshot))
-
-
-def save_cache_async(cache: dict, path: str):
-    snapshot = dict(cache)
-    threading.Thread(target=_save_cache_thread, args=(snapshot, path), daemon=True).start()
-
-
-def read_rows():
-    df = pd.read_csv(CSV_FILE, encoding="utf-8-sig")
-    return df.to_dict("records")
-
-
-def build_book_uci(rows, pieces, sides, castlings, en_passants):
-    book = defaultdict(lambda: {"fen": "", "moves": defaultdict(int)})
-
-    for row in rows:
-        board = chess.Board()
-        moves = str(row["Moves"]).split()[:MAX_PLIES_PER_ROW]
-        played = int(row["Played"])
-
-        for uci in moves:
-            key_str = str(compute_zobrist_from_cpp_dump(board, pieces, sides, castlings, en_passants))
-
-            if not book[key_str]["fen"]:
-                book[key_str]["fen"] = board.fen()
+    with table_path.open(newline="", encoding="utf-8-sig") as source:
+        for row in csv.DictReader(source):
+            rows_processed += 1
+            if rows_processed % 10000 == 0 or rows_processed == total_rows:
+                print(
+                    f"Processed {rows_processed} / {total_rows} table rows...",
+                    end="\r",
+                    flush=True,
+                )
 
             try:
-                board.push_uci(uci)
-            except Exception:
-                break
+                played = int(row["Played"])
+            except (KeyError, TypeError, ValueError):
+                continue
 
-            book[key_str]["moves"][uci] += played
+            board = chess.Board()
+            moves = str(row.get("Moves", "")).split()[:max_plies]
+            for move in moves:
+                try:
+                    parsed_move = board.parse_uci(move)
+                except ValueError:
+                    raise RuntimeError(
+                        f"invalid move {move} in table row "
+                        f"for position {board.fen()}"
+                    ) from None
 
-    return book
+                key = book_key(board, keys)
+                position = positions[key]
+                current_fen = board.fen()
+                if not position["fen"]:
+                    position["fen"] = current_fen
+                elif position["fen"].split()[:4] != current_fen.split()[:4]:
+                    raise RuntimeError(
+                        "Zobrist key maps to multiple board positions: "
+                        f"key=0x{key:016x}, first={position['fen']}, "
+                        f"next={current_fen}"
+                    )
+
+                position["moves"][move] += played
+                board.push(parsed_move)
+
+    print(f"Processed {rows_processed} / {total_rows} table rows.")
+
+    for key, position in positions.items():
+        board = chess.Board(position["fen"])
+        invalid = [
+            move
+            for move in position["moves"]
+            if not _is_legal_uci(board, move)
+        ]
+        if invalid:
+            raise RuntimeError(
+                "candidate moves are illegal for their FEN: "
+                f"key=0x{key:016x}, fen={position['fen']}, "
+                f"moves={','.join(invalid)}"
+            )
+
+    return positions
 
 
-def fill_queue(executor, pending, it, submitted_box, total_to_do):
-    # submitted_box is [submitted_int]
-    while len(pending) < MAX_LIVE_FUTURES and submitted_box[0] < total_to_do:
-        args = next(it, None)
-        if args is None:
-            break
-        pending.add(executor.submit(analyze_position, args))
-        submitted_box[0] += 1
+def select_majority_moves(positions, min_total_plays: int):
+    entries = []
+    total_positions = len(positions)
+    for position_index, (key, position) in enumerate(positions.items(), 1):
+        if position_index % 10000 == 0 or position_index == total_positions:
+            print(
+                f"Selected majority moves for {position_index} / "
+                f"{total_positions} positions...",
+                end="\r",
+                flush=True,
+            )
+
+        move_counts = position["moves"]
+        if (
+            not position["fen"]
+            or not move_counts
+            or sum(move_counts.values()) < min_total_plays
+        ):
+            continue
+
+        # The table is sorted lexicographically, so dict insertion order
+        # preserves the historical tie-break behavior of max(..., get).
+        move = max(move_counts, key=move_counts.get)
+        entries.append((key, move))
+
+    print(
+        f"Selected majority moves for {total_positions} / "
+        f"{total_positions} positions."
+    )
+    return sorted(entries, key=lambda entry: entry[0])
+
+
+def write_header(path: Path, entries: list[tuple[int, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as output:
+        output.write(
+            "// Generated by scripts/opening_book/build_header.py. "
+            "Do not edit by hand.\n\n"
+        )
+        output.write("#ifndef OPENING_BOOK_H\n#define OPENING_BOOK_H\n\n")
+        output.write('#include "types.h"\n\n')
+        output.write("namespace SHAYVERI {\n\n")
+        output.write("struct BookEntry { U64 key; char move[6]; };\n\n")
+        output.write("static constexpr BookEntry OPENING_BOOK[] = {\n")
+        for key, move in entries:
+            output.write(f'    {{ 0x{key:016x}ULL, "{move}" }},\n')
+        output.write("};\n\n")
+        output.write(f"static constexpr int OPENING_BOOK_SIZE = {len(entries)};\n")
+        output.write("\n} // namespace SHAYVERI\n\n")
+        output.write("#endif // OPENING_BOOK_H\n")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--table", type=Path, default=OUTPUTS_DIR / "table.csv")
+    parser.add_argument("--keys", type=Path, default=OUTPUTS_DIR / "zobrist_keys.json")
+    parser.add_argument("--output", type=Path, default=REPO_ROOT / "include" / "opening_book.h")
+    parser.add_argument("--max-plies", type=int, default=30)
+    parser.add_argument("--min-total-plays", type=int, default=MIN_TOTAL_PLAYS)
+    args = parser.parse_args()
+
+    for path in (args.table, args.keys):
+        if not path.exists():
+            raise SystemExit(f"missing required file: {path}")
+    if args.max_plies < 1 or args.min_total_plays < 1:
+        raise SystemExit("--max-plies and --min-total-plays must be positive")
+
+    keys = load_zobrist_keys(args.keys)
+    positions = build_move_table(args.table, keys, args.max_plies)
+    print(
+        f"Selecting majority moves for {len(positions)} positions "
+        f"with minimum cumulative plays {args.min_total_plays}"
+    )
+    entries = select_majority_moves(positions, args.min_total_plays)
+    if not entries:
+        raise SystemExit("no book positions survived the play-count filter")
+
+    write_header(args.output, entries)
+    print(f"Done - {len(entries)} entries written to {args.output}")
+    return 0
 
 
 if __name__ == "__main__":
-    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
-    pieces, sides, castlings, en_passants = load_zobrist_keys(ZOBRIST_KEYS_FILE)
-
-    eval_cache = {}
-    if os.path.exists(CACHE_FILE):
-        print("Loading existing cache...")
-        with open(CACHE_FILE, "rb") as f:
-            eval_cache = _json_loads(f.read())
-
-    print("Reading CSV...")
-    rows = read_rows()
-    print(f"Rows: {len(rows)}")
-
-    print("Building book (UCI moves)...")
-    book = build_book_uci(rows, pieces, sides, castlings, en_passants)
-
-    to_analyze = [(key, data["fen"]) for key, data in book.items() if data["fen"] and key not in eval_cache]
-    total_to_do = len(to_analyze)
-    print(f"Unique positions: {len(book)} | Cached: {len(eval_cache)} | To analyze: {total_to_do}")
-
-    if to_analyze:
-        print(f"Starting parallel analysis with {MAX_WORKERS} workers "
-              f"(depth {BOOK_DEPTH}, SF Hash {STOCKFISH_HASH_MB} MB each, futures cap {MAX_LIVE_FUTURES})...")
-
-        with ProcessPoolExecutor(max_workers=MAX_WORKERS, initializer=init_worker) as executor:
-            pending = set()
-            it = iter(to_analyze)
-            submitted_box = [0]
-            completed = 0
-
-            fill_queue(executor, pending, it, submitted_box, total_to_do)
-
-            while pending:
-                done, pending = wait(pending, return_when=FIRST_COMPLETED)
-                fill_queue(executor, pending, it, submitted_box, total_to_do)
-
-                for fut in done:
-                    key_str, val = fut.result()
-                    eval_cache[key_str] = val
-                    completed += 1
-
-                    if completed % 500 == 0:
-                        pct = completed / total_to_do * 100
-                        print(f"  {completed}/{total_to_do} ({pct:.1f}%) - saving cache async...")
-                        save_cache_async(eval_cache, CACHE_FILE)
-
-        _atomic_write_bytes(CACHE_FILE, _json_dumps_bytes(eval_cache))
-        print("Cache saved.")
-
-    print("Generating header...")
-    entries = []
-    for key_str, data in book.items():
-        if key_str not in eval_cache:
-            continue
-        if not data["moves"]:
-            continue
-        if sum(data["moves"].values()) < MIN_TOTAL_PLAYS:
-            continue
-
-        best_move = max(data["moves"], key=data["moves"].get)
-        entries.append((int(key_str), best_move, float(eval_cache[key_str])))
-
-    entries.sort(key=lambda x: x[0])  # required for binary search
-
-    with open(os.path.join(REPO_ROOT, "include", "opening_book.h"), "w", encoding="utf-8") as out:
-        out.write("#ifndef OPENING_BOOK_H\n#define OPENING_BOOK_H\n\n")
-        out.write('#include "types.h"\n\n')
-        out.write("namespace SHAYVERI {\n\n")
-        out.write("struct BookEntry { U64 key; char move[6]; float evaluation; };\n\n")
-        out.write("static constexpr BookEntry OPENING_BOOK[] = {\n")
-        for k, mv, ev in entries:
-            out.write(f'    {{ 0x{k:016x}ULL, "{mv}", {ev}f }},\n')
-        out.write("};\n\n")
-        out.write(f"static constexpr int OPENING_BOOK_SIZE = {len(entries)};\n")
-        out.write("\n} // namespace SHAYVERI\n\n")
-        out.write("#endif\n")
-
-    print(f"Done - {len(entries)} entries written to include/opening_book.h")
+    raise SystemExit(main())

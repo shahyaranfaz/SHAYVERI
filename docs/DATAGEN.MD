@@ -17,7 +17,7 @@ Example direct Bullet run:
 ./SHAYVERI datagen \
   --threads 1 \
   --positions 10000 \
-  --output-prefix /tmp/shayveri_datagen/smoke \
+  --output-prefix /tmp/shayveri_datagen/check \
   --output-format bullet-v1 \
   --eval-file "<embedded>" \
   --nodes 1000 \

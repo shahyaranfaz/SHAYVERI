@@ -78,6 +78,7 @@ struct GameResult {
 
 struct DatagenCounters {
     std::atomic<U64> total_positions{0};
+    std::atomic<U64> claimed_games{0};
     std::atomic<U64> total_games{0};
     std::atomic<U64> game_position_sum{0};
     std::atomic<U64> max_positions_in_game{0};
@@ -397,8 +398,6 @@ bool play_twic_book_opening(Board &b,
         Undo u;
         if (!make_move(b, chosen, u)) return false;
         history.push_back(b.hash);
-
-        if (terminal_result(b, history).end != GameEnd::None) return false;
     }
 
     return true;
@@ -491,11 +490,26 @@ bool claim_position(DatagenCounters &counters, U64 target_positions) {
     return false;
 }
 
+bool claim_game(DatagenCounters &counters, U64 target_games) {
+    if (target_games == 0) return true;
+
+    U64 current = counters.claimed_games.load(std::memory_order_relaxed);
+    while (current < target_games) {
+        if (counters.claimed_games.compare_exchange_weak(
+                current, current + 1,
+                std::memory_order_relaxed,
+                std::memory_order_relaxed)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool should_continue(const DatagenCounters &counters, const DatagenOptions &options) {
     bool positions_left = options.target_positions == 0 ||
         counters.total_positions.load(std::memory_order_relaxed) < options.target_positions;
     bool games_left = options.target_games == 0 ||
-        counters.total_games.load(std::memory_order_relaxed) < options.target_games;
+        counters.claimed_games.load(std::memory_order_relaxed) < options.target_games;
     return positions_left && games_left;
 }
 
@@ -571,7 +585,6 @@ void datagen_worker(int id,
 
     TranspositionTable local_tt;
     local_tt.resize(16);
-    active_tt = &local_tt;
 
     std::mt19937_64 rng(options.seed + static_cast<U64>(id) * DATAGEN_THREAD_PRIME);
     const std::string extension = output_is_bullet(options) ? ".bullet.bin" : ".plain";
@@ -584,6 +597,7 @@ void datagen_worker(int id,
         failed.store(true, std::memory_order_relaxed);
         return;
     }
+    active_tt = &local_tt;
 
     Board b;
     std::vector<U64> history;
@@ -599,6 +613,7 @@ void datagen_worker(int id,
         stms.reserve(256);
         phases.reserve(256);
         if (!start_game(b, rng, history, options, start_fens, counters)) continue;
+        if (!claim_game(counters, options.target_games)) break;
 
         int decisive_plies = 0;
         int sample_index = 0;
@@ -612,12 +627,13 @@ void datagen_worker(int id,
             int qscore_white = score_to_white_pov(b, qsearch_score(b));
             SearchResult search_result = fixed_node_search(b, history, options.search_nodes);
 
-            MoveList legal = generate_legal_moves(b);
             Move chosen = search_result.best_move;
-            if (chosen == MOVE_NONE && legal.count > 0) chosen = legal.moves[0];
             if (chosen == MOVE_NONE) {
-                result = terminal_result(b, history);
-                if (result.end == GameEnd::None) result = {GameEnd::Draw, 1};
+                MoveList legal = generate_legal_moves(b);
+                if (legal.count > 0) chosen = legal.moves[0];
+            }
+            if (chosen == MOVE_NONE) {
+                result = {GameEnd::Draw, 1};
                 break;
             }
 
@@ -668,7 +684,7 @@ void datagen_worker(int id,
                       << " positions=" << counters.total_positions.load(std::memory_order_relaxed)
                       << " avg_pos_per_game="
                       << static_cast<double>(counters.game_position_sum.load(std::memory_order_relaxed)) /
-                             std::max<U64>(1, games)
+                             static_cast<double>(std::max<U64>(1, games))
                       << '\n';
         }
     }
@@ -686,15 +702,19 @@ void write_summary(const DatagenOptions &options, const DatagenCounters &counter
     out << "target_games " << options.target_games << '\n';
     out << "avg_positions_per_game "
         << static_cast<double>(counters.game_position_sum.load()) /
-               std::max<U64>(1, counters.total_games.load()) << '\n';
+               static_cast<double>(std::max<U64>(1, counters.total_games.load())) << '\n';
     out << "max_positions_from_one_game " << counters.max_positions_in_game.load() << '\n';
     out << "twic_book_starts " << counters.twic_book_starts.load() << '\n';
     out << "external_starts " << counters.external_starts.load() << '\n';
     U64 starts = counters.twic_book_starts.load() + counters.external_starts.load();
+    const auto percentage = [](U64 numerator, U64 denominator) {
+        return denominator == 0 ? 0.0
+            : 100.0 * static_cast<double>(numerator) / static_cast<double>(denominator);
+    };
     out << "twic_book_start_pct "
-        << (starts == 0 ? 0.0 : 100.0 * counters.twic_book_starts.load() / starts) << '\n';
+        << percentage(counters.twic_book_starts.load(), starts) << '\n';
     out << "external_start_pct "
-        << (starts == 0 ? 0.0 : 100.0 * counters.external_starts.load() / starts) << '\n';
+        << percentage(counters.external_starts.load(), starts) << '\n';
     out << "format " << options.output_format << '\n';
     out << "threads " << options.threads << '\n';
     out << "nodes " << options.search_nodes << '\n';
@@ -727,7 +747,7 @@ void write_summary(const DatagenOptions &options, const DatagenCounters &counter
     out << "adjudicated_black_wins " << counters.adjudicated_black_wins.load() << '\n';
     out << "avg_adjudication_ply "
         << static_cast<double>(counters.adjudication_ply_sum.load()) /
-               std::max<U64>(1, counters.ended_adjudication.load()) << '\n';
+               static_cast<double>(std::max<U64>(1, counters.ended_adjudication.load())) << '\n';
     out << "max_adjudication_ply " << counters.max_adjudication_ply.load() << '\n';
 
     out << "\nfilters\n";
@@ -742,8 +762,7 @@ void write_summary(const DatagenOptions &options, const DatagenCounters &counter
     out << "duplicate " << counters.filtered_duplicate.load() << '\n';
     out << "duplicate_checks " << counters.duplicate_checks.load() << '\n';
     out << "duplicate_rate_pct "
-        << (counters.duplicate_checks.load() == 0 ? 0.0 :
-            100.0 * counters.filtered_duplicate.load() / counters.duplicate_checks.load()) << '\n';
+        << percentage(counters.filtered_duplicate.load(), counters.duplicate_checks.load()) << '\n';
 
     out << "\ncp_abs_buckets\n";
     static constexpr const char *CP_NAMES[8] = {

@@ -1,108 +1,89 @@
-SHAYVERI SPSA/CMAES scripts
-===========================
+# Search-parameter tuning
 
-Purpose
--------
+## Purpose
 
-Distributed search-parameter tuning helpers for SHAYVERI. The scripts wrap the
-local Lakas/nevergrad CMAES driver and fastchess so one master can queue tuning
-jobs while one or more workers consume them.
+Tune SHAYVERI search parameters with distributed CMAES evaluations and preserve
+enough optimizer state to inspect, resume, and validate each batch.
 
-Layout
-------
+## Motivation
 
-- `common.sh`: shared defaults, pass selection, batch parameter sets.
-- `master.sh`: queues CMAES eval jobs for one pass/batch.
-- `worker.sh`: claims eval jobs and runs fastchess locally.
-- `watcher.sh`: prints queue and artifact status.
-- `build_book.sh`: helper for constructing a mixed tuning book.
-- `lakas/`: Python tuning and inspection helpers.
-- `output/`: ignored generated output, organized by pass and batch.
+Search parameters interact and individual game matches are noisy. CMAES can
+explore related parameters jointly, while direct candidate-versus-baseline
+games prevent noisy optimizer samples from becoming production defaults.
 
-Output shape
-------------
+## Method
 
-Generated files live under:
+The master asks Nevergrad for candidates and writes evaluation jobs to shared
+storage. Long-lived workers claim jobs and use fastchess to compare each
+candidate with the batch baseline. Completed results update the saved CMA
+distribution.
 
-```text
-scripts/spsa/output/<PASS_NAME>/
-  results.txt
-  batch0/
-  batch1/
-  batch2/
-  ...
-  shared/.lakas_dist/
-```
+The master records the time control, games per evaluation, opening file, and
+engine options in each job. Changing only batch definitions does not require
+restarting updated workers.
 
-`results.txt` is the pass-level tracker. Batch directories hold CMAES artifacts
-such as `batch4.dat`, `batch4.log`, and `batch4.html`.
+Optimizer output is never promoted directly:
 
-Defaults
---------
+1. Inspect the decoded CMA distribution center.
+2. Treat xbest and log aggregates as selection-biased diagnostics.
+3. Validate worthwhile candidates in fresh direct games.
+4. Promote only convincing improvements and leave rejected defaults unchanged.
 
-Defaults are intentionally centralized in `common.sh`.
+## Usage
 
-- `PASS_NAME=pass_v2_6`
-- `BATCH_ID=4`
-- `BATCH_NAME=batch${BATCH_ID}`
-- `BUDGET=400` total evaluated CMAES candidates for the batch
-- `MASTER_JOBS=6`
-- `WORKER_JOBS=23`
-- `JOB_CLAIMS=1`
-- `BASE_TIME_SEC=3`
-- `INC_TIME_SEC=0.03`
-- `GAMES_PER_BUDGET=300`
-- `OPENING_FILE=../books/final_search_mix_shuf.epd`
-- `FASTCHESS=$HOME/chess_arena/fastchess/fastchess`
-
-Usage
------
-
-From repo root or from a trainer-box directory containing the copied scripts:
+From the repository root or a trainer directory containing the copied scripts:
 
 ```bash
+PASS_NAME=pass_v2_7 \
+BATCH_ID=1 \
+BUDGET=400 \
 bash scripts/spsa/master.sh
+```
+
+Start workers and monitor the run:
+
+```bash
 bash scripts/spsa/worker.sh
 bash scripts/spsa/watcher.sh
 ```
 
-Typical current continuation:
+`BUDGET` is the total target, not an additional count. Restarting a master with
+a larger budget resumes from the saved checkpoint and schedules only the
+remainder.
+
+## Inspecting results
+
+Inspect measured outcomes and aggregate diagnostics:
 
 ```bash
-BATCH_ID=4 BUDGET=800 bash scripts/spsa/master.sh
+python3 scripts/spsa/lakas/view_cmaes_log.py \
+  scripts/spsa/outputs/pass_v2_7/batch1/batch1.log
 ```
 
-`BUDGET` is a total target, not an additive per-invocation count. If a resumed
-`batch4.dat` already contains 400 evaluated candidates, `BUDGET=800` schedules
-roughly 400 more candidates and then stops.
-
-Worker defaults are usually enough:
+Inspect the optimizer checkpoint and decoded center:
 
 ```bash
-bash scripts/spsa/worker.sh
+python3 scripts/spsa/lakas/view_cmaes_checkpoint.py \
+  scripts/spsa/outputs/pass_v2_7/batch1/batch1.dat --show-best
 ```
 
-Override examples:
+The checkpoint viewer distinguishes completed updates, partial populations,
+orphaned asks, and live jobs. A low sigma indicates concentration, not proven
+strength.
 
-```bash
-BATCH_ID=2 BUDGET=500 bash scripts/spsa/master.sh
-WORKER_JOBS=16 JOB_CLAIMS=1 bash scripts/spsa/worker.sh
-OPENING_FILE=../books/other.epd bash scripts/spsa/master.sh
-```
+## Layout and controls
 
-Worker semantics
-----------------
+- `common.sh`: batch parameters, time controls, and shared defaults
+- `master.sh`: optimizer and job producer
+- `worker.sh`: long-lived fastchess evaluator
+- `watcher.sh`: queue and artifact summary
+- `lakas/`: optimizer and inspection helpers
+- `outputs/<pass>/`: ignored checkpoints, logs, jobs, and decision tracker
 
-- `MASTER_JOBS` controls outstanding CMAES eval jobs.
-- `WORKER_JOBS` controls fastchess concurrency on that machine.
-- `JOB_CLAIMS` controls how many CMAES eval jobs one worker process claims at
-  once.
-- The default is one claimed eval per worker process, with that eval using local
-  cores through fastchess.
+Important controls are `PASS_NAME`, `BATCH_ID`, `BUDGET`, `MASTER_JOBS`,
+`WORKER_JOBS`, `JOB_CLAIMS`, `GAMES_PER_BUDGET`, `OPENING_FILE`, and
+`FASTCHESS`. Tuning matches default to `OwnBook=false` and
+`BookInfoDepth=0` so the configured external opening set is the only book.
 
-Runtime copy layout
--------------------
-
-In the repository, Python helpers live in `scripts/spsa/lakas/`. On a trainer
-box, `lakas_nnue.py` may instead be copied side-by-side with `master.sh`,
-`worker.sh`, and `common.sh`. The scripts check for that flat layout first.
+On trainer machines, `lakas_nnue.py` may be copied beside the shell scripts or
+kept under `lakas/`; the launcher supports both layouts.

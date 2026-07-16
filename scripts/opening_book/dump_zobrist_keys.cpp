@@ -6,8 +6,10 @@
 #include <iostream>
 #include <string>
 
+using namespace SHAYVERI;
+
 // Minimal JSON writer (no extra deps)
-// Writes schema expected by build_book.py:
+// Writes schema expected by build_header.py:
 // {
 //   "pieces": [[...64...], ... 13 ...],
 //   "sides": <u64>,
@@ -15,11 +17,11 @@
 //   "en_passants": [...8...]
 // }
 static void write_u64(std::ostream& os, std::uint64_t v) {
-    os << v; // decimal; Python int() reads it fine
+    os << v; // Python int() reads the decimal representation directly.
 }
 
 int main(int argc, char** argv) {
-    std::string out_path = "zobrist_keys.json";
+    std::string out_path = "outputs/zobrist_keys.json";
     if (argc >= 2) out_path = argv[1];
 
     Zobrist::init();

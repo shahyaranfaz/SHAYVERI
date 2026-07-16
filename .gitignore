@@ -1,7 +1,10 @@
 
 SHAYVERI.exe
 SHAYVERI
+SHAYVERI_mac
+
 build/
+
 debug/perft
 debug/legality
 debug/fen_state
@@ -9,86 +12,25 @@ debug/make_unmake
 debug/see_tests
 debug/eval_symmetry
 debug/tt_safety
+debug/time_manager
+debug/search_regression
 debug/nnue_test
+SHAYVERI_sanitize
+debug/nnue_*_test.nnue
 debug/__pycache__
 
 nnue/v*/
 nnue/extra_nets
 nnue/README.md
 
-scripts/elo_pin/results
-scripts/elo_pin/runs
-scripts/opening_book/eval_cache.json
-scripts/opening_book/table.csv
-scripts/opening_book/zobrist_keys.json
-scripts/opening_book/artifacts/
-scripts/spsa/output/
+scripts/*/outputs
+scripts/elo_pin/.work/
+scripts/elo_pin/current_run_id
 
-# Prerequisites
-*.d
+future_plans.txt
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
-
-# Linker output
-*.ilk
-*.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
+*.pgn
 *.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
-
-# debug information files
-*.dwo
-
 *.xml
 .venv
 .idea
-cmake-build-debug
-*.pgn
-
-# NNUE datagen/training artifacts
-iter*.nnue
-*.plain
-*.bin
-raw/
-data/

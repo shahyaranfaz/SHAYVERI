@@ -40,9 +40,13 @@ import psutil
 # --------------------------
 HARDCODE_OPTIMIZER = "cmaes"
 HARDCODE_MATCH_MANAGER_PATH = os.environ.get("FASTCHESS", "fastchess")
+HARDCODE_ENGINE_OPTIONS = os.environ.get(
+    "SPSA_ENGINE_OPTIONS",
+    "option.OwnBook=false option.BookInfoDepth=0",
+)
 HARDCODE_BASE_TIME_SEC = float(os.environ.get("BASE_TIME_SEC", "3"))
 HARDCODE_INC_TIME_SEC = float(os.environ.get("INC_TIME_SEC", "0.03"))
-HARDCODE_GAMES_PER_BUDGET = int(os.environ.get("GAMES_PER_BUDGET", "160"))
+HARDCODE_GAMES_PER_BUDGET = int(os.environ.get("GAMES_PER_BUDGET", "300"))
 HARDCODE_ENGINE = "./SHAYVERI"
 HARDCODE_OPENING_FILE = os.environ.get(
     "OPENING_FILE",
@@ -196,7 +200,8 @@ def get_match_commands(engine_file, test_options, base_options,
                        concurrency, base_time_sec, inc_time_sec, match_manager,
                        match_manager_path,
                        variant, fastchess_debug, fastchess_wait,
-                       move_time, nodes, protocol, timemargin):
+                       move_time, nodes, protocol, timemargin,
+                       engine_options=HARDCODE_ENGINE_OPTIONS):
     if match_manager == 'fastchess':
         tour_manager = Path(match_manager_path)
     else:
@@ -236,8 +241,8 @@ def get_match_commands(engine_file, test_options, base_options,
             elif depth is not None:
                 command += f' -each tc=inf depth={depth} timemargin={timemargin}'
 
-        command += f' -engine cmd={engine_file} name={test_name} proto={protocol} {test_options}'
-        command += f' -engine cmd={engine_file} name={base_name} proto={protocol} {base_options}'
+        command += f' -engine cmd={engine_file} name={test_name} proto={protocol} {engine_options} {test_options}'
+        command += f' -engine cmd={engine_file} name={base_name} proto={protocol} {engine_options} {base_options}'
         command += f' -rounds {games//2} -games 2 -repeat'
         command += ' -recover'
         command += f' -wait {fastchess_wait}'
@@ -257,14 +262,15 @@ def engine_match(engine_file, test_options, base_options, opening_file,
                  variant='normal', fastchess_debug=False,
                  fastchess_wait=5000, move_time=None, nodes=None,
                  protocol='uci',
-                 timemargin=50) -> float:
+                 timemargin=50,
+                 engine_options=HARDCODE_ENGINE_OPTIONS) -> float:
     result = ''
 
     tour_manager, command = get_match_commands(
         engine_file, test_options, base_options, opening_file,
         opening_file_format, games, depth, concurrency, base_time_sec,
         inc_time_sec, match_manager, match_manager_path, variant, fastchess_debug,
-        fastchess_wait, move_time, nodes, protocol, timemargin)
+        fastchess_wait, move_time, nodes, protocol, timemargin, engine_options)
     logger2.info("command: %s", str(tour_manager) + command)
 
     if os_name.lower() == 'windows':
@@ -332,7 +338,13 @@ def optimizer_eval_count(optimizer):
     for attr in ("num_tell", "_num_tell"):
         val = getattr(optimizer, attr, None)
         if isinstance(val, int):
-            return val
+            tells_not_asked = 0
+            for skipped_attr in ("num_tell_not_asked", "_num_tell_not_asked"):
+                skipped = getattr(optimizer, skipped_attr, None)
+                if isinstance(skipped, int):
+                    tells_not_asked = skipped
+                    break
+            return max(0, val - tells_not_asked)
 
     es = getattr(optimizer, "_es", None)
     if es is not None:
@@ -390,7 +402,7 @@ def write_json_atomic(path: Path, obj: dict):
 
 
 def claim_one_job(p: DistPaths, worker_name: str) -> Path | None:
-    # Find any job file; claim with atomic rename
+    # Find a job file and claim it with an atomic rename.
     for job_path in sorted(p.jobs.glob("*.json")):
         claimed = p.working / job_path.name
         try:
@@ -431,6 +443,18 @@ def worker_loop(args, p: DistPaths):
         test_param = job["test_param"]
         base_param = job["base_param"]
 
+        job_opening_file = job.get("opening_file", opening_file)
+        job_opening_file_format = Path(job_opening_file).suffix[1:]
+        if job_opening_file_format in ("fen", "epd"):
+            job_opening_file_format = "epd"
+        elif job_opening_file_format == "":
+            job_opening_file_format = "pgn"
+
+        job_engine_options = job.get("engine_options", HARDCODE_ENGINE_OPTIONS)
+        job_base_time_sec = job.get("base_time_sec", base_time_sec)
+        job_inc_time_sec = job.get("inc_time_sec", inc_time_sec)
+        job_games_per_budget = int(job.get("games_per_budget", games_per_budget))
+
         test_options = " ".join([f"option.{k}={v}" for k, v in test_param.items()]).strip()
         base_options = " ".join([f"option.{k}={v}" for k, v in base_param.items()]).strip()
 
@@ -439,13 +463,13 @@ def worker_loop(args, p: DistPaths):
                 engine_file=engine_file,
                 test_options=test_options,
                 base_options=base_options,
-                opening_file=opening_file,
-                opening_file_format=opening_file_format,
-                games=games_per_budget,
+                opening_file=job_opening_file,
+                opening_file_format=job_opening_file_format,
+                games=job_games_per_budget,
                 depth=job.get("depth"),
                 concurrency=args.concurrency,
-                base_time_sec=base_time_sec,
-                inc_time_sec=inc_time_sec,
+                base_time_sec=job_base_time_sec,
+                inc_time_sec=job_inc_time_sec,
                 match_manager=job["match_manager"],
                 match_manager_path=match_manager_path,
                 variant=job["variant"],
@@ -455,6 +479,7 @@ def worker_loop(args, p: DistPaths):
                 nodes=job.get("nodes"),
                 protocol=job["protocol"],
                 timemargin=job["timemargin"],
+                engine_options=job_engine_options,
             )
             loss = 1.0 - float(result)
             out = {"job_id": job_id, "ok": True, "result": float(result), "loss": float(loss)}
@@ -545,7 +570,7 @@ def master_run(args, p: DistPaths):
             best_loss = optimizer.current_bests["average"].mean
 
             if args.output_data_file is not None:
-                # master only writes dumps; no need for lock besides master lock, but keep atomic
+                # Only the master writes dumps, so the master lock is sufficient. Keep the write atomic too.
                 tmp = Path(args.output_data_file).with_suffix(Path(args.output_data_file).suffix + f".tmp.{os.getpid()}")
                 optimizer.dump(str(tmp))
                 os.replace(tmp, args.output_data_file)
@@ -581,9 +606,10 @@ def master_run(args, p: DistPaths):
         if remaining_budget <= 0:
             logger.info("[master] budget target already reached")
 
-        for _ in range(remaining_budget):
+        remaining_to_schedule = remaining_budget
+        while remaining_to_schedule > 0 or in_flight:
             # keep pipeline filled
-            while len(in_flight) < max_outstanding:
+            while remaining_to_schedule > 0 and len(in_flight) < max_outstanding:
                 x = optimizer.ask()
                 test_param = dict(x.kwargs)
 
@@ -601,12 +627,21 @@ def master_run(args, p: DistPaths):
                     "fastchess_wait": args.fastchess_wait,
                     "protocol": args.protocol,
                     "timemargin": args.time_margin,
+                    "base_time_sec": HARDCODE_BASE_TIME_SEC,
+                    "inc_time_sec": HARDCODE_INC_TIME_SEC,
+                    "games_per_budget": HARDCODE_GAMES_PER_BUDGET,
+                    "opening_file": HARDCODE_OPENING_FILE,
+                    "engine_options": HARDCODE_ENGINE_OPTIONS,
                 }
 
                 job_path = p.jobs / f"{job_id}.json"
                 write_json_atomic(job_path, job)
                 in_flight[job_id] = (x, job_path)
                 pending_results.add(job_id)
+                remaining_to_schedule -= 1
+
+            if not in_flight:
+                break
 
             # wait for at least one result
             while True:

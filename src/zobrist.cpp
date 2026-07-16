@@ -30,7 +30,7 @@ U64 compute(const Board &b) {
     U64 h = 0;
 
     for (int p = 1; p < PIECE_COUNT; ++p) {
-        U64 bb = b.bit_boards[p];
+        U64 bb = b.bit_boards[static_cast<std::size_t>(p)];
         while (bb) {
             int sq = __builtin_ctzll(bb);
             bb &= bb - 1;

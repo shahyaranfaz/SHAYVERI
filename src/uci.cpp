@@ -40,6 +40,7 @@ static int  g_hash_mb       = 64;
 static int  g_move_overhead = 10;   // ms
 static bool g_ponder        = false;
 static bool g_own_book      = true;
+static int  g_book_info_depth = 8;
 static int  g_min_think_ms  = 0;
 static std::string g_eval_file = "<embedded>";
 
@@ -49,6 +50,10 @@ static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
+
+static int active_thread_limit() {
+    return static_cast<int>(std::max(1u, std::thread::hardware_concurrency()));
+}
 
 static void stop_search() {
     g_stop = true;
@@ -80,6 +85,16 @@ static bool is_legal_root_move(Board b, Move move) {
 static Move first_legal_move(Board b) {
     MoveList legal = generate_legal_moves(b);
     return legal.count > 0 ? legal.moves[0] : MOVE_NONE;
+}
+
+static std::string uci_score(int score) {
+    if (std::abs(score) > Tune::MATE_SCORE - Tune::MAX_PLY) {
+        int mate_dist = Tune::MATE_SCORE - std::abs(score);
+        int mate_moves = (mate_dist + 1) / 2;
+        if (score < 0) mate_moves = -mate_moves;
+        return "mate " + std::to_string(mate_moves);
+    }
+    return "cp " + std::to_string(score);
 }
 
 static bool parse_bool(const std::string &value) {
@@ -433,15 +448,16 @@ int main(int argc, char **argv) {
                 << "id name SHAYVERI\n"
                 << "id author Shahyar Anfaz and Averi Wylie\n"
                 << "option name Hash type spin default 64 min 1 max 32768\n"
-                << "option name Clear Hash type button\n"
+                << "option name ClearHash type button\n"
                 << "option name Threads type spin default 1 min 1 max 512\n"
-                << "option name Ponder type check default false\n"
-                << "option name OwnBook type check default true\n"
                 << "option name UseNNUE type check default true\n"
                 << "option name " << NNUE::UCI_OPTION_NAME
                 << " type string default " << g_eval_file << "\n"
-                << "option name Minimum Thinking Time type spin default 0 min 0 max 5000\n"
-                << "option name Move Overhead type spin default 10 min 0 max 5000\n";
+                << "option name OwnBook type check default true\n"
+                << "option name BookInfoDepth type spin default 8 min 0 max 32\n"
+                << "option name Ponder type check default false\n"
+                << "option name MinimumThinkingTime type spin default 0 min 0 max 5000\n"
+                << "option name MoveOverhead type spin default 10 min 0 max 5000\n";
 
             for (auto const& [name, opt] : Tune::tuning_registry) {
                 if (opt.type == Tune::TuningOption::INT)
@@ -458,6 +474,9 @@ int main(int argc, char **argv) {
 
         // ===== SETOPTION =====
         else if (token == "setoption") {
+            // Options may mutate TT, NNUE, or tuning state. Never change them
+            // while a search thread is reading the same state.
+            stop_search();
             std::string skip;
             iss >> skip; // "name"
             std::string opt_name;
@@ -473,7 +492,7 @@ int main(int argc, char **argv) {
 
             if      (opt_name == "Hash")
                 resize_hash_option(value);
-            else if (opt_name == "Clear Hash") {
+            else if (opt_name == "ClearHash") {
                 TT.clear();
                 clear_search_histories();
             }
@@ -482,10 +501,6 @@ int main(int argc, char **argv) {
                 if (parse_spin(value, 1, 512, threads))
                     g_num_threads = threads;
             }
-            else if (opt_name == "Ponder")
-                g_ponder = parse_bool(value);
-            else if (opt_name == "OwnBook")
-                g_own_book = parse_bool(value);
             else if (opt_name == "UseNNUE") {
                 NNUE::set_enabled(parse_bool(value));
                 TT.clear();
@@ -499,12 +514,21 @@ int main(int argc, char **argv) {
                 if (NNUE::is_enabled())
                     NNUE::print_info();
             }
-            else if (opt_name == "Minimum Thinking Time") {
+            else if (opt_name == "OwnBook")
+                g_own_book = parse_bool(value);
+            else if (opt_name == "BookInfoDepth") {
+                int book_info_depth = 0;
+                if (parse_spin(value, 0, 32, book_info_depth))
+                    g_book_info_depth = book_info_depth;
+            }
+            else if (opt_name == "Ponder")
+                g_ponder = parse_bool(value);
+            else if (opt_name == "MinimumThinkingTime") {
                 int min_think_ms = 0;
                 if (parse_spin(value, 0, 5000, min_think_ms))
                     g_min_think_ms = min_think_ms;
             }
-            else if (opt_name == "Move Overhead") {
+            else if (opt_name == "MoveOverhead") {
                 int move_overhead = 0;
                 if (parse_spin(value, 0, 5000, move_overhead))
                     g_move_overhead = move_overhead;
@@ -577,7 +601,6 @@ int main(int argc, char **argv) {
 
         // ===== GO =====
         else if (token == "go") {
-            // Book probe for normal searches.
             bool is_ponder_search = false;
             {
                 std::istringstream check(line);
@@ -585,33 +608,6 @@ int main(int argc, char **argv) {
                 while (check >> t)
                     if (t == "ponder") { is_ponder_search = true; break; }
             }
-
-            if (!is_ponder_search && g_own_book) {
-                const BookEntry *entry = probe_book(b.hash);
-                if (entry) {
-                    Move m = uci_to_move(b, entry->move);
-                    if (m != MOVE_NONE) {
-                        stop_search();
-                        g_stop     = false;
-                        node_count = 0;
-
-                        int book_eval_cp = static_cast<int>(entry->evaluation * 100.0f);
-                        if (b.side_to_move == BLACK) book_eval_cp = -book_eval_cp;
-
-                        std::cout << "info depth 8 score cp " << book_eval_cp
-                                  << " pv " << move_to_uci(m) << " \n"
-                                  << "bestmove " << move_to_uci(m)
-                                  << ponder_suffix(b, m) << "\n";
-                        std::cout.flush();
-                        continue;
-                    }
-                }
-            }
-
-            stop_search();
-            g_stop     = false;
-            node_count = 0;
-            TT.new_search();
 
             // Parse go parameters.
             TimeControl tc;
@@ -647,6 +643,43 @@ int main(int argc, char **argv) {
                 }
             }
 
+            Move book_move = MOVE_NONE;
+            bool book_hit = false;
+            if (!is_ponder_search && g_own_book) {
+                if (const BookEntry *entry = probe_book(b.hash)) {
+                    Move candidate = uci_to_move(b, entry->move);
+                    bool allowed = searchmoves.empty();
+                    for (Move sm : searchmoves)
+                        if (sm == candidate) allowed = true;
+
+                    if (is_legal_root_move(b, candidate) && allowed) {
+                        book_move = candidate;
+                        book_hit = true;
+                    }
+                }
+            }
+
+            stop_search();
+            g_stop     = false;
+            node_count = 0;
+
+            if (book_hit && g_book_info_depth == 0) {
+                std::cout << "info string book\n"
+                          << "bestmove " << move_to_uci(book_move)
+                          << ponder_suffix(b, book_move) << "\n";
+                std::cout.flush();
+                continue;
+            }
+
+            bool book_info_search = book_hit && g_book_info_depth > 0;
+            if (book_info_search) {
+                std::cout << "info string book\n";
+                searchmoves.clear();
+                searchmoves.push_back(book_move);
+            }
+
+            TT.new_search();
+
             // Ponder searches run until ponderhit supplies the real clock.
             if (is_ponder_search) {
                 g_pondering.store(true);
@@ -665,20 +698,40 @@ int main(int argc, char **argv) {
             std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
 
             Board b_copy    = b;
-            int   num_thr   = g_num_threads;
+            int   num_thr   = std::min(g_num_threads, active_thread_limit());
+            if (num_thr != g_num_threads)
+                std::cout << "info string Threads clamped to " << num_thr
+                          << " by hardware capacity\n";
             I64   hard_ms   = g_time_manager.hard_ms();
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
+            if (book_info_search)
+                root_depth = fixed_depth > 0
+                    ? std::min(fixed_depth, g_book_info_depth)
+                    : g_book_info_depth;
             int   hash_mb    = g_hash_mb;
 
             if (fixed_nodes > 0 || fixed_depth > 0) {
+                const auto search_start = std::chrono::steady_clock::now();
                 SearchResult result = run_fixed_search(
                     b_copy, rep, searchmoves,
                     root_depth, num_thr, hash_mb, fixed_nodes);
+                const auto search_end = std::chrono::steady_clock::now();
+                const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    search_end - search_start).count();
+                const U64 elapsed_for_nps = static_cast<U64>(std::max<I64>(1, elapsed_ms));
+                const U64 nps = result.nodes * 1000 / elapsed_for_nps;
 
-                if (!is_legal_root_move(b_copy, result.best_move))
+                if (book_info_search)
+                    result.best_move = book_move;
+                else if (!is_legal_root_move(b_copy, result.best_move))
                     result.best_move = first_legal_move(b_copy);
 
+                std::cout << "info depth " << result.depth
+                          << " score " << uci_score(result.score)
+                          << " time " << elapsed_ms
+                          << " nodes " << result.nodes
+                          << " nps " << nps << "\n";
                 std::string ponder_str = ponder_suffix(b_copy, result.best_move);
                 std::cout << "bestmove " << move_to_uci(result.best_move)
                           << ponder_str << "\n";
@@ -687,8 +740,8 @@ int main(int argc, char **argv) {
             }
 
             // Lazy SMP helper threads share the global atomic TT. Their final
-            // root result is discarded; their contribution is the hash they
-            // populate for the main thread.
+            // root result is discarded because they contribute by populating
+            // the hash for the main thread.
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
@@ -705,12 +758,29 @@ int main(int argc, char **argv) {
             // Main search thread.
             smp_threads.insert(
                 smp_threads.begin(),
-                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth]() mutable {
+                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
+                             book_info_search, book_move]() mutable {
                     active_tt = &TT;
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
+                    auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);
 
-                    std::thread timer([hard_ms, real_tc, pondering, timer_active]() {
+                    std::thread timer([hard_ms, real_tc, pondering, timer_active, clock_ready]() {
+                        const auto wait_for_limit = [timer_active](I64 limit_ms) {
+                            using namespace std::chrono;
+                            const auto deadline = steady_clock::now()
+                                + milliseconds(std::max<I64>(0, limit_ms));
+                            while (timer_active->load()) {
+                                const I64 remaining = duration_cast<milliseconds>(
+                                    deadline - steady_clock::now()).count();
+                                if (remaining <= 0)
+                                    break;
+                                std::this_thread::sleep_for(
+                                    milliseconds(std::min<I64>(5, remaining)));
+                            }
+                            return timer_active->load();
+                        };
+
                         if (pondering) {
                             while (*timer_active && g_pondering.load() && !g_stop.load())
                                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -718,28 +788,25 @@ int main(int argc, char **argv) {
                                 return;
 
                             g_time_manager.init(real_tc);
+                            clock_ready->store(true);
                             const I64 ponderhit_hard_ms = g_time_manager.hard_ms();
-                            const I64 slice = 5;
-                            I64 slept = 0;
-                            while (*timer_active && slept < ponderhit_hard_ms) {
-                                std::this_thread::sleep_for(std::chrono::milliseconds(slice));
-                                slept += slice;
-                            }
-                            if (*timer_active) g_stop = true;
+                            const I64 ponderhit_remaining_ms = std::max<I64>(
+                                0, ponderhit_hard_ms - g_time_manager.elapsed_ms());
+                            if (wait_for_limit(ponderhit_remaining_ms)) g_stop = true;
                             return;
                         }
 
-                        const I64 slice = 5;
-                        I64 slept = 0;
-                        while (*timer_active && slept < hard_ms) {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(slice));
-                            slept += slice;
-                        }
-                        if (*timer_active) g_stop = true;
+                        const I64 remaining_ms = std::max<I64>(
+                            0, hard_ms - g_time_manager.elapsed_ms());
+                        if (wait_for_limit(remaining_ms)) g_stop = true;
                     });
 
-                    IterCallback on_iter = [](int depth, Move best, int score, U64, I64) {
-                        if (!g_pondering.load() && g_time_manager.on_iter(depth, best, score))
+                    IterCallback on_iter = [clock_ready](int depth, Move best, int score,
+                                                        U64, I64,
+                                                        double best_move_node_fraction) {
+                        if (clock_ready->load()
+                            && g_time_manager.on_iter(depth, best, score,
+                                                      best_move_node_fraction))
                             g_stop = true;
                     };
 
@@ -749,15 +816,20 @@ int main(int argc, char **argv) {
                         searchmoves,
                         on_iter, false);
 
+                    // A ponder search that finishes naturally, for example on
+                    // a terminal position, must still wait for ponderhit or
+                    // stop before returning a move.
+                    while (pondering && g_pondering.load() && !g_stop.load())
+                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
                     *timer_active = false;
                     g_stop        = true;
                     timer.join();
 
-                    if (!is_legal_root_move(b_copy, result.best_move))
+                    if (book_info_search)
+                        result.best_move = book_move;
+                    else if (!is_legal_root_move(b_copy, result.best_move))
                         result.best_move = first_legal_move(b_copy);
-
-                    while (pondering && g_pondering.load() && !g_stop.load())
-                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
                     std::string ponder_str = ponder_suffix(b_copy, result.best_move);
 
@@ -789,7 +861,15 @@ int main(int argc, char **argv) {
                 "4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 5 20",
             };
 
-            U64  total_nodes = 0;
+            // Bench is a fresh fixed workload. Stop any active UCI search and
+            // discard state that could warm one invocation relative to another.
+            stop_search();
+            TT.clear();
+            clear_search_histories();
+            active_tt = &TT;
+            g_stop   = false;
+
+            U64 total_nodes = 0;
             auto bench_start = std::chrono::steady_clock::now();
             std::cout << "Running bench...\n";
 
@@ -797,18 +877,19 @@ int main(int argc, char **argv) {
                 Board bench_b;
                 set_from_fen(bench_b, fen);
                 std::vector<Move> sm;
+                node_count = 0;
                 SearchResult res = search(bench_b, 10, nullptr, 0, sm);
                 total_nodes += res.nodes;
             }
 
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          std::chrono::steady_clock::now() - bench_start).count();
-            if (ms == 0) ms = 1;
+            auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                  std::chrono::steady_clock::now() - bench_start).count();
+            if (elapsed_us == 0) elapsed_us = 1;
 
             std::cout << "\n===========================\n"
                       << "Nodes: " << total_nodes << "\n"
-                      << "Time : " << ms << " ms\n"
-                      << "NPS  : " << (total_nodes * 1000) / ms << "\n"
+                      << "Time : " << (static_cast<double>(elapsed_us) / 1000.0) << " ms\n"
+                      << "NPS  : " << (total_nodes * 1000000ULL) / static_cast<U64>(elapsed_us) << "\n"
                       << "===========================\n";
         }
 

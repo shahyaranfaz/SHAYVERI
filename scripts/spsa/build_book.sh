@@ -49,7 +49,7 @@ done
 if [ -n "$MIN_PLIES" ]; then
   awk -v min="$MIN_PLIES" '
     {
-      # FEN has at least 6 fields; fullmove number is field 6.
+      # FEN has at least 6 fields, with the fullmove number in field 6.
       if (NF >= 6 && $6 + 0 >= min) print
     }
   ' "$tmp" | shuf > "$OUT"

@@ -1,90 +1,131 @@
-Elo pin harness
-===============
+# Release Elo pin
 
-Purpose
-=======
+## Purpose
 
-Coordinate multi-worker fastchess matches for a properly pinned Elo run.
+Place a release on SHAYVERI's anchored STC and LTC rating scales with exact,
+reproducible game quotas.
 
-Flow
-====
+## Motivation
 
-1. Start the master on the shared filesystem.
-2. Start workers within the master's registration window.
-3. Each worker runs a full 9-engine round-robin tournament and writes one PGN.
-4. Master waits for all registered workers to finish.
-5. Master concatenates worker PGNs into one PGN.
-6. Master runs Ordo on the combined PGN.
+A full STC and LTC pin requires 36,000 games. Distributing deterministic game
+shards across multiple machines makes that workload practical and lets faster
+workers complete more of it. The master keeps the final game quotas exact while
+the available workers reduce the total wall-clock time.
 
-Default layout:
+## Method
 
-- `PIN_ROOT` is the shared directory containing these scripts.
-- Engines live in `$PIN_ROOT/engines`.
-- Engine commands use `dir=engines`.
-- The book defaults to `$PIN_ROOT/books/UHO_2024_8mvs.epd`.
-- Anchors default to `$PIN_ROOT/anchors`.
-- Ordo defaults to `$PIN_ROOT/ordo`.
-- Runs are written to `$PIN_ROOT/results/$RUN_ID`.
+The master freezes one worker roster, runs STC to completion, analyzes it with
+Ordo, and then opens LTC. Workers claim paired-game shards until each phase's
+exact quota is complete. Worker count and speed affect runtime, not the sample.
 
-Typical STC run
-===============
+The fixed nine-engine pool contains release SHAYVERI with NNUE and HCE, five
+external engines, and Stockfish 18 limited to 2850 and 3000 Elo.
 
-On master:
+| Phase | Time control | Games per pairing | Total games |
+|------:|-------------:|------------------:|------------:|
+|   STC |     `10+0.1` |               800 |      28,800 |
+|   LTC |     `90+0.5` |               200 |       7,200 |
+
+Every opening is played with both colors. Seeds derive from `BASE_SEED`, phase,
+and shard number. Fastchess recovers transient engine failures. A failed
+Fastchess process or incomplete PGN discards and requeues that shard. Illegal
+moves remain a hard failure and prevent publication.
+
+## Usage
+
+Start the master on the shared filesystem:
 
 ```bash
 cd ~/elo_pin
 
 PIN_ROOT="$PWD" \
-NAME_ID=rm500 \
-NET=robotmoon_500M.nnue \
-TC=stc \
-GAMES_PER_PAIR_PER_WORKER=40 \
+RELEASE_ID=v0.0.0 \
+NET= \
 REGISTER_SECONDS=300 \
 ./master.sh
 ```
 
-On each worker, within 5 minutes:
+Start one worker on each machine during registration:
 
 ```bash
 cd ~/elo_pin
-
-PIN_ROOT="$PWD" \
-./worker.sh
+PIN_ROOT="$PWD" ./worker.sh
 ```
 
-Useful knobs
-============
+Monitor the run:
 
-- The pool is fixed: SHAYVERI HCE-classical, the current/configured SHAYVERI NNUE, plus `Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000`.
-- Every worker runs a full round robin over all 9 engines.
-- HCE-classical is always included with `UseNNUE=false`.
-- `NET=` uses SHAYVERI's embedded default NNUE file.
-- `NET=SHAYVERI2_5_0.nnue` pins the NNUE slot with the current public net.
-- `NAME_ID` controls the NNUE SHAYVERI name written into PGNs/Ordo.
-- `HCE_NAME` defaults to `SHAYVERI HCE-classical`.
-- `NNUE_NAME` defaults to `NAME_ID`.
-- Run IDs are always `NAME_ID_TC_YYYYmmdd_HHMMSS`.
-- `TC=stc` means `10+0.1`.
-- `TC=ltc` means `90+0.5`.
-- `GAMES_PER_PAIR_PER_WORKER` is total games per worker for each engine pair.
-- Total games are `workers * 36 * GAMES_PER_PAIR_PER_WORKER`.
-- `REGISTER_SECONDS` is the worker join window.
-- `CONCURRENCY` defaults to 23.
-- `SHAYVERI_OPTIONS` can append extra UCI options to the SHAYVERI engine.
+```bash
+cd ~/elo_pin
+PIN_ROOT="$PWD" ./watch.sh
+```
 
-Main outputs
-============
+Status distinguishes the frozen registration roster from workers that
+currently own an active shard.
 
-Under `$PIN_ROOT/results/$RUN_ID`:
+Resume an interrupted run without changing its roster, shards, or seeds:
 
-- `workers/`: worker registration files.
-- `games/`: worker PGNs while running.
-- `done/`: worker completion markers.
-- `rating_pool.pgn`: concatenated final PGN.
-- `anchors`: copied Ordo anchor file.
-- `ordo`: copied Ordo executable.
-- `results.txt`: Ordo text output.
-- `h2h.txt`: pairwise sanity output.
-- `results.csv`: Ordo CSV output.
-- `cfs.csv` and `err.csv`: Ordo support diagnostics.
-- `master.log`: master progress.
+```bash
+cd ~/elo_pin
+PIN_ROOT="$PWD" \
+RESUME_RUN_ID=v0.0.0_YYYYMMDD_HHMMSS \
+./master.sh
+```
+
+Resume automatically discards obsolete transient failure markers but still
+stops on an illegal-move marker. Existing working shards are preserved by
+default so a master can restart while workers continue. If the workers were
+stopped, `RECLAIM_WORKING=1` returns their abandoned shards to the queues before
+the original registered workers are restarted.
+
+Run the orchestration check after changing the harness:
+
+```bash
+bash scripts/elo_pin/check.sh
+```
+
+Validate a completed phase manually:
+
+```bash
+python3 scripts/elo_pin/validate_run.py \
+  --pgn outputs/v0.0.0/stc/rating_pool.pgn \
+  --games-per-pair 800 \
+  --player "SHAYVERI v0.0.0 / HCE-classical" \
+  --player "SHAYVERI v0.0.0 / NNUE" \
+  --player Alexandria9 --player Berserk13 --player Ethereal14 \
+  --player PlentyChess7 --player Weiss2 --player SF2850 --player SF3000 \
+  --ordo-dir outputs/v0.0.0/stc
+```
+
+The master runs this validation before Ordo and again after all Ordo outputs
+are collected.
+
+## Layout and outputs
+
+Engines live under `engines/`; the book, anchors, and Ordo default to `books/`,
+`anchors`, and `ordo`. Temporary state lives under `.work/`.
+
+Successful runs publish `outputs/<release>/{stc,ltc}`. Each phase retains the
+combined `rating_pool.pgn` and every Ordo output. Registrations, logs, shard
+definitions, and individual shard PGNs are then removed. Failed runs keep
+their work directory for diagnosis.
+
+## Main controls
+
+- `STC_GAMES_PER_PAIR` and `LTC_GAMES_PER_PAIR`: exact quotas
+- `STC_SHARD_PAIR_GAMES` and `LTC_SHARD_PAIR_GAMES`: shard sizes
+- `BASE_SEED`: deterministic seed sequence
+- `CONCURRENCY`: local fastchess concurrency, default 23
+- `PYTHON_BIN`: Python 3 executable used by run validation, default `python3`
+- `NET=`: use the embedded default network
+- `RELEASE_ID`: full public engine version used by both SHAYVERI entries and
+  its output directory
+- `EXPECTED_WORKERS`: close registration as soon as this many workers arrive,
+  default 10
+- `REGISTER_SECONDS`: maximum registration wait if fewer workers arrive
+- `OVERWRITE=1`: replace an existing release output
+- `RESUME_RUN_ID`: continue an interrupted run from its retained work directory
+- `RECLAIM_WORKING=1`: requeue abandoned working shards while resuming
+- `SHAYVERI_OPTIONS`: options shared by both SHAYVERI entries
+
+Game and shard quotas must be positive even numbers because openings are
+color-paired.

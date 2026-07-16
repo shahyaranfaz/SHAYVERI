@@ -36,25 +36,80 @@ thread_local bool local_node_limited_search = false;
 thread_local bool local_stop = false;
 thread_local U64 local_node_count = 0;
 thread_local U64 local_node_limit = 0;
+thread_local U64 thread_node_count = 0;
+
+SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(
+    int singular_score, int singular_beta, int beta, int tt_score, bool cut_node) {
+    if (singular_score < singular_beta) {
+        int       extension        = Tune::se_extension;
+        const int double_margin    = std::max(0, Tune::se_double_margin);
+        const int double_extension = std::max(extension, Tune::se_double_extension);
+        const int triple_margin = Tune::se_double_extensions
+            ? std::max(double_margin, Tune::se_triple_margin)
+            : std::max(0, Tune::se_triple_margin);
+        const int triple_extension = Tune::se_double_extensions
+            ? std::max(double_extension, Tune::se_triple_extension)
+            : std::max(extension, Tune::se_triple_extension);
+        if (Tune::se_triple_extensions
+            && singular_score < singular_beta - triple_margin) {
+            extension = triple_extension;
+        } else if (Tune::se_double_extensions
+                   && singular_score < singular_beta - double_margin) {
+            extension = double_extension;
+        }
+        return {extension, false};
+    }
+
+    const bool non_mate_score = std::abs(singular_score) < MATE_SCORE - MAX_PLY;
+    if (Tune::se_multicut && singular_score >= beta && non_mate_score)
+        return {0, true};
+
+    if (Tune::se_negative_extensions) {
+        if (tt_score >= beta)
+            return {Tune::se_negative_tt_extension, false};
+        if (cut_node)
+            return {Tune::se_negative_cutnode_extension, false};
+    }
+
+    return {};
+}
 
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
-    const double d = static_cast<double>(depth);
-    const double m = static_cast<double>(moves);
+    static const auto depth_log = [] {
+        std::array<double, MAX_PLY + 1> values{};
+        for (int i = 2; i <= MAX_PLY; ++i)
+            values[i] = std::log(static_cast<double>(i));
+        return values;
+    }();
+    static const auto move_log = [] {
+        std::array<double, 256> values{};
+        for (int i = 2; i < static_cast<int>(values.size()); ++i)
+            values[i] = std::log(static_cast<double>(i));
+        return values;
+    }();
+
+    const int bounded_depth = std::min(depth, MAX_PLY);
+    const int bounded_moves = std::min(moves, 255);
     const double scale = std::max(0.01, Tune::lmr_scale);
-    return static_cast<int>(Tune::lmr_base + std::log(d) * std::log(m) / scale);
+    return static_cast<int>(Tune::lmr_base +
+                            depth_log[bounded_depth] * move_log[bounded_moves] / scale);
 }
 
 struct ScoredMove {
     Move m;
     int score;
+    int see_value = 0;
+    U64 effort = 0;
 };
 
 // Tracks per-ply state for histories and extensions.
 struct StackInfo {
-    Move move;
-    Piece piece;
-    Move excluded_move;
+    Move move = MOVE_NONE;
+    Piece piece = NONE_PIECE;
+    Move excluded_move = MOVE_NONE;
+    int static_eval = 0;
+    bool has_static_eval = false;
     NNUE::Accumulator acc;
 };
 
@@ -160,6 +215,7 @@ static inline U64 searched_nodes() {
 }
 
 static inline void count_node() {
+    ++thread_node_count;
     if (local_node_limited_search) {
         ++local_node_count;
         if (local_node_limit != 0 && local_node_count >= local_node_limit)
@@ -199,7 +255,8 @@ std::string move_to_uci(Move m) {
 }
 
 static bool is_uci_square_text(const std::string& uci, int offset) {
-    return uci.size() > static_cast<size_t>(offset + 1) &&
+    return offset >= 0 &&
+           uci.size() > static_cast<size_t>(offset) + 1 &&
            uci[offset] >= 'a' && uci[offset] <= 'h' &&
            uci[offset + 1] >= '1' && uci[offset + 1] <= '8';
 }
@@ -249,6 +306,40 @@ static inline bool has_non_pawn_material(const Board &b, Colour c) {
             b.bit_boards[Piece(off + WB)] |
             b.bit_boards[Piece(off + WR)] |
             b.bit_boards[Piece(off + WQ)]) != 0;
+}
+
+static inline bool has_search_insufficient_material(const Board &b) {
+    if (b.bit_boards[WP] | b.bit_boards[BP]
+        | b.bit_boards[WR] | b.bit_boards[BR]
+        | b.bit_boards[WQ] | b.bit_boards[BQ])
+        return false;
+
+    const U64 knights = b.bit_boards[WN] | b.bit_boards[BN];
+    U64 bishops = b.bit_boards[WB] | b.bit_boards[BB];
+    if (__builtin_popcountll(knights | bishops) <= 1)
+        return true;
+    if (knights != 0 || bishops == 0)
+        return false;
+
+    const Square first = static_cast<Square>(__builtin_ctzll(bishops));
+    const int square_colour = (static_cast<int>(get_file(first))
+        + static_cast<int>(get_rank(first))) & 1;
+    while (bishops) {
+        const Square sq = pop_lsb(bishops);
+        const int colour = (static_cast<int>(get_file(sq))
+            + static_cast<int>(get_rank(sq))) & 1;
+        if (colour != square_colour)
+            return false;
+    }
+    return true;
+}
+
+static int rule_draw_score(Board &b, int ply) {
+    const Square king = king_square(b, b.side_to_move);
+    const bool in_check = is_square_attacked(b, king, flip(b.side_to_move));
+    if (in_check && generate_legal_moves(b).count == 0)
+        return -MATE_SCORE + ply;
+    return 0;
 }
 
 void make_null_move(Board &b, Undo &u) {
@@ -301,10 +392,12 @@ static inline bool is_capture_or_promo(const Board& b, Move m) {
     return b.get_piece(move_to(m)) != NONE_PIECE;
 }
 
-static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H, StackInfo* ss) {
+static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H,
+                              StackInfo* ss, int *see_value_out = nullptr) {
     int cap = capture_order_score(b, m);
     if (cap != 0) {
         int see_val = see(b, m);
+        if (see_value_out != nullptr) *see_value_out = see_val;
         // Add capture history bonus for non-promotion captures to fine-tune ordering
         int ch = 0;
         if (move_promo(m) == NONE_PTYPE) {
@@ -387,13 +480,29 @@ static inline int evaluate_position(const Board &b, const StackInfo *ss) {
     return evaluate(b);
 }
 
-static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo *ss) {
+static int max_ply_score(Board &b, int alpha, int ply, const StackInfo *ss) {
+    const Square king = king_square(b, b.side_to_move);
+    const bool in_check = is_square_attacked(b, king, flip(b.side_to_move));
+    if (!in_check)
+        return evaluate_position(b, ss);
+
+    const MoveList legal = generate_legal_moves(b);
+    return legal.count == 0 ? -MATE_SCORE + ply : alpha;
+}
+
+static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo *ss,
+                   U64 *rep_stack, int rep_len) {
     if (search_stopped()) return 0;
     count_node();
+
+    if (has_search_insufficient_material(b)) return 0;
+    if (b.half_move >= 100) return rule_draw_score(b, ply);
+    if (rep_len > 1 && is_repetition(b.hash, rep_stack, rep_len - 1, b.half_move)) return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
     if (alpha >= beta) return alpha;
+    if (ply >= MAX_PLY - 1) return max_ply_score(b, alpha, ply, ss);
 
     const TTEntry *tte = tt().probe(b.hash);
 
@@ -421,9 +530,10 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         }
         if (stand_pat >= beta) return stand_pat;
         if (stand_pat > alpha) alpha = stand_pat;
-        if (depth <= 0) return alpha;
+        if (depth <= Tune::qs_min_depth) return alpha;
     } else {
-        if (depth < Tune::qsearch_min_depth) return evaluate_position(b, ss);
+        // A checked node must search legal evasions even at the qsearch floor.
+        // The absolute ply guard above bounds pathological checking sequences.
     }
 
     MoveList moves;
@@ -452,25 +562,43 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
         for (int j = i + 1; j < noisy_count; ++j)
             if (noisy[j].score > noisy[i].score) std::swap(noisy[i], noisy[j]);
         Move m = noisy[i].m;
+        bool qs_see_reject = false;
+        bool qs_delta_reject = false;
+        int victim_val = 0;
 
         if (!in_check) {
-            if (!is_promo(m) && b.get_piece(move_to(m)) != NONE_PIECE && !see_ge_zero(b, m))
-                continue;
-
             Piece vp = b.get_piece(move_to(m));
-            int victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_move(m) ? PTYPE_VALUES[PAWN] : 0);
+            victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_move(m) ? PTYPE_VALUES[PAWN] : 0);
             if (move_promo(m) != NONE_PTYPE) victim_val += PTYPE_VALUES[move_promo(m)];
 
-            if (stand_pat + victim_val + Tune::qs_delta_margin < alpha)
-                continue;
+            const bool non_promotion_capture = move_promo(m) == NONE_PTYPE
+                && b.get_piece(move_to(m)) != NONE_PIECE;
+            qs_see_reject = non_promotion_capture
+                && see(b, m) < std::max(0, Tune::qs_see_margin);
+
+            qs_delta_reject = stand_pat + victim_val + Tune::qs_delta_margin < alpha;
         }
 
         Undo u;
-        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
         if (!make_move(b, m, u)) continue;
+        const bool qs_futility_reject = !in_check
+            && Tune::qs_futility_margin > 0
+            && move_promo(m) == NONE_PTYPE
+            && stand_pat + victim_val + Tune::qs_futility_margin < alpha;
+        if (qs_see_reject || qs_delta_reject || qs_futility_reject) {
+            const Square king = king_square(b, b.side_to_move);
+            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
+            if (!gives_check) {
+                unmake_move(b, m, u);
+                continue;
+            }
+        }
+        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
         legal_count++;
+        rep_stack[rep_len] = b.hash;
 
-        int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1, ss + 1);
+        int score = -qsearch(b, -beta, -alpha, depth - 1, ply + 1, ss + 1,
+                             rep_stack, rep_len + 1);
         unmake_move(b, m, u);
 
         if (search_stopped()) return 0;
@@ -485,20 +613,23 @@ static int qsearch(Board &b, int alpha, int beta, int depth, int ply, StackInfo 
 }
 
 static int negamax(Board &b, int depth, int alpha, int beta, int ply,
-                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, StackInfo* ss,
+                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, bool cut_node, StackInfo* ss,
                    bool allow_null = true) {
     if (search_stopped()) return 0;
     count_node();
 
     const U64 key = b.hash;
 
-    // Basic Draw Detection
-    if (b.half_move >= 100) return 0;
+    // Basic draw detection. Checkmate takes precedence if the mating move also
+    // reaches the reversible-move limit.
+    if (has_search_insufficient_material(b)) return 0;
+    if (b.half_move >= 100) return rule_draw_score(b, ply);
     if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1, b.half_move)) return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
     if (alpha >= beta) return alpha;
+    if (ply >= MAX_PLY - 1) return max_ply_score(b, alpha, ply, ss);
 
     const int original_alpha = alpha;
     Move tt_move = MOVE_NONE;
@@ -531,15 +662,19 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    if (depth <= 0) return qsearch(b, alpha, beta, Tune::qsearch_start_depth, ply, ss);
+    if (depth <= 0)
+        return qsearch(b, alpha, beta, Tune::qs_start_depth, ply, ss,
+                       rep_stack, rep_len);
 
     Square ksq    = king_square(b, b.side_to_move);
     bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
-    if (in_check && ply < MAX_PLY - 1) depth++;
+    if (in_check && ply < MAX_PLY - Tune::check_extension)
+        depth += Tune::check_extension;
 
     int raw_static_eval = 0;
     int static_eval = 0;
     bool have_static_eval = false;
+    ss->has_static_eval = false;
     if (!in_check) {
         if (tt_has_eval) {
             raw_static_eval = tt_eval;
@@ -549,11 +684,18 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
         static_eval = corrected_static_eval(b, raw_static_eval, H);
         have_static_eval = true;
+        ss->static_eval = static_eval;
+        ss->has_static_eval = true;
     }
+
+    // Compare against the previous same-side node. In-check ancestors do not
+    // carry a meaningful static evaluation and therefore do not trigger it.
+    const bool improving = have_static_eval && ss[-2].has_static_eval &&
+                           static_eval >= ss[-2].static_eval;
 
     // Reverse Futility Pruning
     if (!pv_node && !in_check && depth <= Tune::rfp_max_depth && ss->excluded_move == MOVE_NONE) {
-        if (static_eval - (Tune::rfp_margin_mult * depth) >= beta)
+        if (static_eval - (Tune::rfp_margin * depth) >= beta)
             return static_eval;
     }
 
@@ -571,15 +713,21 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         Undo u;
         (ss + 1)->acc = ss->acc;
         make_null_move(b, u);
+        const Move saved_move = ss->move;
+        const Piece saved_piece = ss->piece;
         ss->move = MOVE_NONE;
         ss->piece = NONE_PIECE;
-        int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1, H, rep_stack, rep_len, false, ss + 1);
+        int score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1,
+                             H, rep_stack, rep_len, false, !cut_node, ss + 1, false);
+        ss->move = saved_move;
+        ss->piece = saved_piece;
         unmake_null_move(b, u);
 
         if (search_stopped()) return 0;
         if (score >= beta) {
             if (depth >= Tune::nmp_verify_min_depth) {
-                int verify = negamax(b, depth - R, beta - 1, beta, ply, H, rep_stack, rep_len, false, ss, false);
+                int verify = negamax(b, depth - R, beta - 1, beta, ply,
+                                     H, rep_stack, rep_len, false, cut_node, ss, false);
                 if (search_stopped()) return 0;
                 if (verify < beta) {
                     // Zugzwang-ish high-depth fail highs must survive verification.
@@ -592,36 +740,95 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    // Singular Extensions
+    // ProbCut: use a reduced capture-only search to prove a high fail-high.
+    // Reduced searches do not write a full-depth TT bound because the proof
+    // depth is shallower.
+    if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE
+        && depth >= Tune::probcut_min_depth) {
+        const int margin = Tune::probcut_margin;
+        const int max_reduction = std::max(1, depth - 2);
+        const int reduction = std::clamp(Tune::probcut_reduction, 1, max_reduction);
+        const int reduced_depth = depth - 1 - reduction;
+        const int pc_beta = std::min(beta + margin, MATE_SCORE - ply - 1);
+
+        if (reduced_depth > 0 && pc_beta > beta) {
+            MoveList pc_moves = generate_pseudo_legal_captures(b);
+            ScoredMove pc_ordered[256];
+            for (int i = 0; i < pc_moves.count; ++i)
+                pc_ordered[i] = {pc_moves.moves[i], capture_order_score(b, pc_moves.moves[i]), 0};
+
+            int pc_tried = 0;
+            const int pc_limit = std::max(1, Tune::probcut_max_captures);
+            for (int i = 0; i < pc_moves.count && pc_tried < pc_limit; ++i) {
+                for (int j = i + 1; j < pc_moves.count; ++j)
+                    if (pc_ordered[j].score > pc_ordered[i].score)
+                        std::swap(pc_ordered[i], pc_ordered[j]);
+
+                Move m = pc_ordered[i].m;
+                if (m == ss->excluded_move) continue;
+                if (move_promo(m) == NONE_PTYPE && see(b, m) < 0) continue;
+
+                Piece moved_piece = b.get_piece(move_from(m));
+                Undo u;
+                if (!make_move(b, m, u)) continue;
+                NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
+                if (rep_len < MAX_PLY * 2) rep_stack[rep_len] = b.hash;
+                ss->move = m;
+                ss->piece = moved_piece;
+                ++pc_tried;
+
+                const int score = -negamax(b, reduced_depth, -pc_beta, -pc_beta + 1,
+                                            ply + 1, H, rep_stack, rep_len + 1,
+                                            false, true, ss + 1);
+                unmake_move(b, m, u);
+
+                if (search_stopped()) return 0;
+                if (score >= pc_beta) return score;
+            }
+        }
+    }
+
+    // Singular search. The excluded-move result decides whether the TT move is
+    // singular, whether several moves prove a cutoff, or whether the TT move
+    // should be searched at a reduced depth.
     int extension = 0;
     if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::se_min_depth
         && tt_move != MOVE_NONE && tt_bound != TT_UPPER && tt_depth >= depth - Tune::se_depth_margin
         && std::abs(tt_score) < MATE_SCORE - MAX_PLY) {
 
         int r_beta = tt_score - Tune::se_margin;
-        int se_depth = (depth - 1) / Tune::se_reduction_denom;
+        int se_depth = (depth - 1) / std::max(1, Tune::se_reduction_denom);
 
         ss->excluded_move = tt_move;
-        int score = negamax(b, se_depth, r_beta - 1, r_beta, ply, H, rep_stack, rep_len, false, ss);
+        int score = negamax(b, se_depth, r_beta - 1, r_beta, ply,
+                            H, rep_stack, rep_len, false, cut_node, ss);
         ss->excluded_move = MOVE_NONE;
 
-        if (score < r_beta) extension = 1;
+        if (search_stopped()) return 0;
+
+        const SearchDetail::SingularSearchDecision decision =
+            SearchDetail::classify_singular_search(
+                score, r_beta, beta, tt_score, cut_node);
+        if (decision.multicut)
+            return score;
+        extension = decision.extension;
     }
 
-    // IIR: when no TT move exists, do a cheaper search by reducing depth by 1.
+    // IIR: when no TT move exists, do a cheaper search by reducing depth.
     // This encourages us to search a reduced-depth iteration first, which then
     // populates the TT for a subsequent re-search at full depth.
     if (depth >= Tune::iir_min_depth && tt_move == MOVE_NONE && ss->excluded_move == MOVE_NONE) {
-        depth--;
+        depth -= Tune::iir_reduction;
     }
 
     MoveList pseudo = generate_pseudo_legal_moves(b);
     ScoredMove ordered[256];
     for (int i = 0; i < pseudo.count; ++i) {
         Move m = pseudo.moves[i];
-        int s  = order_score(b, m, ply, H, ss);
+        int see_value = 0;
+        int s  = order_score(b, m, ply, H, ss, &see_value);
         if (tt_move != MOVE_NONE && m == tt_move) s += 2000000;
-        ordered[i] = {m, s};
+        ordered[i] = {m, s, see_value};
     }
     int ordered_count = pseudo.count;
 
@@ -644,31 +851,64 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         if (m == ss->excluded_move) continue;
 
         bool is_quiet = !is_capture_or_promo(b, m);
+        const int move_history = is_quiet ? quiet_history_score(b, m, ply, H, ss) : 0;
+        bool lmp_reject = false;
+        bool futility_reject = false;
+        bool see_reject = false;
+        bool pvs_see_reject = false;
 
-        // Pruning (LMP, Futility)
+        // Pruning (LMP, futility, and promoted quiet SEE).
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
-            if (is_quiet && legal_count > (Tune::lmp_base + Tune::lmp_mult * depth * depth)) continue;
-            if (is_quiet && depth <= Tune::futility_max_depth && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha) continue;
-            if (!is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_pruning_max_depth &&
-                see(b, m) < Tune::see_pruning_margin * depth)
-                continue;
+            lmp_reject = is_quiet
+                && legal_count > Tune::lmp_base + Tune::lmp_mult * depth * depth;
+            futility_reject = is_quiet
+                && depth <= Tune::fp_max_depth
+                && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha;
+            see_reject = !is_quiet
+                && move_promo(m) == NONE_PTYPE
+                && depth <= Tune::see_max_depth
+                && ordered[i].see_value < Tune::see_margin * depth;
+
+            pvs_see_reject = is_quiet
+                && Tune::pvs_see_margin < 0
+                && depth >= Tune::pvs_see_min_depth
+                && legal_count + 1 >= Tune::pvs_see_min_moves
+                && m != tt_move
+                && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
+                && quiet_see(b, m) < Tune::pvs_see_margin;
         }
 
         Piece moved_piece = b.get_piece(move_from(m));
 
         // Pre-compute victim piece type for capture history (before make_move modifies the board)
         PieceType cap_victim_pt = NONE_PTYPE;
-        if (!is_quiet && move_promo(m) == NONE_PTYPE) {
+        if (!is_quiet && move_promo(m) == NONE_PTYPE)
             cap_victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(move_to(m)));
-        }
 
         Undo u;
-        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
         if (!make_move(b, m, u)) continue;
+        const bool history_reject = Tune::history_pruning_threshold < 0
+            && is_quiet
+            && depth >= Tune::history_pruning_min_depth
+            && legal_count + 1 >= Tune::history_pruning_min_moves
+            && m != tt_move
+            && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
+            && move_history < Tune::history_pruning_threshold;
+        if (lmp_reject || futility_reject || see_reject || pvs_see_reject || history_reject) {
+            const Square king = king_square(b, b.side_to_move);
+            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
+            if (!gives_check) {
+                unmake_move(b, m, u);
+                continue;
+            }
+        }
+
+        NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
 
         legal_count++;
         if (is_quiet) quiets_played[quiet_count++] = m;
-        else if (cap_victim_pt != NONE_PTYPE) captures_tried[capture_tried_count++] = {m, cap_victim_pt, get_type(moved_piece)};
+        else if (cap_victim_pt != NONE_PTYPE)
+            captures_tried[capture_tried_count++] = {m, cap_victim_pt, get_type(moved_piece)};
         rep_stack[rep_len] = b.hash;
         ss->move = m;
         ss->piece = moved_piece;
@@ -678,25 +918,33 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 
         // PVS Logic with LMR
         if (legal_count == 1) {
-            score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, pv_node, ss + 1);
+            const bool child_cut_node = pv_node ? false : !cut_node;
+            score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1,
+                             H, rep_stack, rep_len + 1, pv_node, child_cut_node, ss + 1);
         } else {
             int reduction = 0;
             if (depth >= Tune::lmr_min_depth && is_quiet && m != tt_move && m != H.killers[ply][0]) {
                 reduction = lmr_reduction_base(depth, legal_count);
-                if (!pv_node) reduction++;
-                if (pv_node) reduction--;
-                if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth) reduction++;
-                int hist = quiet_history_score(b, m, ply, H, ss);
-                if (hist > Tune::lmr_good_history_threshold) reduction--;
-                else if (hist < Tune::lmr_bad_history_threshold) reduction++;
+                reduction += pv_node ? Tune::lmr_pv_offset : Tune::lmr_nonpv_offset;
+                if (cut_node) reduction += Tune::cutnode_lmr_reduction;
+                if (improving) reduction += Tune::improving_lmr_reduction;
+                if (legal_count > Tune::lmr_extra_move_threshold && depth >= Tune::lmr_extra_min_depth)
+                    reduction += Tune::lmr_extra_reduction;
+                if (move_history > Tune::lmr_good_history)
+                    reduction += Tune::lmr_good_history_reduction;
+                else if (move_history < Tune::lmr_bad_history)
+                    reduction += Tune::lmr_bad_history_reduction;
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
-            score = -negamax(b, depth - 1 - reduction + d_ext, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false, ss + 1);
+            score = -negamax(b, depth - 1 - reduction + d_ext, -alpha - 1, -alpha, ply + 1,
+                             H, rep_stack, rep_len + 1, false, !cut_node, ss + 1);
             if (score > alpha && reduction > 0)
-                score = -negamax(b, depth - 1 + d_ext, -alpha - 1, -alpha, ply + 1, H, rep_stack, rep_len + 1, false, ss + 1);
+                score = -negamax(b, depth - 1 + d_ext, -alpha - 1, -alpha, ply + 1,
+                                 H, rep_stack, rep_len + 1, false, !cut_node, ss + 1);
             if (pv_node && score > alpha && score < beta)
-                score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1, true, ss + 1);
+                score = -negamax(b, depth - 1 + d_ext, -beta, -alpha, ply + 1,
+                                 H, rep_stack, rep_len + 1, true, false, ss + 1);
         }
 
         unmake_move(b, m, u);
@@ -761,7 +1009,10 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
         }
     }
 
-    if (legal_count == 0) return in_check ? -MATE_SCORE + ply : 0;
+    if (legal_count == 0) {
+        if (ss->excluded_move != MOVE_NONE) return alpha;
+        return in_check ? -MATE_SCORE + ply : 0;
+    }
 
     if (ss->excluded_move == MOVE_NONE) {
         if (have_static_eval && !in_check) {
@@ -778,6 +1029,8 @@ static int negamax(Board &b, int depth, int alpha, int beta, int ply,
 SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_len,
                     const std::vector<Move> &search_moves, IterCallback on_iter,
                     bool silent, int root_bias) {
+
+    thread_node_count = 0;
 
     auto H_storage = std::make_unique<SearchHeuristics>();
     SearchHeuristics& H = *H_storage;
@@ -807,7 +1060,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
     if (rep_init && rep_init_len > 0) {
         rep_len = std::min(rep_init_len, MAX_PLY);
-        for (int i = 0; i < rep_len; ++i) rep_stack[i] = rep_init[i];
+        const int rep_offset = rep_init_len - rep_len;
+        for (int i = 0; i < rep_len; ++i) rep_stack[i] = rep_init[rep_offset + i];
     }
     if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
         if (rep_len < MAX_PLY) rep_stack[rep_len++] = b.hash;
@@ -819,9 +1073,9 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
     for (int depth = 1; depth <= max_depth; ++depth) {
         int window_alpha = -INF;
         int window_beta  = INF;
-        int delta = Tune::ASP_DELTA;
+        int delta = Tune::asp_delta;
 
-        if (depth >= Tune::aspiration_min_depth && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
+        if (depth >= Tune::asp_min_depth && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
             window_alpha = std::max(-INF, final_best_score - delta);
             window_beta  = std::min(INF, final_best_score + delta);
         }
@@ -863,8 +1117,9 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
                 Undo u;
                 Piece root_piece = b.get_piece(move_from(m));
-                NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m);
                 if (!make_move(b, m, u)) continue;
+                const U64 nodes_before = thread_node_count;
+                NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
                 legal_root_count++;
                 rep_stack[rep_len] = b.hash;
 
@@ -873,15 +1128,19 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
                 int score;
                 if (legal_root_count == 1) {
-                    score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true, ss + 1);
+                    score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1,
+                                     H, rep_stack, rep_len + 1, true, false, ss + 1);
                 } else {
-                    score = -negamax(b, depth - 1, -current_alpha - 1, -current_alpha, 1, H, rep_stack, rep_len + 1, false, ss + 1);
+                    score = -negamax(b, depth - 1, -current_alpha - 1, -current_alpha, 1,
+                                     H, rep_stack, rep_len + 1, false, true, ss + 1);
                     if (score > current_alpha && score < current_beta) {
-                        score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack, rep_len + 1, true, ss + 1);
+                        score = -negamax(b, depth - 1, -current_beta, -current_alpha, 1,
+                                         H, rep_stack, rep_len + 1, true, false, ss + 1);
                     }
                 }
 
                 unmake_move(b, m, u);
+                ordered[i].effort += thread_node_count - nodes_before;
 
                 if (search_stopped()) break;
 
@@ -904,11 +1163,11 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
 
             if (best_score_this_depth <= window_alpha && window_alpha > -INF) {
                 window_alpha = std::max(-INF, window_alpha - delta);
-                delta *= Tune::aspiration_growth;
+                delta *= Tune::asp_growth;
                 continue;
             } else if (best_score_this_depth >= window_beta && window_beta < INF) {
                 window_beta = std::min(INF, window_beta + delta);
-                delta *= Tune::aspiration_growth;
+                delta *= Tune::asp_growth;
                 continue;
             }
 
@@ -919,6 +1178,17 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         }
 
         if (search_stopped()) break;
+
+        U64 root_effort = 0;
+        U64 best_move_effort = 0;
+        for (int i = 0; i < root_count; ++i) {
+            root_effort += ordered[i].effort;
+            if (ordered[i].m == final_best_move)
+                best_move_effort = ordered[i].effort;
+        }
+        const double best_move_node_fraction = root_effort > 0
+            ? static_cast<double>(best_move_effort) / static_cast<double>(root_effort)
+            : 0.0;
 
         auto now = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
@@ -974,7 +1244,8 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
             std::cout.flush();
 
             if (on_iter && !search_stopped())
-                on_iter(depth, final_best_move, final_best_score, nodes, ms);
+                on_iter(depth, final_best_move, final_best_score, nodes, ms,
+                        best_move_node_fraction);
         }
 
         if (search_stopped()) break;
@@ -1015,7 +1286,9 @@ int qsearch_score(Board &b) {
     StackInfo st[MAX_PLY + 5]{};
     StackInfo *ss = st + 2;
     ss->acc.refresh(b);
-    return qsearch(b, -INF, INF, Tune::qsearch_start_depth, 0, ss);
+    U64 rep_stack[MAX_PLY * 2]{};
+    rep_stack[0] = b.hash;
+    return qsearch(b, -INF, INF, Tune::qs_start_depth, 0, ss, rep_stack, 1);
 }
 
 } // namespace SHAYVERI

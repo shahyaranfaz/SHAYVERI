@@ -312,8 +312,12 @@ void Accumulator::refresh(const Board &board) {
 void Accumulator::apply_delta(int add_white, int add_black,
                               int sub_white, int sub_black) {
     for (int i = 0; i < g_hidden_size; ++i) {
-        vals[0][i] += feature_weights[add_white][i] - feature_weights[sub_white][i];
-        vals[1][i] += feature_weights[add_black][i] - feature_weights[sub_black][i];
+        const int white_value = static_cast<int>(vals[0][i])
+            + feature_weights[add_white][i] - feature_weights[sub_white][i];
+        const int black_value = static_cast<int>(vals[1][i])
+            + feature_weights[add_black][i] - feature_weights[sub_black][i];
+        vals[0][i] = static_cast<I16>(white_value);
+        vals[1][i] = static_cast<I16>(black_value);
     }
 }
 

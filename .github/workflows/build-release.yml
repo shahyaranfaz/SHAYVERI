@@ -1,0 +1,381 @@
+name: Build historical release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Validated X.Y.Z release tag to build, or all
+        required: true
+        default: all
+        type: string
+      publish:
+        description: Publish releases after every platform build succeeds
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      tags: ${{ steps.tags.outputs.tags }}
+    steps:
+      - id: tags
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          if [[ "$REQUESTED_TAG" == all ]]; then
+            echo 'tags=["v1.0.0","v1.1.0","v1.2.0","v1.3.0","v2.0.0","v2.1.0","v2.2.0","v2.3.0","v2.4.0","v2.5.0","v2.6.0","v2.7.0"]' >> "$GITHUB_OUTPUT"
+          elif [[ "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            printf 'tags=["%s"]\n' "$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "Invalid release tag: $REQUESTED_TAG" >&2
+            exit 1
+          fi
+
+  linux:
+    name: Linux x64-v3
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.prepare.outputs.tags) }}
+    runs-on: ubuntu-22.04
+    env:
+      RELEASE_TAG: ${{ matrix.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.tag }}
+          fetch-depth: 0
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          path: _release_meta
+          sparse-checkout: |
+            LICENSE
+            .github/scripts/write-release-readme.sh
+            docs/CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
+      - name: Validate tag
+        shell: bash
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"
+
+      - name: Build portable release binary
+        shell: bash
+        run: |
+          sed -i 's/-march=native/-march=x86-64-v3/g' Makefile
+          make -B -j"$(nproc)" CXX=g++
+
+      - name: Validate Linux runtime compatibility
+        shell: bash
+        run: |
+          if [[ -x SHAYVERI ]]; then
+            engine=SHAYVERI
+          elif [[ -x shaybot ]]; then
+            engine=shaybot
+          else
+            echo "Built engine binary not found" >&2
+            exit 1
+          fi
+
+          required_glibc=$(readelf --version-info "$engine" \
+            | grep -oE 'GLIBC_[0-9]+\.[0-9]+' | sort -Vu | tail -n 1)
+          required_glibcxx=$(readelf --version-info "$engine" \
+            | grep -oE 'GLIBCXX_[0-9]+\.[0-9]+\.[0-9]+' | sort -Vu | tail -n 1)
+
+          printf 'Maximum required glibc symbol: %s\n' "$required_glibc"
+          printf 'Maximum required libstdc++ symbol: %s\n' "$required_glibcxx"
+
+          [[ "$(printf '%s\n' GLIBC_2.35 "$required_glibc" | sort -V | tail -n 1)" == GLIBC_2.35 ]]
+          [[ "$(printf '%s\n' GLIBCXX_3.4.29 "$required_glibcxx" | sort -V | tail -n 1)" == GLIBCXX_3.4.29 ]]
+
+      - name: Package and uci check
+        shell: bash
+        run: |
+          package="SHAYVERI-${RELEASE_TAG}-linux-x64-v3"
+          mkdir "$package"
+          if [[ -x SHAYVERI ]]; then
+            engine=SHAYVERI
+          elif [[ -x shaybot ]]; then
+            engine=shaybot
+          else
+            echo "Built engine binary not found" >&2
+            exit 1
+          fi
+          cp "$engine" "$package/SHAYVERI"
+          case "$RELEASE_TAG" in
+            v2.0.0) cp first_net.nnue "$package/" ;;
+            v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
+            v2.2.0) cp net8_final.nnue "$package/" ;;
+            v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
+            v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
+          esac
+          bash _release_meta/.github/scripts/write-release-readme.sh \
+            "$package" "$RELEASE_TAG" "Linux x64-v3"
+          (cd "$package" && printf 'uci\nisready\nquit\n' | ./SHAYVERI > check.txt)
+          grep -q 'uciok' "$package/check.txt"
+          grep -q 'readyok' "$package/check.txt"
+          rm "$package/check.txt"
+          tar -czf "${package}.tar.gz" "$package"
+          sha256sum "${package}.tar.gz" > "${package}.tar.gz.sha256"
+
+          source_package="SHAYVERI-${RELEASE_TAG}-source"
+          mkdir "$source_package"
+          git archive "$RELEASE_TAG" | tar -x -C "$source_package"
+          cp _release_meta/LICENSE "$source_package/LICENSE"
+          tar -czf "${source_package}.tar.gz" "$source_package"
+          sha256sum "${source_package}.tar.gz" > "${source_package}.tar.gz.sha256"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SHAYVERI-${{ matrix.tag }}-linux-x64-v3
+          path: |
+            SHAYVERI-${{ matrix.tag }}-linux-x64-v3.tar.gz
+            SHAYVERI-${{ matrix.tag }}-linux-x64-v3.tar.gz.sha256
+            SHAYVERI-${{ matrix.tag }}-source.tar.gz
+            SHAYVERI-${{ matrix.tag }}-source.tar.gz.sha256
+          if-no-files-found: error
+
+  windows:
+    name: Windows x64-v3
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.prepare.outputs.tags) }}
+    runs-on: windows-2022
+    env:
+      RELEASE_TAG: ${{ matrix.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.tag }}
+          fetch-depth: 0
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          path: _release_meta
+          sparse-checkout: |
+            LICENSE
+            .github/scripts/write-release-readme.sh
+            docs/CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            make
+            zip
+            mingw-w64-x86_64-gcc
+
+      - name: Validate, build, package, and uci check
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          sed -i 's/-march=native/-march=x86-64-v3/g' Makefile
+          make -B -j"$(nproc)" windows CXX_WIN=g++
+          package="SHAYVERI-${RELEASE_TAG}-windows-x64-v3"
+          mkdir "$package"
+          if [[ -f SHAYVERI.exe ]]; then
+            engine=SHAYVERI.exe
+          elif [[ -f shaybot.exe ]]; then
+            engine=shaybot.exe
+          else
+            echo "Built engine binary not found" >&2
+            exit 1
+          fi
+          cp "$engine" "$package/SHAYVERI.exe"
+          case "$RELEASE_TAG" in
+            v2.0.0) cp first_net.nnue "$package/" ;;
+            v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
+            v2.2.0) cp net8_final.nnue "$package/" ;;
+            v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
+            v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
+          esac
+          bash _release_meta/.github/scripts/write-release-readme.sh \
+            "$package" "$RELEASE_TAG" "Windows x64-v3"
+          (cd "$package" && printf 'uci\nisready\nquit\n' | ./SHAYVERI.exe > check.txt)
+          grep -q 'uciok' "$package/check.txt"
+          grep -q 'readyok' "$package/check.txt"
+          rm "$package/check.txt"
+          zip -r "${package}.zip" "$package"
+          sha256sum "${package}.zip" > "${package}.zip.sha256"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SHAYVERI-${{ matrix.tag }}-windows-x64-v3
+          path: |
+            SHAYVERI-${{ matrix.tag }}-windows-x64-v3.zip
+            SHAYVERI-${{ matrix.tag }}-windows-x64-v3.zip.sha256
+          if-no-files-found: error
+
+  macos:
+    name: macOS Intel x64-v3
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.prepare.outputs.tags) }}
+    runs-on: macos-15-intel
+    env:
+      RELEASE_TAG: ${{ matrix.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.tag }}
+          fetch-depth: 0
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          path: _release_meta
+          sparse-checkout: |
+            LICENSE
+            .github/scripts/write-release-readme.sh
+            docs/CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
+      - name: Validate tag
+        shell: bash
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"
+
+      - name: Build portable release binary
+        shell: bash
+        run: |
+          sed -i '' 's/-march=native/-march=x86-64-v3/g' Makefile
+          if grep -q '^macos:' Makefile; then
+            make -B -j"$(sysctl -n hw.ncpu)" macos CXX_MACOS=clang++
+            cp SHAYVERI_mac SHAYVERI
+          else
+            make -B -j"$(sysctl -n hw.ncpu)" CXX=clang++
+          fi
+
+      - name: Package and uci check
+        shell: bash
+        run: |
+          package="SHAYVERI-${RELEASE_TAG}-macos-intel-x64-v3"
+          mkdir "$package"
+          if [[ -x SHAYVERI ]]; then
+            engine=SHAYVERI
+          elif [[ -x shaybot ]]; then
+            engine=shaybot
+          else
+            echo "Built engine binary not found" >&2
+            exit 1
+          fi
+          cp "$engine" "$package/SHAYVERI"
+          case "$RELEASE_TAG" in
+            v2.0.0) cp first_net.nnue "$package/" ;;
+            v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
+            v2.2.0) cp net8_final.nnue "$package/" ;;
+            v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
+            v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
+          esac
+          bash _release_meta/.github/scripts/write-release-readme.sh \
+            "$package" "$RELEASE_TAG" "macOS Intel x64-v3"
+          (cd "$package" && printf 'uci\nisready\nquit\n' | ./SHAYVERI > check.txt)
+          grep -q 'uciok' "$package/check.txt"
+          grep -q 'readyok' "$package/check.txt"
+          rm "$package/check.txt"
+          tar -czf "${package}.tar.gz" "$package"
+          shasum -a 256 "${package}.tar.gz" > "${package}.tar.gz.sha256"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SHAYVERI-${{ matrix.tag }}-macos-intel-x64-v3
+          path: |
+            SHAYVERI-${{ matrix.tag }}-macos-intel-x64-v3.tar.gz
+            SHAYVERI-${{ matrix.tag }}-macos-intel-x64-v3.tar.gz.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish releases
+    if: ${{ inputs.publish }}
+    needs: [prepare, linux, windows, macos]
+    permissions:
+      actions: read
+      contents: write
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAGS: ${{ needs.prepare.outputs.tags }}
+    steps:
+      - name: Check out release notes
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            docs/CHANGELOG.md
+            .github/scripts/write-release-readme.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: SHAYVERI-*
+          path: assets
+          merge-multiple: true
+
+      - name: Validate and publish releases in order
+        shell: bash
+        run: |
+          shopt -s nullglob
+          mapfile -t tags < <(jq -r '.[]' <<< "$RELEASE_TAGS")
+
+          for release_tag in "${tags[@]}"; do
+            archives=(
+              assets/SHAYVERI-"$release_tag"-*.zip
+              assets/SHAYVERI-"$release_tag"-*.tar.gz
+            )
+            checksums=(assets/SHAYVERI-"$release_tag"-*.sha256)
+
+            if (( ${#archives[@]} != 4 || ${#checksums[@]} != 4 )); then
+              printf '%s: expected 4 archives and 4 checksums; found %d and %d\n' \
+                "$release_tag" "${#archives[@]}" "${#checksums[@]}" >&2
+              find assets -maxdepth 1 -type f -printf '%f\n' | sort >&2
+              exit 1
+            fi
+
+            for checksum in "${checksums[@]}"; do
+              (cd assets && sha256sum --check "$(basename "$checksum")")
+            done
+
+            heading=$(grep -F -m1 "### $release_tag " docs/CHANGELOG.md || true)
+            if [[ -z "$heading" ]]; then
+              echo "No changelog entry found for $release_tag" >&2
+              exit 1
+            fi
+
+            release_title="SHAYVERI ${heading#\#\#\# }"
+            bash .github/scripts/write-release-readme.sh \
+              --notes release-notes.md "$release_tag"
+
+            if gh release view "$release_tag" >/dev/null 2>&1; then
+              gh release edit "$release_tag" \
+                --title "$release_title" \
+                --notes-file release-notes.md
+              gh release upload "$release_tag" "${archives[@]}" \
+                "${checksums[@]}" --clobber
+            else
+              gh release create "$release_tag" "${archives[@]}" \
+                "${checksums[@]}" \
+                --verify-tag \
+                --title "$release_title" \
+                --notes-file release-notes.md
+            fi
+          done

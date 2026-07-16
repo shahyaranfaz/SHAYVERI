@@ -102,7 +102,7 @@ def main():
         if version == NNUE_VERSION_KB:
             f.write(struct.pack("<I", king_buckets))
 
-        # Marlinflow stores ft.weight as [hidden][input]; SHAYVERI reads [input][hidden].
+        # Marlinflow stores ft.weight as [hidden][input], while SHAYVERI reads [input][hidden].
         for input_idx in range(input_size):
             for hidden_idx in range(HIDDEN_SIZE):
                 f.write(struct.pack("<h", quant_i16(ft_weight[hidden_idx][input_idx],

@@ -77,7 +77,7 @@ static Board mirror_and_swap(const Board &src) {
 int main() {
     SHAYVERI::Zobrist::init();
     SHAYVERI::init_attacks();
-    // When set, symmetry mismatches fail the suite; otherwise they are reported informationally.
+    // When set, symmetry mismatches fail the suite. Otherwise they are reported informationally.
     const bool strict = std::getenv("SHAYVERI_STRICT_EVAL_SYMMETRY") != nullptr;
 
     const std::vector<const char *> fens = {

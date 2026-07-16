@@ -9,9 +9,13 @@ import re
 import subprocess
 import sys
 
-ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "SHAYVERI"))
+ENGINE_BINARY_NAME = "SHAYVERI.exe" if os.name == "nt" else "SHAYVERI"
+DEFAULT_ENGINE_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", ENGINE_BINARY_NAME)
+)
+ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 DEPTH = int(os.environ.get("SHAYVERI_TACTICAL_DEPTH", "4"))
-MIN_SOLVED = int(os.environ.get("SHAYVERI_TACTICAL_MIN_SOLVED", "0"))
+MIN_SOLVED = int(os.environ.get("SHAYVERI_TACTICAL_MIN_SOLVED", "20"))
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_TACTICAL_TIMEOUT_SEC", "15"))
 
 TACTICAL_CASES = [

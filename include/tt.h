@@ -36,6 +36,7 @@ struct TTSlot {
 
 struct TTBucket {
     TTSlot entries[TT_BUCKET_SIZE];
+    std::atomic<U64> sequence{0};
 };
 
 class TranspositionTable {

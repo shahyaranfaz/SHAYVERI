@@ -28,36 +28,38 @@ CXXFLAGS := \
 INCLUDES := -I../../include
 LDFLAGS := -lpthread $(LTO)
 
-DUMP_KEYS_BIN := dump_keys
-ARTIFACTS_DIR := artifacts
-ZOBRIST_KEYS := $(ARTIFACTS_DIR)/zobrist_keys.json
-TABLE_CSV := $(ARTIFACTS_DIR)/table.csv
+DUMP_KEYS_BIN := outputs/dump_zobrist_keys
+OUTPUTS_DIR := outputs
+ZOBRIST_KEYS := $(OUTPUTS_DIR)/zobrist_keys.json
+TABLE_CSV := $(OUTPUTS_DIR)/table.csv
 BOOK_HEADER := ../../include/opening_book.h
 
 DUMP_KEYS_SRC := \
 	dump_zobrist_keys.cpp \
-	../../src/board.cpp \
-	../../src/fen.cpp \
-	../../src/attacks.cpp \
-	../../src/make.cpp \
-	../../src/move_gen.cpp \
-	../../src/evaluate.cpp \
-	../../src/search.cpp \
-	../../src/zobrist.cpp \
-	../../src/tt.cpp \
-	../../src/see.cpp \
-	../../src/time_manager.cpp
+	../../src/zobrist.cpp
 
-all: book
+DUMP_KEYS_HEADERS := \
+	../../include/zobrist.h \
+	../../include/board.h \
+	../../include/types.h
 
-run_all: book
+all: run_all
+
+run_all: fetch table keys book
 
 book: $(BOOK_HEADER)
 
-artifacts:
-	mkdir -p $(ARTIFACTS_DIR)
+outputs:
+	mkdir -p $(OUTPUTS_DIR)
 
 fetch:
+	@if [ -f $(OUTPUTS_DIR)/twic.pgn ]; then \
+		echo "Using existing corpus: $(OUTPUTS_DIR)/twic.pgn"; \
+	else \
+		bash fetch_twic.sh 920 2500 $(OUTPUTS_DIR)/twic.pgn; \
+	fi
+
+update:
 	bash fetch_twic.sh
 
 table: $(TABLE_CSV)
@@ -66,19 +68,19 @@ keys: $(ZOBRIST_KEYS)
 
 dump_keys: $(DUMP_KEYS_BIN)
 
-$(DUMP_KEYS_BIN): $(DUMP_KEYS_SRC) ../../include/*.h
+$(DUMP_KEYS_BIN): $(DUMP_KEYS_SRC) $(DUMP_KEYS_HEADERS) | outputs
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(DUMP_KEYS_SRC) $(LDFLAGS)
 
-$(ZOBRIST_KEYS): $(DUMP_KEYS_BIN) | artifacts
+$(ZOBRIST_KEYS): $(DUMP_KEYS_BIN) | outputs
 	./$(DUMP_KEYS_BIN) $(ZOBRIST_KEYS)
 
-$(TABLE_CSV): build_table.py fetch_twic.sh | artifacts
+$(TABLE_CSV): build_table.py $(OUTPUTS_DIR)/twic.pgn | outputs
 	python3 build_table.py
 
-$(BOOK_HEADER): build_header.py $(TABLE_CSV) $(ZOBRIST_KEYS) | artifacts
+$(BOOK_HEADER): build_header.py $(TABLE_CSV) $(ZOBRIST_KEYS) | outputs
 	python3 build_header.py
 
 clean:
 	rm -f $(DUMP_KEYS_BIN)
 
-.PHONY: all run_all book artifacts fetch table keys dump_keys clean
+.PHONY: all run_all book outputs fetch update table keys dump_keys clean

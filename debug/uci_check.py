@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-UCI smoke checks borrowed from the style of:
+UCI checks borrowed from the style of:
 - official-stockfish/Stockfish/tests/instrumented.py
 """
 
@@ -15,7 +15,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 852425
+BENCH_SIGNATURE_NODES = 101863
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -94,12 +94,11 @@ def extract_max_info_nodes(text: str) -> int:
         raise AssertionError(f"missing info nodes in output: {text[-TAIL_CHARS:]}")
     return max(nodes)
 
-def looks_like_book_probe(text: str) -> bool:
-    info_lines = [line for line in text.splitlines() if line.startswith("info depth ")]
-    if len(info_lines) != 1:
-        return False
-    line = info_lines[0]
-    return (" score cp " in line) and (" pv " in line) and (" nodes " not in line)
+def has_book_marker(text: str) -> bool:
+    return "info string book" in text
+
+def has_depth_info(text: str) -> bool:
+    return bool(re.search(r"^info depth \d+ .*\bscore\s+(?:cp|-?\d+|mate)\s+", text, flags=re.MULTILINE))
 
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
@@ -114,6 +113,16 @@ def main() -> int:
         handshake = run_engine(["uci", "isready"])
         require(handshake, "uciok")
         require(handshake, "readyok")
+        require(handshake, "option name Hash type spin default 64 min 1 max 32768")
+        require(handshake, "option name ClearHash type button")
+        require(handshake, "option name Threads type spin default 1 min 1 max 512")
+        require(handshake, "option name UseNNUE type check default true")
+        require(handshake, "option name EvalFile type string default <embedded>")
+        require(handshake, "option name OwnBook type check default true")
+        require(handshake, "option name BookInfoDepth type spin default 8 min 0 max 32")
+        require(handshake, "option name Ponder type check default false")
+        require(handshake, "option name MinimumThinkingTime type spin default 0 min 0 max 5000")
+        require(handshake, "option name MoveOverhead type spin default 10 min 0 max 5000")
 
         startpos = run_engine([
             "setoption name OwnBook value false",
@@ -130,12 +139,14 @@ def main() -> int:
 
         bench = run_engine(["bench 16 1 3 default depth"])
         bench_nodes = extract_bench_nodes(bench)
+        if bench_nodes <= 0:
+            raise AssertionError(f"bench returned invalid node count: {bench_nodes}")
         if bench_nodes != BENCH_SIGNATURE_NODES:
             raise AssertionError(
                 f"bench signature changed, expected {BENCH_SIGNATURE_NODES}, got {bench_nodes}"
             )
 
-        # Position borrowed from official Stockfish UCI smoke tests.
+        # Position borrowed from official Stockfish UCI checks.
         fen_case = run_engine([
             "ucinewgame",
             "position fen 5rk1/1K4p1/8/8/3B4/8/8/8 b - - 0 1",
@@ -143,23 +154,34 @@ def main() -> int:
         ], wait_for_bestmove=True)
         require_bestmove(fen_case)
 
-        with_book = run_engine([
+        book_info = run_engine([
             "setoption name OwnBook value true",
+            "setoption name BookInfoDepth value 2",
             "ucinewgame",
             "position startpos",
-            "go movetime 10",
+            "go depth 2",
+        ], wait_for_bestmove=True)
+        fast_book = run_engine([
+            "setoption name OwnBook value true",
+            "setoption name BookInfoDepth value 0",
+            "ucinewgame",
+            "position startpos",
+            "go depth 2",
         ], wait_for_bestmove=True)
         without_book = run_engine([
             "setoption name OwnBook value false",
             "ucinewgame",
             "position startpos",
-            "go movetime 10",
+            "go depth 2",
         ], wait_for_bestmove=True)
-        require_bestmove(with_book)
+        require_bestmove(book_info)
+        require_bestmove(fast_book)
         require_bestmove(without_book)
-        if not looks_like_book_probe(with_book):
-            raise AssertionError("opening book probe did not trigger on startpos with OwnBook=true")
-        if looks_like_book_probe(without_book):
+        if not has_book_marker(book_info) or not has_depth_info(book_info):
+            raise AssertionError("book info search did not emit book marker and depth info")
+        if not has_book_marker(fast_book) or has_depth_info(fast_book):
+            raise AssertionError("BookInfoDepth=0 did not preserve the fast book path")
+        if has_book_marker(without_book):
             raise AssertionError("opening book probe still triggered with OwnBook=false")
 
         determinism_1 = run_engine([
@@ -183,10 +205,13 @@ def main() -> int:
                 f"determinism failure: run1 bestmove={bm1} pv={pv1!r}, run2 bestmove={bm2} pv={pv2!r}"
             )
 
-        print("UCI smoke tests passed (flow + bench signature + book probe + determinism).")
+        print(
+            "UCI checks passed "
+            f"(flow + bench nodes={bench_nodes} + book probe + determinism)."
+        )
         return 0
     except Exception as exc:
-        print(f"UCI smoke tests failed: {exc}", file=sys.stderr)
+        print(f"UCI checks failed: {exc}", file=sys.stderr)
         traceback.print_exc()
         return 2
 

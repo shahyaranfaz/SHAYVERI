@@ -20,7 +20,7 @@ fn env_or<T: std::str::FromStr>(key: &str, default: T) -> T {
 fn main() {
     let hl_size = 256;
     let data_files = env::var("DATA_FILES").expect("DATA_FILES must be set");
-    let train_id = env::var("TRAIN_ID").unwrap_or_else(|_| "shayveri_v2.7_kb8".to_string());
+    let train_id = env::var("TRAIN_ID").unwrap_or_else(|_| "shayveri_v2.7.0_kb8".to_string());
     let out_dir = env::var("OUT_DIR").unwrap_or_else(|_| "checkpoints".to_string());
     let resume = env::var("RESUME").unwrap_or_default();
 
