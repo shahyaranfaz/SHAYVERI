@@ -10,7 +10,7 @@ from pathlib import Path
 
 import chess.pgn
 
-DEFAULT_GAMES_PER_PAIRING = 100
+DEFAULT_GAMES_PER_PAIRING = {"stc": 200, "ltc": 100}
 DEFAULT_SEED = 2600
 EXPECTED_PLAYERS = {
     "Alexandria9",
@@ -93,7 +93,7 @@ def make_opening_pairs(
         for orientations in by_fen.values():
             if len(orientations[0]) != len(orientations[1]):
                 raise ValueError(
-                    f"Unbalanced colors for {pairing}: "
+                    f"Unbalanced colours for {pairing}: "
                     f"{len(orientations[0])} versus {len(orientations[1])}"
                 )
             pairs.extend(zip(orientations[0], orientations[1], strict=True))
@@ -152,9 +152,9 @@ def process_time_control(
 
     games = read_reference_games(input_path)
     players = {
-        game.headers[color]
+        game.headers[colour]
         for game in games
-        for color in ("White", "Black")
+        for colour in ("White", "Black")
     }
     if players != EXPECTED_PLAYERS:
         raise ValueError(
@@ -185,9 +185,14 @@ def parse_args() -> argparse.Namespace:
         )
     )
     parser.add_argument(
-        "--games-per-pairing",
+        "--stc-games-per-pairing",
         type=int,
-        default=DEFAULT_GAMES_PER_PAIRING,
+        default=DEFAULT_GAMES_PER_PAIRING["stc"],
+    )
+    parser.add_argument(
+        "--ltc-games-per-pairing",
+        type=int,
+        default=DEFAULT_GAMES_PER_PAIRING["ltc"],
     )
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--stc-input", type=Path, default=DEFAULT_INPUTS["stc"])
@@ -204,7 +209,7 @@ def main() -> None:
             label,
             input_path,
             args.output_dir / f"reference_{label}.pgn",
-            args.games_per_pairing,
+            getattr(args, f"{label}_games_per_pairing"),
             args.seed,
         )
 

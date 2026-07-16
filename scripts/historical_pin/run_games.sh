@@ -19,12 +19,24 @@ candidate_engine_args() {
     "dir=$engine_dir"
 
   case "$tag" in
-    v0.*)
+    v1.0.0|v1.1.0|v1.2.0)
       ;;
     *)
       printf '%s\n' "option.OwnBook=false"
       ;;
   esac
+}
+
+validate_log() {
+  local log="$1"
+
+  [[ -f "$log" ]] || die "missing fastchess log: $log"
+
+  if grep -Eiq \
+    '^warning;.*(illegal move|disconnect)|forfeit on time|lost on time|(illegal moves|disconnects?|timeouts|crashed):[[:space:]]*[1-9]' \
+    "$log"; then
+    die "fastchess reported a failure in $log"
+  fi
 }
 
 run_pairing() {
@@ -47,6 +59,7 @@ run_pairing() {
   fi
 
   if (( existing == games )); then
+    validate_log "$log"
     echo "skip tag=$tag tc=$tc_label opponent=$opponent games=$existing"
     return
   fi
@@ -83,10 +96,7 @@ run_pairing() {
   existing="$(count_games "$pgn")"
   (( existing == games )) || die "$pgn contains $existing games, expected $games"
 
-  if grep -Eiq \
-    'illegal|crash|disconnect|forfeit on time|lost on time|timeout' "$log"; then
-    die "fastchess reported a failure in $log"
-  fi
+  validate_log "$log"
 
   echo "done tag=$tag tc=$tc_label opponent=$opponent games=$existing"
 }

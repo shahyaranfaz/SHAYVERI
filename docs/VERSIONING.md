@@ -12,12 +12,10 @@ release archives, and user-facing documentation.
 ### Note
 
 The current versioning scheme was created with v2.5.0 and strengthened through
-v2.6.0 and the development of v2.7.0. Earlier version numbers were assigned to
-historical engine snapshots for consistency. Those releases remain usable
-milestones. Published releases since v2.3.0 include recorded STC and LTC
-strength pins. This distinction concerns versioning and release organization
-and does not necessarily reflect the rigor of testing or Elo pinning performed
-on the engine.
+v2.6.0 and v2.7.0. Earlier version numbers were assigned to historical engine
+snapshots for consistency, though those versions were never actually released.
+This distinction concerns versioning and release organization and does not
+necessarily reflect the rigour of testing performed on the engine.
 
 ## Release Scope
 
@@ -52,7 +50,7 @@ The major component changes only when the project moves to the next era.
   opening-book, protocol, or NNUE-runtime milestone.
 - Reset `Z` to `0` whenever `Y` changes.
 
-Examples: `v0.1.0`, `v0.2.0`, `v0.3.0`, then `v1.0.0`, `v1.1.0`.
+Examples: `v1.0.0`, `v1.1.0`, `v1.2.0`, then `v2.0.0`, `v2.1.0`.
 
 ## Z: Patch Release
 

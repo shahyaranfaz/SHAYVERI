@@ -9,7 +9,7 @@ release_metadata() {
   local release_tag=$1
 
   case "$release_tag" in
-    v0.*|v1.*|v2.0.0|v2.1.0|v2.2.0|v2.3.0|v2.4.0)
+    v1.*|v2.0.0|v2.1.0|v2.2.0|v2.3.0|v2.4.0)
       HISTORICAL_RELEASE=true
       ;;
     *)
@@ -28,7 +28,7 @@ release_metadata() {
   esac
 
   case "$release_tag" in
-    v0.2.0|v0.3.0|v1.0.0|v1.1.0|v1.2.0)
+    v1.0.0|v1.1.0|v1.2.0)
       BOOK_NOTE="This historical release has an internal opening book without an OwnBook disable option."
       ;;
     v1.3.0|v2.*)
@@ -63,21 +63,21 @@ EOF
       cat >> "$output_file" <<EOF
 
 This is a historical release. Its version number was assigned retroactively
-for consistency with the current scheme. This distinction concerns versioning
-and release organization and does not necessarily reflect the rigor of testing
-or Elo pinning performed on the engine.
+for consistency with the current scheme, though it was never actually released.
+This distinction concerns versioning and release organization and does not
+necessarily reflect the rigour of testing performed on the engine.
 EOF
     else
       cat >> "$output_file" <<EOF
 
-This is a historical release. Its version number was assigned retroactively for consistency with the current scheme. This distinction concerns versioning and release organization and does not necessarily reflect the rigor of testing or Elo pinning performed on the engine.
+This is a historical release. Its version number was assigned retroactively for consistency with the current scheme, though it was never actually released. This distinction concerns versioning and release organization and does not necessarily reflect the rigour of testing performed on the engine.
 EOF
     fi
   fi
 
   cat >> "$output_file" <<EOF
 
-## Changes
+## Engine Changes
 
 EOF
 
@@ -115,6 +115,7 @@ EOF
     }
     $0 ~ "^### " tag " " { found=1; next }
     found && /^### / { exit }
+    found && /^\*\*Default network:\*\*/ { next }
     found { emit($0) }
     END { if (unwrap == "true") flush_paragraph() }
   ' "$CHANGELOG_FILE" >> "$output_file"
@@ -142,17 +143,19 @@ EOF
     echo "- Opening book: $BOOK_NOTE" >> "$output_file"
   fi
 
-  if [[ $wrap_for_readme == true ]]; then
-    cat >> "$output_file" <<EOF
+  if [[ $NETWORK == "External NNUE:"* ]]; then
+    if [[ $wrap_for_readme == true ]]; then
+      cat >> "$output_file" <<EOF
 
 Keep any external NNUE file in the same directory as the engine executable
 unless an explicit EvalFile path is configured.
 EOF
-  else
-    cat >> "$output_file" <<EOF
+    else
+      cat >> "$output_file" <<EOF
 
 Keep any external NNUE file in the same directory as the engine executable unless an explicit EvalFile path is configured.
 EOF
+    fi
   fi
 }
 

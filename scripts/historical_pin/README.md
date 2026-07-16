@@ -16,8 +16,9 @@ The v2.6.0 STC and LTC pin PGNs provide the reference games. The parser removes
 all games involving SHAYVERI and selects the same balanced base for every
 historical pin:
 
-- 100 games for every external-engine pairing
-- 50 opening positions with both colors for each pairing
+- 200 games for every STC external-engine pairing
+- 100 games for every LTC external-engine pairing
+- opening positions played with both colors
 - fixed `SF2850=2850` and `SF3000=3000` Ordo anchors
 
 Each historical release then replaces the removed SHAYVERI slot and plays all
@@ -31,6 +32,10 @@ seven external opponents:
 
 Every rating uses the exact same external reference PGN. Only the tested
 SHAYVERI release and its newly played games change.
+
+Each STC pool contains 4,200 external games and 1,400 SHAYVERI games, for
+5,600 games total. Each LTC pool contains 2,100 external games and 700
+SHAYVERI games, for 2,800 games total.
 
 ## Requirements
 
@@ -50,8 +55,8 @@ scripts/historical_pin/run_all.sh
 
 The complete runner performs four stages:
 
-1. Downloads every Linux release package from v0.1.0 through v2.2.0, verifies
-   its published SHA-256 checksum, extracts it, and runs a UCI smoke test.
+1. Downloads every Linux release package from v1.0.0 through v2.2.0, verifies
+   its published SHA-256 checksum, extracts it, and runs a UCI check.
 2. Creates the shared STC and LTC reference PGNs.
 3. Runs the historical STC and LTC gauntlets.
 4. Combines each release's games with the shared reference PGN and runs Ordo.

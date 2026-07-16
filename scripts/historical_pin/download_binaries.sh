@@ -50,9 +50,9 @@ for tag in "${tag_list[@]}"; do
   mv "$temporary" "$target"
   trap - EXIT
 
-  smoke_output="$(printf 'uci\nisready\nquit\n' | "$target/SHAYVERI")"
-  grep -q '^uciok$' <<< "$smoke_output" || die "$tag did not return uciok"
-  grep -q '^readyok$' <<< "$smoke_output" || die "$tag did not return readyok"
+  check_output="$(printf 'uci\nisready\nquit\n' | "$target/SHAYVERI")"
+  grep -q '^uciok$' <<< "$check_output" || die "$tag did not return uciok"
+  grep -q '^readyok$' <<< "$check_output" || die "$tag did not return readyok"
 
   echo "ready tag=$tag engine=$target/SHAYVERI"
 done

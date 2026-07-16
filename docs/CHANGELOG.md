@@ -4,15 +4,22 @@ This changelog records SHAYVERI engine releases. Each entry describes changes
 since the previous version. NNUE artifact names are recorded separately from
 engine versions. See [VERSIONING.md](VERSIONING.md).
 
-### Note
+### Notes
 
 The current versioning scheme was created with v2.5.0 and strengthened through
-v2.6.0 and the development of v2.7.0. Earlier version numbers were assigned to
-historical engine snapshots for consistency. Those releases remain usable
-milestones. Published releases since v2.3.0 include recorded STC and LTC
-strength pins. This distinction concerns versioning and release organization
-and does not necessarily reflect the rigor of testing or Elo pinning performed
-on the engine.
+v2.6.0 and v2.7.0. Earlier version numbers were assigned to historical engine
+snapshots for consistency, though those versions were never actually released.
+This distinction concerns versioning and release organization and does not
+necessarily reflect the rigour of testing performed on the engine.
+
+Since v2.3.0, all releases were pinned against a broad collection of reputable
+engines. These pins include 800 games per pairing at `10+0.1` (STC) and 200
+games per pairing at `90+0.5` (LTC). The framework is described in
+`scripts/elo_pin`.
+
+Prior releases were retroactively pinned at the same time controls and against
+the same pool, though with 200 games per pairing at STC and 100 games per
+pairing at LTC. The framework is described in `scripts/historical_pin`.
 
 ## NNUE Era
 
@@ -85,8 +92,8 @@ and Elo gates.
   stopped PV reconstruction at repetitions and the fifty-move boundary.
 - Same-net comparisons against the previous search scored `199-52-149` at one
   thread and `102-3-45` at four threads.
-- Recorded `3045.7 +/-14.8` STC and `3136.5 +/-28.9` LTC, improvements of
-  +93.3 STC and +54.6 LTC over v2.5.0 in the same pool.
+- Recorded `3045.7 +/-14.8` at STC and `3136.5 +/-28.9` at LTC, improvements
+  of +93.3 STC and +54.6 LTC over v2.5.0 in the same pool.
 
 ### v2.5.0 - KB16x512 Network and Expanded Training
 
@@ -97,8 +104,8 @@ and Elo gates.
   RobotMoon/Stockfish corpora.
 - Implemented `go nodes N` limits through UCI and search.
 - Fixed Lazy SMP issues discovered after v2.4.0.
-- Recorded `2952.4 +/-14.7` STC and `3081.9 +/-28.4` LTC, improvements of
-  +14.1 STC and +35.7 LTC over the previous promoted NNUE in the same pool.
+- Recorded `2952.4 +/-14.7` at STC and `3081.9 +/-28.4` at LTC, improvements
+  of +14.1 STC and +35.7 LTC over v2.4.0 in the same pool.
 
 ### v2.4.0 - Datagen Repair and External-Corpus Network
 
@@ -109,15 +116,15 @@ and Elo gates.
 - Fixed KB8 SCReLU inference and Bullet conversion output.
 - The repaired datagen and SHAYVERI-generated corpus failed to produce a
   strong network.
-- Experiments with an external RobotMoon corpus labeled with Stockfish
-  evaluations produced the strong `SHAYVERI2_2_0.nnue` network, which improved
-  as the corpus scaled from 250M to 500M to 1B positions.
+- Experiments with an external RobotMoon corpus, labeled with Stockfish
+  evaluations, produced the strong `SHAYVERI2_2_0.nnue` network and improved
+  with scale.
 - Added the UCI option `UseNNUE` for easy selection between the NNUE and HCE
   evaluation paths.
-- Recorded `2938.3 +/-14.9` STC and `3046.2 +/-28.6` LTC, improvements of
-  +222.1 STC and +253.9 LTC over the previous promoted NNUE in the same pool.
+- Recorded `2938.3 +/-14.9` at STC and `3046.2 +/-28.6` at LTC, improvements
+  of +222.1 STC and +253.9 LTC over v2.3.0 in the same pool.
 
-### v2.3.0 - KB8 Continuation and KB16 Attempt
+### v2.3.0 - Scaling King Buckets
 
 **Default network:** external `net5_final.nnue`.
 
@@ -130,8 +137,9 @@ and Elo gates.
   stopped.
 - Retained the known-good net5 engine path after the experimental net13 line
   also failed to produce a promotable replacement.
-- Recorded net5 at `2716.2 +/-16.4` STC and `2792.3 +/-41.5` LTC, improvements
-  of +63.5 STC and +57.8 LTC over HCE in the same pool.
+- Recorded `2716.2 +/-16.4` at STC and `2792.3 +/-41.5` at LTC, approximately
+  +140.9 STC and +76.1 LTC higher than v2.2.0, though the results are not
+  directly comparable due to different Elo-pinning strategies.
 
 ### v2.2.0 - King Buckets and Bullet
 
@@ -144,8 +152,10 @@ and Elo gates.
   later comparisons showed that this line had not surpassed the HCE anchor.
 - Fixed illegal-move behavior occurring with the NNUE evaluation.
 - Fixed worker threads retaining references to moves from an earlier search.
+- Recorded `2575.3 +/-43.7` at STC and `2716.2 +/-50.8` at LTC in historical
+  pins, regressions of -164.7 STC and -123.0 LTC from v2.1.0 in the same pool.
 
-### v2.1.0 - Classic NNUE Iteration
+### v2.1.0 - NNUE Self-Data-Loop
 
 **Default network:** external `net5_final.nnue`.
 
@@ -156,8 +166,8 @@ and Elo gates.
 - Net5 used 1B positions, WDL 0.1, 10k-node labels, and mixed HCE/NNUE data.
 - Identified arrival-order chunk consumption as the source of noisy,
   non-monotonic checkpoint strength. Net6 and net7 did not replace net5.
-- Direct matches measured `+236.8 +/-24.5` STC and `+220.1 +/-42.5` LTC over
-  HCE.
+- Recorded `2740.0 +/-35.3` at STC and `2839.2 +/-45.8` at LTC in historical
+  pins, improvements of +113.4 STC and +111.2 LTC over v2.0.0 in the same pool.
 
 ### v2.0.0 - First NNUE Engine
 
@@ -165,13 +175,16 @@ and Elo gates.
 
 - Added the UCI option `EvalFile`, NNUE loading, scalar and AVX2 inference,
   accumulator refresh and incremental updates, and HCE fallback behavior.
-- Integrated the first trained network after correcting conversion scaling and
-  NNUE runtime issues.
 - Added engine datagen for producing NNUE training positions.
+- Integrated the first trained Chess768/256 network, trained using SHAYVERI
+  data and Marlinflow.
+- Recorded `2626.6 +/-41.1` at STC and `2728.0 +/-50.1` at LTC in historical
+  pins, a regression of -30.6 STC and an improvement of +25.0 LTC relative to
+  v1.3.0 in the same pool.
 
 ## HCE Era
 
-### v1.3.0 - Final HCE Search
+### v1.3.0 - Final HCE Refinements
 
 - Completed the final SPSA cycle and promoted the winning parameter set.
 - Fixed previously unwired LMR, aspiration, and SEE-pruning parameters and
@@ -183,19 +196,20 @@ and Elo gates.
 - Implemented fixed-depth `go depth N` searches.
 - Hardened UCI option parsing with range checks and clamping, handled allocation
   failures, and rejected invalid search inputs safely.
+- Recorded `2657.2 +/-39.5` at STC and `2703.0 +/-51.2` at LTC in historical
+  pins, improvements of +94.7 STC and +33.7 LTC over v1.2.0 in the same pool.
 
-### v1.2.0 - Texel-Tuned HCE
-
-- Adopted Texel-tuned material and PSTs, pawn/evaluation terms, king PSTs,
-  king-safety and tactical terms, and a final refinement phase.
-- Normalized piece values and PSTs.
-
-### v1.1.0 - SPSA-Tuned HCE
+### v1.2.0 - Tuned Search and Evaluation
 
 - Completed four SPSA passes over the centralized HCE and search parameters.
 - Replaced the initial hand-selected defaults with the final SPSA result.
+- Adopted Texel-tuned material and PSTs, pawn/evaluation terms, king PSTs,
+  king-safety and tactical terms, and a final refinement phase.
+- Normalized piece values and PSTs.
+- Recorded `2562.5 +/-44.8` at STC and `2669.3 +/-53.5` at LTC in historical
+  pins, improvements of +115.0 STC and +92.8 LTC over v1.1.0 in the same pool.
 
-### v1.0.0 - Complete Handcrafted Engine
+### v1.1.0 - Improved HCE
 
 - Added aspiration windows, PVS, LMP, singular extensions, internal iterative
   reduction, mate-distance pruning, and the completed handcrafted evaluation.
@@ -206,32 +220,20 @@ and Elo gates.
   engine-side book behavior.
 - Centralized search and evaluation constants in `tune.h` and prepared the
   engine for SPSA.
+- Recorded `2447.5 +/-55.0` at STC and `2576.5 +/-60.2` at LTC in historical
+  pins, improvements of +131.9 STC and +154.5 LTC over v1.0.0 in the same pool.
 
-## HCE Development Era
+### v1.0.0 - First Engine
 
-### v0.3.0 - Evaluation and Pruning
-
-- Replaced the early evaluation with a tapered HCE covering pawn structure,
-  king safety, mobility, coordination, tactical pressure, threats, and
-  outposts.
-- Added futility pruning, delta pruning, reverse futility pruning, null-move
-  pruning, and LMR.
-- Fixed evaluation parity and early search/GUI correctness issues.
-
-### v0.2.0 - Search and Evaluation Infrastructure
-
+- Added the C++20 board representation, FEN parser, attack generation, legal
+  move generation, make/unmake, perft foundation, search, and the UCI loop.
 - Added Zobrist hashing, a transposition table, repetition detection, SEE, and
   check extension support.
 - Added the compiled opening book, piece-square tables, bishop-pair evaluation,
-  square and move ordering, and improved UCI compliance.
-
-### v0.1.0 - First Usable Engine
-
-- Added the C++20 board representation, FEN parser, attack generation, legal
-  move generation, make/unmake, perft foundation, basic HCE, search, UCI loop,
-  and a runnable UCI engine.
-- This was the first working but low-strength SHAYVERI snapshot.
-
-## Future Era
-
-### v3.0.0 - Undetermined
+  square and move ordering, clock-based time allocation, and UCI compliance.
+- Added a tapered HCE covering pawn structure, king safety, mobility,
+  coordination, tactical pressure, threats, and outposts.
+- Added futility pruning, delta pruning, reverse futility pruning, null-move
+  pruning, and LMR.
+- Recorded `2315.6 +/-74.1` at STC and `2422.0 +/-79.6` at LTC in historical
+  pins.

@@ -165,7 +165,7 @@ make test
   side, and counters.
 - En-passant legality edge cases adapted from `niklasf/python-chess`.
 - SEE regression checks.
-- Evaluation symmetry checks on vertically mirrored, color-swapped positions.
+- Evaluation symmetry checks on vertically mirrored, colour-swapped positions.
 - Transposition-table safety checks.
 - Time-manager policy checks covering adaptive scaling, safe clock ceilings, and
   no-increment survival.
