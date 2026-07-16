@@ -30,7 +30,7 @@ JOB_CLAIMS="${JOB_CLAIMS:-1}"
 
 OPENING_FILE="${OPENING_FILE:-../books/final_search_mix_shuf.epd}"
 FASTCHESS="${FASTCHESS:-$HOME/chess_arena/fastchess/fastchess}"
-SPSA_ENGINE_OPTIONS="${SPSA_ENGINE_OPTIONS:-option.OwnBook=false option.Book_Info_Depth=0}"
+SPSA_ENGINE_OPTIONS="${SPSA_ENGINE_OPTIONS:-option.OwnBook=false option.BookInfoDepth=0}"
 GAMES_PER_BUDGET="${GAMES_PER_BUDGET:-300}"
 BUDGET="${BUDGET:-400}"
 

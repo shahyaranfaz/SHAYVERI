@@ -45,7 +45,7 @@ run_sweep() {
   if "$FASTCHESS" "${args[@]}" \
     -tournament roundrobin \
     -each proto=uci tc=10+0.1 timemargin=100 option.Threads=1 \
-      option.OwnBook=false option.Book_Info_Depth=0 \
+      option.OwnBook=false option.BookInfoDepth=0 \
       "${extra_each_options[@]}" \
     -openings file="$OPENING_FILE" format=epd order=random plies=16 \
     -games 2 -rounds 100 -repeat \

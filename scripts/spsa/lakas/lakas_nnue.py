@@ -42,7 +42,7 @@ HARDCODE_OPTIMIZER = "cmaes"
 HARDCODE_MATCH_MANAGER_PATH = os.environ.get("FASTCHESS", "fastchess")
 HARDCODE_ENGINE_OPTIONS = os.environ.get(
     "SPSA_ENGINE_OPTIONS",
-    "option.OwnBook=false option.Book_Info_Depth=0",
+    "option.OwnBook=false option.BookInfoDepth=0",
 )
 HARDCODE_BASE_TIME_SEC = float(os.environ.get("BASE_TIME_SEC", "3"))
 HARDCODE_INC_TIME_SEC = float(os.environ.get("INC_TIME_SEC", "0.03"))

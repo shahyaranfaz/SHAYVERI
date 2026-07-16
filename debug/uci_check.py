@@ -114,15 +114,15 @@ def main() -> int:
         require(handshake, "uciok")
         require(handshake, "readyok")
         require(handshake, "option name Hash type spin default 64 min 1 max 32768")
-        require(handshake, "option name Clear Hash type button")
+        require(handshake, "option name ClearHash type button")
         require(handshake, "option name Threads type spin default 1 min 1 max 512")
         require(handshake, "option name Ponder type check default false")
         require(handshake, "option name OwnBook type check default true")
-        require(handshake, "option name Book_Info_Depth type spin default 8 min 0 max 32")
+        require(handshake, "option name BookInfoDepth type spin default 8 min 0 max 32")
         require(handshake, "option name UseNNUE type check default true")
         require(handshake, "option name EvalFile type string default <embedded>")
-        require(handshake, "option name Minimum Thinking Time type spin default 0 min 0 max 5000")
-        require(handshake, "option name Move Overhead type spin default 10 min 0 max 5000")
+        require(handshake, "option name MinimumThinkingTime type spin default 0 min 0 max 5000")
+        require(handshake, "option name MoveOverhead type spin default 10 min 0 max 5000")
 
         startpos = run_engine([
             "setoption name OwnBook value false",
@@ -156,14 +156,14 @@ def main() -> int:
 
         book_info = run_engine([
             "setoption name OwnBook value true",
-            "setoption name Book_Info_Depth value 2",
+            "setoption name BookInfoDepth value 2",
             "ucinewgame",
             "position startpos",
             "go depth 2",
         ], wait_for_bestmove=True)
         fast_book = run_engine([
             "setoption name OwnBook value true",
-            "setoption name Book_Info_Depth value 0",
+            "setoption name BookInfoDepth value 0",
             "ucinewgame",
             "position startpos",
             "go depth 2",
@@ -180,7 +180,7 @@ def main() -> int:
         if not has_book_marker(book_info) or not has_depth_info(book_info):
             raise AssertionError("book info search did not emit book marker and depth info")
         if not has_book_marker(fast_book) or has_depth_info(fast_book):
-            raise AssertionError("Book_Info_Depth=0 did not preserve the fast book path")
+            raise AssertionError("BookInfoDepth=0 did not preserve the fast book path")
         if has_book_marker(without_book):
             raise AssertionError("opening book probe still triggered with OwnBook=false")
 

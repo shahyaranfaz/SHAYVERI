@@ -28,48 +28,26 @@ pairing at LTC. The framework is described in
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
-**Candidate range:** `1013ebb1a5c7f312e418f944fb737b44fc85810b` through
-the final validated `search_overhaul` commit. Tag only after SPSA, regression,
-and Elo gates.
-
-- Expanded the v2.6.0 tuning surface with configurable improving, cut-node,
-  PV/non-PV LMR, singular-search, extension, pruning, and time-management
-  controls, and removed the remaining hard-coded search constants.
-- Added improving and cut-node-aware LMR and propagated cut-node state through
-  PVS, null-move, and singular-search calls. The initial pair scored
-  `466-417-717` against the preceding configuration at `3+0.03`.
-- Stopped active searches before changing TT, NNUE, thread, or tuning state,
-  and bounded active SMP by detected hardware capacity.
-- Fixed qsearch at the checked-position depth floor so legal evasions are
-  searched instead of returning a normal static evaluation.
-- Removed repeated LMR logarithms, reused SEE results, delayed NNUE accumulator
-  work until legality was known, and removed redundant datagen move generation.
-- Verified the initial audit fixes in a 1,600-game Fastchess regression:
-  `454-419-727`, or `+7.6 +/-12.6` Elo versus the preceding binary.
-- Added and ablated qsearch SEE/futility pruning, late-history pruning,
-  quiet-move PVS SEE pruning, and capture-only ProbCut. Regressing qsearch
-  futility and late-history pruning remain disabled.
-- Corrected repetition, fifty-move, insufficient-material, mate-at-the-rule
-  boundary, maximum-ply, excluded-move, and null-move stack handling.
-- Serialized whole TT-bucket writes so concurrent probes cannot accept a
-  mixed snapshot, and preserved the newest available repetition history.
-- Disabled check extensions after direct testing.
-- Reworked time management with root best-move node-share scaling,
-  multi-iteration evaluation-stability scaling, enforced soft/hard/minimum
-  limits, low-clock survival, and corrected ponder-hit initialization.
-- Extended singular-search handling and promoted multi-cut pruning. Negative,
-  double, and triple extensions remain disabled after testing.
-- Replaced the legacy book, whose compiled entries carried precomputed
-  Stockfish evaluations, with a book rebuilt from qualifying TWIC games. The
-  generator now selects one deterministic weighted-majority move per position
-  and stores moves without evaluator-specific scores.
-- Added `Book_Info_Depth`. A positive value searches the forced book move to
-  emit normal UCI information using SHAYVERI's own evaluation instead of the
-  old stored Stockfish score. A value of `0` keeps the immediate book response.
-- Made `bench` start from clean TT, history, stop, and node-count state and
-  report short-run timing at microsecond resolution.
-- Promoted the first SPSA batch's search-parameter values. Final validation and
-  the release tag remain pending.
+- Reworked LMR with improving and cut-node awareness, PV and non-PV offsets,
+  move-count and history adjustments, and consistent cut-node propagation.
+- Added capture-only ProbCut, quiet PVS SEE pruning, expanded qsearch pruning,
+  and singular-search multi-cut. Check, negative, double, and triple extensions
+  and regressing pruning policies remain disabled after direct testing.
+- Added root-node-share and multi-depth evaluation-stability time scaling,
+  safe clock ceilings, emergency no-increment behavior, and deadline-aware
+  hard-timer sleeps.
+- Fixed correctness and lifecycle issues across search, qsearch, repetition
+  history, rule handling, transposition-table concurrency, pondering, and UCI
+  state changes.
+- Delayed NNUE accumulator updates until moves pass legality and pruning,
+  reused SEE results from move ordering, precomputed LMR logarithms, and
+  removed redundant datagen move generation.
+- Bounded active Lazy SMP workers by detected hardware capacity.
+- Rebuilt the opening book from qualifying TWIC games using one deterministic
+  weighted-majority move per position and no stored evaluator scores.
+- Added `BookInfoDepth` for SHAYVERI-generated scores on book moves, which now
+  respect `searchmoves` and legality.
+- Made `bench` independent of prior search state and report microsecond timing.
 
 ### v2.6.0 - Atomic Lazy SMP, Embedded NNUE, and Search Refinements
 

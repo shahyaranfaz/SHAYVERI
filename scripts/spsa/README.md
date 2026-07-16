@@ -83,7 +83,7 @@ strength.
 Important controls are `PASS_NAME`, `BATCH_ID`, `BUDGET`, `MASTER_JOBS`,
 `WORKER_JOBS`, `JOB_CLAIMS`, `GAMES_PER_BUDGET`, `OPENING_FILE`, and
 `FASTCHESS`. Tuning matches default to `OwnBook=false` and
-`Book_Info_Depth=0` so the configured external opening set is the only book.
+`BookInfoDepth=0` so the configured external opening set is the only book.
 
 On trainer machines, `lakas_nnue.py` may be copied beside the shell scripts or
 kept under `lakas/`; the launcher supports both layouts.

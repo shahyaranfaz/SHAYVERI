@@ -32,7 +32,7 @@ NAME_ID="${NAME_ID:-SHAYVERI $RELEASE_ID / NNUE}"
 HCE_NAME="${HCE_NAME:-SHAYVERI $RELEASE_ID / HCE-classical}"
 NNUE_NAME="${NNUE_NAME:-$NAME_ID}"
 NET="${NET:-}"
-SHAYVERI_OPTIONS="${SHAYVERI_OPTIONS:-option.OwnBook=false option.Book_Info_Depth=0}"
+SHAYVERI_OPTIONS="${SHAYVERI_OPTIONS:-option.OwnBook=false option.BookInfoDepth=0}"
 
 FIXED_OPPONENTS="Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000"
 ENGINE_COUNT=9

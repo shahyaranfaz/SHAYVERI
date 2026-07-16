@@ -448,16 +448,16 @@ int main(int argc, char **argv) {
                 << "id name SHAYVERI\n"
                 << "id author Shahyar Anfaz and Averi Wylie\n"
                 << "option name Hash type spin default 64 min 1 max 32768\n"
-                << "option name Clear Hash type button\n"
+                << "option name ClearHash type button\n"
                 << "option name Threads type spin default 1 min 1 max 512\n"
                 << "option name Ponder type check default false\n"
                 << "option name OwnBook type check default true\n"
-                << "option name Book_Info_Depth type spin default 8 min 0 max 32\n"
+                << "option name BookInfoDepth type spin default 8 min 0 max 32\n"
                 << "option name UseNNUE type check default true\n"
                 << "option name " << NNUE::UCI_OPTION_NAME
                 << " type string default " << g_eval_file << "\n"
-                << "option name Minimum Thinking Time type spin default 0 min 0 max 5000\n"
-                << "option name Move Overhead type spin default 10 min 0 max 5000\n";
+                << "option name MinimumThinkingTime type spin default 0 min 0 max 5000\n"
+                << "option name MoveOverhead type spin default 10 min 0 max 5000\n";
 
             for (auto const& [name, opt] : Tune::tuning_registry) {
                 if (opt.type == Tune::TuningOption::INT)
@@ -492,7 +492,7 @@ int main(int argc, char **argv) {
 
             if      (opt_name == "Hash")
                 resize_hash_option(value);
-            else if (opt_name == "Clear Hash") {
+            else if (opt_name == "ClearHash") {
                 TT.clear();
                 clear_search_histories();
             }
@@ -505,7 +505,7 @@ int main(int argc, char **argv) {
                 g_ponder = parse_bool(value);
             else if (opt_name == "OwnBook")
                 g_own_book = parse_bool(value);
-            else if (opt_name == "Book_Info_Depth") {
+            else if (opt_name == "BookInfoDepth") {
                 int book_info_depth = 0;
                 if (parse_spin(value, 0, 32, book_info_depth))
                     g_book_info_depth = book_info_depth;
@@ -523,12 +523,12 @@ int main(int argc, char **argv) {
                 if (NNUE::is_enabled())
                     NNUE::print_info();
             }
-            else if (opt_name == "Minimum Thinking Time") {
+            else if (opt_name == "MinimumThinkingTime") {
                 int min_think_ms = 0;
                 if (parse_spin(value, 0, 5000, min_think_ms))
                     g_min_think_ms = min_think_ms;
             }
-            else if (opt_name == "Move Overhead") {
+            else if (opt_name == "MoveOverhead") {
                 int move_overhead = 0;
                 if (parse_spin(value, 0, 5000, move_overhead))
                     g_move_overhead = move_overhead;

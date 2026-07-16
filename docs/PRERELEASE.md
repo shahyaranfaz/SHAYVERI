@@ -77,7 +77,7 @@ Commands below use `v2.7.0` as the example. Substitute the release being made.
 
   "$FASTCHESS" \
     -engine name=candidate cmd="$CANDIDATE" dir=. proto=uci \
-      option.OwnBook=false option.Book_Info_Depth=0 \
+      option.OwnBook=false option.BookInfoDepth=0 \
     -engine name=baseline cmd="$BASELINE" dir=. proto=uci \
       option.OwnBook=false \
     -each proto=uci "tc=$TC" timemargin=100 option.Threads=1 option.Hash=64 \

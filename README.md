@@ -117,7 +117,7 @@ keeps 24-ply lines from standard-chess games where both players are rated at
 least 2600, aggregates observed move counts, and compiles the majority move for
 positions reaching at least five weighted plays. The compiled book stores only
 the selected move and does not embed evaluator-specific metadata.
-`Book_Info_Depth` controls optional search output for book hits. Its default
+`BookInfoDepth` controls optional search output for book hits. Its default
 value of `8` searches only the selected book move and reports SHAYVERI's own
 depth-by-depth score and PV information. Set it to `0` for the immediate
 book-only fast path.
@@ -132,18 +132,18 @@ make -C scripts/opening_book run_all
 ## UCI options
 
 - `Hash`: transposition table size in MB.
-- `Clear Hash`: clear the transposition table.
+- `ClearHash`: clear the transposition table.
 - `Threads`: requested search threads, bounded by detected hardware capacity.
 - `Ponder`: enable ponder output/search support.
 - `OwnBook`: enable the embedded opening book.
-- `Book_Info_Depth`: depth for optional book-move evaluation output. Set to `0`
+- `BookInfoDepth`: depth for optional book-move evaluation output. Set to `0`
   for the fast path.
 - `UseNNUE`: enable or disable NNUE evaluation without changing the configured
   network path.
 - `EvalFile`: NNUE network path. Set an explicit path to load an external
   network.
-- `Minimum Thinking Time`: minimum move time, in milliseconds.
-- `Move Overhead`: GUI/network delay reserve, in milliseconds.
+- `MinimumThinkingTime`: minimum move time, in milliseconds.
+- `MoveOverhead`: GUI/network delay reserve, in milliseconds.
 
 ## Verification
 

@@ -348,7 +348,7 @@
           </article>
           <article class="card">
             <h3>Book</h3>
-            <p>Built from 2600+ rated games sourced from The Week in Chess (TWIC). The pipeline keeps 24-ply lines from standard-chess games where both players are rated at least 2600, aggregates observed move counts, and compiles the majority move for positions reaching at least five weighted plays. The compiled book stores only the selected move and does not embed evaluator-specific metadata. <code>Book_Info_Depth</code> controls optional search output for book hits, with <code>0</code> preserving the immediate book-only fast path.</p>
+            <p>Built from 2600+ rated games sourced from The Week in Chess (TWIC). The pipeline keeps 24-ply lines from standard-chess games where both players are rated at least 2600, aggregates observed move counts, and compiles the majority move for positions reaching at least five weighted plays. The compiled book stores only the selected move and does not embed evaluator-specific metadata. <code>BookInfoDepth</code> controls optional search output for book hits, with <code>0</code> preserving the immediate book-only fast path.</p>
             <pre><code>make -C scripts/opening_book run_all</code></pre>
           </article>
         </div>
@@ -508,15 +508,15 @@ go movetime 1000</code></pre>
         <h2>UCI Options</h2>
         <div class="metric-grid">
           <div class="card"><h3>Hash</h3><p>Transposition table size in MB.</p></div>
-          <div class="card"><h3>Clear Hash</h3><p>Clear the transposition table.</p></div>
+          <div class="card"><h3>ClearHash</h3><p>Clear the transposition table.</p></div>
           <div class="card"><h3>Threads</h3><p>Requested search threads, bounded by detected hardware capacity.</p></div>
           <div class="card"><h3>Ponder</h3><p>Enable ponder output/search support.</p></div>
           <div class="card"><h3>OwnBook</h3><p>Enable the embedded opening book.</p></div>
-          <div class="card"><h3>Book_Info_Depth</h3><p>Depth for optional book-move evaluation output. Set to <code>0</code> for the fast path.</p></div>
+          <div class="card"><h3>BookInfoDepth</h3><p>Depth for optional book-move evaluation output. Set to <code>0</code> for the fast path.</p></div>
           <div class="card"><h3>UseNNUE</h3><p>Enable or disable NNUE evaluation without changing the configured network path.</p></div>
           <div class="card"><h3>EvalFile</h3><p>NNUE network path. Set an explicit path to load an external network.</p></div>
-          <div class="card"><h3>Minimum Thinking Time</h3><p>Minimum move time, in milliseconds.</p></div>
-          <div class="card"><h3>Move Overhead</h3><p>GUI/network delay reserve, in milliseconds.</p></div>
+          <div class="card"><h3>MinimumThinkingTime</h3><p>Minimum move time, in milliseconds.</p></div>
+          <div class="card"><h3>MoveOverhead</h3><p>GUI/network delay reserve, in milliseconds.</p></div>
         </div>
       </div>
     </section>

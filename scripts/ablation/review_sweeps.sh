@@ -176,7 +176,7 @@ run_worker() {
       -engine name="$label" cmd="$ENGINE" dir="$ENGINE_DIR" proto=uci \
         "${candidate_options[@]}" \
       -each proto=uci tc="${base_time}+${increment}" timemargin=100 \
-        option.Threads="$THREADS" option.OwnBook=false option.Book_Info_Depth=0 \
+        option.Threads="$THREADS" option.OwnBook=false option.BookInfoDepth=0 \
       -openings file="$OPENING_FILE" format=epd order=random plies=16 \
       -games 2 -rounds "$rounds" -repeat \
       -concurrency "$CONCURRENCY" -recover \
