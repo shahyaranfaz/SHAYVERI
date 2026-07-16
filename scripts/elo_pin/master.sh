@@ -20,6 +20,10 @@ if [[ -n "$RESUME_RUN_ID" ]]; then
   source "$WORK_ROOT/config.env"
   RESUMING=1
 else
+  [[ -n "$RELEASE_ID" ]] || die "RELEASE_ID is required"
+  (( EXPECTED_WORKERS > 0 )) || die "EXPECTED_WORKERS must be positive"
+  [[ "$RELEASE_ID" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || \
+    die "RELEASE_ID must use the full vX.Y.Z form"
   SAFE_RELEASE_ID="${RELEASE_ID//[^A-Za-z0-9_.-]/_}"
   [[ "$RELEASE_ID" == "$SAFE_RELEASE_ID" ]] || \
     die "RELEASE_ID may contain only letters, numbers, dots, underscores, and hyphens"
@@ -68,7 +72,7 @@ if (( RESUMING )); then
 else
   : > "$WORK_ROOT/config.env"
   for key in PIN_ROOT SCRIPT_DIR RUN_ID WORK_ROOT ENGINES_DIR BOOK ANCHORS ORDO \
-    FASTCHESS OUTPUT_ROOT RELEASE_ID REGISTER_SECONDS TIMEMARGIN CONCURRENCY \
+    FASTCHESS OUTPUT_ROOT RELEASE_ID REGISTER_SECONDS EXPECTED_WORKERS TIMEMARGIN CONCURRENCY \
     RATING_INTERVAL POLL_SECONDS WORKER_ACK_SECONDS BASE_SEED STC_GAMES_PER_PAIR LTC_GAMES_PER_PAIR \
     STC_SHARD_PAIR_GAMES LTC_SHARD_PAIR_GAMES NAME_ID HCE_NAME NNUE_NAME NET \
     SHAYVERI_OPTIONS FIXED_OPPONENTS ORDO_FLAGS; do
@@ -76,7 +80,7 @@ else
   done
 
   log "run_id=$RUN_ID release=$RELEASE_ID"
-  log "registration window=${REGISTER_SECONDS}s"
+  log "registration window=${REGISTER_SECONDS}s expected_workers=$EXPECTED_WORKERS"
   log "stc_games_per_pair=$STC_GAMES_PER_PAIR ltc_games_per_pair=$LTC_GAMES_PER_PAIR"
 
   deadline=$((SECONDS + REGISTER_SECONDS))
@@ -84,6 +88,7 @@ else
     count="$(find "$WORK_ROOT/workers" -maxdepth 1 -type f -name '*.worker' | wc -l)"
     remaining=$((deadline - SECONDS))
     log "registered_workers=$count remaining=${remaining}s"
+    (( count >= EXPECTED_WORKERS )) && break
     (( remaining > 30 )) && remaining=30
     sleep "$remaining"
   done

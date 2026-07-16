@@ -39,8 +39,7 @@ Start the master on the shared filesystem:
 cd ~/elo_pin
 
 PIN_ROOT="$PWD" \
-RELEASE_ID=v2.7 \
-NAME_ID="SHAYVERI v2.7.0 / NNUE" \
+RELEASE_ID=v0.0.0 \
 NET= \
 REGISTER_SECONDS=300 \
 ./master.sh
@@ -68,7 +67,7 @@ Resume an interrupted run without changing its roster, shards, or seeds:
 ```bash
 cd ~/elo_pin
 PIN_ROOT="$PWD" \
-RESUME_RUN_ID=v2.7_20260716_150056 \
+RESUME_RUN_ID=v0.0.0_YYYYMMDD_HHMMSS \
 ./master.sh
 ```
 
@@ -101,6 +100,11 @@ their work directory for diagnosis.
 - `BASE_SEED`: deterministic seed sequence
 - `CONCURRENCY`: local fastchess concurrency, default 23
 - `NET=`: use the embedded default network
+- `RELEASE_ID`: full public engine version used by both SHAYVERI entries and
+  its output directory
+- `EXPECTED_WORKERS`: close registration as soon as this many workers arrive,
+  default 10
+- `REGISTER_SECONDS`: maximum registration wait if fewer workers arrive
 - `OVERWRITE=1`: replace an existing release output
 - `RESUME_RUN_ID`: continue an interrupted run from its retained work directory
 - `RECLAIM_WORKING=1`: requeue abandoned working shards while resuming

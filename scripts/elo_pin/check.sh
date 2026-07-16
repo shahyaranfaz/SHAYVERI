@@ -61,7 +61,7 @@ BOOK="$CHECK_ROOT/books/check.epd" \
 ANCHORS="$CHECK_ROOT/anchors" \
 ORDO="$CHECK_ROOT/ordo" \
 FASTCHESS="$CHECK_ROOT/fastchess" \
-RELEASE_ID=check \
+RELEASE_ID=v0.0.0 \
 REGISTER_SECONDS=1 \
 POLL_SECONDS=1 \
 WORKER_ACK_SECONDS=5 \
@@ -99,17 +99,23 @@ wait "$master_pid" || {
   cat "$CHECK_ROOT/worker2.stdout"
   exit 1
 }
-wait "$worker1_pid"
-wait "$worker2_pid"
+wait "$worker1_pid" || {
+  cat "$CHECK_ROOT/worker1.stdout"
+  exit 1
+}
+wait "$worker2_pid" || {
+  cat "$CHECK_ROOT/worker2.stdout"
+  exit 1
+}
 
 for phase in stc ltc; do
   for output in rating_pool.pgn results.txt h2h.txt results.csv cfs.csv err.csv ordo.stdout.txt; do
-    [[ -s "$CHECK_ROOT/outputs/check/$phase/$output" ]] || {
+    [[ -s "$CHECK_ROOT/outputs/v0.0.0/$phase/$output" ]] || {
       echo "missing check output: $phase/$output" >&2
       exit 1
     }
   done
-  games="$(grep -c '^\[Event ' "$CHECK_ROOT/outputs/check/$phase/rating_pool.pgn")"
+  games="$(grep -c '^\[Event ' "$CHECK_ROOT/outputs/v0.0.0/$phase/rating_pool.pgn")"
   [[ "$games" == 144 ]] || {
     echo "$phase has $games games, expected 144" >&2
     exit 1

@@ -13,7 +13,7 @@ numbers were contemporaneous release results.
 
 ## Method
 
-The v2.6 STC and LTC PGNs provide the external-engine reference games. Games
+The v2.6.0 STC and LTC PGNs provide the external-engine reference games. Games
 involving SHAYVERI are removed, leaving the same reference pool for every
 historical engine. Each tested release then plays all seven external opponents
 with paired openings.

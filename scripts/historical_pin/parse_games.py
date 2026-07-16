@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build balanced reference PGNs from the v2.6 Elo-pin games."""
+"""Build balanced reference PGNs from the v2.6.0 Elo-pin games."""
 
 from __future__ import annotations
 
@@ -40,10 +40,10 @@ def find_repo_root(start: Path | None = None) -> Path:
 ROOT = find_repo_root()
 DEFAULT_INPUTS = {
     "stc": (
-        ROOT / "scripts" / "elo_pin" / "outputs" / "v2.6" / "stc" / "rating_pool.pgn"
+        ROOT / "scripts" / "elo_pin" / "outputs" / "v2.6.0" / "stc" / "rating_pool.pgn"
     ),
     "ltc": (
-        ROOT / "scripts" / "elo_pin" / "outputs" / "v2.6" / "ltc" / "rating_pool.pgn"
+        ROOT / "scripts" / "elo_pin" / "outputs" / "v2.6.0" / "ltc" / "rating_pool.pgn"
     ),
 }
 DEFAULT_OUTPUT_DIR = ROOT / "scripts" / "historical_pin" / "outputs"
@@ -174,7 +174,7 @@ def process_time_control(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Remove all SHAYVERI games from the v2.6 pin and retain a "
+            "Remove all SHAYVERI games from the v2.6.0 pin and retain a "
             "balanced sample of paired games for every external pairing."
         )
     )

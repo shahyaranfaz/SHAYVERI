@@ -29,7 +29,7 @@ def main():
         "--hidden-size",
         type=int,
         default=DEFAULT_HIDDEN_SIZE,
-        help="hidden width used by the Bullet trainer; defaults to 512 for v2.3 KB16x512",
+        help="hidden width used by the Bullet trainer; defaults to 512 for v2.3.0 KB16x512",
     )
     args = parser.parse_args()
 
