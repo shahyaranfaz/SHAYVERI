@@ -27,8 +27,9 @@ external engines, and Stockfish 18 limited to 2850 and 3000 Elo.
 |   LTC |     `90+0.5` |               200 |       7,200 |
 
 Every opening is played with both colors. Seeds derive from `BASE_SEED`, phase,
-and shard number. Crashes, illegal moves, time forfeits, incomplete PGNs, or
-failed shards prevent publication.
+and shard number. Fastchess recovers transient engine failures. A failed
+Fastchess process or incomplete PGN discards and requeues that shard. Illegal
+moves remain a hard failure and prevent publication.
 
 ## Usage
 
@@ -59,6 +60,24 @@ cd ~/elo_pin
 PIN_ROOT="$PWD" ./watch.sh
 ```
 
+Status distinguishes the frozen registration roster from workers that
+currently own an active shard.
+
+Resume an interrupted run without changing its roster, shards, or seeds:
+
+```bash
+cd ~/elo_pin
+PIN_ROOT="$PWD" \
+RESUME_RUN_ID=v2.7_20260716_150056 \
+./master.sh
+```
+
+Resume automatically discards obsolete transient failure markers but still
+stops on an illegal-move marker. Existing working shards are preserved by
+default so a master can restart while workers continue. If the workers were
+stopped, `RECLAIM_WORKING=1` returns their abandoned shards to the queues before
+the original registered workers are restarted.
+
 Run the orchestration check after changing the harness:
 
 ```bash
@@ -83,6 +102,8 @@ their work directory for diagnosis.
 - `CONCURRENCY`: local fastchess concurrency, default 23
 - `NET=`: use the embedded default network
 - `OVERWRITE=1`: replace an existing release output
+- `RESUME_RUN_ID`: continue an interrupted run from its retained work directory
+- `RECLAIM_WORKING=1`: requeue abandoned working shards while resuming
 - `SHAYVERI_OPTIONS`: options shared by both SHAYVERI entries
 
 Game and shard quotas must be positive even numbers because openings are

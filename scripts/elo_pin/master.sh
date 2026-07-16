@@ -5,11 +5,28 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
-SAFE_RELEASE_ID="${RELEASE_ID//[^A-Za-z0-9_.-]/_}"
-[[ "$RELEASE_ID" == "$SAFE_RELEASE_ID" ]] || \
-  die "RELEASE_ID may contain only letters, numbers, dots, underscores, and hyphens"
-RUN_ID="${SAFE_RELEASE_ID}_$(date +%Y%m%d_%H%M%S)"
-WORK_ROOT="$(run_work_dir "$RUN_ID")"
+RESUME_RUN_ID="${RESUME_RUN_ID:-}"
+RECLAIM_WORKING="${RECLAIM_WORKING:-0}"
+RESUMING=0
+
+if [[ -n "$RESUME_RUN_ID" ]]; then
+  SAFE_RUN_ID="${RESUME_RUN_ID//[^A-Za-z0-9_.-]/_}"
+  [[ "$RESUME_RUN_ID" == "$SAFE_RUN_ID" ]] || \
+    die "RESUME_RUN_ID may contain only letters, numbers, dots, underscores, and hyphens"
+  RUN_ID="$RESUME_RUN_ID"
+  WORK_ROOT="$(run_work_dir "$RUN_ID")"
+  [[ -f "$WORK_ROOT/config.env" ]] || die "missing run configuration: $WORK_ROOT/config.env"
+  # shellcheck disable=SC1090
+  source "$WORK_ROOT/config.env"
+  RESUMING=1
+else
+  SAFE_RELEASE_ID="${RELEASE_ID//[^A-Za-z0-9_.-]/_}"
+  [[ "$RELEASE_ID" == "$SAFE_RELEASE_ID" ]] || \
+    die "RELEASE_ID may contain only letters, numbers, dots, underscores, and hyphens"
+  RUN_ID="${SAFE_RELEASE_ID}_$(date +%Y%m%d_%H%M%S)"
+  WORK_ROOT="$(run_work_dir "$RUN_ID")"
+fi
+
 FINAL_ROOT="$OUTPUT_ROOT/$RELEASE_ID"
 PUBLISH_ROOT="$WORK_ROOT/publish"
 
@@ -18,7 +35,7 @@ require_file "$ANCHORS"
 require_exe "$FASTCHESS"
 [[ -x "$ORDO" ]] || die "missing executable: $ORDO"
 
-if [[ -e "$FINAL_ROOT" && "$OVERWRITE" != "1" ]]; then
+if (( ! RESUMING )) && [[ -e "$FINAL_ROOT" && "$OVERWRITE" != "1" ]]; then
   die "output already exists: $FINAL_ROOT; set OVERWRITE=1 to replace it"
 fi
 
@@ -38,42 +55,103 @@ write_env() {
   printf '%s=%q\n' "$key" "$value" >> "$WORK_ROOT/config.env"
 }
 
-: > "$WORK_ROOT/config.env"
-for key in PIN_ROOT SCRIPT_DIR RUN_ID WORK_ROOT ENGINES_DIR BOOK ANCHORS ORDO \
-  FASTCHESS OUTPUT_ROOT RELEASE_ID REGISTER_SECONDS TIMEMARGIN CONCURRENCY \
-  RATING_INTERVAL POLL_SECONDS WORKER_ACK_SECONDS BASE_SEED STC_GAMES_PER_PAIR LTC_GAMES_PER_PAIR \
-  STC_SHARD_PAIR_GAMES LTC_SHARD_PAIR_GAMES NAME_ID HCE_NAME NNUE_NAME NET \
-  SHAYVERI_OPTIONS FIXED_OPPONENTS ORDO_FLAGS; do
-  write_env "$key" "${!key}"
-done
-
 RUN_POINTER_TMP="$PIN_ROOT/current_run_id.tmp.$$"
 printf '%s\n' "$RUN_ID" > "$RUN_POINTER_TMP"
 mv "$RUN_POINTER_TMP" "$PIN_ROOT/current_run_id"
 
-log "run_id=$RUN_ID release=$RELEASE_ID"
-log "registration window=${REGISTER_SECONDS}s"
-log "stc_games_per_pair=$STC_GAMES_PER_PAIR ltc_games_per_pair=$LTC_GAMES_PER_PAIR"
+if (( RESUMING )); then
+  [[ -f "$WORK_ROOT/state/registered_workers.txt" ]] || \
+    die "missing frozen worker roster for $RUN_ID"
+  mapfile -t workers < "$WORK_ROOT/state/registered_workers.txt"
+  (( ${#workers[@]} > 0 )) || die "frozen worker roster is empty"
+  log "resuming run_id=$RUN_ID release=$RELEASE_ID frozen_roster=${workers[*]}"
+else
+  : > "$WORK_ROOT/config.env"
+  for key in PIN_ROOT SCRIPT_DIR RUN_ID WORK_ROOT ENGINES_DIR BOOK ANCHORS ORDO \
+    FASTCHESS OUTPUT_ROOT RELEASE_ID REGISTER_SECONDS TIMEMARGIN CONCURRENCY \
+    RATING_INTERVAL POLL_SECONDS WORKER_ACK_SECONDS BASE_SEED STC_GAMES_PER_PAIR LTC_GAMES_PER_PAIR \
+    STC_SHARD_PAIR_GAMES LTC_SHARD_PAIR_GAMES NAME_ID HCE_NAME NNUE_NAME NET \
+    SHAYVERI_OPTIONS FIXED_OPPONENTS ORDO_FLAGS; do
+    write_env "$key" "${!key}"
+  done
 
-deadline=$((SECONDS + REGISTER_SECONDS))
-while (( SECONDS < deadline )); do
-  count="$(find "$WORK_ROOT/workers" -maxdepth 1 -type f -name '*.worker' | wc -l)"
-  remaining=$((deadline - SECONDS))
-  log "registered_workers=$count remaining=${remaining}s"
-  (( remaining > 30 )) && remaining=30
-  sleep "$remaining"
-done
+  log "run_id=$RUN_ID release=$RELEASE_ID"
+  log "registration window=${REGISTER_SECONDS}s"
+  log "stc_games_per_pair=$STC_GAMES_PER_PAIR ltc_games_per_pair=$LTC_GAMES_PER_PAIR"
 
-mapfile -t workers < <(
-  find "$WORK_ROOT/workers" -maxdepth 1 -type f -name '*.worker' -printf '%f\n' \
-    | sed 's/\.worker$//' \
-    | sort
-)
+  deadline=$((SECONDS + REGISTER_SECONDS))
+  while (( SECONDS < deadline )); do
+    count="$(find "$WORK_ROOT/workers" -maxdepth 1 -type f -name '*.worker' | wc -l)"
+    remaining=$((deadline - SECONDS))
+    log "registered_workers=$count remaining=${remaining}s"
+    (( remaining > 30 )) && remaining=30
+    sleep "$remaining"
+  done
 
-(( ${#workers[@]} > 0 )) || die "no workers registered"
-printf '%s\n' "${workers[@]}" > "$WORK_ROOT/state/registered_workers.txt"
-touch "$WORK_ROOT/state/registration.closed"
-log "registration closed workers=${workers[*]}"
+  mapfile -t workers < <(
+    find "$WORK_ROOT/workers" -maxdepth 1 -type f -name '*.worker' -printf '%f\n' \
+      | sed 's/\.worker$//' \
+      | sort
+  )
+
+  (( ${#workers[@]} > 0 )) || die "no workers registered"
+  printf '%s\n' "${workers[@]}" > "$WORK_ROOT/state/registered_workers.txt"
+  touch "$WORK_ROOT/state/registration.closed"
+  log "registration closed frozen_roster=${workers[*]}"
+fi
+
+review_failure_markers() {
+  local marker
+
+  for marker in "$WORK_ROOT/failed"/*.failed; do
+    [[ -e "$marker" ]] || return 0
+    if grep -Eiq 'illegal' "$marker"; then
+      printf '%s\n' "$marker"
+      cat "$marker"
+      die "illegal-move failure remains in resumed run"
+    fi
+    log "discarding obsolete transient failure marker=$(basename "$marker")"
+    rm -f -- "$marker"
+  done
+}
+
+(( RESUMING )) && review_failure_markers
+
+reclaim_working_jobs() {
+  local phase
+  local phase_root
+  local job
+  local working_count=0
+
+  for phase in stc ltc; do
+    phase_root="$WORK_ROOT/$phase"
+    [[ -d "$phase_root/working" ]] || continue
+    working_count=$((working_count + $(find "$phase_root/working" -maxdepth 1 -type f -name '*.job' | wc -l)))
+  done
+
+  (( working_count == 0 )) && return 0
+  if [[ "$RECLAIM_WORKING" != "1" ]]; then
+    log "preserving existing working shards=$working_count"
+    return 0
+  fi
+
+  for phase in stc ltc; do
+    phase_root="$WORK_ROOT/$phase"
+    [[ -d "$phase_root/working" ]] || continue
+    for job in "$phase_root/working"/*.job; do
+      [[ -e "$job" ]] || continue
+      unset SHARD_ID
+      # shellcheck disable=SC1090
+      source "$job"
+      [[ -n "${SHARD_ID:-}" ]] || die "working job has no SHARD_ID: $job"
+      mv "$job" "$phase_root/queue/$SHARD_ID.job"
+      rm -f -- "$phase_root/games/$SHARD_ID".*.tmp.pgn
+    done
+  done
+  log "requeued abandoned working shards=$working_count"
+}
+
+(( RESUMING )) && reclaim_working_jobs
 
 create_shards() {
   local phase="$1"
@@ -161,14 +239,23 @@ run_phase() {
   local phase_root="$WORK_ROOT/$phase"
   local shard_count
 
-  create_shards "$phase"
+  if [[ -f "$phase_root/complete" ]]; then
+    log "$phase already complete"
+    return 0
+  fi
+
+  if [[ -f "$phase_root/shard_count" ]]; then
+    log "$phase resuming existing shards"
+  else
+    create_shards "$phase"
+  fi
   shard_count="$(< "$phase_root/shard_count")"
   touch "$phase_root/start"
   log "$phase started shards=$shard_count tc=$(phase_tc "$phase")"
 
   while true; do
     if (( $(count_files "$WORK_ROOT/failed" '*.failed') > 0 )); then
-      find "$WORK_ROOT/failed" -type f -name '*.failed' -maxdepth 1 -print -exec cat {} \;
+      find "$WORK_ROOT/failed" -maxdepth 1 -type f -name '*.failed' -print -exec cat {} \;
       die "$phase worker failure"
     fi
 

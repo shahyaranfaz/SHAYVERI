@@ -76,6 +76,9 @@ run_shard() {
   local expected_games
   local actual_games
   local final_pgn
+  local shard_log
+  local fastchess_status=0
+  local failure_matches
 
   # shellcheck disable=SC1090
   source "$job"
@@ -83,11 +86,12 @@ run_shard() {
 
   CURRENT_PGN="$phase_root/games/${SHARD_ID}.${WORKER_ID}.tmp.pgn"
   final_pgn="$phase_root/games/${SHARD_ID}.pgn"
+  shard_log="$phase_root/tmp/${SHARD_ID}.${WORKER_ID}.log"
   expected_games=$((PAIR_COUNT * PAIR_GAMES))
-  rm -f -- "$CURRENT_PGN"
+  rm -f -- "$CURRENT_PGN" "$shard_log"
 
   log "start shard=$SHARD_ID phase=$PHASE tc=$TC_VALUE pair_games=$PAIR_GAMES seed=$SEED"
-  if ! (
+  if (
     cd "$PIN_ROOT"
     "$FASTCHESS" \
       "${engine_args[@]}" \
@@ -100,27 +104,46 @@ run_shard() {
       -pgnout "file=$CURRENT_PGN" min=true \
       -scoreinterval "$expected_games" \
       -ratinginterval "$RATING_INTERVAL"
-  ) >> "$LOG" 2>&1; then
-    printf 'worker=%s\nshard=%s\nreason=fastchess failed\n' \
-      "$WORKER_ID" "$SHARD_ID" > "$WORK_ROOT/failed/$WORKER_ID.failed"
-    return 1
+  ) > "$shard_log" 2>&1; then
+    fastchess_status=0
+  else
+    fastchess_status=$?
+  fi
+  cat "$shard_log" >> "$LOG"
+
+  if (( fastchess_status != 0 )); then
+    log "retry shard=$SHARD_ID reason=fastchess_status_$fastchess_status"
+    return_claim
+    CURRENT_JOB=""
+    CURRENT_QUEUE=""
+    CURRENT_PGN=""
+    rm -f -- "$shard_log"
+    return 0
   fi
 
-  if grep -Eiq 'illegal|crash|disconnect|forfeit on time|lost on time|timeout' "$LOG"; then
-    printf 'worker=%s\nshard=%s\nreason=fastchess reported a game failure\n' \
-      "$WORKER_ID" "$SHARD_ID" > "$WORK_ROOT/failed/$WORKER_ID.failed"
+  failure_matches="$(grep -Ei 'illegal' "$shard_log" || true)"
+  if [[ -n "$failure_matches" ]]; then
+    {
+      printf 'worker=%s\nshard=%s\nreason=fastchess reported a game failure\n' \
+        "$WORKER_ID" "$SHARD_ID"
+      printf '%s\n' "$failure_matches"
+    } > "$WORK_ROOT/failed/$WORKER_ID.failed"
     return 1
   fi
 
   actual_games="$(grep -c '^\[Event ' "$CURRENT_PGN" || true)"
   if [[ "$actual_games" != "$expected_games" ]]; then
-    printf 'worker=%s\nshard=%s\nreason=expected %s games, found %s\n' \
-      "$WORKER_ID" "$SHARD_ID" "$expected_games" "$actual_games" \
-      > "$WORK_ROOT/failed/$WORKER_ID.failed"
-    return 1
+    log "retry shard=$SHARD_ID reason=expected_${expected_games}_games_found_$actual_games"
+    return_claim
+    CURRENT_JOB=""
+    CURRENT_QUEUE=""
+    CURRENT_PGN=""
+    rm -f -- "$shard_log"
+    return 0
   fi
 
   mv "$CURRENT_PGN" "$final_pgn"
+  rm -f -- "$shard_log"
   CURRENT_PGN=""
   rm -f -- "$CURRENT_JOB"
   CURRENT_JOB=""

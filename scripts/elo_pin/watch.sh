@@ -17,9 +17,18 @@ count_files() {
   find "$dir" -maxdepth 1 -type f -name "$glob" 2>/dev/null | wc -l
 }
 
+count_active_workers() {
+  find "$WORK_ROOT"/stc/working "$WORK_ROOT"/ltc/working \
+    -maxdepth 1 -type f -name '*.job' -printf '%f\n' 2>/dev/null \
+    | sed -E 's/^[^.]+\.//; s/\.job$//' \
+    | sort -u \
+    | wc -l
+}
+
 echo "run_id: $RUN_ID"
 echo "release: $RELEASE_ID"
-echo "workers: $(count_files "$WORK_ROOT/workers" '*.worker')"
+echo "frozen roster:  $(count_files "$WORK_ROOT/workers" '*.worker')"
+echo "active workers: $(count_active_workers)"
 echo "failed:  $(count_files "$WORK_ROOT/failed" '*.failed')"
 echo
 
