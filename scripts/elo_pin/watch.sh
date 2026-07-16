@@ -5,15 +5,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
-if [[ -z "$RUN_ID" ]]; then
-  RUN_ID="$(current_run_id)"
-fi
-RUN_DIR="$(run_dir "$RUN_ID")"
-
-if [[ -f "$RUN_DIR/config.env" ]]; then
-  # shellcheck disable=SC1090
-  source "$RUN_DIR/config.env"
-fi
+[[ -n "$RUN_ID" ]] || RUN_ID="$(current_run_id)"
+WORK_ROOT="$(run_work_dir "$RUN_ID")"
+[[ -f "$WORK_ROOT/config.env" ]] || die "missing run configuration: $WORK_ROOT/config.env"
+# shellcheck disable=SC1090
+source "$WORK_ROOT/config.env"
 
 count_files() {
   local dir="$1"
@@ -21,52 +17,23 @@ count_files() {
   find "$dir" -maxdepth 1 -type f -name "$glob" 2>/dev/null | wc -l
 }
 
-human_size() {
-  local path="$1"
-  if [[ -f "$path" ]]; then
-    du -h "$path" 2>/dev/null | awk '{print $1}'
-  else
-    printf '0'
-  fi
-}
-
-pgn_games() {
-  local path="$1"
-  if [[ -f "$path" ]]; then
-    grep -c '^\[Event ' "$path" 2>/dev/null || true
-  else
-    printf '0'
-  fi
-}
-
-expected_worker_games=$((PAIR_COUNT * GAMES_PER_PAIR_PER_WORKER))
-
 echo "run_id: $RUN_ID"
-echo "run_dir: $RUN_DIR"
+echo "release: $RELEASE_ID"
+echo "workers: $(count_files "$WORK_ROOT/workers" '*.worker')"
+echo "failed:  $(count_files "$WORK_ROOT/failed" '*.failed')"
 echo
-printf "%-12s %8s\n" "state" "count"
-printf "%-12s %8s\n" "workers" "$(count_files "$RUN_DIR/workers" '*.worker')"
-printf "%-12s %8s\n" "done" "$(count_files "$RUN_DIR/done" '*.done')"
-printf "%-12s %8s\n" "failed" "$(count_files "$RUN_DIR/failed" '*.failed')"
-printf "%-12s %8s\n" "games" "$(count_files "$RUN_DIR/games" '*.pgn')"
-echo
-printf "%-24s %10s %12s %12s %10s\n" "worker" "pgn_size" "games" "total" "complete"
-total_games=0
-total_expected=0
-while read -r worker; do
-  [[ -n "$worker" ]] || continue
-  pgn="$RUN_DIR/games/${worker}_tournament.pgn"
-  games="$(pgn_games "$pgn")"
-  size="$(human_size "$pgn")"
-  pct="$(awk -v g="$games" -v t="$expected_worker_games" 'BEGIN { if (t > 0) printf "%.1f%%", (g/t)*100; else printf "0.0%%" }')"
-  printf "%-24s %10s %12s %12s %10s\n" "$worker" "$size" "$games" "$expected_worker_games" "$pct"
-  total_games=$((total_games + games))
-  total_expected=$((total_expected + expected_worker_games))
-done < <(
-  find "$RUN_DIR/workers" -maxdepth 1 -type f -name '*.worker' -printf '%f\n' 2>/dev/null \
-    | sed 's/\.worker$//' \
-    | sort
-)
 
-total_pct="$(awk -v g="$total_games" -v t="$total_expected" 'BEGIN { if (t > 0) printf "%.1f%%", (g/t)*100; else printf "0.0%%" }')"
-printf "%-24s %10s %12s %12s %10s\n" "TOTALS" "-" "$total_games" "$total_expected" "$total_pct"
+printf '%-8s %8s %8s %8s %8s\n' phase shards queue working done
+for phase in stc ltc; do
+  phase_root="$WORK_ROOT/$phase"
+  if [[ -d "$phase_root" ]]; then
+    shards="$(< "$phase_root/shard_count")"
+    printf '%-8s %8s %8s %8s %8s\n' \
+      "$phase" "$shards" \
+      "$(count_files "$phase_root/queue" '*.job')" \
+      "$(count_files "$phase_root/working" '*.job')" \
+      "$(count_files "$phase_root/done" '*.done')"
+  else
+    printf '%-8s %8s %8s %8s %8s\n' "$phase" 0 0 0 0
+  fi
+done

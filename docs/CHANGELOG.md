@@ -15,11 +15,12 @@ necessarily reflect the rigour of testing performed on the engine.
 Since v2.3.0, all releases were pinned against a broad collection of reputable
 engines. These pins include 800 games per pairing at `10+0.1` (STC) and 200
 games per pairing at `90+0.5` (LTC). The framework is described in
-`scripts/elo_pin`.
+[`scripts/elo_pin/README.md`](../scripts/elo_pin/README.md).
 
 Prior releases were retroactively pinned at the same time controls and against
 the same pool, though with 200 games per pairing at STC and 100 games per
-pairing at LTC. The framework is described in `scripts/historical_pin`.
+pairing at LTC. The framework is described in
+[`scripts/historical_pin/README.md`](../scripts/historical_pin/README.md).
 
 ## NNUE Era
 

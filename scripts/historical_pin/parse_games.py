@@ -39,18 +39,12 @@ def find_repo_root(start: Path | None = None) -> Path:
 
 ROOT = find_repo_root()
 DEFAULT_INPUTS = {
-    "stc": ROOT
-           / "scripts"
-           / "elo_pin"
-           / "outputs"
-           / "SHAYVERI_v2.6_stc_20260628_103045"
-           / "rating_pool.pgn",
-    "ltc": ROOT
-           / "scripts"
-           / "elo_pin"
-           / "outputs"
-           / "SHAYVERI_v2.6_ltc_20260628_113909"
-           / "rating_pool.pgn",
+    "stc": (
+        ROOT / "scripts" / "elo_pin" / "outputs" / "v2.6" / "stc" / "rating_pool.pgn"
+    ),
+    "ltc": (
+        ROOT / "scripts" / "elo_pin" / "outputs" / "v2.6" / "ltc" / "rating_pool.pgn"
+    ),
 }
 DEFAULT_OUTPUT_DIR = ROOT / "scripts" / "historical_pin" / "outputs"
 

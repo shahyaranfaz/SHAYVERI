@@ -5,72 +5,155 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
-if [[ -z "$RUN_ID" ]]; then
-  RUN_ID="$(current_run_id)"
-fi
-RUN_DIR="$(run_dir "$RUN_ID")"
-
-if [[ -f "$RUN_DIR/config.env" ]]; then
-  # shellcheck disable=SC1090
-  source "$RUN_DIR/config.env"
-fi
-TC_VALUE="${TC_VALUE:-$(tc_value)}"
+[[ -n "$RUN_ID" ]] || RUN_ID="$(current_run_id)"
+WORK_ROOT="$(run_work_dir "$RUN_ID")"
+[[ -f "$WORK_ROOT/config.env" ]] || die "missing run configuration: $WORK_ROOT/config.env"
+# shellcheck disable=SC1090
+source "$WORK_ROOT/config.env"
 
 WORKER_ID="${WORKER_ID:-$(hostname -s 2>/dev/null || hostname)}"
 WORKER_ID="${WORKER_ID//[^A-Za-z0-9_.-]/_}"
+LOG="$WORK_ROOT/logs/$WORKER_ID.log"
+CURRENT_JOB=""
+CURRENT_QUEUE=""
+CURRENT_PGN=""
 
-mkdir -p "$RUN_DIR"/{workers,games,done,failed,logs}
-
-require_file "$BOOK"
-require_exe "$FASTCHESS"
-
-printf 'worker=%s\nhost=%s\nstarted=%s\n' \
-  "$WORKER_ID" "$(hostname 2>/dev/null || echo unknown)" "$(date '+%Y-%m-%d %H:%M:%S')" \
-  > "$RUN_DIR/workers/$WORKER_ID.worker"
-
-LOG="$RUN_DIR/logs/$WORKER_ID.log"
+mkdir -p "$WORK_ROOT"/{workers,failed,logs}
 touch "$LOG"
 
 log() {
   printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" | tee -a "$LOG"
 }
 
-fail() {
-  printf '%s\n' "$*" > "$RUN_DIR/failed/$WORKER_ID.failed"
-  log "failed: $*"
-  exit 1
+return_claim() {
+  if [[ -n "$CURRENT_JOB" && -f "$CURRENT_JOB" && -n "$CURRENT_QUEUE" ]]; then
+    mv "$CURRENT_JOB" "$CURRENT_QUEUE" 2>/dev/null || true
+  fi
+  [[ -z "$CURRENT_PGN" ]] || rm -f -- "$CURRENT_PGN"
 }
 
-run_tournament() {
-  local rounds
-  rounds="$(rounds_for_pair_games "$GAMES_PER_PAIR_PER_WORKER")"
-  local score_interval
-  score_interval="${SCORE_INTERVAL:-$((PAIR_COUNT * GAMES_PER_PAIR_PER_WORKER))}"
-  local pgn="$RUN_DIR/games/${WORKER_ID}_tournament.pgn"
+trap return_claim EXIT
+trap 'return_claim; exit 130' INT TERM
+
+require_file "$BOOK"
+require_exe "$FASTCHESS"
+
+printf 'worker=%s\nhost=%s\nregistered=%s\n' \
+  "$WORKER_ID" "$(hostname 2>/dev/null || echo unknown)" "$(date '+%Y-%m-%d %H:%M:%S')" \
+  > "$WORK_ROOT/workers/$WORKER_ID.worker"
+log "registered run=$RUN_ID"
+
+while [[ ! -f "$WORK_ROOT/state/registration.closed" ]]; do
+  sleep "$POLL_SECONDS"
+done
+
+grep -Fxq "$WORKER_ID" "$WORK_ROOT/state/registered_workers.txt" || \
+  die "worker $WORKER_ID was not included in the frozen roster"
+
+claim_job() {
+  local phase_root="$1"
+  local queued
+  local base
+  local claimed
+
+  for queued in "$phase_root/queue"/*.job; do
+    [[ -e "$queued" ]] || return 1
+    base="$(basename "$queued" .job)"
+    claimed="$phase_root/working/${base}.${WORKER_ID}.job"
+    if mv "$queued" "$claimed" 2>/dev/null; then
+      CURRENT_JOB="$claimed"
+      CURRENT_QUEUE="$phase_root/queue/${base}.job"
+      return 0
+    fi
+  done
+  return 1
+}
+
+run_shard() {
+  local phase_root="$1"
+  local job="$2"
   local engine_args=()
+  local expected_games
+  local actual_games
+  local final_pgn
+
+  # shellcheck disable=SC1090
+  source "$job"
   mapfile -t engine_args < <(tournament_engine_args)
 
-  log "start tournament engines=$ENGINE_COUNT pairs=$PAIR_COUNT games_per_pair=$GAMES_PER_PAIR_PER_WORKER rounds=$rounds pgn=$pgn"
-  (
+  CURRENT_PGN="$phase_root/games/${SHARD_ID}.${WORKER_ID}.tmp.pgn"
+  final_pgn="$phase_root/games/${SHARD_ID}.pgn"
+  expected_games=$((PAIR_COUNT * PAIR_GAMES))
+  rm -f -- "$CURRENT_PGN"
+
+  log "start shard=$SHARD_ID phase=$PHASE tc=$TC_VALUE pair_games=$PAIR_GAMES seed=$SEED"
+  if ! (
     cd "$PIN_ROOT"
     "$FASTCHESS" \
       "${engine_args[@]}" \
       -each proto=uci "tc=$TC_VALUE" "timemargin=$TIMEMARGIN" option.Threads=1 \
       -openings "file=$BOOK" format=epd order=random plies=16 \
-      -games 2 -rounds "$rounds" -repeat \
+      -srand "$SEED" \
+      -games 2 -rounds "$ROUNDS" -repeat \
       -concurrency "$CONCURRENCY" \
       -recover \
-      -pgnout "file=$pgn" min=true \
-      -scoreinterval "$score_interval" \
+      -pgnout "file=$CURRENT_PGN" min=true \
+      -scoreinterval "$expected_games" \
       -ratinginterval "$RATING_INTERVAL"
-  ) >> "$LOG" 2>&1 || fail "fastchess tournament failed"
-  if grep -Eiq 'illegal|crash|disconnect|forfeit on time|lost on time|timeout' "$LOG"; then
-    fail "fastchess reported illegal move, crash, disconnect, timeout, or time loss"
+  ) >> "$LOG" 2>&1; then
+    printf 'worker=%s\nshard=%s\nreason=fastchess failed\n' \
+      "$WORKER_ID" "$SHARD_ID" > "$WORK_ROOT/failed/$WORKER_ID.failed"
+    return 1
   fi
-  log "finished tournament"
+
+  if grep -Eiq 'illegal|crash|disconnect|forfeit on time|lost on time|timeout' "$LOG"; then
+    printf 'worker=%s\nshard=%s\nreason=fastchess reported a game failure\n' \
+      "$WORKER_ID" "$SHARD_ID" > "$WORK_ROOT/failed/$WORKER_ID.failed"
+    return 1
+  fi
+
+  actual_games="$(grep -c '^\[Event ' "$CURRENT_PGN" || true)"
+  if [[ "$actual_games" != "$expected_games" ]]; then
+    printf 'worker=%s\nshard=%s\nreason=expected %s games, found %s\n' \
+      "$WORKER_ID" "$SHARD_ID" "$expected_games" "$actual_games" \
+      > "$WORK_ROOT/failed/$WORKER_ID.failed"
+    return 1
+  fi
+
+  mv "$CURRENT_PGN" "$final_pgn"
+  CURRENT_PGN=""
+  rm -f -- "$CURRENT_JOB"
+  CURRENT_JOB=""
+  CURRENT_QUEUE=""
+  printf 'worker=%s\nfinished=%s\n' "$WORKER_ID" "$(date '+%Y-%m-%d %H:%M:%S')" \
+    > "$phase_root/done/$SHARD_ID.done"
+  log "finished shard=$SHARD_ID"
 }
 
-run_tournament
+run_phase() {
+  local phase="$1"
+  local phase_root="$WORK_ROOT/$phase"
+  local job
 
-printf 'worker=%s\nfinished=%s\n' "$WORKER_ID" "$(date '+%Y-%m-%d %H:%M:%S')" > "$RUN_DIR/done/$WORKER_ID.done"
+  while [[ ! -f "$phase_root/start" ]]; do
+    [[ -f "$WORK_ROOT/state/run.complete" ]] && return 0
+    sleep "$POLL_SECONDS"
+  done
+
+  log "$phase available"
+  while [[ ! -f "$phase_root/complete" ]]; do
+    if claim_job "$phase_root"; then
+      run_shard "$phase_root" "$CURRENT_JOB"
+    else
+      sleep "$POLL_SECONDS"
+    fi
+  done
+  log "$phase complete"
+}
+
+run_phase stc
+run_phase ltc
+
+touch "$WORK_ROOT/state/$WORKER_ID.finished"
+trap - EXIT INT TERM
 log "done"

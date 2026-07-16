@@ -122,7 +122,8 @@ value of `8` searches only the selected book move and reports SHAYVERI's own
 depth-by-depth score and PV information. Set it to `0` for the immediate
 book-only fast path.
 
-Opening-book helper tools live in `scripts/opening_book/`:
+The generation method and helper tools are documented in
+[`scripts/opening_book/README.md`](scripts/opening_book/README.md):
 
 ```bash
 make -C scripts/opening_book run_all

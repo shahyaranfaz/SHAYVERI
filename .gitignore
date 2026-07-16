@@ -24,6 +24,8 @@ nnue/extra_nets
 nnue/README.md
 
 scripts/*/outputs
+scripts/elo_pin/.work/
+scripts/elo_pin/current_run_id
 
 future_plans.txt
 

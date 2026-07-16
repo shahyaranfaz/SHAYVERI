@@ -93,37 +93,21 @@ Commands below use `v2.7.0` as the example. Substitute the release being made.
   [`scripts/elo_pin/README.md`](../scripts/elo_pin/README.md) at both:
   - STC `10+0.1`
   - LTC `90+0.5`
-- [ ] Use exactly 10 uniquely named workers for each pin.
 - [ ] Match the fixed pool, opponent binaries, anchors, opening book, engine
   settings, adjudication, Ordo configuration, and games per pairing used by
   the comparison release.
 - [ ] Record SHA-256 hashes for the opponent binaries, anchors, and Ordo
   executable.
 
-  Start the STC master. This example expects 10 workers, giving 800 games per
-  pairing at 80 games per worker.
+  Start the release master. It runs the exact STC quota and then the exact LTC
+  quota regardless of how many workers register.
 
   ```sh
   cd ~/elo_pin
   PIN_ROOT="$PWD" \
+  RELEASE_ID=v2.7 \
   NAME_ID="SHAYVERI v2.7.0 / NNUE" \
   NET= \
-  TC=stc \
-  GAMES_PER_PAIR_PER_WORKER=80 \
-  REGISTER_SECONDS=300 \
-  ./master.sh
-  ```
-
-  Start the LTC master separately. This example expects 10 workers, giving 200
-  games per pairing at 20 games per worker.
-
-  ```sh
-  cd ~/elo_pin
-  PIN_ROOT="$PWD" \
-  NAME_ID="SHAYVERI v2.7.0 / NNUE" \
-  NET= \
-  TC=ltc \
-  GAMES_PER_PAIR_PER_WORKER=20 \
   REGISTER_SECONDS=300 \
   ./master.sh
   ```
@@ -143,24 +127,20 @@ Commands below use `v2.7.0` as the example. Substitute the release being made.
   PIN_ROOT="$PWD" ./watch.sh
   ```
 
-- [ ] Review the results for crashes, illegal moves, stalls, and time forfeits.
+- [ ] Confirm the master completed both phases. Any crash, illegal move,
+  disconnect, time forfeit, failed shard, or incomplete PGN must prevent
+  publication and preserve the temporary work directory for diagnosis.
 
   ```sh
   cd ~/elo_pin
-  RUN_ID="$(cat current_run_id)"
-  grep -REni \
-    'illegal|crash|disconnect|forfeit on time|lost on time|timeout' \
-    "results/$RUN_ID/logs" || true
+  cat outputs/v2.7/stc/results.txt
+  cat outputs/v2.7/stc/h2h.txt
+  cat outputs/v2.7/ltc/results.txt
+  cat outputs/v2.7/ltc/h2h.txt
   ```
 
-- [ ] Preserve the run configuration, combined PGN, and complete Ordo output.
-
-  ```sh
-  cd ~/elo_pin
-  RUN_ID="$(cat current_run_id)"
-  cat "results/$RUN_ID/results.txt"
-  cat "results/$RUN_ID/h2h.txt"
-  ```
+- [ ] Preserve each phase's combined PGN and complete Ordo output under
+  `outputs/v2.7/{stc,ltc}`.
 
 ## 4. Finalize documentation and release metadata
 

@@ -1,8 +1,8 @@
 # SHAYVERI Elo
 
-These ratings are from local multi-engine round-robin gauntlets analyzed with
-Ordo. They are pool-relative and anchored to fixed-strength `SF2850=2850` and
-`SF3000=3000`. They are not universal CCRL ratings.
+This file records published ratings. The release-pin workflow and configuration
+are documented in [`scripts/elo_pin/README.md`](../scripts/elo_pin/README.md).
+Ratings are pool-relative rather than universal CCRL ratings.
 
 Version labels now separate SHAYVERI source, evaluator, and network:
 

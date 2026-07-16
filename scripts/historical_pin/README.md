@@ -1,72 +1,43 @@
-# Historical Elo Pins
+# Historical Elo pins
+
+## Purpose
+
+Estimate the strength of releases that predate SHAYVERI's current release-pin
+process on one shared rating scale.
 
 ## Motivation
 
-SHAYVERI's releases prior to v2.3.0 predate the current release and 
-Elo-pinning process. This harness retrospectively places every release before 
-v2.3.0 into one shared reference pool so their strength can be compared 
-consistently.
-
-These results are retrospective estimates. They do not claim that the ratings
-were known or formally pinned when the historical releases were developed.
+Historical ratings were not measured when those engines were developed. A
+fixed retrospective pool permits useful comparison without implying that the
+numbers were contemporaneous release results.
 
 ## Method
 
-The v2.6.0 STC and LTC pin PGNs provide the reference games. The parser removes
-all games involving SHAYVERI and selects the same balanced base for every
-historical pin:
+The v2.6 STC and LTC PGNs provide the external-engine reference games. Games
+involving SHAYVERI are removed, leaving the same reference pool for every
+historical engine. Each tested release then plays all seven external opponents
+with paired openings.
 
-- 200 games for every STC external-engine pairing
-- 100 games for every LTC external-engine pairing
-- opening positions played with both colors
-- fixed `SF2850=2850` and `SF3000=3000` Ordo anchors
+- STC: `10+0.1`, 200 games per opponent
+- LTC: `90+0.5`, 100 games per opponent
+- Ordo anchors: `SF2850=2850` and `SF3000=3000`
+- Internal SHAYVERI books are disabled when the release supports it
 
-Each historical release then replaces the removed SHAYVERI slot and plays all
-seven external opponents:
+Only the tested SHAYVERI binary and its new games change between pins.
 
-- 200 games per opponent at STC `10+0.1`
-- 100 games per opponent at LTC `90+0.5`
-- paired openings from the same book
-- the same opening seed, hardware, engine configuration, and engine pool
-- the internal SHAYVERI opening book disabled where the option exists
-
-Every rating uses the exact same external reference PGN. Only the tested
-SHAYVERI release and its newly played games change.
-
-Each STC pool contains 4,200 external games and 1,400 SHAYVERI games, for
-5,600 games total. Each LTC pool contains 2,100 external games and 700
-SHAYVERI games, for 2,800 games total.
-
-## Requirements
-
-By default, the parser expects the original PGNs at their preserved output
-locations under `scripts/elo_pin/outputs`. Other paths can be supplied through
-`STC_SOURCE_PGN` and `LTC_SOURCE_PGN`.
-
-## Complete Run
+## Usage
 
 ```bash
-chmod +x scripts/historical_pin/*.sh
-
 STC_SOURCE_PGN=/path/to/stc/rating_pool.pgn \
 LTC_SOURCE_PGN=/path/to/ltc/rating_pool.pgn \
 scripts/historical_pin/run_all.sh
 ```
 
-The complete runner performs four stages:
+The runner downloads and verifies historical packages, checks their UCI
+handshake, creates shared reference PGNs, runs the games, and analyzes each
+combined pool with Ordo.
 
-1. Downloads every Linux release package from v1.0.0 through v2.2.0, verifies
-   its published SHA-256 checksum, extracts it, and runs a UCI check.
-2. Creates the shared STC and LTC reference PGNs.
-3. Runs the historical STC and LTC gauntlets.
-4. Combines each release's games with the shared reference PGN and runs Ordo.
-
-Shared paths, tags, time controls, game counts, and helper functions live in
-`common.sh`. The other scripts only implement their individual pipeline stage.
-
-## Partial and Resumed Runs
-
-The stages can be run separately:
+Run individual stages when resuming or diagnosing:
 
 ```bash
 scripts/historical_pin/download_binaries.sh
@@ -75,17 +46,10 @@ scripts/historical_pin/run_games.sh
 scripts/historical_pin/run_ordo.sh
 ```
 
-The game runner stores one PGN per release, time control, and opponent. A
-completed pairing is skipped when rerun. An incomplete pairing is rejected so
-it cannot silently enter the final rating pool. Remove that pairing's PGN and
-log before deliberately rerunning it.
-
-Restrict a run with `TAGS` or `TCS`:
+Restrict work with `TAGS` or `TCS`:
 
 ```bash
-TAGS="v2.1.0 v2.2.0" TCS="stc" scripts/historical_pin/run_all.sh
+TAGS="v2.1.0 v2.2.0" TCS=stc scripts/historical_pin/run_all.sh
 ```
 
-Generated binaries, PGNs, logs, and Ordo reports are stored beneath
-`scripts/historical_pin/outputs`. They are local testing artifacts and are not
-committed.
+Generated binaries, games, logs, and reports stay under `outputs/`.

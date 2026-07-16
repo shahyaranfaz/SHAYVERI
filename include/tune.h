@@ -473,7 +473,7 @@ struct TuningOption {
 };
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
-    // Batch 1: 5+0.05
+    /* Batch 1: 5+0.05
     {                   "ASP_Delta", {                     &asp_delta,    TuningOption::INT,    16,    80,      "41"}},
     {                     "FP_Base", {                       &fp_base,    TuningOption::INT,    80,   350,     "217"}},
     {                "FP_Max_Depth", {                  &fp_max_depth,    TuningOption::INT,     1,    12,       "4"}},
@@ -487,24 +487,26 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {                  "RFP_Margin", {                    &rfp_margin,    TuningOption::INT,    30,   120,      "68"}},
     {               "RFP_Max_Depth", {                 &rfp_max_depth,    TuningOption::INT,     1,    12,       "5"}},
     {                  "SEE_Margin", {                    &see_margin,    TuningOption::INT,  -600,   -40,    "-161"}},
+    */
 
-    // Batch 2: 10+0.1
-    {               "ASP_Min_Depth", {                 &asp_min_depth,    TuningOption::INT,     1,    12,       "4"}}, // untuned
-    {          "CorrHist_Depth_Cap", {            &corrhist_depth_cap,    TuningOption::INT,     1,    32,       "4"}}, // untuned
-    {     "Improving_LMR_Reduction", {       &improving_lmr_reduction,    TuningOption::INT,    -3,     0,      "-2"}}, // untuned
-    {             "LMR_Bad_History", {               &lmr_bad_history,    TuningOption::INT, -4096,     0,    "-800"}}, // untuned
-    {         "LMR_Extra_Min_Depth", {           &lmr_extra_min_depth,    TuningOption::INT,     1,    16,       "6"}}, // untuned
-    {    "LMR_Extra_Move_Threshold", {      &lmr_extra_move_threshold,    TuningOption::INT,     1,    32,       "6"}}, // untuned
-    {            "LMR_Good_History", {              &lmr_good_history,    TuningOption::INT,     0,  4096,     "800"}}, // untuned
-    {               "LMR_Min_Depth", {                 &lmr_min_depth,    TuningOption::INT,     1,    12,       "3"}}, // untuned
-    {            "LMR_NonPV_Offset", {              &lmr_nonpv_offset,    TuningOption::INT,     0,     3,       "0"}}, // untuned
-    {               "LMR_PV_Offset", {                 &lmr_pv_offset,    TuningOption::INT,    -3,     0,       "0"}}, // untuned
-    {           "NMP_Reduction_Min", {             &nmp_reduction_min,    TuningOption::INT,     0,    16,       "0"}}, // untuned
-    {                "QS_Min_Depth", {                  &qs_min_depth,    TuningOption::INT,   -16,     0,      "-6"}}, // untuned
-    {               "QS_SEE_Margin", {                 &qs_see_margin,    TuningOption::INT,     0,   200,     "100"}}, // untuned
-    {               "SEE_Max_Depth", {                 &see_max_depth,    TuningOption::INT,     1,    16,       "4"}}, // untuned
+    /* Batch 2: 10+0.1
+    {               "ASP_Min_Depth", {                 &asp_min_depth,    TuningOption::INT,     1,    12,       "4"}}, // default
+    {          "CorrHist_Depth_Cap", {            &corrhist_depth_cap,    TuningOption::INT,     1,    32,       "4"}}, // default
+    {     "Improving_LMR_Reduction", {       &improving_lmr_reduction,    TuningOption::INT,    -3,     0,      "-2"}}, // default
+    {             "LMR_Bad_History", {               &lmr_bad_history,    TuningOption::INT, -4096,     0,    "-800"}}, // default
+    {         "LMR_Extra_Min_Depth", {           &lmr_extra_min_depth,    TuningOption::INT,     1,    16,       "6"}}, // default
+    {    "LMR_Extra_Move_Threshold", {      &lmr_extra_move_threshold,    TuningOption::INT,     1,    32,       "6"}}, // default
+    {            "LMR_Good_History", {              &lmr_good_history,    TuningOption::INT,     0,  4096,     "800"}}, // default
+    {               "LMR_Min_Depth", {                 &lmr_min_depth,    TuningOption::INT,     1,    12,       "3"}}, // default
+    {            "LMR_NonPV_Offset", {              &lmr_nonpv_offset,    TuningOption::INT,     0,     3,       "0"}}, // default
+    {               "LMR_PV_Offset", {                 &lmr_pv_offset,    TuningOption::INT,    -3,     0,       "0"}}, // default
+    {           "NMP_Reduction_Min", {             &nmp_reduction_min,    TuningOption::INT,     0,    16,       "0"}}, // default
+    {                "QS_Min_Depth", {                  &qs_min_depth,    TuningOption::INT,   -16,     0,      "-6"}}, // default
+    {               "QS_SEE_Margin", {                 &qs_see_margin,    TuningOption::INT,     0,   200,     "100"}}, // default
+    {               "SEE_Max_Depth", {                 &see_max_depth,    TuningOption::INT,     1,    16,       "4"}}, // default
+    */
 
-    // Batch 3: 5+0.05
+    /* Batch 3: 5+0.05
     {          "NMP_Base_Reduction", {            &nmp_base_reduction,    TuningOption::INT,     2,     5,       "3"}},
     {           "NMP_Depth_Divisor", {             &nmp_depth_divisor,    TuningOption::INT,     2,     8,       "3"}},
     {            "NMP_Eval_Divisor", {              &nmp_eval_divisor,    TuningOption::INT,    80,   500,     "183"}},
@@ -516,21 +518,24 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {                   "SE_Margin", {                     &se_margin,    TuningOption::INT,    25,   100,      "74"}},
     {                "SE_Min_Depth", {                  &se_min_depth,    TuningOption::INT,     1,    16,      "11"}},
     {          "SE_Reduction_Denom", {            &se_reduction_denom,    TuningOption::INT,     2,     6,       "5"}},
+    */
 
-    // Batch 4: 5+0.05
+    /* Batch 4: 5+0.05
     {                  "CMH_Weight", {                    &cmh_weight,    TuningOption::INT,    15,   160,      "75"}},
     {                  "FMH_Weight", {                    &fmh_weight,    TuningOption::INT,     0,   130,      "30"}},
     {         "History_Bonus_Limit", {           &history_bonus_limit,    TuningOption::INT,  1500,  4500,    "3090"}},
     {          "History_Bonus_Mult", {            &history_bonus_mult,    TuningOption::INT,   280,   720,     "468"}},
     {           "History_Bonus_Sub", {             &history_bonus_sub,    TuningOption::INT,    60,   340,     "165"}},
-    {                 "History_Max", {                   &history_max,    TuningOption::INT,  1024, 32768,   "16384"}}, // untuned
+    {                 "History_Max", {                   &history_max,    TuningOption::INT,  1024, 32768,   "16384"}}, // default
     {         "Main_History_Weight", {           &main_history_weight,    TuningOption::INT,    25,   160,      "85"}},
+    */
 
-    // Batch 5: 10+0.1
-    {              "ProbCut_Margin", {                &probcut_margin,    TuningOption::INT,     0,   300,      "50"}}, // untuned
-    {        "ProbCut_Max_Captures", {          &probcut_max_captures,    TuningOption::INT,     1,     8,       "3"}}, // untuned
-    {           "ProbCut_Min_Depth", {             &probcut_min_depth,    TuningOption::INT,     3,    12,       "5"}}, // untuned
-    {           "ProbCut_Reduction", {             &probcut_reduction,    TuningOption::INT,     1,     5,       "3"}}, // untuned
+    /* Batch 5: 10+0.1, tuning failed validation
+    {              "ProbCut_Margin", {                &probcut_margin,    TuningOption::INT,     0,   300,      "50"}},
+    {        "ProbCut_Max_Captures", {          &probcut_max_captures,    TuningOption::INT,     1,     8,       "3"}},
+    {           "ProbCut_Min_Depth", {             &probcut_min_depth,    TuningOption::INT,     3,    12,       "5"}},
+    {           "ProbCut_Reduction", {             &probcut_reduction,    TuningOption::INT,     1,     5,       "3"}},
+    */
 
     /* TIME PARAMETERS FOR FUTURE TUNING -- all untuned
     {           "Time_Bank_Ceiling", {    &time_bank_ceiling_fraction, TuningOption::DOUBLE,     0,     0,    "0.82"}},
