@@ -9,19 +9,19 @@ analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
 
 Release labels separate the SHAYVERI source version, evaluator, and network. The
-current release is `SHAYVERI v2.6.0 / NNUE SHAYVERI2_5_0`.
+current release is `SHAYVERI v2.7.0 / NNUE SHAYVERI2_5_0`.
 
 ## Elo results
 
 |          Engine |    Evaluation |       Network | Time control | Rating |   Error | Gap to SF2850 | Gap to SF3000 |
 |----------------:|--------------:|--------------:|-------------:|-------:|--------:|--------------:|--------------:|
-| SHAYVERI v2.6.0 |          NNUE | SHAYVERI2_5_0 |   STC 10+0.1 | 3045.7 | +/-14.8 |        +195.7 |         +45.7 |
-| SHAYVERI v2.6.0 |          NNUE | SHAYVERI2_5_0 |   LTC 90+0.5 | 3136.5 | +/-28.9 |        +286.5 |        +136.5 |
-| SHAYVERI v2.6.0 | HCE-classical |          none |   STC 10+0.1 | 2594.5 | +/-19.8 |        -255.5 |        -405.5 |
-| SHAYVERI v2.6.0 | HCE-classical |          none |   LTC 90+0.5 | 2718.8 | +/-33.2 |        -131.2 |        -281.2 |
+| SHAYVERI v2.7.0 |          NNUE | SHAYVERI2_5_0 |   STC 10+0.1 | 3094.7 | +/-14.9 |        +244.7 |         +94.7 |
+| SHAYVERI v2.7.0 |          NNUE | SHAYVERI2_5_0 |   LTC 90+0.5 | 3235.7 | +/-29.8 |        +385.7 |        +235.7 |
+| SHAYVERI v2.7.0 | HCE-classical |          none |   STC 10+0.1 | 2626.5 | +/-19.3 |        -223.5 |        -373.5 |
+| SHAYVERI v2.7.0 | HCE-classical |          none |   LTC 90+0.5 | 2751.3 | +/-32.1 |         -98.7 |        -248.7 |
 
-The v2.6.0 NNUE configuration is about +451.2 Elo over HCE-classical at STC and
-+417.7 Elo at LTC in this anchored pool.
+The v2.7.0 NNUE configuration is about +468.2 Elo over HCE-classical at STC and
++484.4 Elo at LTC in this anchored pool.
 
 ## How to build
 

@@ -36,7 +36,7 @@ Start the master:
 
 ```sh
 cd ~/elo_pin
-PIN_ROOT="$PWD" RELEASE_ID=v0.0.0 \
+PIN_ROOT="$PWD" RELEASE_ID=v2.7.0 \
   NET= REGISTER_SECONDS=300 ./master.sh
 ```
 

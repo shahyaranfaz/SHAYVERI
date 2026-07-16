@@ -308,19 +308,19 @@
         <div>
           <h1>SHAYVERI</h1>
           <p class="tagline">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence: a UCI-compliant C++20 chess engine with a classical search core, a handcrafted evaluation path, and an embedded NNUE evaluation path.</p>
-          <p class="tagline">Current release: SHAYVERI v2.6.0 / NNUE SHAYVERI2_5_0.</p>
+          <p class="tagline">Current release: SHAYVERI v2.7.0 / NNUE SHAYVERI2_5_0.</p>
         </div>
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
-            <strong>3136.5</strong>
+            <strong>3235.7</strong>
             <span>Anchored Ordo LTC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
-            <strong>3045.7</strong>
+            <strong>3094.7</strong>
             <span>Anchored Ordo STC rating for SHAYVERI NNUE</span>
           </div>
           <div class="metric">
-            <strong>+418</strong>
+            <strong>+484</strong>
             <span>Approximate LTC gain over HCE-classical</span>
           </div>
           <div class="metric">
@@ -375,49 +375,49 @@
             </thead>
             <tbody>
               <tr>
-                <td>SHAYVERI v2.6.0</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>HCE-classical</td>
                 <td>none</td>
                 <td>STC 10+0.1</td>
-                <td>2594.5</td>
-                <td>+/-19.8</td>
-                <td>-255.5</td>
-                <td>-405.5</td>
+                <td>2626.5</td>
+                <td>+/-19.3</td>
+                <td>-223.5</td>
+                <td>-373.5</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.6.0</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>HCE-classical</td>
                 <td>none</td>
                 <td>LTC 90+0.5</td>
-                <td>2718.8</td>
-                <td>+/-33.2</td>
-                <td>-131.2</td>
-                <td>-281.2</td>
+                <td>2751.3</td>
+                <td>+/-32.1</td>
+                <td>-98.7</td>
+                <td>-248.7</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.6.0</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>NNUE</td>
                 <td>SHAYVERI2_5_0</td>
                 <td>STC 10+0.1</td>
-                <td class="good">3045.7</td>
-                <td>+/-14.8</td>
-                <td>+195.7</td>
-                <td>+45.7</td>
+                <td class="good">3094.7</td>
+                <td>+/-14.9</td>
+                <td>+244.7</td>
+                <td>+94.7</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.6.0</td>
+                <td>SHAYVERI v2.7.0</td>
                 <td>NNUE</td>
                 <td>SHAYVERI2_5_0</td>
                 <td>LTC 90+0.5</td>
-                <td class="good">3136.5</td>
-                <td>+/-28.9</td>
-                <td>+286.5</td>
-                <td>+136.5</td>
+                <td class="good">3235.7</td>
+                <td>+/-29.8</td>
+                <td>+385.7</td>
+                <td>+235.7</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="note">SHAYVERI v2.6.0 / NNUE improved over HCE-classical by about <span class="warn">+451.2 Elo at STC</span> and <span class="warn">+417.7 Elo at LTC</span> in this anchored pool. It is above SF3000 at both time controls.</p>
+        <p class="note">SHAYVERI v2.7.0 / NNUE improved over HCE-classical by about <span class="warn">+468.2 Elo at STC</span> and <span class="warn">+484.4 Elo at LTC</span> in this anchored pool. It is above SF3000 at both time controls.</p>
       </div>
     </section>
 
@@ -441,7 +441,7 @@
               <li>Embedded default network: <code>SHAYVERI2_5_0.nnue</code>.</li>
               <li>KB16x512: Chess768 features, 16 mirrored king buckets, 512 hidden units, and SCReLU.</li>
               <li>Incremental two-perspective accumulators during search.</li>
-              <li>Pinned at +451.2 Elo STC and +417.7 Elo LTC over HCE-classical.</li>
+              <li>Pinned at +468.2 Elo STC and +484.4 Elo LTC over HCE-classical.</li>
               <li>Compatible external Chess768, KB8, and KB16 networks can be loaded through <code>EvalFile</code>.</li>
               <li>Trained from external Stockfish/RobotMoon-style corpora, not included here.</li>
             </ul>

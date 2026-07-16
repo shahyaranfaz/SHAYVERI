@@ -24,7 +24,7 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
-### v2.7.0 - Search and Engine Refinement (Unreleased)
+### v2.7.0 - Search and Engine Refinement
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
@@ -33,6 +33,8 @@ pairing at LTC. The framework is described in
 - Added capture-only ProbCut, quiet PVS SEE pruning, expanded qsearch pruning,
   and singular-search multi-cut. Check, negative, double, and triple extensions
   and regressing pruning policies remain disabled after direct testing.
+- Retuned aspiration, futility, LMR, qsearch, reverse futility, SEE, null-move,
+  and singular-search parameters.
 - Added root-node-share and multi-depth evaluation-stability time scaling,
   safe clock ceilings, emergency no-increment behavior, and deadline-aware
   hard-timer sleeps.
@@ -47,7 +49,10 @@ pairing at LTC. The framework is described in
   weighted-majority move per position and no stored evaluator scores.
 - Added `BookInfoDepth` for SHAYVERI-generated scores on book moves, which now
   respect `searchmoves` and legality.
+- Standardized public UCI option names to PascalCase.
 - Made `bench` independent of prior search state and report microsecond timing.
+- Recorded `3094.7 +/-14.9` at STC and `3235.7 +/-29.8` at LTC, improvements
+  of +49.0 STC and +99.2 LTC over v2.6.0 in the same pool.
 
 ### v2.6.0 - Atomic Lazy SMP, Embedded NNUE, and Search Refinements
 

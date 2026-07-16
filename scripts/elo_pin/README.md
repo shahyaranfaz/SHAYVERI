@@ -83,6 +83,22 @@ Run the orchestration check after changing the harness:
 bash scripts/elo_pin/check.sh
 ```
 
+Validate a completed phase manually:
+
+```bash
+python3 scripts/elo_pin/validate_run.py \
+  --pgn outputs/v0.0.0/stc/rating_pool.pgn \
+  --games-per-pair 800 \
+  --player "SHAYVERI v0.0.0 / HCE-classical" \
+  --player "SHAYVERI v0.0.0 / NNUE" \
+  --player Alexandria9 --player Berserk13 --player Ethereal14 \
+  --player PlentyChess7 --player Weiss2 --player SF2850 --player SF3000 \
+  --ordo-dir outputs/v0.0.0/stc
+```
+
+The master runs this validation before Ordo and again after all Ordo outputs
+are collected.
+
 ## Layout and outputs
 
 Engines live under `engines/`; the book, anchors, and Ordo default to `books/`,
@@ -99,6 +115,7 @@ their work directory for diagnosis.
 - `STC_SHARD_PAIR_GAMES` and `LTC_SHARD_PAIR_GAMES`: shard sizes
 - `BASE_SEED`: deterministic seed sequence
 - `CONCURRENCY`: local fastchess concurrency, default 23
+- `PYTHON_BIN`: Python 3 executable used by run validation, default `python3`
 - `NET=`: use the embedded default network
 - `RELEASE_ID`: full public engine version used by both SHAYVERI entries and
   its output directory
