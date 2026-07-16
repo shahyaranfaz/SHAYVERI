@@ -1,159 +1,68 @@
 # Release Checklist
 
-Use this checklist for every published SHAYVERI release. Version-specific
-experiments, tuning, and promotion criteria belong in that release's own plan.
-Commands below use `v2.7.0` as the example. Substitute the release being made.
+Use this checklist for every published SHAYVERI release. Commands use
+`v2.7.0` as an example.
 
-## 1. Freeze the release candidate
+## 1. Finalize the engine
 
 - [ ] Choose the version according to [`VERSIONING.md`](VERSIONING.md).
-- [ ] Confirm the release scope and final production defaults.
-- [ ] Complete the tuning, ablation, correctness, and performance work relevant
-  to the changes in this release.
-- [ ] Remove temporary gates and disable unfinished experimental behavior.
-- [ ] Confirm tuning-only registry options are absent from the production UCI
-  handshake.
+- [ ] Freeze the release scope, production defaults, and default NNUE.
+- [ ] Remove temporary gates and unfinished experimental behaviour.
+- [ ] Confirm tuning-only options are absent from the production UCI handshake.
 
-## 2. Record the bench and run verification
+## 2. Build and verify
 
-- [ ] Build the finalized candidate.
+```sh
+make -j"$(nproc)"
+printf 'bench 16 1 3 default depth\nquit\n' | ./SHAYVERI
+make test
+make -C debug sanitize
+printf 'uci\nisready\nquit\n' | ./SHAYVERI
+```
 
-  ```sh
-  make -j"$(nproc)"
-  ```
+- [ ] Confirm repeated benches produce the same node signature.
+- [ ] If an intentional search change altered the signature, update
+  [`debug/uci_check.py`](../debug/uci_check.py) and
+  [`scripts/profiling/bench.sh`](../scripts/profiling/bench.sh).
 
-- [ ] Run the bench repeatedly and confirm the node signature is deterministic.
+## 3. Validate strength
 
-  ```sh
-  printf 'bench 16 1 3 default depth\nquit\n' | ./SHAYVERI
-  ```
+- [ ] Run a 1,000-game colour-paired match against the previous public release
+  at `5+0.05`, one thread, and 64 MB hash.
+- [ ] Run the anchored STC and LTC release pin exactly as described in
+  [`scripts/elo_pin/README.md`](../scripts/elo_pin/README.md).
 
-- [ ] If intentional search changes altered the signature, confirm the change
-  is expected and update both values before running `make test`:
-  - `BENCH_SIGNATURE_NODES` in
-    [`debug/uci_check.py`](../debug/uci_check.py)
-  - `EXPECTED_NODES` in
-    [`scripts/profiling/bench.sh`](../scripts/profiling/bench.sh)
-- [ ] Run the normal verification suite.
+Start the master:
 
-  ```sh
-  make test
-  ```
+```sh
+cd ~/elo_pin
+PIN_ROOT="$PWD" RELEASE_ID=v2.7 NAME_ID="SHAYVERI v2.7.0 / NNUE" \
+  NET= REGISTER_SECONDS=300 ./master.sh
+```
 
-- [ ] Run the sanitizer suite.
+Start one worker on each participating machine:
 
-  ```sh
-  make -C debug sanitize
-  ```
+```sh
+cd ~/elo_pin
+PIN_ROOT="$PWD" ./worker.sh
+```
 
-- [ ] Inspect the production UCI handshake.
+Monitor the pin:
 
-  ```sh
-  printf 'uci\nisready\nquit\n' | ./SHAYVERI
-  ```
+```sh
+cd ~/elo_pin
+PIN_ROOT="$PWD" ./watch.sh
+```
 
-- [ ] Confirm every exposed production option is intentional and documented
-  consistently in [`README.md`](../README.md) and
-  [`index.html`](../index.html).
-- [ ] Preserve the exact verified binary for release strength testing.
-- [ ] Record the compiler, build flags, bench signature, and SHA-256 hashes for
-  the verified binary, default NNUE, and opening book.
+- [ ] Confirm both phases completed successfully.
 
-## 3. Run mandatory release strength testing
+## 4. Finalize documentation
 
-- [ ] Use the exact finalized binary for every release comparison.
-- [ ] Run a 1,000-game paired match against the previous public release at
-  `5+0.05`, one thread, and 64 MB hash.
-
-  ```sh
-  set -o pipefail
-  FASTCHESS="$HOME/chess_arena/fastchess/fastchess"
-  CANDIDATE=./SHAYVERI
-  BASELINE=./SHAYVERI_BASELINE
-  BOOK=./8moves_GM_LB.epd
-  TC=5+0.05
-  ROUNDS=500
-  CONCURRENCY=23
-
-  "$FASTCHESS" \
-    -engine name=candidate cmd="$CANDIDATE" dir=. proto=uci \
-      option.OwnBook=false option.BookInfoDepth=0 \
-    -engine name=baseline cmd="$BASELINE" dir=. proto=uci \
-      option.OwnBook=false \
-    -each proto=uci "tc=$TC" timemargin=100 option.Threads=1 option.Hash=64 \
-    -openings file="$BOOK" format=epd order=random plies=16 \
-    -games 2 -rounds "$ROUNDS" -repeat \
-    -concurrency "$CONCURRENCY" -recover \
-    -output format=cutechess \
-    -pgnout file=release_h2h.pgn min=true \
-    -ratinginterval 0 2>&1 | tee release_h2h.log
-  ```
-
-- [ ] Run the full anchored pool described in
-  [`scripts/elo_pin/README.md`](../scripts/elo_pin/README.md) at both:
-  - STC `10+0.1`
-  - LTC `90+0.5`
-- [ ] Match the fixed pool, opponent binaries, anchors, opening book, engine
-  settings, adjudication, Ordo configuration, and games per pairing used by
-  the comparison release.
-- [ ] Record SHA-256 hashes for the opponent binaries, anchors, and Ordo
-  executable.
-
-  Start the release master. It runs the exact STC quota and then the exact LTC
-  quota regardless of how many workers register.
-
-  ```sh
-  cd ~/elo_pin
-  PIN_ROOT="$PWD" \
-  RELEASE_ID=v2.7 \
-  NAME_ID="SHAYVERI v2.7.0 / NNUE" \
-  NET= \
-  REGISTER_SECONDS=300 \
-  ./master.sh
-  ```
-
-  Start one worker process on each participating machine during the
-  registration window.
-
-  ```sh
-  cd ~/elo_pin
-  PIN_ROOT="$PWD" ./worker.sh
-  ```
-
-  Monitor the active pin from another shell.
-
-  ```sh
-  cd ~/elo_pin
-  PIN_ROOT="$PWD" ./watch.sh
-  ```
-
-- [ ] Confirm the master completed both phases. Any crash, illegal move,
-  disconnect, time forfeit, failed shard, or incomplete PGN must prevent
-  publication and preserve the temporary work directory for diagnosis.
-
-  ```sh
-  cd ~/elo_pin
-  cat outputs/v2.7/stc/results.txt
-  cat outputs/v2.7/stc/h2h.txt
-  cat outputs/v2.7/ltc/results.txt
-  cat outputs/v2.7/ltc/h2h.txt
-  ```
-
-- [ ] Preserve each phase's combined PGN and complete Ordo output under
-  `outputs/v2.7/{stc,ltc}`.
-
-## 4. Finalize documentation and release metadata
-
-- [ ] Ensure [`CHANGELOG.md`](CHANGELOG.md) describes every user-visible and
-  engine-relevant change in the release.
+- [ ] Ensure [`CHANGELOG.md`](CHANGELOG.md) describes every engine change.
 - [ ] Remove `(Unreleased)`, candidate ranges, and pending-validation wording.
-- [ ] Confirm the changelog heading contains the final version and title.
-- [ ] Confirm the exact default NNUE and whether it is embedded or external.
 - [ ] Update [`README.md`](../README.md), [`ELO.md`](ELO.md), and
-  [`index.html`](../index.html) with the new release and applicable results.
-- [ ] Confirm all published numbers match the preserved release evidence.
-- [ ] Remove obsolete internal names, paths, stale versions, and private
-  milestone wording from public documentation.
+  [`index.html`](../index.html) with the release and applicable results.
+- [ ] Remove obsolete internal names, paths, versions, and milestone wording.
 
 If the default NNUE changed:
 
@@ -162,72 +71,35 @@ If the default NNUE changed:
   [`build-release.yml`](../.github/workflows/build-release.yml).
 - [ ] Update the mapping in
   [`write-release-readme.sh`](../.github/scripts/write-release-readme.sh).
-- [ ] Confirm the network exists under its exact advertised filename.
-- [ ] Confirm the packaged `README.txt` describes it correctly.
 
-## 5. Finalize the release commit
+## 5. Merge and tag
 
-- [ ] Review the complete change from the previous public tag.
-- [ ] Confirm the finalized engine and build inputs match those that passed the
-  release gates.
-- [ ] If an engine or build input changed after verification, rebuild and rerun
-  every affected gate with the replacement binary.
-- [ ] Confirm the working tree is clean.
-- [ ] Record the final release commit.
-- [ ] Push the finalized release branch.
+- [ ] Review the complete diff from the previous public tag.
+- [ ] Rebuild and repeat affected gates after any engine or build-input change.
+- [ ] Commit the finalized release, merge it into `main`, and confirm the
+  working tree is clean.
 
-## 6. Merge and tag
+```sh
+git tag -a v2.7.0 -m "SHAYVERI v2.7.0"
+git push origin main
+git push origin v2.7.0
+```
 
-- [ ] Merge the finalized release commit into `main`.
-- [ ] Confirm local `main` matches `origin/main`.
-- [ ] Create an annotated tag from the finalized commit.
+## 6. Build and publish
 
-  ```sh
-  git tag -a v2.7.0 -m "SHAYVERI v2.7.0"
-  git show --stat v2.7.0
-  test "$(git cat-file -t v2.7.0)" = tag
-  test "$(git rev-parse 'v2.7.0^{}')" = "$(git rev-parse HEAD)"
-  ```
+The tag must be pushed before running the release workflow.
 
-- [ ] Push `main` and the tag.
+```sh
+gh workflow run build-release.yml \
+  --repo shahyaranfaz/SHAYVERI \
+  --ref main \
+  -f tag=v2.7.0 \
+  -f publish=true
+```
 
-  ```sh
-  git push origin main
-  git push origin v2.7.0
-  ```
+- [ ] Confirm every build and publish job succeeds.
 
-## 7. Build and publish
+## 7. Verify the release
 
-The release workflow checks out the requested tag, so the tag must be pushed
-before this step.
-
-- [ ] Run the workflow from `main` once with publishing enabled.
-
-  ```sh
-  gh workflow run build-release.yml \
-    --repo shahyaranfaz/SHAYVERI \
-    --ref main \
-    -f tag=v2.7.0 \
-    -f publish=true
-  ```
-
-- [ ] Confirm every platform job succeeds.
-- [ ] Confirm the publish job succeeds and creates or updates the intended
-  release.
-
-## 8. Verify the published release
-
-- [ ] Download every published archive and checksum from the release page.
-- [ ] Verify every checksum against its corresponding published archive.
-- [ ] Inspect every published archive for the expected binary, `LICENSE`,
-  `README.txt`, and external NNUE where applicable.
-- [ ] Start each published platform binary and verify `uci`, `isready`, the
-  production option list, the default NNUE, and a legal `bestmove`.
-- [ ] Confirm the release uses the correct annotated tag, title, and continuous
-  changelog notes.
-- [ ] Verify the exact tagged source archive is present alongside the platform
-  packages.
+- [ ] Inspect the release title, notes, and assets.
 - [ ] Test at least one downloaded package outside the source tree.
-- [ ] Confirm the release page, [`README.md`](../README.md),
-  [`ELO.md`](ELO.md), and [`index.html`](../index.html) identify the new release
-  as current.
