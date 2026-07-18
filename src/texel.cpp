@@ -1002,8 +1002,6 @@ void TexelTuner::print_parameters(const parameters_t& p) {
         };
         auto mg = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[0])); };
         auto eg = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[1])); };
-        auto mg_pct = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[0] * 100.0)); };
-        auto eg_pct = [&](int idx) { return static_cast<int>(std::round(parameter(idx)[1] * 100.0)); };
 
         ss << "// SHAYVERI_TEXEL_PHASE=" << TEXEL_PHASE << "\n";
 
@@ -1120,6 +1118,12 @@ void TexelTuner::print_parameters(const parameters_t& p) {
         }
 
         if constexpr (tune_mobility) {
+            auto mg_pct = [&](int idx) {
+                return static_cast<int>(std::round(parameter(idx)[0] * 100.0));
+            };
+            auto eg_pct = [&](int idx) {
+                return static_cast<int>(std::round(parameter(idx)[1] * 100.0));
+            };
             ss << "inline int MOBILITY_KNIGHT_MG = " << mg_pct(i) << ";\n";
             ss << "inline int MOBILITY_KNIGHT_EG = " << eg_pct(i++) << ";\n";
             ss << "inline int MOBILITY_BISHOP_MG = " << mg_pct(i) << ";\n";

@@ -191,7 +191,6 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
         TTEntry candidate;
         if (!read_slot(slot, candidate)) {
             replace = &slot;
-            have_replace = false;
             break;
         }
 
