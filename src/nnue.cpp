@@ -10,6 +10,10 @@
 #include <iostream>
 #include <vector>
 
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+
 namespace SHAYVERI {
 
 namespace NNUE {
@@ -325,6 +329,38 @@ void Accumulator::refresh(const Board &board) {
     const Square white_king_sq = king_square(board, WHITE);
     const Square black_king_sq = king_square(board, BLACK);
 
+#ifdef __AVX2__
+    int white_indices[32];
+    int black_indices[32];
+    int feature_count = 0;
+
+    for (int p = 1; p < PIECE_COUNT; ++p) {
+        U64 bb = board.bit_boards[p];
+        while (bb) {
+            const Square sq = pop_lsb(bb);
+            const Piece piece = Piece(p);
+            feature_indices(piece_type_index(piece), piece_colour_index(piece), sq,
+                            white_king_sq, black_king_sq,
+                            white_indices[feature_count], black_indices[feature_count]);
+            ++feature_count;
+        }
+    }
+
+    constexpr int LANES = sizeof(__m256i) / sizeof(I16);
+    for (int i = 0; i < g_hidden_size; i += LANES) {
+        __m256i white = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i *>(feature_bias + i));
+        __m256i black = white;
+        for (int f = 0; f < feature_count; ++f) {
+            white = _mm256_add_epi16(white, _mm256_loadu_si256(
+                reinterpret_cast<const __m256i *>(feature_weights[white_indices[f]] + i)));
+            black = _mm256_add_epi16(black, _mm256_loadu_si256(
+                reinterpret_cast<const __m256i *>(feature_weights[black_indices[f]] + i)));
+        }
+        _mm256_storeu_si256(reinterpret_cast<__m256i *>(vals[0] + i), white);
+        _mm256_storeu_si256(reinterpret_cast<__m256i *>(vals[1] + i), black);
+    }
+#else
     for (int i = 0; i < g_hidden_size; ++i) {
         vals[0][i] = feature_bias[i];
         vals[1][i] = feature_bias[i];
@@ -343,6 +379,28 @@ void Accumulator::refresh(const Board &board) {
                 vals[0][i] += feature_weights[wi][i];
                 vals[1][i] += feature_weights[bi][i];
             }
+        }
+    }
+#endif
+}
+
+void Accumulator::refresh_perspective(const Board &board, int perspective) {
+    const Square perspective_king_sq = king_square(
+        board, static_cast<Colour>(perspective));
+
+    for (int i = 0; i < g_hidden_size; ++i)
+        vals[perspective][i] = feature_bias[i];
+
+    for (int p = 1; p < PIECE_COUNT; ++p) {
+        U64 bb = board.bit_boards[p];
+        while (bb) {
+            const Square sq = pop_lsb(bb);
+            const Piece piece = Piece(p);
+            const int index = feature_index(
+                piece_type_index(piece), piece_colour_index(piece), sq,
+                perspective, perspective_king_sq);
+            for (int i = 0; i < g_hidden_size; ++i)
+                vals[perspective][i] += feature_weights[index][i];
         }
     }
 }

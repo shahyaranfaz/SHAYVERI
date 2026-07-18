@@ -31,6 +31,16 @@ pairing at LTC. The framework is described in
 - Added reproducible profiling baselines covering trusted bench, fixed-depth,
   fixed-node, tactical, timed, and real 1/2/4/8-thread Lazy SMP workloads, with
   machine/build metadata and before-and-after comparison output.
+- Combined ordinary quiet-move NNUE parent copying, subtraction, and addition
+  into one pass, preserving exact refreshed values while removing redundant
+  hot-path traversals.
+- Rebuilt only the moved king's NNUE perspective after ordinary quiet king
+  moves, updating the unchanged perspective incrementally while retaining full
+  refreshes for king captures and castling.
+- Fused ordinary-capture NNUE parent copying and all three feature deltas into
+  one accumulator pass.
+- Reduced AVX2 evaluation widening by accumulating bounded products in safe
+  32-bit blocks before converting them to the 64-bit output sum.
 - Fixed fixed-node searches counting an unreported preliminary search outside
   the requested node budget.
 - Fixed fixed-depth and fixed-node searches blocking UCI command processing,

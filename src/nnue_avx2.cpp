@@ -19,11 +19,11 @@ I64 hsum256_epi64(__m256i v) {
     return a + b;
 }
 
-__m256i mullo_epi32_to_epi64(__m256i a, __m256i b) {
-    __m256i even = _mm256_mul_epi32(a, b);
-    __m256i odd = _mm256_mul_epi32(_mm256_srli_epi64(a, 32),
-                                   _mm256_srli_epi64(b, 32));
-    return _mm256_add_epi64(even, odd);
+void widen_accumulate(__m256i values, __m256i &sum) {
+    const __m128i low = _mm256_castsi256_si128(values);
+    const __m128i high = _mm256_extracti128_si256(values, 1);
+    sum = _mm256_add_epi64(sum, _mm256_cvtepi32_epi64(low));
+    sum = _mm256_add_epi64(sum, _mm256_cvtepi32_epi64(high));
 }
 
 __m256i div255_epi32(__m256i x) {
@@ -58,21 +58,35 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
     const bool use_screlu = uses_screlu();
     const int hidden_size = active_hidden_size();
 
-    for (int i = 0; i < hidden_size; i += 8) {
-        __m128i stm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(stm_acc + i));
-        __m128i stm_w = _mm_loadu_si128(reinterpret_cast<const __m128i *>(output_weights + i));
+    constexpr int BLOCK_SIZE = 64;
+    for (int base = 0; base < hidden_size; base += BLOCK_SIZE) {
+        __m256i block_stm = _mm256_setzero_si256();
+        __m256i block_nstm = _mm256_setzero_si256();
 
-        __m256i stm32 = use_screlu ? screlu16_to_i32(stm) : crelu16_to_i32(stm);
-        __m256i stm_w32 = _mm256_cvtepi16_epi32(stm_w);
-        sum_stm = _mm256_add_epi64(sum_stm, mullo_epi32_to_epi64(stm32, stm_w32));
+        for (int i = base; i < base + BLOCK_SIZE; i += 8) {
+            const __m128i stm = _mm_loadu_si128(
+                reinterpret_cast<const __m128i *>(stm_acc + i));
+            const __m128i stm_w = _mm_loadu_si128(
+                reinterpret_cast<const __m128i *>(output_weights + i));
+            const __m256i stm32 = use_screlu
+                ? screlu16_to_i32(stm) : crelu16_to_i32(stm);
+            const __m256i stm_w32 = _mm256_cvtepi16_epi32(stm_w);
+            block_stm = _mm256_add_epi32(
+                block_stm, _mm256_mullo_epi32(stm32, stm_w32));
 
-        __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(nstm_acc + i));
-        __m128i nstm_w = _mm_loadu_si128(
-            reinterpret_cast<const __m128i *>(output_weights + hidden_size + i));
+            const __m128i nstm = _mm_loadu_si128(
+                reinterpret_cast<const __m128i *>(nstm_acc + i));
+            const __m128i nstm_w = _mm_loadu_si128(
+                reinterpret_cast<const __m128i *>(output_weights + hidden_size + i));
+            const __m256i nstm32 = use_screlu
+                ? screlu16_to_i32(nstm) : crelu16_to_i32(nstm);
+            const __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
+            block_nstm = _mm256_add_epi32(
+                block_nstm, _mm256_mullo_epi32(nstm32, nstm_w32));
+        }
 
-        __m256i nstm32 = use_screlu ? screlu16_to_i32(nstm) : crelu16_to_i32(nstm);
-        __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
-        sum_nstm = _mm256_add_epi64(sum_nstm, mullo_epi32_to_epi64(nstm32, nstm_w32));
+        widen_accumulate(block_stm, sum_stm);
+        widen_accumulate(block_nstm, sum_nstm);
     }
 
     I64 total = hsum256_epi64(sum_stm) + hsum256_epi64(sum_nstm);

@@ -42,6 +42,7 @@ struct Accumulator {
 
     void reset();
     void refresh(const Board &board);
+    void refresh_perspective(const Board &board, int perspective);
     void apply_delta(int add_white, int add_black, int sub_white, int sub_black);
     void apply_deltas(const Delta *deltas, int count);
 };
