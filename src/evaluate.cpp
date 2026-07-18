@@ -536,6 +536,7 @@ static int count_pins(const Board &b, Colour attacker) {
     int king_f      = get_file(king);
     int king_r      = get_rank(king);
     int count       = 0;
+    const Piece defender_king = defender == WHITE ? WK : BK;
 
     auto check_pin_from = [&](Square from, bool ortho, bool diag) {
         int f = get_file(from), r = get_rank(from);
@@ -553,13 +554,9 @@ static int count_pins(const Board &b, Colour attacker) {
             Piece  p  = b.mailbox[sq];
             if (p != NONE_PIECE) {
                 if (pinned == SQ_NONE) {
-                    Piece king_piece = (defender == WHITE) ? WK : BK;
-                    if (get_colour(p) == defender && p != king_piece) pinned = sq;
+                    if (get_colour(p) == defender && p != defender_king) pinned = sq;
                     else return;
-                } else {
-                    if (p == ((defender == WHITE) ? WK : BK)) count++;
-                    return;
-                }
+                } else return;
             }
             cf += sf; cr += sr;
         }
@@ -747,26 +744,22 @@ static void evaluate_outposts(const Board &b, Colour c,
 }
 
 // ===== DEVELOPMENT =====
-static int development_score(const Board &b, Colour c, int phase) {
+template<Colour Side>
+static int development_score(const Board &b, int phase) {
     if (phase <= MAX_PHASE / 2) return 0;
 
+    constexpr Rank home = Side == WHITE ? RANK_1 : RANK_8;
+    constexpr Piece knight = Side == WHITE ? WN : BN;
+    constexpr Piece bishop = Side == WHITE ? WB : BB;
     int developed = 0;
-    if (c == WHITE) {
-        if (!(b.bit_boards[WN] & bb_square(make_square(FILE_B, RANK_1)))) developed++;
-        if (!(b.bit_boards[WN] & bb_square(make_square(FILE_G, RANK_1)))) developed++;
-        if (!(b.bit_boards[WB] & bb_square(make_square(FILE_C, RANK_1)))) developed++;
-        if (!(b.bit_boards[WB] & bb_square(make_square(FILE_F, RANK_1)))) developed++;
-    } else {
-        if (!(b.bit_boards[BN] & bb_square(make_square(FILE_B, RANK_8)))) developed++;
-        if (!(b.bit_boards[BN] & bb_square(make_square(FILE_G, RANK_8)))) developed++;
-        if (!(b.bit_boards[BB] & bb_square(make_square(FILE_C, RANK_8)))) developed++;
-        if (!(b.bit_boards[BB] & bb_square(make_square(FILE_F, RANK_8)))) developed++;
-    }
+    developed += !(b.bit_boards[knight] & bb_square(make_square(FILE_B, home)));
+    developed += !(b.bit_boards[knight] & bb_square(make_square(FILE_G, home)));
+    developed += !(b.bit_boards[bishop] & bb_square(make_square(FILE_C, home)));
+    developed += !(b.bit_boards[bishop] & bb_square(make_square(FILE_F, home)));
 
-    Square ksq   = king_square(b, c);
-    bool castled = (c == WHITE)
-        ? (ksq == make_square(FILE_G, RANK_1) || ksq == make_square(FILE_C, RANK_1))
-        : (ksq == make_square(FILE_G, RANK_8) || ksq == make_square(FILE_C, RANK_8));
+    const Square king = king_square(b, Side);
+    const bool castled = king == make_square(FILE_G, home) ||
+        king == make_square(FILE_C, home);
 
     int raw = developed * DEVELOPMENT_BONUS + (castled ? CASTLED_BONUS : 0);
     return raw * (phase - MAX_PHASE/2) / (MAX_PHASE/2);
@@ -837,7 +830,7 @@ int evaluate(const Board &b) {
     evaluate_outposts(b, BLACK, black_attacks, white_attacks, mg, eg);
 
     // Development.
-    int dev_diff     = development_score(b, WHITE, phase) - development_score(b, BLACK, phase);
+    int dev_diff = development_score<WHITE>(b, phase) - development_score<BLACK>(b, phase);
     int opening_scale = phase;
     mg += dev_diff * opening_scale / MAX_PHASE;
 

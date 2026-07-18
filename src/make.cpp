@@ -18,21 +18,6 @@ static const int CASTLING_RIGHTS_MASK[64] = {
      7, 15, 15, 15,  3, 15, 15, 11
 };
 
-static Piece promo_piece(Colour stm, PieceType promo) {
-    if (stm == WHITE) {
-        if (promo == KNIGHT) return WN;
-        if (promo == BISHOP) return WB;
-        if (promo == ROOK)   return WR;
-        if (promo == QUEEN)  return WQ;
-    } else {
-        if (promo == KNIGHT) return BN;
-        if (promo == BISHOP) return BB;
-        if (promo == ROOK)   return BR;
-        if (promo == QUEEN)  return BQ;
-    }
-    return NONE_PIECE;
-}
-
 static void remove_piece(Board &b, Piece p, Square sq) {
     b.bit_boards[p]               &= ~bb_square(sq);
     b.occupancies[get_colour(p)]  &= ~bb_square(sq);
@@ -66,6 +51,9 @@ bool make_move(Board &b, Move m, Undo &u) {
 
     Piece     moved    = b.get_piece(from);
     Piece     captured = b.get_piece(to);
+    const bool is_castle = get_type(moved) == KING &&
+        std::abs(get_file(from) - get_file(to)) == 2;
+    CastleInfo castle{};
 
     if (moved == NONE_PIECE || get_colour(moved) != b.side_to_move)
         return false;
@@ -88,30 +76,14 @@ bool make_move(Board &b, Move m, Undo &u) {
         if (!is_valid(cap_sq) || b.get_piece(cap_sq) != (b.side_to_move == WHITE ? BP : WP))
             return false;
     }
-    if (get_type(moved) == KING && std::abs(get_file(from) - get_file(to)) == 2) {
-        if (b.side_to_move == WHITE) {
-            if (from != make_square(FILE_E, RANK_1)) return false;
-            if (to == make_square(FILE_G, RANK_1)) {
-                if (!(b.castling & WHITE_KINGSIDE) || b.get_piece(make_square(FILE_H, RANK_1)) != WR)
-                    return false;
-            } else if (to == make_square(FILE_C, RANK_1)) {
-                if (!(b.castling & WHITE_QUEENSIDE) || b.get_piece(make_square(FILE_A, RANK_1)) != WR)
-                    return false;
-            } else {
-                return false;
-            }
-        } else {
-            if (from != make_square(FILE_E, RANK_8)) return false;
-            if (to == make_square(FILE_G, RANK_8)) {
-                if (!(b.castling & BLACK_KINGSIDE) || b.get_piece(make_square(FILE_H, RANK_8)) != BR)
-                    return false;
-            } else if (to == make_square(FILE_C, RANK_8)) {
-                if (!(b.castling & BLACK_QUEENSIDE) || b.get_piece(make_square(FILE_A, RANK_8)) != BR)
-                    return false;
-            } else {
-                return false;
-            }
-        }
+    if (is_castle) {
+        const Rank home = b.side_to_move == WHITE ? RANK_1 : RANK_8;
+        const bool kingside = to == make_square(FILE_G, home);
+        if (from != make_square(FILE_E, home) ||
+            (!kingside && to != make_square(FILE_C, home))) return false;
+        castle = castle_info(b.side_to_move, kingside);
+        if (!(b.castling & castle.required_right) ||
+            b.get_piece(castle.rook_from) != castle.rook) return false;
     }
 
     u.hash       = b.hash;
@@ -137,17 +109,15 @@ bool make_move(Board &b, Move m, Undo &u) {
         b.half_move = 0;
     }
 
-    if (get_type(moved) == KING && std::abs(get_file(from) - get_file(to)) == 2) {
+    if (is_castle) {
         u.was_castle = true;
-        if      (to == make_square(FILE_G, RANK_1)) { remove_piece(b, WR, make_square(FILE_H, RANK_1)); add_piece(b, WR, make_square(FILE_F, RANK_1)); }
-        else if (to == make_square(FILE_C, RANK_1)) { remove_piece(b, WR, make_square(FILE_A, RANK_1)); add_piece(b, WR, make_square(FILE_D, RANK_1)); }
-        else if (to == make_square(FILE_G, RANK_8)) { remove_piece(b, BR, make_square(FILE_H, RANK_8)); add_piece(b, BR, make_square(FILE_F, RANK_8)); }
-        else if (to == make_square(FILE_C, RANK_8)) { remove_piece(b, BR, make_square(FILE_A, RANK_8)); add_piece(b, BR, make_square(FILE_D, RANK_8)); }
+        remove_piece(b, castle.rook, castle.rook_from);
+        add_piece(b, castle.rook, castle.rook_to);
     }
 
     update_castling(b, from, to);
     remove_piece(b, moved, from);
-    if (promo != NONE_PTYPE) add_piece(b, promo_piece(b.side_to_move, promo), to);
+    if (promo != NONE_PTYPE) add_piece(b, promotion_piece(b.side_to_move, promo), to);
     else                     add_piece(b, moved, to);
 
     b.en_passant = SQ_NONE;
@@ -193,10 +163,9 @@ void unmake_move(Board &b, Move m, const Undo &u) {
     }
 
     if (u.was_castle) {
-        if      (to == make_square(FILE_G, RANK_1)) { remove_piece(b, WR, make_square(FILE_F, RANK_1)); add_piece(b, WR, make_square(FILE_H, RANK_1)); }
-        else if (to == make_square(FILE_C, RANK_1)) { remove_piece(b, WR, make_square(FILE_D, RANK_1)); add_piece(b, WR, make_square(FILE_A, RANK_1)); }
-        else if (to == make_square(FILE_G, RANK_8)) { remove_piece(b, BR, make_square(FILE_F, RANK_8)); add_piece(b, BR, make_square(FILE_H, RANK_8)); }
-        else if (to == make_square(FILE_C, RANK_8)) { remove_piece(b, BR, make_square(FILE_D, RANK_8)); add_piece(b, BR, make_square(FILE_A, RANK_8)); }
+        const CastleInfo castle = castle_info(b.side_to_move, get_file(to) == FILE_G);
+        remove_piece(b, castle.rook, castle.rook_to);
+        add_piece(b, castle.rook, castle.rook_from);
     }
 
     b.castling   = u.castling;

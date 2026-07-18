@@ -183,9 +183,8 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
         return;
     }
 
-    TTSlot *replace = &bucket.entries[0];
+    TTSlot *replace = nullptr;
     TTEntry replace_entry;
-    bool have_replace = read_slot(*replace, replace_entry);
 
     for (TTSlot &slot : bucket.entries) {
         TTEntry candidate;
@@ -193,14 +192,18 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
             replace = &slot;
             break;
         }
-
-        bool c_old = candidate.age != age;
-        bool r_old = !have_replace || replace_entry.age != age;
-        if ((c_old && !r_old) ||
-            (c_old == r_old && candidate.depth < replace_entry.depth)) {
+        if (!replace) {
             replace = &slot;
             replace_entry = candidate;
-            have_replace = true;
+            continue;
+        }
+
+        const bool candidate_old = candidate.age != age;
+        const bool replace_old = replace_entry.age != age;
+        if ((candidate_old && !replace_old) ||
+            (candidate_old == replace_old && candidate.depth < replace_entry.depth)) {
+            replace = &slot;
+            replace_entry = candidate;
         }
     }
 

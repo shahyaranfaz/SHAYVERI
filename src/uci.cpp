@@ -65,15 +65,6 @@ static void stop_search() {
     node_limit = 0;
 }
 
-static const BookEntry *probe_book(U64 zobrist_key) {
-    auto it = std::lower_bound(
-        OPENING_BOOK, OPENING_BOOK + OPENING_BOOK_SIZE, zobrist_key,
-        [](const BookEntry &e, U64 k) { return e.key < k; });
-    if (it != OPENING_BOOK + OPENING_BOOK_SIZE && it->key == zobrist_key)
-        return it;
-    return nullptr;
-}
-
 static Move first_legal_move(Board b) {
     return find_first_legal_move(b);
 }

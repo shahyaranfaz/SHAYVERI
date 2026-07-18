@@ -192,15 +192,6 @@ std::string fen_from_start_line(const std::string &line) {
     return fen;
 }
 
-const BookEntry *probe_book(U64 zobrist_key) {
-    auto it = std::lower_bound(
-        OPENING_BOOK, OPENING_BOOK + OPENING_BOOK_SIZE, zobrist_key,
-        [](const BookEntry &e, U64 k) { return e.key < k; });
-    if (it != OPENING_BOOK + OPENING_BOOK_SIZE && it->key == zobrist_key)
-        return it;
-    return nullptr;
-}
-
 int ply_number(const Board &b) {
     return std::max(0, (b.full_move - 1) * 2 + static_cast<int>(b.side_to_move));
 }

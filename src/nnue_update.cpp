@@ -37,20 +37,6 @@ void acc_sub(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square 
     }
 }
 
-Piece promoted_piece(Colour stm, PieceType promo) {
-    if (stm == WHITE) {
-        if (promo == KNIGHT) return WN;
-        if (promo == BISHOP) return WB;
-        if (promo == ROOK)   return WR;
-        return WQ;
-    }
-
-    if (promo == KNIGHT) return BN;
-    if (promo == BISHOP) return BB;
-    if (promo == ROOK)   return BR;
-    return BQ;
-}
-
 } // namespace
 
 void update_accumulator(Accumulator &child, const Accumulator &parent,
@@ -174,32 +160,12 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
     }
 
     if (get_type(moved) == KING && std::abs(get_file(from) - get_file(to)) == 2) {
-        Square rook_from = SQ_NONE;
-        Square rook_to = SQ_NONE;
-        Piece rook_piece = NONE_PIECE;
-
-        if (to == make_square(FILE_G, RANK_1)) {
-            rook_from = make_square(FILE_H, RANK_1);
-            rook_to = make_square(FILE_F, RANK_1);
-            rook_piece = WR;
-        } else if (to == make_square(FILE_C, RANK_1)) {
-            rook_from = make_square(FILE_A, RANK_1);
-            rook_to = make_square(FILE_D, RANK_1);
-            rook_piece = WR;
-        } else if (to == make_square(FILE_G, RANK_8)) {
-            rook_from = make_square(FILE_H, RANK_8);
-            rook_to = make_square(FILE_F, RANK_8);
-            rook_piece = BR;
-        } else {
-            rook_from = make_square(FILE_A, RANK_8);
-            rook_to = make_square(FILE_D, RANK_8);
-            rook_piece = BR;
-        }
+        const CastleInfo castle = castle_info(stm, get_file(to) == FILE_G);
 
         acc_sub(child, moved, from, white_king_sq, black_king_sq);
         acc_add(child, moved, to, white_king_sq, black_king_sq);
-        acc_sub(child, rook_piece, rook_from, white_king_sq, black_king_sq);
-        acc_add(child, rook_piece, rook_to, white_king_sq, black_king_sq);
+        acc_sub(child, castle.rook, castle.rook_from, white_king_sq, black_king_sq);
+        acc_add(child, castle.rook, castle.rook_to, white_king_sq, black_king_sq);
         return;
     }
 
@@ -207,7 +173,7 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
         acc_sub(child, captured, to, white_king_sq, black_king_sq);
 
     acc_sub(child, moved, from, white_king_sq, black_king_sq);
-    if (promo != NONE_PTYPE) acc_add(child, promoted_piece(stm, promo), to, white_king_sq, black_king_sq);
+    if (promo != NONE_PTYPE) acc_add(child, promotion_piece(stm, promo), to, white_king_sq, black_king_sq);
     else                     acc_add(child, moved, to, white_king_sq, black_king_sq);
 }
 

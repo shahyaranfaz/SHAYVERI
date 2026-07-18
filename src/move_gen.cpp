@@ -5,30 +5,124 @@
 
 namespace SHAYVERI {
 
-static constexpr Square E1 = make_square(FILE_E, RANK_1);
-static constexpr Square E8 = make_square(FILE_E, RANK_8);
-static constexpr Square G1 = make_square(FILE_G, RANK_1);
-static constexpr Square C1 = make_square(FILE_C, RANK_1);
-static constexpr Square G8 = make_square(FILE_G, RANK_8);
-static constexpr Square C8 = make_square(FILE_C, RANK_8);
-
-static constexpr U64 WK_EMPTY =
-    bb_square(make_square(FILE_F, RANK_1)) | bb_square(make_square(FILE_G, RANK_1));
-static constexpr U64 WQ_EMPTY =
-    bb_square(make_square(FILE_B, RANK_1)) | bb_square(make_square(FILE_C, RANK_1)) |
-    bb_square(make_square(FILE_D, RANK_1));
-static constexpr U64 BK_EMPTY =
-    bb_square(make_square(FILE_F, RANK_8)) | bb_square(make_square(FILE_G, RANK_8));
-static constexpr U64 BQ_EMPTY =
-    bb_square(make_square(FILE_B, RANK_8)) | bb_square(make_square(FILE_C, RANK_8)) |
-    bb_square(make_square(FILE_D, RANK_8));
-
 static void push_moves_from_mask(MoveList &out, Square from, U64 mask) {
     while (mask) {
         Square to = __builtin_ctzll(mask);
         mask &= mask - 1;
         out.add(create_move(from, to));
     }
+}
+
+static void add_promotions(MoveList &moves, Square from, Square to) {
+    moves.add(create_move(from, to, QUEEN));
+    moves.add(create_move(from, to, ROOK));
+    moves.add(create_move(from, to, BISHOP));
+    moves.add(create_move(from, to, KNIGHT));
+}
+
+template<Colour Side, bool CapturesOnly>
+static void generate_pawn_moves(const Board &b, MoveList &moves, U64 enemy) {
+    constexpr Piece pawn = Side == WHITE ? WP : BP;
+    constexpr int push = Side == WHITE ? 8 : -8;
+    constexpr Rank start_rank = Side == WHITE ? RANK_2 : RANK_7;
+    constexpr Rank promotion_rank = Side == WHITE ? RANK_7 : RANK_2;
+
+    U64 pawns = b.bit_boards[pawn];
+    while (pawns) {
+        const Square from = pop_lsb(pawns);
+        const Rank rank = get_rank(from);
+        const Square forward = from + push;
+
+        if constexpr (!CapturesOnly) {
+            if (is_valid(forward) && !(b.occupied & bb_square(forward))) {
+                if (rank == promotion_rank) {
+                    add_promotions(moves, from, forward);
+                } else {
+                    moves.add(create_move(from, forward));
+                    const Square double_push = forward + push;
+                    if (rank == start_rank && !(b.occupied & bb_square(double_push)))
+                        moves.add(create_move(from, double_push));
+                }
+            }
+        } else if (rank == promotion_rank && !(b.occupied & bb_square(forward))) {
+            add_promotions(moves, from, forward);
+        }
+
+        U64 captures = pawn_attacks(Side, from) & enemy;
+        while (captures) {
+            const Square to = pop_lsb(captures);
+            if (rank == promotion_rank) add_promotions(moves, from, to);
+            else                        moves.add(create_move(from, to));
+        }
+
+        if (b.en_passant != SQ_NONE &&
+            (pawn_attacks(Side, from) & bb_square(b.en_passant)))
+            moves.add(create_ep_move(from, b.en_passant));
+    }
+}
+
+template<Colour Side>
+static void generate_piece_moves(const Board &b, MoveList &moves, U64 targets) {
+    constexpr Piece knight = Side == WHITE ? WN : BN;
+    constexpr Piece bishop = Side == WHITE ? WB : BB;
+    constexpr Piece rook = Side == WHITE ? WR : BR;
+    constexpr Piece queen = Side == WHITE ? WQ : BQ;
+
+    U64 pieces = b.bit_boards[knight];
+    while (pieces) {
+        const Square from = pop_lsb(pieces);
+        push_moves_from_mask(moves, from, knight_attacks(from) & targets);
+    }
+    pieces = b.bit_boards[bishop];
+    while (pieces) {
+        const Square from = pop_lsb(pieces);
+        push_moves_from_mask(moves, from, bishop_attacks(from, b.occupied) & targets);
+    }
+    pieces = b.bit_boards[rook];
+    while (pieces) {
+        const Square from = pop_lsb(pieces);
+        push_moves_from_mask(moves, from, rook_attacks(from, b.occupied) & targets);
+    }
+    pieces = b.bit_boards[queen];
+    while (pieces) {
+        const Square from = pop_lsb(pieces);
+        push_moves_from_mask(moves, from, queen_attacks(from, b.occupied) & targets);
+    }
+
+    const Square king = king_square(b, Side);
+    push_moves_from_mask(moves, king, king_attacks(king) & targets);
+}
+
+template<Colour Side>
+static void generate_castling_moves(const Board &b, MoveList &moves) {
+    constexpr Rank rank = Side == WHITE ? RANK_1 : RANK_8;
+    constexpr Piece rook = Side == WHITE ? WR : BR;
+    constexpr int kingside_right = Side == WHITE ? WHITE_KINGSIDE : BLACK_KINGSIDE;
+    constexpr int queenside_right = Side == WHITE ? WHITE_QUEENSIDE : BLACK_QUEENSIDE;
+    constexpr Square king_from = make_square(FILE_E, rank);
+    constexpr Square kingside_to = make_square(FILE_G, rank);
+    constexpr Square queenside_to = make_square(FILE_C, rank);
+    constexpr Square kingside_rook = make_square(FILE_H, rank);
+    constexpr Square queenside_rook = make_square(FILE_A, rank);
+    constexpr U64 kingside_empty = bb_square(make_square(FILE_F, rank)) |
+        bb_square(kingside_to);
+    constexpr U64 queenside_empty = bb_square(make_square(FILE_B, rank)) |
+        bb_square(queenside_to) | bb_square(make_square(FILE_D, rank));
+    constexpr Colour enemy = Side == WHITE ? BLACK : WHITE;
+
+    if ((b.castling & kingside_right) && !(b.occupied & kingside_empty) &&
+        b.get_piece(kingside_rook) == rook &&
+        !is_square_attacked(b, king_from, enemy) &&
+        !is_square_attacked(b, make_square(FILE_F, rank), enemy) &&
+        !is_square_attacked(b, kingside_to, enemy))
+        moves.add(create_move(king_from, kingside_to));
+
+    if ((b.castling & queenside_right) && !(b.occupied & queenside_empty) &&
+        b.get_piece(queenside_rook) == rook &&
+        !is_square_attacked(b, king_from, enemy) &&
+        !is_square_attacked(b, make_square(FILE_D, rank), enemy) &&
+        !is_square_attacked(b, queenside_to, enemy))
+        moves.add(create_move(king_from, queenside_to));
 }
 
 static Move find_matching_legal_move(Board &b, Move target, bool find_first) {
@@ -50,160 +144,20 @@ MoveList generate_pseudo_legal_moves(Board &b) {
 
     Colour curr  = b.side_to_move;
     if (curr != WHITE && curr != BLACK) return moves;
-    Colour other = (curr == WHITE) ? BLACK : WHITE;
 
     const int curr_idx = (curr == WHITE) ? 0 : 1;
     const int other_idx = curr_idx ^ 1;
     U64 curr_occupied  = b.occupancies[curr_idx];
     U64 other_occupied = b.occupancies[other_idx];
-    U64 empty          = ~b.occupied;
 
-    if (curr == WHITE) {
-        U64 pawns = b.bit_boards[WP];
-        while (pawns) {
-            Square from = __builtin_ctzll(pawns);
-            pawns &= pawns - 1;
-            int r = get_rank(from);
+    if (curr == WHITE) generate_pawn_moves<WHITE, false>(b, moves, other_occupied);
+    else               generate_pawn_moves<BLACK, false>(b, moves, other_occupied);
 
-            Square to_one = from + 8;
-            if (to_one < 64 && (empty & bb_square(to_one))) {
-                if (r == RANK_7) {
-                    moves.add(create_move(from, to_one, QUEEN));
-                    moves.add(create_move(from, to_one, ROOK));
-                    moves.add(create_move(from, to_one, BISHOP));
-                    moves.add(create_move(from, to_one, KNIGHT));
-                } else {
-                    moves.add(create_move(from, to_one));
-                    if (r == RANK_2) {
-                        Square to_two = from + 16;
-                        if (empty & bb_square(to_two)) moves.add(create_move(from, to_two));
-                    }
-                }
-            }
+    if (curr == WHITE) generate_piece_moves<WHITE>(b, moves, ~curr_occupied);
+    else               generate_piece_moves<BLACK>(b, moves, ~curr_occupied);
 
-            U64 captures = pawn_attacks(WHITE, from) & other_occupied;
-            while (captures) {
-                Square to = __builtin_ctzll(captures);
-                captures &= captures - 1;
-                if (r == RANK_7) {
-                    moves.add(create_move(from, to, QUEEN));
-                    moves.add(create_move(from, to, ROOK));
-                    moves.add(create_move(from, to, BISHOP));
-                    moves.add(create_move(from, to, KNIGHT));
-                } else {
-                    moves.add(create_move(from, to));
-                }
-            }
-
-            if (b.en_passant != SQ_NONE) {
-                U64 ep_mask = pawn_attacks(WHITE, from) & bb_square(b.en_passant);
-                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
-            }
-        }
-    } else {
-        U64 pawns = b.bit_boards[BP];
-        while (pawns) {
-            Square from = __builtin_ctzll(pawns);
-            pawns &= pawns - 1;
-            int r = get_rank(from);
-
-            Square to_one = from - 8;
-            if (to_one >= 0 && (empty & bb_square(to_one))) {
-                if (r == RANK_2) {
-                    moves.add(create_move(from, to_one, QUEEN));
-                    moves.add(create_move(from, to_one, ROOK));
-                    moves.add(create_move(from, to_one, BISHOP));
-                    moves.add(create_move(from, to_one, KNIGHT));
-                } else {
-                    moves.add(create_move(from, to_one));
-                    if (r == RANK_7) {
-                        Square to_two = from - 16;
-                        if (empty & bb_square(to_two)) moves.add(create_move(from, to_two));
-                    }
-                }
-            }
-
-            U64 captures = pawn_attacks(BLACK, from) & other_occupied;
-            while (captures) {
-                Square to = __builtin_ctzll(captures);
-                captures &= captures - 1;
-                if (r == RANK_2) {
-                    moves.add(create_move(from, to, QUEEN));
-                    moves.add(create_move(from, to, ROOK));
-                    moves.add(create_move(from, to, BISHOP));
-                    moves.add(create_move(from, to, KNIGHT));
-                } else {
-                    moves.add(create_move(from, to));
-                }
-            }
-
-            if (b.en_passant != SQ_NONE) {
-                U64 ep_mask = pawn_attacks(BLACK, from) & bb_square(b.en_passant);
-                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
-            }
-        }
-    }
-
-    U64 knights = (curr == WHITE) ? b.bit_boards[WN] : b.bit_boards[BN];
-    while (knights) {
-        Square from = __builtin_ctzll(knights);
-        knights &= knights - 1;
-        push_moves_from_mask(moves, from, knight_attacks(from) & ~curr_occupied);
-    }
-
-    U64 bishops = (curr == WHITE) ? b.bit_boards[WB] : b.bit_boards[BB];
-    while (bishops) {
-        Square from = __builtin_ctzll(bishops);
-        bishops &= bishops - 1;
-        push_moves_from_mask(moves, from, bishop_attacks(from, b.occupied) & ~curr_occupied);
-    }
-
-    U64 rooks = (curr == WHITE) ? b.bit_boards[WR] : b.bit_boards[BR];
-    while (rooks) {
-        Square from = __builtin_ctzll(rooks);
-        rooks &= rooks - 1;
-        push_moves_from_mask(moves, from, rook_attacks(from, b.occupied) & ~curr_occupied);
-    }
-
-    U64 queens = (curr == WHITE) ? b.bit_boards[WQ] : b.bit_boards[BQ];
-    while (queens) {
-        Square from = __builtin_ctzll(queens);
-        queens &= queens - 1;
-        push_moves_from_mask(moves, from, queen_attacks(from, b.occupied) & ~curr_occupied);
-    }
-
-    Square ksq = king_square(b, curr);
-    push_moves_from_mask(moves, ksq, king_attacks(ksq) & ~curr_occupied);
-
-    if (curr == WHITE) {
-        if ((b.castling & WHITE_KINGSIDE) && !(b.occupied & WK_EMPTY)
-            && (b.bit_boards[WR] & bb_square(make_square(FILE_H, RANK_1)))
-            && !is_square_attacked(b, E1, other)
-            && !is_square_attacked(b, make_square(FILE_F, RANK_1), other)
-            && !is_square_attacked(b, G1, other))
-            moves.add(create_move(E1, G1));
-
-        if ((b.castling & WHITE_QUEENSIDE) && !(b.occupied & WQ_EMPTY)
-            && (b.bit_boards[WR] & bb_square(make_square(FILE_A, RANK_1)))
-            && !is_square_attacked(b, E1, other)
-            && !is_square_attacked(b, make_square(FILE_D, RANK_1), other)
-            && !is_square_attacked(b, C1, other))
-            moves.add(create_move(E1, C1));
-    } else {
-        if ((b.castling & BLACK_KINGSIDE) && !(b.occupied & BK_EMPTY)
-            && (b.bit_boards[BR] & bb_square(make_square(FILE_H, RANK_8)))
-            && !is_square_attacked(b, E8, other)
-            && !is_square_attacked(b, make_square(FILE_F, RANK_8), other)
-            && !is_square_attacked(b, G8, other))
-            moves.add(create_move(E8, G8));
-
-        if ((b.castling & BLACK_QUEENSIDE) && !(b.occupied & BQ_EMPTY)
-            && (b.bit_boards[BR] & bb_square(make_square(FILE_A, RANK_8)))
-            && !is_square_attacked(b, E8, other)
-            && !is_square_attacked(b, make_square(FILE_D, RANK_8), other)
-            && !is_square_attacked(b, C8, other))
-            moves.add(create_move(E8, C8));
-    }
+    if (curr == WHITE) generate_castling_moves<WHITE>(b, moves);
+    else               generate_castling_moves<BLACK>(b, moves);
 
     return moves;
 }
@@ -217,116 +171,11 @@ MoveList generate_pseudo_legal_captures(Board &b) {
     const int other_idx = (curr == WHITE) ? 1 : 0;
     U64 other_occupied = b.occupancies[other_idx];
 
-    if (curr == WHITE) {
-        U64 pawns = b.bit_boards[WP];
-        while (pawns) {
-            Square from = __builtin_ctzll(pawns);
-            pawns &= pawns - 1;
-            int r = get_rank(from);
+    if (curr == WHITE) generate_pawn_moves<WHITE, true>(b, moves, other_occupied);
+    else               generate_pawn_moves<BLACK, true>(b, moves, other_occupied);
 
-            // Promotions (push to 8th rank)
-            if (r == RANK_7) {
-                Square to_one = from + 8;
-                if (bb_square(to_one) & ~b.occupied) {
-                    moves.add(create_move(from, to_one, QUEEN));
-                    moves.add(create_move(from, to_one, ROOK));
-                    moves.add(create_move(from, to_one, BISHOP));
-                    moves.add(create_move(from, to_one, KNIGHT));
-                }
-            }
-
-            // Pawn captures (including promotion captures)
-            U64 captures = pawn_attacks(WHITE, from) & other_occupied;
-            while (captures) {
-                Square to = __builtin_ctzll(captures);
-                captures &= captures - 1;
-                if (r == RANK_7) {
-                    moves.add(create_move(from, to, QUEEN));
-                    moves.add(create_move(from, to, ROOK));
-                    moves.add(create_move(from, to, BISHOP));
-                    moves.add(create_move(from, to, KNIGHT));
-                } else {
-                    moves.add(create_move(from, to));
-                }
-            }
-
-            // En-passant
-            if (b.en_passant != SQ_NONE) {
-                U64 ep_mask = pawn_attacks(WHITE, from) & bb_square(b.en_passant);
-                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
-            }
-        }
-    } else {
-        U64 pawns = b.bit_boards[BP];
-        while (pawns) {
-            Square from = __builtin_ctzll(pawns);
-            pawns &= pawns - 1;
-            int r = get_rank(from);
-
-            // Promotions
-            if (r == RANK_2) {
-                Square to_one = from - 8;
-                if (bb_square(to_one) & ~b.occupied) {
-                    moves.add(create_move(from, to_one, QUEEN));
-                    moves.add(create_move(from, to_one, ROOK));
-                    moves.add(create_move(from, to_one, BISHOP));
-                    moves.add(create_move(from, to_one, KNIGHT));
-                }
-            }
-
-            // Pawn captures
-            U64 captures = pawn_attacks(BLACK, from) & other_occupied;
-            while (captures) {
-                Square to = __builtin_ctzll(captures);
-                captures &= captures - 1;
-                if (r == RANK_2) {
-                    moves.add(create_move(from, to, QUEEN));
-                    moves.add(create_move(from, to, ROOK));
-                    moves.add(create_move(from, to, BISHOP));
-                    moves.add(create_move(from, to, KNIGHT));
-                } else {
-                    moves.add(create_move(from, to));
-                }
-            }
-
-            // En-passant
-            if (b.en_passant != SQ_NONE) {
-                U64 ep_mask = pawn_attacks(BLACK, from) & bb_square(b.en_passant);
-                if (ep_mask) moves.add(create_ep_move(from, b.en_passant));
-            }
-        }
-    }
-
-    U64 knights = (curr == WHITE) ? b.bit_boards[WN] : b.bit_boards[BN];
-    while (knights) {
-        Square from = __builtin_ctzll(knights);
-        knights &= knights - 1;
-        push_moves_from_mask(moves, from, knight_attacks(from) & other_occupied);
-    }
-
-    U64 bishops = (curr == WHITE) ? b.bit_boards[WB] : b.bit_boards[BB];
-    while (bishops) {
-        Square from = __builtin_ctzll(bishops);
-        bishops &= bishops - 1;
-        push_moves_from_mask(moves, from, bishop_attacks(from, b.occupied) & other_occupied);
-    }
-
-    U64 rooks = (curr == WHITE) ? b.bit_boards[WR] : b.bit_boards[BR];
-    while (rooks) {
-        Square from = __builtin_ctzll(rooks);
-        rooks &= rooks - 1;
-        push_moves_from_mask(moves, from, rook_attacks(from, b.occupied) & other_occupied);
-    }
-
-    U64 queens = (curr == WHITE) ? b.bit_boards[WQ] : b.bit_boards[BQ];
-    while (queens) {
-        Square from = __builtin_ctzll(queens);
-        queens &= queens - 1;
-        push_moves_from_mask(moves, from, queen_attacks(from, b.occupied) & other_occupied);
-    }
-
-    Square ksq = king_square(b, curr);
-    push_moves_from_mask(moves, ksq, king_attacks(ksq) & other_occupied);
+    if (curr == WHITE) generate_piece_moves<WHITE>(b, moves, other_occupied);
+    else               generate_piece_moves<BLACK>(b, moves, other_occupied);
 
     return moves;
 }

@@ -18,6 +18,7 @@ using SHAYVERI::Piece;
 using SHAYVERI::Rank;
 using SHAYVERI::SQ_NONE;
 using SHAYVERI::Square;
+using SHAYVERI::U64;
 using SHAYVERI::WHITE;
 using SHAYVERI::WHITE_KINGSIDE;
 using SHAYVERI::WHITE_QUEENSIDE;
@@ -28,6 +29,7 @@ using SHAYVERI::WP;
 using SHAYVERI::WK;
 using SHAYVERI::make_square;
 using SHAYVERI::set_from_fen;
+using SHAYVERI::set_startpos;
 
 struct PieceExpectation {
     Square square;
@@ -121,8 +123,28 @@ int main() {
         }
     }
 
+    const std::vector<std::string> invalid = {
+        "8/8/8/8/8/8/8 w - - 0 1",
+        "9/8/8/8/8/8/8/8 w - - 0 1",
+        "7/8/8/8/8/8/8/8 w - - 0 1",
+        "8/8/8/8/8/8/8/8 w - - -1 1",
+        "8/8/8/8/8/8/8/8 w - - 0 0",
+        "8/8/8/8/8/8/8/8 w - - 0 1 trailing",
+    };
+    for (const std::string &fen : invalid) {
+        Board b;
+        set_startpos(b);
+        const std::string before = SHAYVERI::get_board_fen(b);
+        const U64 hash_before = b.hash;
+        if (set_from_fen(b, fen) || SHAYVERI::get_board_fen(b) != before || b.hash != hash_before) {
+            std::cerr << "[FAIL] malformed FEN accepted or changed board: " << fen << "\n";
+            ++failures;
+        }
+    }
+
     if (failures == 0) {
-        std::cout << "FEN state suite passed: " << cases.size() << "/" << cases.size() << "\n";
+        std::cout << "FEN state suite passed: " << cases.size()
+                  << " valid + " << invalid.size() << " malformed cases\n";
         return 0;
     }
 

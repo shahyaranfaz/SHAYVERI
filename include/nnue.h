@@ -54,7 +54,6 @@ inline int chess768_index(int piece_type, int piece_colour, int sq, int perspect
 }
 
 int king_bucket_count();
-int active_input_size();
 int active_hidden_size();
 bool has_king_buckets();
 bool uses_screlu();
@@ -101,7 +100,6 @@ inline void feature_indices(int piece_type, int piece_colour, int sq,
 
 bool load(const std::string &path, std::string &error);
 bool load_embedded_default(std::string &error);
-bool is_loaded();
 bool is_enabled();
 void set_enabled(bool enabled);
 void print_info();

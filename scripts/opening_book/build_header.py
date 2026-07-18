@@ -171,7 +171,7 @@ def write_header(path: Path, entries: list[tuple[int, str]]) -> None:
             "Do not edit by hand.\n\n"
         )
         output.write("#ifndef OPENING_BOOK_H\n#define OPENING_BOOK_H\n\n")
-        output.write('#include "types.h"\n\n')
+        output.write('#include "types.h"\n\n#include <algorithm>\n\n')
         output.write("namespace SHAYVERI {\n\n")
         output.write("struct BookEntry { U64 key; char move[6]; };\n\n")
         output.write("static constexpr BookEntry OPENING_BOOK[] = {\n")
@@ -179,6 +179,13 @@ def write_header(path: Path, entries: list[tuple[int, str]]) -> None:
             output.write(f'    {{ 0x{key:016x}ULL, "{move}" }},\n')
         output.write("};\n\n")
         output.write(f"static constexpr int OPENING_BOOK_SIZE = {len(entries)};\n")
+        output.write(
+            "\ninline const BookEntry *probe_book(U64 key) {\n"
+            "    const auto entry = std::lower_bound(OPENING_BOOK, OPENING_BOOK + OPENING_BOOK_SIZE, key,\n"
+            "        [](const BookEntry &book, U64 target) { return book.key < target; });\n"
+            "    return entry != OPENING_BOOK + OPENING_BOOK_SIZE && entry->key == key ? entry : nullptr;\n"
+            "}\n"
+        )
         output.write("\n} // namespace SHAYVERI\n\n")
         output.write("#endif // OPENING_BOOK_H\n")
 

@@ -34,7 +34,6 @@ U64         g_net_hash = 0;
 bool        g_loaded = false;
 bool        g_enabled = true;
 int         g_king_buckets = 1;
-int         g_input_size = CHESS768_INPUT_SIZE;
 int         g_hidden_size = 256;
 bool        g_use_screlu = false;
 
@@ -242,7 +241,6 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
     g_net_path.swap(committed_path);
     g_net_hash = h;
     g_king_buckets = pending.king_buckets;
-    g_input_size = pending.input_size;
     g_hidden_size = pending.hidden_size;
     g_use_screlu = pending.use_screlu;
     g_loaded = true;
@@ -274,10 +272,6 @@ bool load_embedded_default(std::string &error) {
     }
 }
 
-bool is_loaded() {
-    return g_loaded;
-}
-
 bool is_enabled() {
     return g_enabled && g_loaded;
 }
@@ -288,10 +282,6 @@ void set_enabled(bool enabled) {
 
 int king_bucket_count() {
     return g_king_buckets;
-}
-
-int active_input_size() {
-    return g_input_size;
 }
 
 int active_hidden_size() {

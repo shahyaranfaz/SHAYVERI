@@ -5,6 +5,8 @@
 
 #include "types.h"
 
+#include <algorithm>
+
 namespace SHAYVERI {
 
 struct BookEntry { U64 key; char move[6]; };
@@ -48014,6 +48016,12 @@ static constexpr BookEntry OPENING_BOOK[] = {
 };
 
 static constexpr int OPENING_BOOK_SIZE = 48001;
+
+inline const BookEntry *probe_book(U64 key) {
+    const auto entry = std::lower_bound(OPENING_BOOK, OPENING_BOOK + OPENING_BOOK_SIZE, key,
+        [](const BookEntry &book, U64 target) { return book.key < target; });
+    return entry != OPENING_BOOK + OPENING_BOOK_SIZE && entry->key == key ? entry : nullptr;
+}
 
 } // namespace SHAYVERI
 

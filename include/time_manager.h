@@ -38,7 +38,6 @@ public:
     // Returns true when the soft limit has been reached.
     bool on_iter(int depth, Move best_move, int score, double best_move_node_fraction);
 
-    bool hard_expired() const;
     I64  elapsed_ms()   const;
 
     I64 soft_ms() const { return soft_ms_; }

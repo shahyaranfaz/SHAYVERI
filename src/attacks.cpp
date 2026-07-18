@@ -14,6 +14,9 @@ U64 Ray[64][8];
 
 enum Dir { N, S, E, W, NE, NW, SE, SW };
 
+static constexpr int FILE_STEP[8] = {0, 0, 1, -1, 1, -1, 1, -1};
+static constexpr int RANK_STEP[8] = {1, -1, 0, 0, 1, 1, -1, -1};
+
 struct PextSlider {
     U64 mask;
     U64 *attacks;
@@ -38,34 +41,31 @@ static U64 rook_mask(Square sq) {
 }
 
 static void init_rays() {
-    const int df[8] = { 0,  0, 1, -1,  1, -1,  1, -1 };
-    const int dr[8] = { 1, -1, 0,  0,  1,  1, -1, -1 };
     for (int sq = 0; sq < 64; ++sq) {
         for (int d = 0; d < 8; ++d) Ray[sq][d] = 0;
 
         int f = sq % 8, r = sq / 8;
         for (int d = 0; d < 8; ++d) {
-            int nf = f + df[d], nr = r + dr[d];
+            int nf = f + FILE_STEP[d], nr = r + RANK_STEP[d];
             while (is_valid_square(nf, nr)) {
                 Ray[sq][d] |= bb_square(make_square(File(nf), Rank(nr)));
-                nf += df[d];
-                nr += dr[d];
+                nf += FILE_STEP[d];
+                nr += RANK_STEP[d];
             }
         }
     }
 }
 
 static U64 compute_pawn_attacks(Colour c, Square from) {
-    int f = get_file(from), r = get_rank(from);
-    U64 bb = 0;
-    if (c == WHITE) {
-        if (is_valid_square(f - 1, r + 1)) bb |= bb_square(make_square(File(f - 1), Rank(r + 1)));
-        if (is_valid_square(f + 1, r + 1)) bb |= bb_square(make_square(File(f + 1), Rank(r + 1)));
-    } else {
-        if (is_valid_square(f - 1, r - 1)) bb |= bb_square(make_square(File(f - 1), Rank(r - 1)));
-        if (is_valid_square(f + 1, r - 1)) bb |= bb_square(make_square(File(f + 1), Rank(r - 1)));
+    const int file = get_file(from);
+    const int rank = get_rank(from) + (c == WHITE ? 1 : -1);
+    U64 attacks = 0;
+    for (int file_delta = -1; file_delta <= 1; file_delta += 2) {
+        const int target_file = file + file_delta;
+        if (is_valid_square(target_file, rank))
+            attacks |= bb_square(make_square(File(target_file), Rank(rank)));
     }
-    return bb;
+    return attacks;
 }
 
 static U64 compute_knight_attacks(Square from) {
@@ -96,23 +96,33 @@ static U64 compute_king_attacks(Square from) {
 }
 
 static U64 sliding_attacks(Square sq, U64 occ, bool bishop) {
-    const int df[8] = { 0,  0, 1, -1,  1, -1,  1, -1 };
-    const int dr[8] = { 1, -1, 0,  0,  1,  1, -1, -1 };
     int start = bishop ? 4 : 0;
     int end   = bishop ? 8 : 4;
     int f = get_file(sq), r = get_rank(sq);
     U64 attacks = 0;
     for (int d = start; d < end; ++d) {
-        int nf = f + df[d], nr = r + dr[d];
+        int nf = f + FILE_STEP[d], nr = r + RANK_STEP[d];
         while (is_valid_square(nf, nr)) {
             U64 bb = bb_square(make_square(File(nf), Rank(nr)));
             attacks |= bb;
             if (occ & bb) break;
-            nf += df[d];
-            nr += dr[d];
+            nf += FILE_STEP[d];
+            nr += RANK_STEP[d];
         }
     }
     return attacks;
+}
+
+static void init_slider(PextSlider &slider, U64 *&table, Square square,
+                        U64 mask, bool bishop) {
+    slider.mask = mask;
+    slider.attacks = table;
+    for (U64 occupied = 0;; occupied = (occupied - mask) & mask) {
+        slider.attacks[_pext_u64(occupied, mask)] =
+            sliding_attacks(square, occupied, bishop);
+        if (occupied == mask) break;
+    }
+    table += 1ULL << __builtin_popcountll(mask);
 }
 
 void init_attacks() {
@@ -129,25 +139,9 @@ void init_attacks() {
     U64 *r_ptr = RookTable;
 
     for (int sq = 0; sq < 64; ++sq) {
-        U64 b_mask = bishop_mask(Square(sq));
-        int b_bits = __builtin_popcountll(b_mask);
-        Bishop[sq].mask    = b_mask;
-        Bishop[sq].attacks = b_ptr;
-        for (U64 occ = 0;; occ = (occ - b_mask) & b_mask) {
-            Bishop[sq].attacks[_pext_u64(occ, b_mask)] = sliding_attacks(Square(sq), occ, true);
-            if (occ == b_mask) break;
-        }
-        b_ptr += (1ULL << b_bits);
-
-        U64 r_mask = rook_mask(Square(sq));
-        int r_bits = __builtin_popcountll(r_mask);
-        Rook[sq].mask    = r_mask;
-        Rook[sq].attacks = r_ptr;
-        for (U64 occ = 0;; occ = (occ - r_mask) & r_mask) {
-            Rook[sq].attacks[_pext_u64(occ, r_mask)] = sliding_attacks(Square(sq), occ, false);
-            if (occ == r_mask) break;
-        }
-        r_ptr += (1ULL << r_bits);
+        const Square square = Square(sq);
+        init_slider(Bishop[sq], b_ptr, square, bishop_mask(square), true);
+        init_slider(Rook[sq], r_ptr, square, rook_mask(square), false);
     }
 }
 

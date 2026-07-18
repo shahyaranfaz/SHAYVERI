@@ -49,6 +49,14 @@ pairing at LTC. The framework is described in
   full legal-list construction in UCI parsing, book, ponder, and fallback paths.
 - Simplified UCI option, position, ponder, and asynchronous-output plumbing,
   and removed an unreachable legacy Texel parameter-printing implementation.
+- Centralized the generated opening-book lookup shared by UCI play and datagen.
+- Centralized castling rook/right handling across make and unmake operations.
+- Made FEN parsing transactional and rejected malformed rank widths, invalid
+  move counters, and trailing fields instead of changing the board.
+- Consolidated colour-specialized pawn, piece, castling, promotion, and attack
+  initialization logic while preserving move order and generated move sets.
+- Simplified transposition-table replacement selection and removed unused time
+  manager and NNUE state-query APIs.
 - Added a profile-guided optimization target trained on the representative
   bench, fixed-depth, fixed-node, tactical, timed, and Lazy SMP workloads.
 - Fixed fixed-node searches counting an unreported preliminary search outside

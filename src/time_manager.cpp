@@ -92,10 +92,6 @@ I64 TimeManager::elapsed_ms() const {
     return duration_cast<milliseconds>(steady_clock::now() - start_).count();
 }
 
-bool TimeManager::hard_expired() const {
-    return elapsed_ms() >= hard_ms_;
-}
-
 bool TimeManager::on_iter(int depth, Move best_move, int score,
                           double best_move_node_fraction) {
     const I64 elapsed = elapsed_ms();
