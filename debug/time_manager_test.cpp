@@ -100,6 +100,25 @@ void test_fixed_movetime_reserves_overhead() {
     expect_true(manager.hard_ms() == 40, "movetime hard limit ignored overhead");
 }
 
+void test_fixed_movetime_disables_adaptive_scaling() {
+    Tune::time_node_min_depth = 1;
+    Tune::time_node_base_scale = 0.50;
+    Tune::time_node_share_slope = 0.25;
+    Tune::time_node_min_scale = 0.25;
+    Tune::time_node_max_scale = 0.50;
+
+    TimeControl tc;
+    tc.movetime = 1'000;
+    tc.move_overhead = 0;
+
+    TimeManager manager;
+    manager.init(tc);
+    expect_true(!manager.on_iter(8, 1, 0, 1.0),
+                "adaptive scaling ended fixed movetime early");
+    expect_near(manager.last_scale(), 1.0,
+                "fixed movetime applied an adaptive scale");
+}
+
 void test_explicit_moves_to_go() {
     TimeControl tc;
     tc.side = WHITE;
@@ -200,6 +219,7 @@ int main() {
     test_deep_eval_stability_scaling();
     test_adaptive_scalers_compose();
     test_fixed_movetime_reserves_overhead();
+    test_fixed_movetime_disables_adaptive_scaling();
     test_explicit_moves_to_go();
     test_black_clock_selection();
     test_safe_clock_ceiling_overrides_minimums();

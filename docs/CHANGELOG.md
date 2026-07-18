@@ -28,6 +28,9 @@ pairing at LTC. The framework is described in
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
+- Added reproducible profiling baselines covering trusted bench, fixed-depth,
+  fixed-node, tactical, timed, and real 1/2/4/8-thread Lazy SMP workloads, with
+  machine/build metadata and before-and-after comparison output.
 - Fixed fixed-node searches counting an unreported preliminary search outside
   the requested node budget.
 - Fixed fixed-depth and fixed-node searches blocking UCI command processing,
@@ -35,6 +38,8 @@ pairing at LTC. The framework is described in
   workers no longer format or emit their own completion messages.
 - Serialized asynchronous UCI output so search information, command responses,
   and completion messages cannot corrupt one another through byte interleaving.
+- Fixed `go movetime` searches being shortened by adaptive clock-management
+  scalers instead of using the requested duration minus safety overhead.
 - Made NNUE file changes transactional: invalid or unreadable `EvalFile`
   values now report an error and preserve the active evaluator instead of
   terminating the engine or leaving partial network state.

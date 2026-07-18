@@ -51,6 +51,7 @@ private:
     I64  soft_ms_      = 0;
     I64  hard_ms_      = 0;
     I64  min_think_ms_ = 0;
+    bool fixed_movetime_ = false;
 
     Move prev_best_    = MOVE_NONE;
     int  stable_iters_ = 0;

@@ -19,6 +19,7 @@ void TimeManager::init(const TimeControl &tc) {
     score_history_next_  = 0;
     last_scale_ = 1.0;
     min_think_ms_ = std::max(0, tc.min_think_ms);
+    fixed_movetime_ = tc.movetime > 0;
 
     if (tc.infinite) {
         soft_ms_ = hard_ms_ = 1'000'000'000LL;
@@ -98,6 +99,13 @@ bool TimeManager::hard_expired() const {
 bool TimeManager::on_iter(int depth, Move best_move, int score,
                           double best_move_node_fraction) {
     const I64 elapsed = elapsed_ms();
+
+    // UCI go movetime is a fixed allocation, not a soft clock target. Keep
+    // the safety overhead, but do not let adaptive clock scalers shorten it.
+    if (fixed_movetime_) {
+        last_scale_ = 1.0;
+        return elapsed >= soft_ms_;
+    }
 
     const bool best_changed = score_inited_ && best_move != prev_best_;
     if (best_move == prev_best_) {

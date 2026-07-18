@@ -113,6 +113,21 @@ def test_lazy_smp_timed_stop(session: EngineSession) -> None:
         raise AssertionError(f"Lazy SMP timed search took {elapsed:.3f}s to stop")
 
 
+def test_fixed_movetime_is_not_adaptively_shortened(session: EngineSession) -> None:
+    session.send("setoption name Threads value 4")
+    session.send("setoption name MoveOverhead value 10")
+    session.send("ucinewgame")
+    session.send("position startpos")
+    started = time.monotonic()
+    session.send("go movetime 250")
+    session.wait_for_prefix("bestmove ")
+    elapsed = time.monotonic() - started
+    # The fixed allocation is 240 ms after overhead. Allow 25 ms for timer
+    # granularity, but reject the ~190 ms adaptive early stops this guards.
+    if elapsed < 0.215:
+        raise AssertionError(f"fixed movetime ended early after {elapsed:.3f}s")
+
+
 def test_concurrent_command_output(session: EngineSession) -> None:
     session.send("setoption name Threads value 4")
     session.send("ucinewgame")
@@ -189,6 +204,7 @@ def main() -> int:
     try:
         initialize(session)
         test_lazy_smp_timed_stop(session)
+        test_fixed_movetime_is_not_adaptively_shortened(session)
         test_concurrent_command_output(session)
         test_ponderhit(session)
         test_stop_during_ponder(session)
