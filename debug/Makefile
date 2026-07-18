@@ -154,6 +154,7 @@ TEST_TARGETS := \
 	datagen_check \
 	uci_check \
 	time_control_integration \
+	fixed_search_integration \
 	tactical_regression
 
 test:
@@ -272,6 +273,9 @@ uci_check: ensure_engine
 time_control_integration: ensure_engine
 	$(PYTHON) time_control_integration.py
 
+fixed_search_integration: ensure_engine
+	$(PYTHON) fixed_search_integration.py
+
 tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py
 
@@ -279,4 +283,4 @@ clean:
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration tactical_regression clean
+.PHONY: all test strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration fixed_search_integration tactical_regression clean

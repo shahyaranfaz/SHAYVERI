@@ -113,6 +113,29 @@ def test_lazy_smp_timed_stop(session: EngineSession) -> None:
         raise AssertionError(f"Lazy SMP timed search took {elapsed:.3f}s to stop")
 
 
+def test_concurrent_command_output(session: EngineSession) -> None:
+    session.send("setoption name Threads value 4")
+    session.send("ucinewgame")
+    session.send("position startpos")
+    output_start = len(session.output)
+    session.send("go infinite")
+    for _ in range(20):
+        session.send("isready")
+    for _ in range(20):
+        session.wait_for_prefix("readyok")
+    session.send("stop")
+    session.wait_for_prefix("bestmove ")
+
+    valid_prefixes = ("info ", "readyok", "bestmove ")
+    malformed = [
+        line.rstrip("\n")
+        for line in session.output[output_start:]
+        if line and not line.startswith(valid_prefixes)
+    ]
+    if malformed:
+        raise AssertionError(f"interleaved UCI output: {malformed[:3]}")
+
+
 def start_ponder(session: EngineSession) -> None:
     session.send("setoption name Threads value 2")
     session.send("ucinewgame")
@@ -166,13 +189,14 @@ def main() -> int:
     try:
         initialize(session)
         test_lazy_smp_timed_stop(session)
+        test_concurrent_command_output(session)
         test_ponderhit(session)
         test_stop_during_ponder(session)
         test_terminal_ponder_waits_for_stop(session)
         test_terminal_ponderhit(session)
         print(
             "Time-control integration checks passed "
-            "(Lazy SMP + ponderhit + ponder stop + terminal ponder)."
+            "(Lazy SMP + serialized output + ponderhit + ponder stop + terminal ponder)."
         )
         return 0
     except Exception as exc:

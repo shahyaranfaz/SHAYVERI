@@ -11,6 +11,7 @@
 #include "time_manager.h"
 #include "tt.h"
 #include "tune.h"
+#include "uci_output.h"
 #include "zobrist.h"
 
 #include <algorithm>
@@ -28,6 +29,8 @@
 
 #include <cerrno>
 #include <cctype>
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
 
 namespace SHAYVERI {
@@ -35,21 +38,27 @@ namespace SHAYVERI {
 // ======
 // UCI options (written by setoption, read by go / search)
 // ======
-static int  g_num_threads   = 1;
-static int  g_hash_mb       = 64;
-static int  g_move_overhead = 10;   // ms
-static bool g_ponder        = false;
-static bool g_own_book      = true;
-static int  g_book_info_depth = 8;
-static int  g_min_think_ms  = 0;
+static int  g_num_threads      = 1;
+static int  g_hash_mb          = 64;
+static int  g_move_overhead    = 10;   // ms
+static bool g_ponder           = false;
+static bool g_own_book         = true;
+static int  g_book_info_depth  = 8;
+static int  g_min_think_ms     = 0;
 static std::string g_eval_file = "<embedded>";
 
 // Ponder state.
-static Move g_ponder_move =         MOVE_NONE;  // move we are pondering on
+static Move g_ponder_move = MOVE_NONE;  // move we are pondering on
 static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
+
+struct SearchCompletion {
+    std::atomic<bool> ready{false};
+    SearchResult result{};
+    I64 elapsed_ms = 0;
+};
 
 static int active_thread_limit() {
     return static_cast<int>(std::max(1u, std::thread::hardware_concurrency()));
@@ -61,6 +70,20 @@ static void stop_search() {
         if (t.joinable()) t.join();
     smp_threads.clear();
     node_limit = 0;
+}
+
+static void publish_search_completion(
+    const std::shared_ptr<SearchCompletion> &completion,
+    const SearchResult &result, I64 elapsed_ms = 0) {
+    completion->result = result;
+    completion->elapsed_ms = elapsed_ms;
+    completion->ready.store(true, std::memory_order_release);
+}
+
+static void wait_for_search_completion(
+    const std::shared_ptr<SearchCompletion> &completion) {
+    while (!completion->ready.load(std::memory_order_acquire))
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
 static const BookEntry *probe_book(U64 zobrist_key) {
@@ -87,14 +110,28 @@ static Move first_legal_move(Board b) {
     return legal.count > 0 ? legal.moves[0] : MOVE_NONE;
 }
 
-static std::string uci_score(int score) {
-    if (std::abs(score) > Tune::MATE_SCORE - Tune::MAX_PLY) {
-        int mate_dist = Tune::MATE_SCORE - std::abs(score);
-        int mate_moves = (mate_dist + 1) / 2;
-        if (score < 0) mate_moves = -mate_moves;
-        return "mate " + std::to_string(mate_moves);
+static void format_uci_move(Move move, char (&text)[6]) {
+    text[0] = '0';
+    text[1] = '0';
+    text[2] = '0';
+    text[3] = '0';
+    text[4] = '\0';
+    text[5] = '\0';
+    if (move == MOVE_NONE) return;
+
+    const Square from = move_from(move);
+    const Square to = move_to(move);
+    text[0] = static_cast<char>('a' + get_file(from));
+    text[1] = static_cast<char>('1' + get_rank(from));
+    text[2] = static_cast<char>('a' + get_file(to));
+    text[3] = static_cast<char>('1' + get_rank(to));
+    switch (move_promo(move)) {
+        case KNIGHT: text[4] = 'n'; break;
+        case BISHOP: text[4] = 'b'; break;
+        case ROOK:   text[4] = 'r'; break;
+        case QUEEN:  text[4] = 'q'; break;
+        default: break;
     }
-    return "cp " + std::to_string(score);
 }
 
 static bool parse_bool_strict(const std::string &value, bool &out) {
@@ -141,7 +178,7 @@ static bool parse_int(const std::string &value, int &out) {
 
 static bool parse_int_64(const std::string &value, U64 &out) {
     std::string v = trim(value);
-    if (v.empty()) return false;
+    if (v.empty() || v.front() == '-') return false;
 
     char *end = nullptr;
     errno = 0;
@@ -160,7 +197,7 @@ static bool parse_double_value(const std::string &value, double &out) {
     char *end = nullptr;
     errno = 0;
     double parsed = std::strtod(v.c_str(), &end);
-    if (end == v.c_str() || *end != '\0' || errno == ERANGE)
+    if (end == v.c_str() || *end != '\0' || errno == ERANGE || !std::isfinite(parsed))
         return false;
 
     out = parsed;
@@ -332,38 +369,24 @@ static bool parse_datagen_args(int argc, char **argv, DatagenOptions &options) {
     return true;
 }
 
-static SearchResult run_fixed_search(Board b, const std::vector<U64> &rep,
-                                     const std::vector<Move> &searchmoves,
-                                     int root_depth, U64 fixed_nodes) {
-    node_count = 0;
-    node_limit = fixed_nodes;
-    g_stop     = false;
-
-    SearchResult result = search(
-        b, root_depth,
-        rep.data(), static_cast<int>(rep.size()),
-        searchmoves,
-        nullptr, false);
-
-    active_tt = &TT;
-    g_stop    = true;
-    node_limit = 0;
-    return result;
-}
-
-static std::string ponder_suffix(Board b, Move best) {
-    if (!g_ponder || best == MOVE_NONE) return "";
+static Move find_ponder_move(Board b, Move best) {
+    if (!g_ponder || best == MOVE_NONE) return MOVE_NONE;
 
     Undo u;
-    if (!make_move(b, best, u)) return "";
+    if (!make_move(b, best, u)) return MOVE_NONE;
 
     if (const TTEntry *pe = tt().probe(b.hash)) {
         if (is_legal_root_move(b, pe->best)) {
             g_ponder_move = pe->best;
-            return " ponder " + move_to_uci(pe->best);
+            return pe->best;
         }
     }
-    return "";
+    return MOVE_NONE;
+}
+
+static std::string ponder_suffix(Board b, Move best) {
+    const Move ponder = find_ponder_move(b, best);
+    return ponder == MOVE_NONE ? "" : " ponder " + move_to_uci(ponder);
 }
 
 } // namespace SHAYVERI
@@ -427,6 +450,7 @@ int main(int argc, char **argv) {
 
         // ===== UCI =====
         if (token == "uci") {
+            std::lock_guard<std::mutex> output_lock(uci_output_mutex);
             std::cout
                 << "id name SHAYVERI\n"
                 << "id author Shahyar Anfaz and Averi Wylie\n"
@@ -534,6 +558,7 @@ int main(int argc, char **argv) {
 
         // ===== ISREADY =====
         else if (token == "isready") {
+            std::lock_guard<std::mutex> output_lock(uci_output_mutex);
             std::cout << "readyok\n";
         }
 
@@ -705,29 +730,79 @@ int main(int argc, char **argv) {
                     ? std::min(fixed_depth, g_book_info_depth)
                     : g_book_info_depth;
             if (fixed_nodes > 0 || fixed_depth > 0) {
-                const auto search_start = std::chrono::steady_clock::now();
-                SearchResult result = run_fixed_search(
-                    b_copy, rep, searchmoves, root_depth, fixed_nodes);
-                const auto elapsed_ms =
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::steady_clock::now() - search_start).count();
-                const U64 elapsed_for_nps =
-                    static_cast<U64>(std::max<I64>(1, elapsed_ms));
-                const U64 nps = result.nodes * 1000 / elapsed_for_nps;
+                auto completion = std::make_shared<SearchCompletion>();
+                smp_threads.push_back(std::thread(
+                    [b_copy, rep, searchmoves, root_depth, fixed_nodes,
+                     book_info_search, book_move, completion]() mutable {
+                        active_tt = &TT;
+                        node_count = 0;
+                        node_limit = fixed_nodes;
+                        g_stop = false;
+                        const Board root_board = b_copy;
+                        const auto search_start = std::chrono::steady_clock::now();
+                        SearchResult result = search(
+                            b_copy, root_depth,
+                            rep.data(), static_cast<int>(rep.size()),
+                            searchmoves, nullptr, false);
+                        g_stop = true;
+                        node_limit = 0;
+                        const auto elapsed_ms =
+                            std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now() - search_start).count();
+                        if (book_info_search)
+                            result.best_move = book_move;
+                        else if (result.best_move == MOVE_NONE)
+                            result.best_move = first_legal_move(root_board);
+                        publish_search_completion(completion, result, elapsed_ms);
+                        node_limit = 0;
+                    }));
+                smp_threads.push_back(std::thread(
+                    [completion, b_copy]() mutable {
+                        wait_for_search_completion(completion);
+                        active_tt = &TT;
+                        const SearchResult result = completion->result;
+                        const U64 elapsed_for_nps = static_cast<U64>(
+                            std::max<I64>(1, completion->elapsed_ms));
+                        const U64 nps = result.nodes * 1000 / elapsed_for_nps;
 
-                if (book_info_search)
-                    result.best_move = book_move;
-                else if (!is_legal_root_move(b_copy, result.best_move))
-                    result.best_move = first_legal_move(b_copy);
+                        char score[32];
+                        if (std::abs(result.score) > Tune::MATE_SCORE - Tune::MAX_PLY) {
+                            const int mate_dist = Tune::MATE_SCORE - std::abs(result.score);
+                            int mate_moves = (mate_dist + 1) / 2;
+                            if (result.score < 0) mate_moves = -mate_moves;
+                            std::snprintf(score, sizeof(score), "mate %d", mate_moves);
+                        } else {
+                            std::snprintf(score, sizeof(score), "cp %d", result.score);
+                        }
 
-                std::cout << "info depth " << result.depth
-                          << " score " << uci_score(result.score)
-                          << " time " << elapsed_ms
-                          << " nodes " << result.nodes
-                          << " nps " << nps << "\n";
-                std::cout << "bestmove " << move_to_uci(result.best_move)
-                          << ponder_suffix(b_copy, result.best_move) << "\n";
-                std::cout.flush();
+                        char bestmove[6];
+                        format_uci_move(result.best_move, bestmove);
+                        char ponder[32] = "";
+                        const Move ponder_move = find_ponder_move(b_copy, result.best_move);
+                        if (ponder_move != MOVE_NONE) {
+                            char ponder_text[6];
+                            format_uci_move(ponder_move, ponder_text);
+                            std::snprintf(ponder, sizeof(ponder), " ponder %s", ponder_text);
+                        }
+
+                        char output[512];
+                        const int output_size = std::snprintf(
+                            output, sizeof(output),
+                            "info depth %d score %s time %lld nodes %llu nps %llu\n"
+                            "bestmove %s%s\n",
+                            result.depth, score,
+                            static_cast<long long>(completion->elapsed_ms),
+                            static_cast<unsigned long long>(result.nodes),
+                            static_cast<unsigned long long>(nps), bestmove, ponder);
+                        std::lock_guard<std::mutex> output_lock(uci_output_mutex);
+                        std::cout.flush();
+                        if (output_size > 0) {
+                            const std::size_t bytes = std::min<std::size_t>(
+                                static_cast<std::size_t>(output_size), sizeof(output) - 1);
+                            std::fwrite(output, 1, bytes, stdout);
+                            std::fflush(stdout);
+                        }
+                    }));
                 continue;
             }
 
@@ -742,17 +817,19 @@ int main(int argc, char **argv) {
                         search(b_copy, root_depth,
                                rep.data(), static_cast<int>(rep.size()),
                                searchmoves, nullptr, true, t);
-                        active_tt = &TT;
                     })
                 );
             }
+
+            auto completion = std::make_shared<SearchCompletion>();
 
             // Main search thread.
             smp_threads.insert(
                 smp_threads.begin(),
                 std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
-                             book_info_search, book_move]() mutable {
+                             book_info_search, book_move, completion]() mutable {
                     active_tt = &TT;
+                    const Board root_board = b_copy;
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
                     auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);
@@ -820,18 +897,41 @@ int main(int argc, char **argv) {
 
                     if (book_info_search)
                         result.best_move = book_move;
-                    else if (!is_legal_root_move(b_copy, result.best_move))
-                        result.best_move = first_legal_move(b_copy);
-
-                    std::string ponder_str = ponder_suffix(b_copy, result.best_move);
-
-                    std::cout << "bestmove " << move_to_uci(result.best_move)
-                              << ponder_str << "\n";
-                    std::cout.flush();
-                    active_tt = &TT;
+                    else if (result.best_move == MOVE_NONE)
+                        result.best_move = first_legal_move(root_board);
+                    publish_search_completion(completion, result);
                     node_limit = 0;
                 })
             );
+            smp_threads.push_back(std::thread(
+                [completion, b_copy]() mutable {
+                    wait_for_search_completion(completion);
+                    active_tt = &TT;
+                    const SearchResult result = completion->result;
+                    char bestmove[6];
+                    format_uci_move(result.best_move, bestmove);
+                    char ponder_text[32] = "";
+                    const Move ponder_move = find_ponder_move(b_copy, result.best_move);
+                    if (ponder_move != MOVE_NONE) {
+                        char ponder_uci[6];
+                        format_uci_move(ponder_move, ponder_uci);
+                        std::snprintf(ponder_text, sizeof(ponder_text),
+                                      " ponder %s", ponder_uci);
+                    }
+
+                    char output[64];
+                    const int output_size = std::snprintf(
+                        output, sizeof(output), "bestmove %s%s\n",
+                        bestmove, ponder_text);
+                    std::lock_guard<std::mutex> output_lock(uci_output_mutex);
+                    std::cout.flush();
+                    if (output_size > 0) {
+                        const std::size_t bytes = std::min<std::size_t>(
+                            static_cast<std::size_t>(output_size), sizeof(output) - 1);
+                        std::fwrite(output, 1, bytes, stdout);
+                        std::fflush(stdout);
+                    }
+                }));
         }
 
         // ===== PONDERHIT =====

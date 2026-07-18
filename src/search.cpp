@@ -9,6 +9,7 @@
 #include "nnue_update.h"
 #include "see.h"
 #include "tt.h"
+#include "uci_output.h"
 #include "tune.h"
 #include "zobrist.h"
 
@@ -1235,6 +1236,7 @@ SearchResult search(Board &b, int max_depth, const U64 *rep_init, int rep_init_l
         }
 
         if (!silent) {
+            std::lock_guard<std::mutex> output_lock(uci_output_mutex);
             std::cout << "info depth " << depth
                       << " score " << score_str
                       << " time " << ms

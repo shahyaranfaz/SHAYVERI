@@ -217,6 +217,10 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
     h ^= fnv1a_hash(&pending.hidden_size, sizeof(pending.hidden_size));
     h ^= fnv1a_hash(&pending.use_screlu, sizeof(pending.use_screlu));
 
+    // Complete the final potentially-throwing allocation before changing any
+    // live evaluator state. The commit below is then entirely non-throwing.
+    std::string committed_path = label;
+
     std::memset(feature_weights, 0, sizeof(feature_weights));
     std::memset(feature_bias, 0, sizeof(feature_bias));
     std::memset(output_weights, 0, sizeof(output_weights));
@@ -231,7 +235,7 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
                 inferred_hidden * 2 * sizeof(I16));
     output_bias = pending.output_bias;
 
-    g_net_path = label;
+    g_net_path.swap(committed_path);
     g_net_hash = h;
     g_king_buckets = pending.king_buckets;
     g_input_size = pending.input_size;

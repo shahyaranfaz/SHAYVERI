@@ -20,6 +20,22 @@ THREADS = int(os.environ.get("SHAYVERI_DATAGEN_THREADS", "1"))
 RUN_MATRIX = os.environ.get("SHAYVERI_DATAGEN_MATRIX", "0") == "1"
 
 
+def require_invalid_arguments(root: Path, name: str, *arguments: str) -> None:
+    prefix = root / name
+    completed = subprocess.run(
+        [ENGINE_PATH, "datagen", *arguments, "--output-prefix", str(prefix)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=TIMEOUT_SEC,
+        check=False,
+    )
+    if completed.returncode == 0:
+        raise AssertionError(f"{name} accepted invalid datagen arguments")
+    if list(root.glob(name + "*")):
+        raise AssertionError(f"{name} created output for invalid datagen arguments")
+
+
 def summary_values(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
     for line in path.read_text().splitlines():
@@ -175,6 +191,14 @@ def main() -> int:
     try:
         with tempfile.TemporaryDirectory(prefix="shayveri_datagen_check_") as tmp:
             root = Path(tmp)
+            require_invalid_arguments(
+                root, "negative_games",
+                "--threads", "1", "--games", "-1",
+            )
+            require_invalid_arguments(
+                root, "nan_probability",
+                "--threads", "1", "--games", "1", "--book-prob", "nan",
+            )
             if RUN_MATRIX:
                 run_matrix(root)
             else:

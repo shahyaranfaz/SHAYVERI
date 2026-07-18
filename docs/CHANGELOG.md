@@ -28,6 +28,27 @@ pairing at LTC. The framework is described in
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
+- Fixed fixed-node searches counting an unreported preliminary search outside
+  the requested node budget.
+- Fixed fixed-depth and fixed-node searches blocking UCI command processing,
+  and separated asynchronous search execution from UCI result output so search
+  workers no longer format or emit their own completion messages.
+- Serialized asynchronous UCI output so search information, command responses,
+  and completion messages cannot corrupt one another through byte interleaving.
+- Made NNUE file changes transactional: invalid or unreadable `EvalFile`
+  values now report an error and preserve the active evaluator instead of
+  terminating the engine or leaving partial network state.
+- Hardened UCI boolean and tuning-value parsing so malformed values leave the
+  current setting unchanged, and tuning changes now invalidate stale search
+  state.
+- Rejected negative unsigned and non-finite floating-point datagen arguments
+  instead of accepting wrapped counters or `nan`/`inf` configuration values.
+
+**Validation note:** ThreadSanitizer validation of the asynchronous search and
+Lazy SMP paths is still required on a compatible native Linux environment. The
+available machines abort inside both GCC and Clang TSan runtimes before
+`main()` with an `unexpected memory mapping` error; this is therefore an
+outstanding validation requirement rather than a completed engine test.
 
 ### v2.7.0 - Search and Time Improvements
 
