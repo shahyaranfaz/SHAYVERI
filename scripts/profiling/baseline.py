@@ -20,6 +20,8 @@ import sys
 import threading
 import time
 
+sys.dont_write_bytecode = True
+
 from workloads import POSITION_CASES, TACTICAL_CASES, TIMED_CASES
 
 
@@ -91,6 +93,7 @@ def metadata(engine: Path, arguments: argparse.Namespace) -> dict[str, object]:
         "nodes": arguments.nodes,
         "movetime_ms": arguments.movetime,
         "threads": arguments.threads,
+        "timed_scaling_metric": "median aggregate UCI NPS at the last completed iteration",
     }
 
 
@@ -252,11 +255,15 @@ def scaling(summary: list[dict[str, object]]) -> list[dict[str, object]]:
             continue
         base_nodes = float(base.get("median_nodes", 0))
         nodes = float(row.get("median_nodes", 0))
-        speedup = nodes / base_nodes if base_nodes else 0.0
+        base_nps = float(base.get("median_nps", 0))
+        nps = float(row.get("median_nps", 0))
+        speedup = nps / base_nps if base_nps else 0.0
         rows.append({
             "case": case,
             "threads": threads,
             "median_nodes": nodes,
+            "median_nps": nps,
+            "node_ratio_vs_1t": nodes / base_nodes if base_nodes else 0.0,
             "speedup_vs_1t": speedup,
             "scaling_efficiency": speedup / threads,
         })
