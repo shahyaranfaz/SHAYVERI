@@ -47,6 +47,8 @@ pairing at LTC. The framework is described in
   comparisons and subtraction in hot board, search, SEE, and NNUE paths.
 - Centralized single-move legality probes and first-legal-move lookup, avoiding
   full legal-list construction in UCI parsing, book, ponder, and fallback paths.
+- Simplified UCI option, position, ponder, and asynchronous-output plumbing,
+  and removed an unreachable legacy Texel parameter-printing implementation.
 - Added a profile-guided optimization target trained on the representative
   bench, fixed-depth, fixed-node, tactical, timed, and Lazy SMP workloads.
 - Fixed fixed-node searches counting an unreported preliminary search outside

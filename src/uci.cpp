@@ -15,6 +15,7 @@
 #include "zobrist.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <exception>
@@ -39,7 +40,6 @@ namespace SHAYVERI {
 // UCI options (written by setoption, read by go / search)
 // ======
 static int  g_num_threads      = 1;
-static int  g_hash_mb          = 64;
 static int  g_move_overhead    = 10;   // ms
 static bool g_ponder           = false;
 static bool g_own_book         = true;
@@ -48,7 +48,6 @@ static int  g_min_think_ms     = 0;
 static std::string g_eval_file = "<embedded>";
 
 // Ponder state.
-static Move g_ponder_move = MOVE_NONE;  // move we are pondering on
 static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
@@ -73,10 +72,6 @@ static const BookEntry *probe_book(U64 zobrist_key) {
     if (it != OPENING_BOOK + OPENING_BOOK_SIZE && it->key == zobrist_key)
         return it;
     return nullptr;
-}
-
-static bool is_legal_root_move(Board &b, Move move) {
-    return is_legal_move(b, move);
 }
 
 static Move first_legal_move(Board b) {
@@ -189,10 +184,62 @@ static void resize_hash_option(const std::string &value) {
     if (!parse_spin(value, 1, 32768, hash_mb)) return;
     try {
         TT.resize(static_cast<SIZE_T>(hash_mb));
-        g_hash_mb = hash_mb;
     } catch (const std::exception &) {
         // Keep the existing table if the requested size cannot be allocated.
     }
+}
+
+struct OptionHandler {
+    const char *name;
+    void (*apply)(const std::string &);
+};
+
+static bool load_eval_file_or_default(const std::string &path, std::string &error);
+
+static bool handle_uci_option(const std::string &name, const std::string &value) {
+    static const std::array<OptionHandler, 10> handlers = {{
+        {"Hash", resize_hash_option},
+        {"ClearHash", [](const std::string &) {
+            TT.clear();
+            clear_search_histories();
+        }},
+        {"Threads", [](const std::string &v) { parse_spin(v, 1, 512, g_num_threads); }},
+        {"UseNNUE", [](const std::string &v) {
+            bool enabled;
+            if (!parse_bool_strict(v, enabled)) return;
+            NNUE::set_enabled(enabled);
+            TT.clear();
+            clear_search_histories();
+        }},
+        {NNUE::UCI_OPTION_NAME, [](const std::string &v) {
+            std::string error;
+            if (!load_eval_file_or_default(v, error)) {
+                std::cout << "info string NNUE load failed: " << error << "\n";
+                return;
+            }
+            g_eval_file = v;
+            TT.clear();
+            clear_search_histories();
+            if (NNUE::is_enabled()) NNUE::print_info();
+        }},
+        {"OwnBook", [](const std::string &v) { parse_bool_strict(v, g_own_book); }},
+        {"BookInfoDepth", [](const std::string &v) {
+            parse_spin(v, 0, 32, g_book_info_depth);
+        }},
+        {"Ponder", [](const std::string &v) { parse_bool_strict(v, g_ponder); }},
+        {"MinimumThinkingTime", [](const std::string &v) {
+            parse_spin(v, 0, 5000, g_min_think_ms);
+        }},
+        {"MoveOverhead", [](const std::string &v) {
+            parse_spin(v, 0, 5000, g_move_overhead);
+        }},
+    }};
+
+    const auto handler = std::find_if(handlers.begin(), handlers.end(),
+        [&](const OptionHandler &entry) { return name == entry.name; });
+    if (handler == handlers.end()) return false;
+    handler->apply(value);
+    return true;
 }
 
 static bool file_exists(const std::string &path) {
@@ -350,15 +397,34 @@ static Move find_ponder_move(const Board &root, Move best) {
     if (!make_move(b, best, u)) return MOVE_NONE;
 
     if (const TTEntry *pe = tt().probe(b.hash)) {
-        if (is_legal_root_move(b, pe->best)) {
-            g_ponder_move = pe->best;
+        if (is_legal_move(b, pe->best)) {
             return pe->best;
         }
     }
     return MOVE_NONE;
 }
 
-static std::string ponder_suffix(Board b, Move best) {
+static void format_ponder(Board &b, Move best, char (&text)[32]) {
+    text[0] = '\0';
+    const Move ponder = find_ponder_move(b, best);
+    if (ponder == MOVE_NONE) return;
+
+    char move[6];
+    format_uci_move(ponder, move);
+    std::snprintf(text, sizeof(text), " ponder %s", move);
+}
+
+static void write_search_output(const char *output, int size, std::size_t capacity) {
+    std::lock_guard<std::mutex> output_lock(uci_output_mutex);
+    std::cout.flush();
+    if (size <= 0) return;
+    const std::size_t bytes = std::min<std::size_t>(
+        static_cast<std::size_t>(size), capacity - 1);
+    std::fwrite(output, 1, bytes, stdout);
+    std::fflush(stdout);
+}
+
+static std::string ponder_suffix(const Board &b, Move best) {
     const Move ponder = find_ponder_move(b, best);
     return ponder == MOVE_NONE ? "" : " ponder " + move_to_uci(ponder);
 }
@@ -383,7 +449,6 @@ int main(int argc, char **argv) {
     Board b;
     set_startpos(b);
 
-    std::vector<std::string> move_history;
     std::vector<U64>         hash_history;
     hash_history.push_back(b.hash);
 
@@ -471,60 +536,8 @@ int main(int argc, char **argv) {
             if (!value.empty() && value.front() == ' ')
                 value.erase(value.begin());
 
-            if      (opt_name == "Hash")
-                resize_hash_option(value);
-            else if (opt_name == "ClearHash") {
-                TT.clear();
-                clear_search_histories();
-            }
-            else if (opt_name == "Threads") {
-                int threads = 0;
-                if (parse_spin(value, 1, 512, threads))
-                    g_num_threads = threads;
-            }
-            else if (opt_name == "UseNNUE") {
-                bool enabled = false;
-                if (parse_bool_strict(value, enabled)) {
-                    NNUE::set_enabled(enabled);
-                    TT.clear();
-                    clear_search_histories();
-                }
-            }
-            else if (opt_name == NNUE::UCI_OPTION_NAME) {
-                std::string error;
-                if (load_eval_file_or_default(value, error)) {
-                    g_eval_file = value;
-                    TT.clear();
-                    clear_search_histories();
-                    if (NNUE::is_enabled()) NNUE::print_info();
-                } else {
-                    std::cout << "info string NNUE load failed: " << error << "\n";
-                }
-            }
-            else if (opt_name == "OwnBook") {
-                bool own_book = false;
-                if (parse_bool_strict(value, own_book)) g_own_book = own_book;
-            }
-            else if (opt_name == "BookInfoDepth") {
-                int book_info_depth = 0;
-                if (parse_spin(value, 0, 32, book_info_depth))
-                    g_book_info_depth = book_info_depth;
-            }
-            else if (opt_name == "Ponder") {
-                bool ponder = false;
-                if (parse_bool_strict(value, ponder)) g_ponder = ponder;
-            }
-            else if (opt_name == "MinimumThinkingTime") {
-                int min_think_ms = 0;
-                if (parse_spin(value, 0, 5000, min_think_ms))
-                    g_min_think_ms = min_think_ms;
-            }
-            else if (opt_name == "MoveOverhead") {
-                int move_overhead = 0;
-                if (parse_spin(value, 0, 5000, move_overhead))
-                    g_move_overhead = move_overhead;
-            }
-            else if (Tune::handle_setoption(opt_name, value)) {
+            if (!handle_uci_option(opt_name, value) &&
+                Tune::handle_setoption(opt_name, value)) {
                 TT.clear();
                 clear_search_histories();
             }
@@ -542,10 +555,8 @@ int main(int argc, char **argv) {
             set_startpos(b);
             hash_history.clear();
             hash_history.push_back(b.hash);
-            move_history.clear();
             TT.clear();
             clear_search_histories();
-            g_ponder_move = MOVE_NONE;
             g_pondering.store(false);
         }
 
@@ -554,8 +565,6 @@ int main(int argc, char **argv) {
             stop_search();
             std::string pos;
             iss >> pos;
-            move_history.clear();
-
             if (pos == "startpos") {
                 set_startpos(b);
                 hash_history.clear();
@@ -574,21 +583,14 @@ int main(int argc, char **argv) {
                 std::string mv;
                 while (iss >> mv) {
                     Move m = uci_to_move(b, mv);
-                    if (m != MOVE_NONE) {
-                        Undo u;
-                        if (make_move(b, m, u)) {
-                            move_history.push_back(mv);
-                            hash_history.push_back(b.hash);
-                        } else {
-                            std::cout << "info string rejected position move " << mv
-                                      << " at " << get_board_fen(b) << "\n";
-                            break;
-                        }
-                    } else {
-                        std::cout << "info string rejected position move " << mv
-                                  << " at " << get_board_fen(b) << "\n";
-                        break;
+                    Undo u;
+                    if (m != MOVE_NONE && make_move(b, m, u)) {
+                        hash_history.push_back(b.hash);
+                        continue;
                     }
+                    std::cout << "info string rejected position move " << mv
+                              << " at " << get_board_fen(b) << "\n";
+                    break;
                 }
             }
         }
@@ -642,13 +644,9 @@ int main(int argc, char **argv) {
             if (!is_ponder_search && g_own_book) {
                 if (const BookEntry *entry = probe_book(b.hash)) {
                     Move candidate = uci_to_move(b, entry->move);
-                    bool allowed = searchmoves.empty();
-                    for (Move sm : searchmoves) {
-                        if (sm == candidate) {
-                            allowed = true;
-                            break;
-                        }
-                    }
+                    const bool allowed = searchmoves.empty() ||
+                        std::find(searchmoves.begin(), searchmoves.end(), candidate)
+                            != searchmoves.end();
 
                     // uci_to_move() returns only a legal move, so do not validate
                     // the same book candidate a second time here.
@@ -681,16 +679,11 @@ int main(int argc, char **argv) {
             TT.new_search();
 
             // Ponder searches run until ponderhit supplies the real clock.
-            if (is_ponder_search) {
-                g_pondering.store(true);
-            } else {
-                g_pondering.store(false);
-            }
+            g_pondering.store(is_ponder_search);
 
             TimeControl real_tc = tc;
-            if (fixed_depth > 0) tc.infinite = true;
-            if (fixed_nodes > 0) tc.infinite = true;
-            if (is_ponder_search) tc.infinite = true;
+            if (fixed_depth > 0 || fixed_nodes > 0 || is_ponder_search)
+                tc.infinite = true;
             g_time_manager.init(tc);
 
             int   start = static_cast<int>(hash_history.size()) - 1 - b.half_move;
@@ -749,12 +742,7 @@ int main(int argc, char **argv) {
                         char bestmove[6];
                         format_uci_move(result.best_move, bestmove);
                         char ponder[32] = "";
-                        const Move ponder_move = find_ponder_move(b_copy, result.best_move);
-                        if (ponder_move != MOVE_NONE) {
-                            char ponder_text[6];
-                            format_uci_move(ponder_move, ponder_text);
-                            std::snprintf(ponder, sizeof(ponder), " ponder %s", ponder_text);
-                        }
+                        format_ponder(b_copy, result.best_move, ponder);
 
                         char output[512];
                         const int output_size = std::snprintf(
@@ -765,14 +753,7 @@ int main(int argc, char **argv) {
                             static_cast<long long>(elapsed_ms),
                             static_cast<unsigned long long>(result.nodes),
                             static_cast<unsigned long long>(nps), bestmove, ponder);
-                        std::lock_guard<std::mutex> output_lock(uci_output_mutex);
-                        std::cout.flush();
-                        if (output_size > 0) {
-                            const std::size_t bytes = std::min<std::size_t>(
-                                static_cast<std::size_t>(output_size), sizeof(output) - 1);
-                            std::fwrite(output, 1, bytes, stdout);
-                            std::fflush(stdout);
-                        }
+                        write_search_output(output, output_size, sizeof(output));
                     }));
                 continue;
             }
@@ -872,26 +853,13 @@ int main(int argc, char **argv) {
                     char bestmove[6];
                     format_uci_move(result.best_move, bestmove);
                     char ponder_text[32] = "";
-                    const Move ponder_move = find_ponder_move(b_copy, result.best_move);
-                    if (ponder_move != MOVE_NONE) {
-                        char ponder_uci[6];
-                        format_uci_move(ponder_move, ponder_uci);
-                        std::snprintf(ponder_text, sizeof(ponder_text),
-                                      " ponder %s", ponder_uci);
-                    }
+                    format_ponder(b_copy, result.best_move, ponder_text);
 
                     char output[64];
                     const int output_size = std::snprintf(
                         output, sizeof(output), "bestmove %s%s\n",
                         bestmove, ponder_text);
-                    std::lock_guard<std::mutex> output_lock(uci_output_mutex);
-                    std::cout.flush();
-                    if (output_size > 0) {
-                        const std::size_t bytes = std::min<std::size_t>(
-                            static_cast<std::size_t>(output_size), sizeof(output) - 1);
-                        std::fwrite(output, 1, bytes, stdout);
-                        std::fflush(stdout);
-                    }
+                    write_search_output(output, output_size, sizeof(output));
                 })
             );
         }
