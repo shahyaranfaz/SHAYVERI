@@ -19,6 +19,10 @@ if ! [[ "$RUNS" =~ ^[1-9][0-9]*$ ]]; then
     echo "RUNS must be a positive integer" >&2
     exit 1
 fi
+if [[ "$THREADS" != "1" ]]; then
+    echo "bench is single-threaded; use baseline.py for Lazy SMP scaling" >&2
+    exit 1
+fi
 if [[ -n "$CPU" ]] && ! command -v taskset >/dev/null; then
     echo "taskset not found; rerun with CPU= to disable pinning" >&2
     exit 1
