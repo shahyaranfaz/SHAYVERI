@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import traceback
 
 ENGINE_BINARY_NAME = "SHAYVERI.exe" if os.name == "nt" else "SHAYVERI"
@@ -78,6 +79,9 @@ def extract_bestmove(text: str) -> str:
         raise AssertionError(f"missing bestmove in output: {text[-TAIL_CHARS:]}")
     return m.group(1)
 
+def extract_bestmoves(text: str) -> list[str]:
+    return re.findall(r"^bestmove\s+(\S+)", text, flags=re.MULTILINE)
+
 def extract_last_pv(text: str) -> str:
     pvs = re.findall(r"^info .*?\spv\s+(.+)$", text, flags=re.MULTILINE)
     return pvs[-1].strip() if pvs else ""
@@ -131,8 +135,8 @@ def main() -> int:
             "go nodes 1000",
         ], wait_for_bestmove=True)
         require_bestmove(startpos)
-        if extract_max_info_nodes(startpos) > 2000:
-            raise AssertionError("go nodes 1000 did not stop near the requested node limit")
+        if extract_max_info_nodes(startpos) > 1000:
+            raise AssertionError("go nodes 1000 exceeded the requested node limit")
 
         depth1 = run_engine(["ucinewgame", "position startpos", "go depth 1"], wait_for_bestmove=True)
         require_bestmove(depth1)
@@ -184,6 +188,42 @@ def main() -> int:
         if has_book_marker(without_book):
             raise AssertionError("opening book probe still triggered with OwnBook=false")
 
+        invalid_bool = run_engine([
+            "setoption name OwnBook value true",
+            "setoption name BookInfoDepth value 0",
+            "setoption name OwnBook value invalid",
+            "ucinewgame",
+            "position startpos",
+            "go depth 1",
+        ], wait_for_bestmove=True)
+        if not has_book_marker(invalid_bool):
+            raise AssertionError("invalid boolean option changed OwnBook")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bad_net = os.path.join(temp_dir, "bad.nnue")
+            with open(bad_net, "wb") as stream:
+                stream.write(b"not-an-nnue")
+
+            nnue_recovery = run_engine([
+                "setoption name OwnBook value false",
+                "ucinewgame",
+                "position startpos",
+                "go depth 3",
+                f"setoption name EvalFile value {bad_net}",
+                "isready",
+                "ucinewgame",
+                "position startpos",
+                "go depth 3",
+            ], wait_for_bestmove=True)
+            require(nnue_recovery, "info string NNUE load failed:")
+            require(nnue_recovery, "readyok")
+            recovered_moves = extract_bestmoves(nnue_recovery)
+            if len(recovered_moves) != 2 or recovered_moves[0] != recovered_moves[1]:
+                raise AssertionError(
+                    "invalid EvalFile did not preserve deterministic NNUE search: "
+                    f"{recovered_moves}"
+                )
+
         determinism_1 = run_engine([
             "setoption name Threads value 1",
             "setoption name OwnBook value false",
@@ -207,7 +247,7 @@ def main() -> int:
 
         print(
             "UCI checks passed "
-            f"(flow + bench nodes={bench_nodes} + book probe + determinism)."
+            f"(flow + bench nodes={bench_nodes} + book probe + option recovery + determinism)."
         )
         return 0
     except Exception as exc:

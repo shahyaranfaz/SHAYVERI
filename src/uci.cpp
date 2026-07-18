@@ -97,13 +97,6 @@ static std::string uci_score(int score) {
     return "cp " + std::to_string(score);
 }
 
-static bool parse_bool(const std::string &value) {
-    std::string v = value;
-    std::transform(v.begin(), v.end(), v.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return v == "true" || v == "1" || v == "yes" || v == "on";
-}
-
 static bool parse_bool_strict(const std::string &value, bool &out) {
     std::string v = value;
     std::transform(v.begin(), v.end(), v.begin(),
@@ -205,20 +198,22 @@ static bool is_embedded_eval_file(const std::string &path) {
     return path.empty() || path == "<embedded>" || path == "<default>";
 }
 
-static void load_eval_file_or_default(const std::string &path) {
+static bool load_eval_file_or_default(const std::string &path, std::string &error) {
     if (is_hce_eval_file(path)) {
         NNUE::set_enabled(false);
-        return;
+        error.clear();
+        return true;
     }
 
+    bool loaded = false;
     if (is_embedded_eval_file(path)) {
-        NNUE::load_embedded_default();
-        NNUE::set_enabled(true);
-        return;
+        loaded = NNUE::load_embedded_default(error);
+    } else {
+        loaded = NNUE::load(path, error);
     }
 
-    NNUE::load(path);
-    NNUE::set_enabled(true);
+    if (loaded) NNUE::set_enabled(true);
+    return loaded;
 }
 
 static void print_datagen_usage(const char *argv0) {
@@ -339,23 +334,7 @@ static bool parse_datagen_args(int argc, char **argv, DatagenOptions &options) {
 
 static SearchResult run_fixed_search(Board b, const std::vector<U64> &rep,
                                      const std::vector<Move> &searchmoves,
-                                     int root_depth, int num_threads,
-                                     int hash_mb, U64 fixed_nodes) {
-    (void)num_threads;
-    (void)hash_mb;
-
-    SearchResult seed_result;
-    if (fixed_nodes > 0) {
-        g_stop = false;
-        node_count = 0;
-        node_limit = 0;
-        seed_result = search(
-            b, 1,
-            rep.data(), static_cast<int>(rep.size()),
-            searchmoves,
-            nullptr, true);
-    }
-
+                                     int root_depth, U64 fixed_nodes) {
     node_count = 0;
     node_limit = fixed_nodes;
     g_stop     = false;
@@ -368,10 +347,7 @@ static SearchResult run_fixed_search(Board b, const std::vector<U64> &rep,
 
     active_tt = &TT;
     g_stop    = true;
-
     node_limit = 0;
-    if (result.best_move == MOVE_NONE && seed_result.best_move != MOVE_NONE)
-        result = seed_result;
     return result;
 }
 
@@ -401,7 +377,11 @@ int main(int argc, char **argv) {
     Zobrist::init();
     init_attacks();
     TT.resize(64);
-    load_eval_file_or_default(g_eval_file);
+    std::string nnue_error;
+    if (!load_eval_file_or_default(g_eval_file, nnue_error)) {
+        std::cerr << "[nnue] " << nnue_error << '\n';
+        return 1;
+    }
 
     Board b;
     set_startpos(b);
@@ -429,7 +409,10 @@ int main(int argc, char **argv) {
                 std::cerr << "missing eval file: " << g_eval_file << '\n';
                 return 1;
             }
-            load_eval_file_or_default(g_eval_file);
+            if (!load_eval_file_or_default(g_eval_file, nnue_error)) {
+                std::cerr << "[nnue] " << nnue_error << '\n';
+                return 1;
+            }
             return generate_data(options);
         }
         print_datagen_usage(argv[0]);
@@ -502,27 +485,37 @@ int main(int argc, char **argv) {
                     g_num_threads = threads;
             }
             else if (opt_name == "UseNNUE") {
-                NNUE::set_enabled(parse_bool(value));
-                TT.clear();
-                clear_search_histories();
+                bool enabled = false;
+                if (parse_bool_strict(value, enabled)) {
+                    NNUE::set_enabled(enabled);
+                    TT.clear();
+                    clear_search_histories();
+                }
             }
             else if (opt_name == NNUE::UCI_OPTION_NAME) {
-                g_eval_file = value;
-                load_eval_file_or_default(g_eval_file);
-                TT.clear();
-                clear_search_histories();
-                if (NNUE::is_enabled())
-                    NNUE::print_info();
+                std::string error;
+                if (load_eval_file_or_default(value, error)) {
+                    g_eval_file = value;
+                    TT.clear();
+                    clear_search_histories();
+                    if (NNUE::is_enabled()) NNUE::print_info();
+                } else {
+                    std::cout << "info string NNUE load failed: " << error << "\n";
+                }
             }
-            else if (opt_name == "OwnBook")
-                g_own_book = parse_bool(value);
+            else if (opt_name == "OwnBook") {
+                bool own_book = false;
+                if (parse_bool_strict(value, own_book)) g_own_book = own_book;
+            }
             else if (opt_name == "BookInfoDepth") {
                 int book_info_depth = 0;
                 if (parse_spin(value, 0, 32, book_info_depth))
                     g_book_info_depth = book_info_depth;
             }
-            else if (opt_name == "Ponder")
-                g_ponder = parse_bool(value);
+            else if (opt_name == "Ponder") {
+                bool ponder = false;
+                if (parse_bool_strict(value, ponder)) g_ponder = ponder;
+            }
             else if (opt_name == "MinimumThinkingTime") {
                 int min_think_ms = 0;
                 if (parse_spin(value, 0, 5000, min_think_ms))
@@ -533,8 +526,10 @@ int main(int argc, char **argv) {
                 if (parse_spin(value, 0, 5000, move_overhead))
                     g_move_overhead = move_overhead;
             }
-            else
-                Tune::handle_setoption(opt_name, value);
+            else if (Tune::handle_setoption(opt_name, value)) {
+                TT.clear();
+                clear_search_histories();
+            }
         }
 
         // ===== ISREADY =====
@@ -709,17 +704,15 @@ int main(int argc, char **argv) {
                 root_depth = fixed_depth > 0
                     ? std::min(fixed_depth, g_book_info_depth)
                     : g_book_info_depth;
-            int   hash_mb    = g_hash_mb;
-
             if (fixed_nodes > 0 || fixed_depth > 0) {
                 const auto search_start = std::chrono::steady_clock::now();
                 SearchResult result = run_fixed_search(
-                    b_copy, rep, searchmoves,
-                    root_depth, num_thr, hash_mb, fixed_nodes);
-                const auto search_end = std::chrono::steady_clock::now();
-                const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    search_end - search_start).count();
-                const U64 elapsed_for_nps = static_cast<U64>(std::max<I64>(1, elapsed_ms));
+                    b_copy, rep, searchmoves, root_depth, fixed_nodes);
+                const auto elapsed_ms =
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - search_start).count();
+                const U64 elapsed_for_nps =
+                    static_cast<U64>(std::max<I64>(1, elapsed_ms));
                 const U64 nps = result.nodes * 1000 / elapsed_for_nps;
 
                 if (book_info_search)
@@ -732,9 +725,8 @@ int main(int argc, char **argv) {
                           << " time " << elapsed_ms
                           << " nodes " << result.nodes
                           << " nps " << nps << "\n";
-                std::string ponder_str = ponder_suffix(b_copy, result.best_move);
                 std::cout << "bestmove " << move_to_uci(result.best_move)
-                          << ponder_str << "\n";
+                          << ponder_suffix(b_copy, result.best_move) << "\n";
                 std::cout.flush();
                 continue;
             }

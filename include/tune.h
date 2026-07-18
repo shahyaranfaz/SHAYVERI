@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <exception>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -613,17 +615,26 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     */
 };
 
-// Applies a UCI setoption value.
-inline void handle_setoption(const std::string& name, const std::string& value) {
+// Applies a UCI setoption value and leaves the old value unchanged on failure.
+inline bool handle_setoption(const std::string& name, const std::string& value) {
     auto it = tuning_registry.find(name);
-    if (it == tuning_registry.end()) return;
+    if (it == tuning_registry.end()) return false;
     auto& opt = it->second;
-    if (opt.type == TuningOption::INT) {
-        const int parsed = std::stoi(value);
-        *static_cast<int*>(opt.ptr) = std::clamp(parsed, opt.min_val, opt.max_val);
-    } else {
-        *static_cast<double*>(opt.ptr) = std::stod(value);
+    try {
+        std::size_t parsed_chars = 0;
+        if (opt.type == TuningOption::INT) {
+            const int parsed = std::stoi(value, &parsed_chars);
+            if (parsed_chars != value.size()) return false;
+            *static_cast<int*>(opt.ptr) = std::clamp(parsed, opt.min_val, opt.max_val);
+        } else {
+            const double parsed = std::stod(value, &parsed_chars);
+            if (parsed_chars != value.size() || !std::isfinite(parsed)) return false;
+            *static_cast<double*>(opt.ptr) = parsed;
+        }
+    } catch (const std::exception&) {
+        return false;
     }
+    return true;
 }
 
 #ifndef coefficients_t

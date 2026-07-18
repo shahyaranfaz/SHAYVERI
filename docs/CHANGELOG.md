@@ -24,6 +24,11 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
+### v2.8.0 - DEVELOPMENT BRANCH
+
+**Default network:** embedded `SHAYVERI2_5_0.nnue`.
+
+
 ### v2.7.0 - Search and Time Improvements
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.

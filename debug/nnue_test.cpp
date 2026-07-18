@@ -127,7 +127,11 @@ int main(int argc, char **argv) {
 
     Zobrist::init();
     init_attacks();
-    NNUE::load(argv[1]);
+    std::string error;
+    if (!NNUE::load(argv[1], error)) {
+        std::cerr << "failed to load NNUE: " << error << "\n";
+        return 1;
+    }
 
     Board b;
     set_startpos(b);

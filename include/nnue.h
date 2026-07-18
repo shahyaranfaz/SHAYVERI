@@ -98,8 +98,8 @@ inline void feature_indices(int piece_type, int piece_colour, int sq,
     black_idx = feature_index(piece_type, piece_colour, sq, 1, black_king_sq);
 }
 
-std::string load(const std::string &path);
-std::string load_embedded_default();
+bool load(const std::string &path, std::string &error);
+bool load_embedded_default(std::string &error);
 bool is_loaded();
 bool is_enabled();
 void set_enabled(bool enabled);
