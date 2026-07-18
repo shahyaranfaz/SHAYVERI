@@ -41,6 +41,12 @@ pairing at LTC. The framework is described in
   one accumulator pass.
 - Reduced AVX2 evaluation widening by accumulating bounded products in safe
   32-bit blocks before converting them to the 64-bit output sum.
+- Reduced full NNUE refresh traffic by retaining accumulator blocks in AVX2
+  registers across all active features and storing each block once.
+- Replaced division-based piece type and colour decoding with equivalent
+  comparisons and subtraction in hot board, search, SEE, and NNUE paths.
+- Added a profile-guided optimization target trained on the representative
+  bench, fixed-depth, fixed-node, tactical, timed, and Lazy SMP workloads.
 - Fixed fixed-node searches counting an unreported preliminary search outside
   the requested node budget.
 - Fixed fixed-depth and fixed-node searches blocking UCI command processing,
