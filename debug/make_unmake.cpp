@@ -12,8 +12,12 @@ using SHAYVERI::Board;
 using SHAYVERI::Move;
 using SHAYVERI::MoveList;
 using SHAYVERI::Undo;
+using SHAYVERI::MOVE_NONE;
+using SHAYVERI::find_first_legal_move;
 using SHAYVERI::generate_legal_moves;
+using SHAYVERI::generate_pseudo_legal_moves;
 using SHAYVERI::init_attacks;
+using SHAYVERI::is_legal_move;
 using SHAYVERI::make_move;
 using SHAYVERI::set_from_fen;
 using SHAYVERI::unmake_move;
@@ -51,6 +55,35 @@ static bool verify_roundtrip(Board &b, int depth, int &checked) {
     return true;
 }
 
+static bool verify_legality_helpers(Board &b) {
+    const Board before = b;
+    const MoveList legal = generate_legal_moves(b);
+
+    const Move expected_first = legal.count > 0 ? legal.moves[0] : MOVE_NONE;
+    if (find_first_legal_move(b) != expected_first || !boards_equal(b, before)) return false;
+    if (is_legal_move(b, MOVE_NONE) || !boards_equal(b, before)) return false;
+
+    for (int i = 0; i < legal.count; ++i) {
+        if (!is_legal_move(b, legal.moves[i]) || !boards_equal(b, before)) return false;
+    }
+
+    const MoveList pseudo = generate_pseudo_legal_moves(b);
+    for (int i = 0; i < pseudo.count; ++i) {
+        bool legal_match = false;
+        for (int j = 0; j < legal.count; ++j) {
+            if (pseudo.moves[i] == legal.moves[j]) {
+                legal_match = true;
+                break;
+            }
+        }
+        if (!legal_match) {
+            if (is_legal_move(b, pseudo.moves[i]) || !boards_equal(b, before)) return false;
+            break;
+        }
+    }
+    return true;
+}
+
 int main() {
     SHAYVERI::Zobrist::init();
     init_attacks();
@@ -73,7 +106,10 @@ int main() {
         }
 
         int checked = 0;
-        if (!verify_roundtrip(b, 3, checked)) {
+        if (!verify_legality_helpers(b)) {
+            std::cerr << "[FAIL] " << name << ": legality helper mismatch\n";
+            ++failures;
+        } else if (!verify_roundtrip(b, 3, checked)) {
             std::cerr << "[FAIL] " << name << ": make/unmake mismatch\n";
             ++failures;
         } else {

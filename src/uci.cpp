@@ -75,19 +75,12 @@ static const BookEntry *probe_book(U64 zobrist_key) {
     return nullptr;
 }
 
-static bool is_legal_root_move(Board b, Move move) {
-    if (move == MOVE_NONE) return false;
-
-    MoveList legal = generate_legal_moves(b);
-    for (int i = 0; i < legal.count; ++i)
-        if (legal.moves[i] == move)
-            return true;
-    return false;
+static bool is_legal_root_move(Board &b, Move move) {
+    return is_legal_move(b, move);
 }
 
 static Move first_legal_move(Board b) {
-    MoveList legal = generate_legal_moves(b);
-    return legal.count > 0 ? legal.moves[0] : MOVE_NONE;
+    return find_first_legal_move(b);
 }
 
 static void format_uci_move(Move move, char (&text)[6]) {
@@ -650,10 +643,16 @@ int main(int argc, char **argv) {
                 if (const BookEntry *entry = probe_book(b.hash)) {
                     Move candidate = uci_to_move(b, entry->move);
                     bool allowed = searchmoves.empty();
-                    for (Move sm : searchmoves)
-                        if (sm == candidate) allowed = true;
+                    for (Move sm : searchmoves) {
+                        if (sm == candidate) {
+                            allowed = true;
+                            break;
+                        }
+                    }
 
-                    if (is_legal_root_move(b, candidate) && allowed) {
+                    // uci_to_move() returns only a legal move, so do not validate
+                    // the same book candidate a second time here.
+                    if (candidate != MOVE_NONE && allowed) {
                         book_move = candidate;
                         book_hit = true;
                     }

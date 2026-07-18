@@ -292,11 +292,16 @@ Move uci_to_move(Board& b, const std::string& uci) {
         }
     }
 
-    MoveList legal = generate_legal_moves(b);
-    for (int i = 0; i < legal.count; ++i) {
-        Move m = legal.moves[i];
-        if (move_from(m) == from && move_to(m) == to && move_promo(m) == promo)
-            return m;
+    MoveList pseudo = generate_pseudo_legal_moves(b);
+    for (int i = 0; i < pseudo.count; ++i) {
+        Move m = pseudo.moves[i];
+        if (move_from(m) != from || move_to(m) != to || move_promo(m) != promo)
+            continue;
+
+        Undo u;
+        if (!make_move(b, m, u)) continue;
+        unmake_move(b, m, u);
+        return m;
     }
     return MOVE_NONE;
 }

@@ -45,6 +45,8 @@ pairing at LTC. The framework is described in
   registers across all active features and storing each block once.
 - Replaced division-based piece type and colour decoding with equivalent
   comparisons and subtraction in hot board, search, SEE, and NNUE paths.
+- Centralized single-move legality probes and first-legal-move lookup, avoiding
+  full legal-list construction in UCI parsing, book, ponder, and fallback paths.
 - Added a profile-guided optimization target trained on the representative
   bench, fixed-depth, fixed-node, tactical, timed, and Lazy SMP workloads.
 - Fixed fixed-node searches counting an unreported preliminary search outside

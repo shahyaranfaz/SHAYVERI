@@ -31,6 +31,20 @@ static void push_moves_from_mask(MoveList &out, Square from, U64 mask) {
     }
 }
 
+static Move find_matching_legal_move(Board &b, Move target, bool find_first) {
+    MoveList pseudo = generate_pseudo_legal_moves(b);
+    for (int i = 0; i < pseudo.count; ++i) {
+        const Move move = pseudo.moves[i];
+        if (!find_first && move != target) continue;
+
+        Undo u;
+        if (!make_move(b, move, u)) continue;
+        unmake_move(b, move, u);
+        return move;
+    }
+    return MOVE_NONE;
+}
+
 MoveList generate_pseudo_legal_moves(Board &b) {
     MoveList moves;
 
@@ -321,13 +335,21 @@ MoveList generate_legal_moves(Board &b) {
     MoveList pseudo = generate_pseudo_legal_moves(b);
     MoveList legal;
     for (int i = 0; i < pseudo.count; ++i) {
+        const Move move = pseudo.moves[i];
         Undo u;
-        if (make_move(b, pseudo.moves[i], u)) {
-            legal.add(pseudo.moves[i]);
-            unmake_move(b, pseudo.moves[i], u);
-        }
+        if (!make_move(b, move, u)) continue;
+        legal.add(move);
+        unmake_move(b, move, u);
     }
     return legal;
+}
+
+Move find_first_legal_move(Board &b) {
+    return find_matching_legal_move(b, MOVE_NONE, true);
+}
+
+bool is_legal_move(Board &b, Move move) {
+    return move != MOVE_NONE && find_matching_legal_move(b, move, false) != MOVE_NONE;
 }
 
 } // namespace SHAYVERI
