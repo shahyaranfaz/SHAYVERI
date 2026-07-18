@@ -54,12 +54,6 @@ static std::atomic<bool> g_pondering{false};  // currently in ponder search
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
 
-struct SearchCompletion {
-    std::atomic<bool> ready{false};
-    SearchResult result{};
-    I64 elapsed_ms = 0;
-};
-
 static int active_thread_limit() {
     return static_cast<int>(std::max(1u, std::thread::hardware_concurrency()));
 }
@@ -70,20 +64,6 @@ static void stop_search() {
         if (t.joinable()) t.join();
     smp_threads.clear();
     node_limit = 0;
-}
-
-static void publish_search_completion(
-    const std::shared_ptr<SearchCompletion> &completion,
-    const SearchResult &result, I64 elapsed_ms = 0) {
-    completion->result = result;
-    completion->elapsed_ms = elapsed_ms;
-    completion->ready.store(true, std::memory_order_release);
-}
-
-static void wait_for_search_completion(
-    const std::shared_ptr<SearchCompletion> &completion) {
-    while (!completion->ready.load(std::memory_order_acquire))
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
 static const BookEntry *probe_book(U64 zobrist_key) {
@@ -369,9 +349,10 @@ static bool parse_datagen_args(int argc, char **argv, DatagenOptions &options) {
     return true;
 }
 
-static Move find_ponder_move(Board b, Move best) {
+static Move find_ponder_move(const Board &root, Move best) {
     if (!g_ponder || best == MOVE_NONE) return MOVE_NONE;
 
+    Board b = root;
     Undo u;
     if (!make_move(b, best, u)) return MOVE_NONE;
 
@@ -730,10 +711,9 @@ int main(int argc, char **argv) {
                     ? std::min(fixed_depth, g_book_info_depth)
                     : g_book_info_depth;
             if (fixed_nodes > 0 || fixed_depth > 0) {
-                auto completion = std::make_shared<SearchCompletion>();
                 smp_threads.push_back(std::thread(
                     [b_copy, rep, searchmoves, root_depth, fixed_nodes,
-                     book_info_search, book_move, completion]() mutable {
+                     book_info_search, book_move]() mutable {
                         active_tt = &TT;
                         node_count = 0;
                         node_limit = fixed_nodes;
@@ -753,16 +733,8 @@ int main(int argc, char **argv) {
                             result.best_move = book_move;
                         else if (result.best_move == MOVE_NONE)
                             result.best_move = first_legal_move(root_board);
-                        publish_search_completion(completion, result, elapsed_ms);
-                        node_limit = 0;
-                    }));
-                smp_threads.push_back(std::thread(
-                    [completion, b_copy]() mutable {
-                        wait_for_search_completion(completion);
-                        active_tt = &TT;
-                        const SearchResult result = completion->result;
                         const U64 elapsed_for_nps = static_cast<U64>(
-                            std::max<I64>(1, completion->elapsed_ms));
+                            std::max<I64>(1, elapsed_ms));
                         const U64 nps = result.nodes * 1000 / elapsed_for_nps;
 
                         char score[32];
@@ -791,7 +763,7 @@ int main(int argc, char **argv) {
                             "info depth %d score %s time %lld nodes %llu nps %llu\n"
                             "bestmove %s%s\n",
                             result.depth, score,
-                            static_cast<long long>(completion->elapsed_ms),
+                            static_cast<long long>(elapsed_ms),
                             static_cast<unsigned long long>(result.nodes),
                             static_cast<unsigned long long>(nps), bestmove, ponder);
                         std::lock_guard<std::mutex> output_lock(uci_output_mutex);
@@ -821,13 +793,11 @@ int main(int argc, char **argv) {
                 );
             }
 
-            auto completion = std::make_shared<SearchCompletion>();
-
             // Main search thread.
             smp_threads.insert(
                 smp_threads.begin(),
                 std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
-                             book_info_search, book_move, completion]() mutable {
+                             book_info_search, book_move]() mutable {
                     active_tt = &TT;
                     const Board root_board = b_copy;
 
@@ -899,15 +869,7 @@ int main(int argc, char **argv) {
                         result.best_move = book_move;
                     else if (result.best_move == MOVE_NONE)
                         result.best_move = first_legal_move(root_board);
-                    publish_search_completion(completion, result);
                     node_limit = 0;
-                })
-            );
-            smp_threads.push_back(std::thread(
-                [completion, b_copy]() mutable {
-                    wait_for_search_completion(completion);
-                    active_tt = &TT;
-                    const SearchResult result = completion->result;
                     char bestmove[6];
                     format_uci_move(result.best_move, bestmove);
                     char ponder_text[32] = "";
@@ -931,7 +893,8 @@ int main(int argc, char **argv) {
                         std::fwrite(output, 1, bytes, stdout);
                         std::fflush(stdout);
                     }
-                }));
+                })
+            );
         }
 
         // ===== PONDERHIT =====

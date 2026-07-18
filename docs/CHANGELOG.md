@@ -34,8 +34,10 @@ pairing at LTC. The framework is described in
 - Fixed fixed-node searches counting an unreported preliminary search outside
   the requested node budget.
 - Fixed fixed-depth and fixed-node searches blocking UCI command processing,
-  and separated asynchronous search execution from UCI result output so search
-  workers no longer format or emit their own completion messages.
+  and made each asynchronous search worker own its completion output instead
+  of relaying results through a second thread.
+- Fixed an optimized MinGW access violation before `bestmove` by avoiding an
+  unconditional by-value board copy during ponder-move lookup.
 - Serialized asynchronous UCI output so search information, command responses,
   and completion messages cannot corrupt one another through byte interleaving.
 - Fixed `go movetime` searches being shortened by adaptive clock-management
