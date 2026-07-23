@@ -152,7 +152,7 @@ pgo-train:
 		--movetime $(PGO_TRAIN_MOVETIME) \
 		--threads $(PGO_TRAIN_THREADS) \
 		--fixed-depth-threads 1 \
-		--fixed-node-threads $(PGO_TRAIN_THREADS) \
+		--fixed-node-threads 1 \
 		--all-timed-cases \
 		--pgo-cases \
 		--timeout $(PGO_TRAIN_TIMEOUT) \

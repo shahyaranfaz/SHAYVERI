@@ -52,7 +52,8 @@ pairing at LTC. The framework is described in
 - Centralized the generated opening-book lookup shared by UCI play and datagen.
 - Centralized castling rook/right handling across make and unmake operations.
 - Made FEN parsing transactional and rejected malformed rank widths, invalid
-  move counters, and trailing fields instead of changing the board.
+  move counters, trailing fields, impossible piece totals, and missing or
+  duplicate kings instead of changing the board.
 - Consolidated colour-specialized pawn, piece, castling, promotion, and attack
   initialization logic while preserving move order and generated move sets.
 - Simplified transposition-table replacement selection and removed unused time
@@ -61,8 +62,9 @@ pairing at LTC. The framework is described in
   bench, fixed-depth, fixed-node, tactical, timed, and Lazy SMP workloads.
 - Hardened PGO construction with strict missing/mismatched-profile failures,
   separate generation, training, and use stages, a portable `x86-64-v3`
-  target, retained build/profile diagnostics, and bounded node-normalized
-  1/2/4/8-thread training that avoids relying on distorted instrumented timing.
+  target, retained build/profile diagnostics, bounded single-thread
+  node-normalized training, and timed 1/2/4/8-thread Lazy SMP coverage that
+  avoids relying solely on distorted instrumented timing.
 - Qualified optional native Linux PGO with repeatable `+2.00%` and `+2.20%`
   geometric timed NPS across bracketed 1/2/4/8-thread comparisons. Normal
   portable release builds remain non-PGO.
@@ -85,6 +87,8 @@ pairing at LTC. The framework is described in
   state.
 - Rejected negative unsigned and non-finite floating-point datagen arguments
   instead of accepting wrapped counters or `nan`/`inf` configuration values.
+- Prevented malformed overpopulated FEN input from overflowing NNUE refresh
+  scratch storage.
 - Scored `+55.71 +/- 15.95`, `+37.67 +/- 13.56`, and `+32.05 +/- 12.50` Elo
   over v2.7.0 in 1,000-game colour-paired matches at `1+0.01`, `5+0.05`, and
   `10+0.1`, respectively, at one thread and 64 MB hash.

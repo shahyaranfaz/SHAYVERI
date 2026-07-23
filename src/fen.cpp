@@ -72,6 +72,15 @@ bool set_from_fen(Board &b, const std::string &fen) {
     parsed.half_move = half_move;
     parsed.full_move = full_move;
     parsed.recompute_all();
+
+    // Preserve the invariants required by move generation and NNUE evaluation.
+    // Promotions replace pawns, so no legally reachable position can contain
+    // more than the initial 32 pieces.
+    if (__builtin_popcountll(parsed.bit_boards[WK]) != 1 ||
+        __builtin_popcountll(parsed.bit_boards[BK]) != 1 ||
+        __builtin_popcountll(parsed.occupied) > 32)
+        return false;
+
     parsed.hash = Zobrist::compute(parsed);
     b = parsed;
     return true;

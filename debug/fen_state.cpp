@@ -130,6 +130,11 @@ int main() {
         "8/8/8/8/8/8/8/8 w - - -1 1",
         "8/8/8/8/8/8/8/8 w - - 0 0",
         "8/8/8/8/8/8/8/8 w - - 0 1 trailing",
+        "8/8/8/8/8/8/8/K7 w - - 0 1",
+        "k7/8/8/8/8/8/8/8 w - - 0 1",
+        "k7/8/8/8/8/8/8/KK6 w - - 0 1",
+        "kk6/8/8/8/8/8/8/K7 w - - 0 1",
+        "kppppppp/pppppppp/pppppppp/8/8/PPPPPPPP/PPPPPPPP/KPPPPPPP w - - 0 1",
     };
     for (const std::string &fen : invalid) {
         Board b;

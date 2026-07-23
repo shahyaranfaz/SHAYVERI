@@ -320,8 +320,10 @@ void Accumulator::refresh(const Board &board) {
     const Square black_king_sq = king_square(board, BLACK);
 
 #ifdef __AVX2__
-    int white_indices[32];
-    int black_indices[32];
+    // A legal chess position contains at most 32 pieces, but keep refresh
+    // memory-safe for every board representation the parser can construct.
+    int white_indices[64];
+    int black_indices[64];
     int feature_count = 0;
 
     for (int p = 1; p < PIECE_COUNT; ++p) {

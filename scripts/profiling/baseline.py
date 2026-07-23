@@ -325,15 +325,15 @@ def main() -> int:
     parser.add_argument("--threads", type=parse_threads, default=parse_threads("1,2,4,8"))
     parser.add_argument(
         "--fixed-threads", type=parse_threads, default=parse_threads("1"),
-        help="fallback thread counts for fixed-depth and fixed-node workloads",
+        help="fallback thread count for fixed-depth and fixed-node workloads; must be 1",
     )
     parser.add_argument(
         "--fixed-depth-threads", type=parse_threads,
-        help="thread counts for fixed-depth workloads; defaults to --fixed-threads",
+        help="thread count for fixed-depth workloads; must be 1",
     )
     parser.add_argument(
         "--fixed-node-threads", type=parse_threads,
-        help="thread counts for fixed-node workloads; defaults to --fixed-threads",
+        help="thread count for fixed-node workloads; must be 1",
     )
     parser.add_argument(
         "--all-timed-cases", action="store_true",
@@ -356,6 +356,11 @@ def main() -> int:
         parser.error("runs, depth, nodes, and movetime must be positive")
     args.fixed_depth_threads = args.fixed_depth_threads or args.fixed_threads
     args.fixed_node_threads = args.fixed_node_threads or args.fixed_threads
+    if args.fixed_depth_threads != [1] or args.fixed_node_threads != [1]:
+        parser.error(
+            "fixed-depth and fixed-node searches are single-threaded; "
+            "use --threads for Lazy SMP timed workloads"
+        )
     engine_path = args.engine.resolve()
     if not engine_path.is_file():
         parser.error(f"engine not found: {engine_path}")
