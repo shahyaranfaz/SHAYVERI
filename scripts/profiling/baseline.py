@@ -22,7 +22,7 @@ import time
 
 sys.dont_write_bytecode = True
 
-from workloads import POSITION_CASES, TACTICAL_CASES, TIMED_CASES
+from workloads import PGO_POSITION_CASES, POSITION_CASES, TACTICAL_CASES, TIMED_CASES
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -93,6 +93,11 @@ def metadata(engine: Path, arguments: argparse.Namespace) -> dict[str, object]:
         "nodes": arguments.nodes,
         "movetime_ms": arguments.movetime,
         "threads": arguments.threads,
+        "fixed_threads": arguments.fixed_threads,
+        "fixed_depth_threads": arguments.fixed_depth_threads,
+        "fixed_node_threads": arguments.fixed_node_threads,
+        "all_timed_cases": arguments.all_timed_cases,
+        "pgo_cases": arguments.pgo_cases,
         "timed_scaling_metric": "median aggregate UCI NPS at the last completed iteration",
     }
 
@@ -274,14 +279,19 @@ def correctness_errors(results: list[dict[str, object]]) -> list[str]:
     errors = []
     if not all(bool(row.get("solved", True)) for row in results):
         errors.append("tactical correctness signature failed")
-    fixed: dict[tuple[str, str], set[str]] = {}
+    fixed: dict[tuple[str, str, int], set[str]] = {}
     for row in results:
         if row["category"] in ("fixed_depth", "fixed_nodes"):
-            key = (str(row["category"]), str(row["case"]))
+            key = (
+                str(row["category"]), str(row["case"]), int(row["threads"])
+            )
             fixed.setdefault(key, set()).add(str(row["bestmove"]))
     for key, moves in sorted(fixed.items()):
         if len(moves) != 1:
-            errors.append(f"non-deterministic {key[0]} {key[1]} bestmoves: {sorted(moves)}")
+            errors.append(
+                f"non-deterministic {key[0]} {key[1]} at {key[2]} threads "
+                f"bestmoves: {sorted(moves)}"
+            )
     return errors
 
 
@@ -313,6 +323,26 @@ def main() -> int:
     parser.add_argument("--nodes", type=int, default=100_000)
     parser.add_argument("--movetime", type=int, default=250)
     parser.add_argument("--threads", type=parse_threads, default=parse_threads("1,2,4,8"))
+    parser.add_argument(
+        "--fixed-threads", type=parse_threads, default=parse_threads("1"),
+        help="fallback thread counts for fixed-depth and fixed-node workloads",
+    )
+    parser.add_argument(
+        "--fixed-depth-threads", type=parse_threads,
+        help="thread counts for fixed-depth workloads; defaults to --fixed-threads",
+    )
+    parser.add_argument(
+        "--fixed-node-threads", type=parse_threads,
+        help="thread counts for fixed-node workloads; defaults to --fixed-threads",
+    )
+    parser.add_argument(
+        "--all-timed-cases", action="store_true",
+        help="run timed searches on every position case instead of the short subset",
+    )
+    parser.add_argument(
+        "--pgo-cases", action="store_true",
+        help="include the broader game-history position set used for PGO training",
+    )
     parser.add_argument("--cpu", default="", help="taskset CPU list; empty disables pinning")
     parser.add_argument("--timeout", type=float, default=60.0)
     parser.add_argument("--build-label", default="release")
@@ -322,8 +352,10 @@ def main() -> int:
         help="exact compiler/linker flags used for the measured engine",
     )
     args = parser.parse_args()
-    if args.runs < 1 or args.depth < 1 or args.nodes < 1 or args.movetime < 1:
+    if any(value < 1 for value in (args.runs, args.depth, args.nodes, args.movetime)):
         parser.error("runs, depth, nodes, and movetime must be positive")
+    args.fixed_depth_threads = args.fixed_depth_threads or args.fixed_threads
+    args.fixed_node_threads = args.fixed_node_threads or args.fixed_threads
     engine_path = args.engine.resolve()
     if not engine_path.is_file():
         parser.error(f"engine not found: {engine_path}")
@@ -337,18 +369,28 @@ def main() -> int:
     run_dir.mkdir(parents=True)
 
     results: list[dict[str, object]] = []
+    position_cases = list(PGO_POSITION_CASES if args.pgo_cases else POSITION_CASES)
     engine = Engine(engine_path, args.cpu, args.timeout)
     try:
         for run in range(1, args.runs + 1):
             add_result(results, "bench", "trusted", run, 1, engine.bench())
-        for case, position in POSITION_CASES:
-            for run in range(1, args.runs + 1):
-                add_result(results, "fixed_depth", case, run, 1,
-                           run_search(engine, position, f"go depth {args.depth}", 1))
-                add_result(results, "fixed_nodes", case, run, 1,
-                           run_search(engine, position, f"go nodes {args.nodes}", 1))
+        for threads in args.fixed_depth_threads:
+            for case, position in position_cases:
+                for run in range(1, args.runs + 1):
+                    add_result(
+                        results, "fixed_depth", case, run, threads,
+                        run_search(engine, position, f"go depth {args.depth}", threads),
+                    )
+        for threads in args.fixed_node_threads:
+            for case, position in position_cases:
+                for run in range(1, args.runs + 1):
+                    add_result(
+                        results, "fixed_nodes", case, run, threads,
+                        run_search(engine, position, f"go nodes {args.nodes}", threads),
+                    )
+        timed_cases = position_cases if args.all_timed_cases else TIMED_CASES
         for threads in args.threads:
-            for case, position in TIMED_CASES:
+            for case, position in timed_cases:
                 for run in range(1, args.runs + 1):
                     add_result(results, "timed", case, run, threads,
                                run_search(engine, position, f"go movetime {args.movetime}", threads))

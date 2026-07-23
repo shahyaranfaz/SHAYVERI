@@ -19,6 +19,32 @@ POSITION_CASES = [
     ),
 ]
 
+# Broader PGO-only cases expressed as UCI move histories. These exercise
+# repetition history and incremental board/NNUE updates that isolated FEN
+# searches do not cover.
+PGO_POSITION_CASES = POSITION_CASES + [
+    (
+        "ruy-lopez-history",
+        "startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4 g8f6 "
+        "e1g1 f8e7 f1e1 b7b5 a4b3 d7d6 c2c3 e8g8 h2h3",
+    ),
+    (
+        "qgd-history",
+        "startpos moves d2d4 d7d5 c2c4 e7e6 b1c3 g8f6 c1g5 f8e7 "
+        "e2e3 e8g8 g1f3 h7h6 g5h4 b7b6",
+    ),
+    (
+        "english-history",
+        "startpos moves c2c4 e7e5 b1c3 g8f6 g1f3 b8c6 g2g3 d7d5 "
+        "c4d5 f6d5 f1g2 d5b6 e1g1 f8e7 d2d3 e8g8",
+    ),
+    (
+        "caro-kann-history",
+        "startpos moves e2e4 c7c6 d2d4 d7d5 e4e5 c8f5 g1f3 e7e6 "
+        "f1e2 c6c5 e1g1 b8c6 c2c3 d8b6 b1a3",
+    ),
+]
+
 TIMED_CASES = POSITION_CASES[:2]
 
 TACTICAL_CASES = [

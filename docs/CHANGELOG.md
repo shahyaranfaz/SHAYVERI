@@ -59,6 +59,13 @@ pairing at LTC. The framework is described in
   manager and NNUE state-query APIs.
 - Added a profile-guided optimization target trained on the representative
   bench, fixed-depth, fixed-node, tactical, timed, and Lazy SMP workloads.
+- Hardened PGO construction with strict missing/mismatched-profile failures,
+  separate generation, training, and use stages, a portable `x86-64-v3`
+  target, retained build/profile diagnostics, and bounded node-normalized
+  1/2/4/8-thread training that avoids relying on distorted instrumented timing.
+- Qualified optional native Linux PGO with repeatable `+2.00%` and `+2.20%`
+  geometric timed NPS across bracketed 1/2/4/8-thread comparisons. Normal
+  portable release builds remain non-PGO.
 - Fixed fixed-node searches counting an unreported preliminary search outside
   the requested node budget.
 - Fixed fixed-depth and fixed-node searches blocking UCI command processing,
@@ -78,6 +85,9 @@ pairing at LTC. The framework is described in
   state.
 - Rejected negative unsigned and non-finite floating-point datagen arguments
   instead of accepting wrapped counters or `nan`/`inf` configuration values.
+- Scored `+55.71 +/- 15.95`, `+37.67 +/- 13.56`, and `+32.05 +/- 12.50` Elo
+  over v2.7.0 in 1,000-game colour-paired matches at `1+0.01`, `5+0.05`, and
+  `10+0.1`, respectively, at one thread and 64 MB hash.
 
 **Validation note:** ThreadSanitizer validation of the asynchronous search and
 Lazy SMP paths is still required on a compatible native Linux environment. The
