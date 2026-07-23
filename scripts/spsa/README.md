@@ -86,4 +86,4 @@ Important controls are `PASS_NAME`, `BATCH_ID`, `BUDGET`, `MASTER_JOBS`,
 `BookInfoDepth=0` so the configured external opening set is the only book.
 
 On trainer machines, `lakas_nnue.py` may be copied beside the shell scripts or
-kept under `lakas/`; the launcher supports both layouts.
+kept under `lakas/`. The launcher supports both layouts.

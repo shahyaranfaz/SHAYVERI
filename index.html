@@ -425,7 +425,7 @@
           <div class="identity">
             <div class="title-row">
               <h1>SHAYVERI</h1>
-              <span class="version">v2.7.0</span>
+              <span class="version">v2.8.0</span>
             </div>
             <p class="subtitle">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence</p>
           </div>
@@ -433,20 +433,34 @@
         </div>
         <div class="hero-grid" aria-label="Engine highlights">
           <div class="metric">
-            <div class="metric-value"><strong>3094.7</strong><span class="metric-error-sign">+/-</span><span class="metric-error">14.9</span></div>
+            <div class="metric-value">
+              <strong>3130.0</strong>
+              <span class="metric-error-sign">+/-</span>
+              <span class="metric-error">15.0</span>
+            </div>
             <span>Anchored Ordo STC rating for SHAYVERI NNUE Evaluation</span>
           </div>
           <div class="metric">
-            <div class="metric-value"><strong>3235.7</strong><span class="metric-error-sign">+/-</span><span class="metric-error">29.8</span></div>
+            <div class="metric-value">
+              <strong>3235.6</strong>
+              <span class="metric-error-sign">+/-</span>
+              <span class="metric-error">29.6</span>
+            </div>
             <span>Anchored Ordo LTC rating for SHAYVERI NNUE Evaluation</span>
           </div>
           <div class="metric">
-            <div class="metric-value"><strong>+49.0</strong><span class="metric-error-sign">+/-</span><span class="metric-error">21.0</span></div>
-            <span>STC improvement compared to SHAYVERI v2.6.0</span>
+            <div class="metric-value">
+              <strong>+21.64%</strong>
+            </div>
+            <span>Fixed-bench speedup compared to SHAYVERI v2.7.0</span>
           </div>
           <div class="metric">
-            <div class="metric-value"><strong>+99.2</strong><span class="metric-error-sign">+/-</span><span class="metric-error">41.5</span></div>
-            <span>LTC improvement compared to SHAYVERI v2.6.0</span>
+            <div class="metric-value">
+              <strong>+35.3</strong>
+              <span class="metric-error-sign">+/-</span>
+              <span class="metric-error">21.1</span>
+            </div>
+            <span>Elo gained at STC compared to SHAYVERI v2.7.0</span>
           </div>
         </div>
       </div>
@@ -510,49 +524,52 @@
             </thead>
             <tbody>
               <tr>
-                <td>SHAYVERI v2.7.0</td>
+                <td>SHAYVERI v2.8.0</td>
                 <td>HCE-classical</td>
                 <td>none</td>
                 <td>STC 10+0.1</td>
-                <td>2626.5</td>
-                <td>+/-19.3</td>
-                <td>-223.5</td>
-                <td>-373.5</td>
+                <td>2643.6</td>
+                <td>+/-18.8</td>
+                <td>-206.4</td>
+                <td>-356.4</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.7.0</td>
+                <td>SHAYVERI v2.8.0</td>
                 <td>HCE-classical</td>
                 <td>none</td>
                 <td>LTC 90+0.5</td>
-                <td>2751.3</td>
-                <td>+/-32.1</td>
-                <td>-98.7</td>
-                <td>-248.7</td>
+                <td>2771.4</td>
+                <td>+/-31.3</td>
+                <td>-78.6</td>
+                <td>-228.6</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.7.0</td>
+                <td>SHAYVERI v2.8.0</td>
                 <td>NNUE</td>
                 <td>SHAYVERI2_5_0</td>
                 <td>STC 10+0.1</td>
-                <td class="good">3094.7</td>
-                <td>+/-14.9</td>
-                <td>+244.7</td>
-                <td>+94.7</td>
+                <td class="good">3130.0</td>
+                <td>+/-15.0</td>
+                <td>+280.0</td>
+                <td>+130.0</td>
               </tr>
               <tr>
-                <td>SHAYVERI v2.7.0</td>
+                <td>SHAYVERI v2.8.0</td>
                 <td>NNUE</td>
                 <td>SHAYVERI2_5_0</td>
                 <td>LTC 90+0.5</td>
-                <td class="good">3235.7</td>
-                <td>+/-29.8</td>
-                <td>+385.7</td>
-                <td>+235.7</td>
+                <td class="good">3235.6</td>
+                <td>+/-29.6</td>
+                <td>+385.6</td>
+                <td>+235.6</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="note">SHAYVERI v2.7.0 / NNUE improved over HCE-classical by about <span class="warn">+468.2 Elo at STC</span> and <span class="warn">+484.4 Elo at LTC</span> in this anchored pool. It is above SF3000 at both time controls.</p>
+        <p class="note">SHAYVERI v2.8.0 / NNUE leads HCE-classical by about
+          <span class="warn">+486.4 Elo at STC</span> and
+          <span class="warn">+464.2 Elo at LTC</span> in this anchored pool.
+          It is above SF3000 at both time controls.</p>
       </div>
     </section>
 
@@ -642,7 +659,14 @@
             <pre><code>make
 make windows
 make macos
+make pgo
 make clean</code></pre>
+            <p>On Linux, the PGO target builds the profile-guided
+              <code>SHAYVERI_pgo</code> binary. It trains the engine on
+              representative fixed and timed single-thread and Lazy SMP
+              searches, then rebuilds it using the collected profile. This
+              machine-native build takes longer but provides the best local
+              performance. Release binaries remain portable non-PGO builds.</p>
           </article>
           <article>
             <h3>UCI Session</h3>
@@ -699,7 +723,7 @@ go movetime 1000</code></pre>
 
   <footer>
     <div class="wrap">
-      SHAYVERI v2.7.0, built by Shahyar Anfaz and Averi Wylie.
+      SHAYVERI v2.8.0, built by Shahyar Anfaz and Averi Wylie.
     </div>
   </footer>
 </body>

@@ -14,11 +14,10 @@ Use this checklist for every published SHAYVERI release. Commands use
 
 ```sh
 make -j23
-printf 'bench 16 1 3 default depth\nquit\n' | ./SHAYVERI
 make test -j23
 make -C debug sanitize -j23
 printf 'uci\nisready\nquit\n' | ./SHAYVERI
-printf 'bench 16 1 3' | ./SHAYVERI
+printf 'bench 16 1 3 default depth\nquit\n' | ./SHAYVERI
 ```
 
 - [ ] Confirm repeated benches produce the same node signature.

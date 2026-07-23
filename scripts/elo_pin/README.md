@@ -101,7 +101,7 @@ are collected.
 
 ## Layout and outputs
 
-Engines live under `engines/`; the book, anchors, and Ordo default to `books/`,
+Engines live under `engines/`. The book, anchors, and Ordo default to `books/`,
 `anchors`, and `ordo`. Temporary state lives under `.work/`.
 
 Successful runs publish `outputs/<release>/{stc,ltc}`. Each phase retains the

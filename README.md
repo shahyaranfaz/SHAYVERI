@@ -9,19 +9,19 @@ analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
 
 Release labels separate the SHAYVERI source version, evaluator, and network. The
-current release is `SHAYVERI v2.7.0 / NNUE SHAYVERI2_5_0`.
+current release is `SHAYVERI v2.8.0 / NNUE SHAYVERI2_5_0`.
 
 ## Elo results
 
 |          Engine |    Evaluation |       Network | Time control | Rating |   Error | Gap to SF2850 | Gap to SF3000 |
 |----------------:|--------------:|--------------:|-------------:|-------:|--------:|--------------:|--------------:|
-| SHAYVERI v2.7.0 |          NNUE | SHAYVERI2_5_0 |   STC 10+0.1 | 3094.7 | +/-14.9 |        +244.7 |         +94.7 |
-| SHAYVERI v2.7.0 |          NNUE | SHAYVERI2_5_0 |   LTC 90+0.5 | 3235.7 | +/-29.8 |        +385.7 |        +235.7 |
-| SHAYVERI v2.7.0 | HCE-classical |          none |   STC 10+0.1 | 2626.5 | +/-19.3 |        -223.5 |        -373.5 |
-| SHAYVERI v2.7.0 | HCE-classical |          none |   LTC 90+0.5 | 2751.3 | +/-32.1 |         -98.7 |        -248.7 |
+| SHAYVERI v2.8.0 |          NNUE | SHAYVERI2_5_0 |   STC 10+0.1 | 3130.0 | +/-15.0 |        +280.0 |        +130.0 |
+| SHAYVERI v2.8.0 |          NNUE | SHAYVERI2_5_0 |   LTC 90+0.5 | 3235.6 | +/-29.6 |        +385.6 |        +235.6 |
+| SHAYVERI v2.8.0 | HCE-classical |          none |   STC 10+0.1 | 2643.6 | +/-18.8 |        -206.4 |        -356.4 |
+| SHAYVERI v2.8.0 | HCE-classical |          none |   LTC 90+0.5 | 2771.4 | +/-31.3 |         -78.6 |        -228.6 |
 
-The v2.7.0 NNUE configuration is about +468.2 Elo over HCE-classical at STC and
-+484.4 Elo at LTC in this anchored pool.
+The v2.8.0 NNUE configuration is about +486.4 Elo over HCE-classical at STC and
++464.2 Elo at LTC in this anchored pool.
 
 ## How to build
 
@@ -35,8 +35,15 @@ for Linux, Windows, and Intel macOS.
 make
 make windows
 make macos
+make pgo
 make clean
 ```
+
+On Linux, the `pgo` target builds the profile-guided `SHAYVERI_pgo` binary. It
+trains the engine on representative fixed and timed single-thread and Lazy SMP
+searches, then rebuilds it using the collected profile. This machine-native
+build takes longer but provides the best local performance. Release binaries
+remain portable non-PGO builds.
 
 The default net, `SHAYVERI2_5_0.nnue`, is automatically embedded into the 
 binary while building. Hence, the `.nnue` file must be at root-level only 

@@ -24,80 +24,34 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
-### v2.8.0 - DEVELOPMENT BRANCH
+### v2.8.0 - Speed Overhaul
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
-- Added reproducible profiling baselines covering trusted bench, fixed-depth,
-  fixed-node, tactical, timed, and real 1/2/4/8-thread Lazy SMP workloads, with
-  machine/build metadata and before-and-after comparison output.
-- Combined ordinary quiet-move NNUE parent copying, subtraction, and addition
-  into one pass, preserving exact refreshed values while removing redundant
-  hot-path traversals.
-- Rebuilt only the moved king's NNUE perspective after ordinary quiet king
-  moves, updating the unchanged perspective incrementally while retaining full
-  refreshes for king captures and castling.
-- Fused ordinary-capture NNUE parent copying and all three feature deltas into
-  one accumulator pass.
-- Reduced AVX2 evaluation widening by accumulating bounded products in safe
-  32-bit blocks before converting them to the 64-bit output sum.
-- Reduced full NNUE refresh traffic by retaining accumulator blocks in AVX2
-  registers across all active features and storing each block once.
-- Replaced division-based piece type and colour decoding with equivalent
-  comparisons and subtraction in hot board, search, SEE, and NNUE paths.
-- Centralized single-move legality probes and first-legal-move lookup, avoiding
-  full legal-list construction in UCI parsing, book, ponder, and fallback paths.
-- Simplified UCI option, position, ponder, and asynchronous-output plumbing,
-  and removed an unreachable legacy Texel parameter-printing implementation.
-- Centralized the generated opening-book lookup shared by UCI play and datagen.
-- Centralized castling rook/right handling across make and unmake operations.
-- Made FEN parsing transactional and rejected malformed rank widths, invalid
-  move counters, trailing fields, impossible piece totals, and missing or
-  duplicate kings instead of changing the board.
-- Consolidated colour-specialized pawn, piece, castling, promotion, and attack
-  initialization logic while preserving move order and generated move sets.
-- Simplified transposition-table replacement selection and removed unused time
-  manager and NNUE state-query APIs.
-- Added a profile-guided optimization target trained on the representative
-  bench, fixed-depth, fixed-node, tactical, timed, and Lazy SMP workloads.
-- Hardened PGO construction with strict missing/mismatched-profile failures,
-  separate generation, training, and use stages, a portable `x86-64-v3`
-  target, retained build/profile diagnostics, bounded single-thread
-  node-normalized training, and timed 1/2/4/8-thread Lazy SMP coverage that
-  avoids relying solely on distorted instrumented timing.
-- Qualified optional native Linux PGO with repeatable `+2.00%` and `+2.20%`
-  geometric timed NPS across bracketed 1/2/4/8-thread comparisons. Normal
-  portable release builds remain non-PGO.
-- Fixed fixed-node searches counting an unreported preliminary search outside
-  the requested node budget.
-- Fixed fixed-depth and fixed-node searches blocking UCI command processing,
-  and made each asynchronous search worker own its completion output instead
-  of relaying results through a second thread.
-- Fixed an optimized MinGW access violation before `bestmove` by avoiding an
-  unconditional by-value board copy during ponder-move lookup.
-- Serialized asynchronous UCI output so search information, command responses,
-  and completion messages cannot corrupt one another through byte interleaving.
-- Fixed `go movetime` searches being shortened by adaptive clock-management
-  scalers instead of using the requested duration minus safety overhead.
-- Made NNUE file changes transactional: invalid or unreadable `EvalFile`
-  values now report an error and preserve the active evaluator instead of
-  terminating the engine or leaving partial network state.
-- Hardened UCI boolean and tuning-value parsing so malformed values leave the
-  current setting unchanged, and tuning changes now invalidate stale search
+- Optimized NNUE incremental updates, full refreshes, and AVX2 evaluation by
+  eliminating redundant accumulator work and memory traffic.
+- Reduced repeated work in hot piece decoding, move-legality queries, opening
+  book access, UCI move handling, pondering, and fallback move selection.
+  Simplified move generation, make and unmake, UCI, and transposition-table
+  code, and removed dead and unused code.
+- Improved the normal fixed bench by `+21.64%` on the same machine, from
+  `1,358,562` to `1,652,587` median NPS, while retaining the `101863` node
+  signature.
+- Fixed asynchronous fixed-search lifecycle and output. Searches no longer
+  block UCI commands, fixed-node limits exclude preliminary work, and
+  concurrent messages are serialized.
+- Fixed an optimized MinGW access violation during pondermove lookup.
+- Fixed `go movetime` searches being shortened by adaptive clock management.
+- Made FEN parsing transactional and rejected malformed positions, including
+  overpopulated boards that could overflow NNUE refresh storage.
+- Made NNUE file changes transactional so invalid `EvalFile` values preserve
+  the active evaluator instead of terminating the engine or leaving partial
   state.
-- Rejected negative unsigned and non-finite floating-point datagen arguments
-  instead of accepting wrapped counters or `nan`/`inf` configuration values.
-- Prevented malformed overpopulated FEN input from overflowing NNUE refresh
-  scratch storage.
-- Scored `+55.71 +/- 15.95`, `+37.67 +/- 13.56`, and `+32.05 +/- 12.50` Elo
-  over v2.7.0 in 1,000-game colour-paired matches at `1+0.01`, `5+0.05`, and
-  `10+0.1`, respectively, at one thread and 64 MB hash.
-
-**Validation note:** ThreadSanitizer validation of the asynchronous search and
-Lazy SMP paths is still required on a compatible native Linux environment. The
-available machines abort inside both GCC and Clang TSan runtimes before
-`main()` with an `unexpected memory mapping` error; this is therefore an
-outstanding validation requirement rather than a completed engine test.
+- Hardened UCI and datagen value validation so malformed input is rejected
+  without changing active settings. Valid tuning changes now invalidate a stale
+  search state.
+- Recorded `3130.0 +/-15.0` at STC and `3235.6 +/-29.6` at LTC, changes of
+  +35.3 STC and -0.1 LTC relative to v2.7.0 in the same pool.
 
 ### v2.7.0 - Search and Time Improvements
 
@@ -238,8 +192,7 @@ outstanding validation requirement rather than a completed engine test.
 - Integrated the first trained Chess768/256 network, trained using SHAYVERI
   data and Marlinflow.
 - Recorded `2626.6 +/-41.1` at STC and `2728.0 +/-50.1` at LTC in historical
-  pins, a regression of -30.6 STC and an improvement of +25.0 LTC relative to
-  v1.3.0 in the same pool.
+  pins, changes of -30.6 STC and +25.0 LTC relative to v1.3.0 in the same pool.
 
 ## HCE Era
 
