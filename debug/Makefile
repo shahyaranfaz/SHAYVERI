@@ -160,6 +160,9 @@ TEST_TARGETS := \
 test:
 	+$(MAKE) strict
 	+$(MAKE) tidy
+	+$(MAKE) runtime_tests
+
+runtime_tests:
 	+$(MAKE) $(TEST_TARGETS)
 
 # Full runtime-memory/undefined-behavior gate.  The instrumented engine has a
@@ -171,7 +174,7 @@ sanitize:
 	@test "$(ASAN)$(UBSAN)$(LSAN)" != 000 || { echo "enable at least one sanitizer" >&2; exit 1; }
 	+$(MAKE) clean
 	+$(MAKE) -B -C .. BIN="$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" LDFLAGS="$(SANITIZE_LDFLAGS)" all
-	+$(SANITIZER_ENV) $(MAKE) ENGINE="../$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" test
+	+$(SANITIZER_ENV) $(MAKE) ENGINE="../$(SANITIZE_BIN)" CXXFLAGS="$(SANITIZE_CXXFLAGS)" runtime_tests
 	+$(SANITIZER_ENV) SHAYVERI_DATAGEN_MATRIX=1 SHAYVERI_DATAGEN_GAMES="$(SANITIZE_DATAGEN_GAMES)" SHAYVERI_DATAGEN_THREADS="$(SANITIZE_DATAGEN_THREADS)" SHAYVERI_DATAGEN_TIMEOUT_SEC=180 $(PYTHON) datagen_check.py
 	+$(MAKE) sanitize_cutechess
 	+$(MAKE) clean
@@ -283,4 +286,4 @@ clean:
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration fixed_search_integration tactical_regression clean
+.PHONY: all test runtime_tests strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration fixed_search_integration tactical_regression clean
