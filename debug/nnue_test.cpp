@@ -71,10 +71,13 @@ static bool same_acc(const NNUE::Accumulator &a, const NNUE::Accumulator &b) {
     return std::memcmp(a.vals, b.vals, sizeof(a.vals)) == 0;
 }
 
-static int scalar_nnue_evaluate(int side_to_move,
+static int scalar_nnue_evaluate(int side_to_move, int piece_count,
                                 const NNUE::Accumulator &acc) {
     I64 sum = 0;
     const int hidden_size = NNUE::active_hidden_size();
+    const int output_bucket = NNUE::output_bucket_count() == 1
+        ? 0 : NNUE::material_bucket(piece_count);
+    const I16 *weights = NNUE::output_weights[output_bucket];
     for (int perspective = 0; perspective < 2; ++perspective) {
         const int accumulator_side = side_to_move ^ perspective;
         const int weight_offset = perspective * hidden_size;
@@ -84,10 +87,10 @@ static int scalar_nnue_evaluate(int side_to_move,
             const I32 activated = NNUE::uses_screlu()
                 ? value * value / NNUE::L1_SCALE : value;
             sum += static_cast<I64>(activated)
-                * NNUE::output_weights[weight_offset + i];
+                * weights[weight_offset + i];
         }
     }
-    sum += NNUE::output_bias;
+    sum += NNUE::output_bias[output_bucket];
     return static_cast<int>(
         sum * NNUE::OUTPUT_SCALE / (NNUE::L1_SCALE * NNUE::L1_SCALE));
 }
@@ -99,38 +102,62 @@ static int check_vector_evaluation() {
         std::numeric_limits<I16>::max(),
     };
 
-    I16 saved_weights[NNUE::MAX_HIDDEN_SIZE * 2];
+    I16 saved_weights[NNUE::MAX_OUTPUT_BUCKETS][NNUE::MAX_HIDDEN_SIZE * 2];
     std::memcpy(saved_weights, NNUE::output_weights, sizeof(saved_weights));
-    const I32 saved_bias = NNUE::output_bias;
+    I32 saved_bias[NNUE::MAX_OUTPUT_BUCKETS];
+    std::memcpy(saved_bias, NNUE::output_bias, sizeof(saved_bias));
     const int hidden_size = NNUE::active_hidden_size();
 
     for (int i = 0; i < hidden_size; ++i) {
         acc.vals[WHITE][i] = VALUES[i % std::size(VALUES)];
         acc.vals[BLACK][i] = VALUES[(i * 5 + 3) % std::size(VALUES)];
-        NNUE::output_weights[i] = (i & 1)
-            ? std::numeric_limits<I16>::min()
-            : std::numeric_limits<I16>::max();
-        NNUE::output_weights[hidden_size + i] = (i & 2)
-            ? std::numeric_limits<I16>::max()
-            : std::numeric_limits<I16>::min();
+        for (int bucket = 0; bucket < NNUE::output_bucket_count(); ++bucket) {
+            NNUE::output_weights[bucket][i] = ((i + bucket) & 1)
+                ? std::numeric_limits<I16>::min()
+                : std::numeric_limits<I16>::max();
+            NNUE::output_weights[bucket][hidden_size + i] = ((i + bucket) & 2)
+                ? std::numeric_limits<I16>::max()
+                : std::numeric_limits<I16>::min();
+        }
     }
-    NNUE::output_bias = std::numeric_limits<I32>::max();
+    for (int bucket = 0; bucket < NNUE::output_bucket_count(); ++bucket)
+        NNUE::output_bias[bucket] =
+            std::numeric_limits<I32>::max() - bucket * 1000;
 
     int status = 0;
-    for (int side = WHITE; side <= BLACK; ++side) {
-        const int expected = scalar_nnue_evaluate(side, acc);
-        const int actual = NNUE::evaluate(side, acc);
-        if (actual != expected) {
-            std::cerr << "NNUE vector evaluation mismatch: side=" << side
-                      << " expected=" << expected
-                      << " actual=" << actual << "\n";
-            status = 1;
+    const int max_piece_count =
+        NNUE::output_bucket_count() == 1 ? 1 : 32;
+    for (int piece_count = 1; piece_count <= max_piece_count; ++piece_count) {
+        for (int side = WHITE; side <= BLACK; ++side) {
+            const int expected = scalar_nnue_evaluate(side, piece_count, acc);
+            const int actual = NNUE::evaluate(side, piece_count, acc);
+            if (actual != expected) {
+                std::cerr << "NNUE vector evaluation mismatch: side=" << side
+                          << " piece_count=" << piece_count
+                          << " expected=" << expected
+                          << " actual=" << actual << "\n";
+                status = 1;
+            }
         }
     }
 
     std::memcpy(NNUE::output_weights, saved_weights, sizeof(saved_weights));
-    NNUE::output_bias = saved_bias;
+    std::memcpy(NNUE::output_bias, saved_bias, sizeof(saved_bias));
     return status;
+}
+
+static int check_material_bucket_mapping() {
+    for (int piece_count = 1; piece_count <= 32; ++piece_count) {
+        const int expected = std::min((piece_count - 1) / 4, 7);
+        const int actual = NNUE::material_bucket(piece_count);
+        if (actual != expected) {
+            std::cerr << "NNUE material bucket mismatch: piece_count="
+                      << piece_count << " expected=" << expected
+                      << " actual=" << actual << "\n";
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static std::string test_move_to_uci(Move m) {
@@ -202,6 +229,8 @@ int main(int argc, char **argv) {
     if (check_feature_index_mapping() != 0)
         return 1;
     if (check_king_bucket_mapping() != 0)
+        return 1;
+    if (check_material_bucket_mapping() != 0)
         return 1;
 
     Zobrist::init();

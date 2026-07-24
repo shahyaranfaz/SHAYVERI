@@ -21,14 +21,16 @@ namespace NNUE {
 
 I16 feature_weights[MAX_INPUT_SIZE][MAX_HIDDEN_SIZE];
 I16 feature_bias[MAX_HIDDEN_SIZE];
-I16 output_weights[MAX_HIDDEN_SIZE * 2];
-I32 output_bias;
+I16 output_weights[MAX_OUTPUT_BUCKETS][MAX_HIDDEN_SIZE * 2];
+I32 output_bias[MAX_OUTPUT_BUCKETS];
 
 namespace {
 
 static constexpr U32 NNUE_MAGIC   = 0x4E4E5545u;
 static constexpr U32 NNUE_VERSION_CLASSIC = 2u;
 static constexpr U32 NNUE_VERSION_KB      = 3u;
+static constexpr U32 NNUE_VERSION_BUCKETED = 4u;
+static constexpr U32 NNUE_FLAG_SCRELU = 1u;
 
 std::string g_net_path;
 U64         g_net_hash = 0;
@@ -37,6 +39,7 @@ bool        g_enabled = true;
 int         g_king_buckets = 1;
 int         g_hidden_size = 256;
 bool        g_use_screlu = false;
+int         g_output_buckets = 1;
 
 U64 fnv1a_hash(const void *data, size_t bytes) {
     const U8 *p = static_cast<const U8 *>(data);
@@ -99,22 +102,25 @@ I32 squared_crelu_scaled(I16 x) {
     return (y * y) / L1_SCALE;
 }
 
-[[maybe_unused]] int evaluate_scalar(int side_to_move, const Accumulator &acc) {
+[[maybe_unused]] int evaluate_scalar(
+    int side_to_move, int piece_count, const Accumulator &acc) {
     const I16 *stm_acc = acc.vals[side_to_move];
     const I16 *nstm_acc = acc.vals[side_to_move ^ 1];
+    const int bucket = g_output_buckets == 1 ? 0 : material_bucket(piece_count);
+    const I16 *weights = output_weights[bucket];
 
     I64 sum = 0;
     for (int i = 0; i < g_hidden_size; ++i) {
         if (g_use_screlu) {
-            sum += static_cast<I64>(squared_crelu_scaled(stm_acc[i])) * output_weights[i];
-            sum += static_cast<I64>(squared_crelu_scaled(nstm_acc[i])) * output_weights[g_hidden_size + i];
+            sum += static_cast<I64>(squared_crelu_scaled(stm_acc[i])) * weights[i];
+            sum += static_cast<I64>(squared_crelu_scaled(nstm_acc[i])) * weights[g_hidden_size + i];
         } else {
-            sum += static_cast<I64>(screlu(stm_acc[i])) * output_weights[i];
-            sum += static_cast<I64>(screlu(nstm_acc[i])) * output_weights[g_hidden_size + i];
+            sum += static_cast<I64>(screlu(stm_acc[i])) * weights[i];
+            sum += static_cast<I64>(screlu(nstm_acc[i])) * weights[g_hidden_size + i];
         }
     }
 
-    sum += output_bias;
+    sum += output_bias[bucket];
     int score = static_cast<int>(sum * OUTPUT_SCALE / (L1_SCALE * L1_SCALE));
     return score;
 }
@@ -124,10 +130,11 @@ struct PendingNetwork {
     int input_size = CHESS768_INPUT_SIZE;
     int hidden_size = 256;
     bool use_screlu = false;
+    int output_buckets = 1;
     std::vector<I16> feature_weights;
     std::vector<I16> feature_bias;
     std::vector<I16> output_weights;
-    I32 output_bias = 0;
+    std::vector<I32> output_bias;
 };
 
 bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
@@ -143,17 +150,23 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
         error = "bad magic in \"" + label + "\"";
         return false;
     }
-    if (version != NNUE_VERSION_CLASSIC && version != NNUE_VERSION_KB) {
+    if (version != NNUE_VERSION_CLASSIC && version != NNUE_VERSION_KB &&
+        version != NNUE_VERSION_BUCKETED) {
         error = "unsupported version " + std::to_string(version) + " in \"" + label + "\"";
         return false;
     }
 
     PendingNetwork pending;
+    size_t declared_feature_weights_bytes = 0;
+    size_t declared_feature_bias_bytes = 0;
+    size_t declared_output_weights_bytes = 0;
+    size_t declared_output_bias_bytes = 0;
+
     if (version == NNUE_VERSION_CLASSIC) {
         pending.king_buckets = 1;
         pending.input_size = CHESS768_INPUT_SIZE;
         pending.use_screlu = false;
-    } else {
+    } else if (version == NNUE_VERSION_KB) {
         U32 buckets = 0;
         if (!read_bytes(data, size, offset, &buckets, sizeof(buckets),
                         "king_bucket_count", label, error))
@@ -166,30 +179,93 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
         pending.king_buckets = static_cast<int>(buckets);
         pending.input_size = CHESS768_INPUT_SIZE * pending.king_buckets;
         pending.use_screlu = true;
+    } else {
+        U32 buckets = 0;
+        U32 hidden = 0;
+        U32 output_buckets = 0;
+        U32 flags = 0;
+        U32 feature_weights_bytes = 0;
+        U32 feature_bias_bytes = 0;
+        U32 output_weights_bytes = 0;
+        U32 output_bias_bytes = 0;
+        if (!read_bytes(data, size, offset, &buckets, sizeof(buckets),
+                        "king_bucket_count", label, error) ||
+            !read_bytes(data, size, offset, &hidden, sizeof(hidden),
+                        "hidden_size", label, error) ||
+            !read_bytes(data, size, offset, &output_buckets, sizeof(output_buckets),
+                        "output_bucket_count", label, error) ||
+            !read_bytes(data, size, offset, &flags, sizeof(flags),
+                        "flags", label, error) ||
+            !read_bytes(data, size, offset, &feature_weights_bytes, sizeof(feature_weights_bytes),
+                        "feature_weights_bytes", label, error) ||
+            !read_bytes(data, size, offset, &feature_bias_bytes, sizeof(feature_bias_bytes),
+                        "feature_bias_bytes", label, error) ||
+            !read_bytes(data, size, offset, &output_weights_bytes, sizeof(output_weights_bytes),
+                        "output_weights_bytes", label, error) ||
+            !read_bytes(data, size, offset, &output_bias_bytes, sizeof(output_bias_bytes),
+                        "output_bias_bytes", label, error))
+            return false;
+
+        if (buckets != 16 || hidden != 512 ||
+            output_buckets != MAX_OUTPUT_BUCKETS || flags != NNUE_FLAG_SCRELU) {
+            error = "unsupported v4 architecture in \"" + label + "\"";
+            return false;
+        }
+        pending.king_buckets = static_cast<int>(buckets);
+        pending.input_size = CHESS768_INPUT_SIZE * pending.king_buckets;
+        pending.hidden_size = static_cast<int>(hidden);
+        pending.output_buckets = static_cast<int>(output_buckets);
+        pending.use_screlu = true;
+        declared_feature_weights_bytes = feature_weights_bytes;
+        declared_feature_bias_bytes = feature_bias_bytes;
+        declared_output_weights_bytes = output_weights_bytes;
+        declared_output_bias_bytes = output_bias_bytes;
     }
 
     const size_t payload_bytes = size - offset;
-    const size_t hidden_stride_bytes =
-        static_cast<size_t>(pending.input_size) * sizeof(I16) + 3 * sizeof(I16);
-    const size_t fixed_bytes = sizeof(pending.output_bias);
-    if (payload_bytes <= fixed_bytes ||
-        (payload_bytes - fixed_bytes) % hidden_stride_bytes != 0) {
-        error = "cannot infer hidden size from payload " +
-                std::to_string(payload_bytes) + " bytes in \"" + label + "\"";
+    size_t inferred_hidden = static_cast<size_t>(pending.hidden_size);
+    if (version != NNUE_VERSION_BUCKETED) {
+        const size_t hidden_stride_bytes =
+            static_cast<size_t>(pending.input_size) * sizeof(I16) + 3 * sizeof(I16);
+        const size_t fixed_bytes = sizeof(I32);
+        if (payload_bytes <= fixed_bytes ||
+            (payload_bytes - fixed_bytes) % hidden_stride_bytes != 0) {
+            error = "cannot infer hidden size from payload " +
+                    std::to_string(payload_bytes) + " bytes in \"" + label + "\"";
+            return false;
+        }
+        inferred_hidden = (payload_bytes - fixed_bytes) / hidden_stride_bytes;
+        if (inferred_hidden != 256 && inferred_hidden != 512) {
+            error = "unsupported hidden size " + std::to_string(inferred_hidden) +
+                    " in \"" + label + "\"; supported sizes are 256 and 512";
+            return false;
+        }
+        pending.hidden_size = static_cast<int>(inferred_hidden);
+    }
+
+    const size_t weight_count = static_cast<size_t>(pending.input_size) * inferred_hidden;
+    const size_t output_weight_count =
+        inferred_hidden * 2 * static_cast<size_t>(pending.output_buckets);
+    const size_t expected_feature_weights_bytes = weight_count * sizeof(I16);
+    const size_t expected_feature_bias_bytes = inferred_hidden * sizeof(I16);
+    const size_t expected_output_weights_bytes = output_weight_count * sizeof(I16);
+    const size_t expected_output_bias_bytes =
+        static_cast<size_t>(pending.output_buckets) * sizeof(I32);
+    if (version == NNUE_VERSION_BUCKETED &&
+        (declared_feature_weights_bytes != expected_feature_weights_bytes ||
+         declared_feature_bias_bytes != expected_feature_bias_bytes ||
+         declared_output_weights_bytes != expected_output_weights_bytes ||
+         declared_output_bias_bytes != expected_output_bias_bytes ||
+         payload_bytes != expected_feature_weights_bytes + expected_feature_bias_bytes +
+                          expected_output_weights_bytes + expected_output_bias_bytes)) {
+        error = "invalid v4 section lengths in \"" + label + "\"";
         return false;
     }
 
-    const size_t inferred_hidden = (payload_bytes - fixed_bytes) / hidden_stride_bytes;
-    if (inferred_hidden != 256 && inferred_hidden != 512) {
-        error = "unsupported hidden size " + std::to_string(inferred_hidden) +
-                " in \"" + label + "\"; supported sizes are 256 and 512";
-        return false;
-    }
-    pending.hidden_size = static_cast<int>(inferred_hidden);
-    const size_t weight_count = static_cast<size_t>(pending.input_size) * inferred_hidden;
     pending.feature_weights.resize(weight_count);
     pending.feature_bias.resize(inferred_hidden);
-    pending.output_weights.resize(inferred_hidden * 2);
+    pending.output_weights.resize(output_weight_count);
+    pending.output_bias.resize(pending.output_buckets);
 
     const size_t feature_weights_row_bytes =
         inferred_hidden * sizeof(I16);
@@ -198,9 +274,9 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
         !read_bytes(data, size, offset, pending.feature_bias.data(),
                     inferred_hidden * sizeof(I16), "feature_bias", label, error) ||
         !read_bytes(data, size, offset, pending.output_weights.data(),
-                    inferred_hidden * 2 * sizeof(I16), "output_weights", label, error) ||
-        !read_bytes(data, size, offset, &pending.output_bias,
-                    sizeof(pending.output_bias), "output_bias", label, error))
+                    output_weight_count * sizeof(I16), "output_weights", label, error) ||
+        !read_bytes(data, size, offset, pending.output_bias.data(),
+                    pending.output_bias.size() * sizeof(I32), "output_bias", label, error))
         return false;
 
     if (offset != size) {
@@ -215,11 +291,13 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
                         feature_weights_row_bytes);
     }
     h ^= fnv1a_hash(pending.feature_bias.data(), inferred_hidden * sizeof(I16));
-    h ^= fnv1a_hash(pending.output_weights.data(), inferred_hidden * 2 * sizeof(I16));
-    h ^= fnv1a_hash(&pending.output_bias, sizeof(pending.output_bias));
+    h ^= fnv1a_hash(pending.output_weights.data(), output_weight_count * sizeof(I16));
+    h ^= fnv1a_hash(pending.output_bias.data(),
+                    pending.output_bias.size() * sizeof(I32));
     h ^= fnv1a_hash(&pending.king_buckets, sizeof(pending.king_buckets));
     h ^= fnv1a_hash(&pending.hidden_size, sizeof(pending.hidden_size));
     h ^= fnv1a_hash(&pending.use_screlu, sizeof(pending.use_screlu));
+    h ^= fnv1a_hash(&pending.output_buckets, sizeof(pending.output_buckets));
 
     // Complete the final potentially-throwing allocation before changing any
     // live evaluator state. The commit below is then entirely non-throwing.
@@ -236,14 +314,16 @@ bool load_from_bytes(const U8 *data, size_t size, const std::string &label,
     std::memcpy(feature_bias, pending.feature_bias.data(),
                 inferred_hidden * sizeof(I16));
     std::memcpy(output_weights, pending.output_weights.data(),
-                inferred_hidden * 2 * sizeof(I16));
-    output_bias = pending.output_bias;
+                output_weight_count * sizeof(I16));
+    std::memcpy(output_bias, pending.output_bias.data(),
+                pending.output_bias.size() * sizeof(I32));
 
     g_net_path.swap(committed_path);
     g_net_hash = h;
     g_king_buckets = pending.king_buckets;
     g_hidden_size = pending.hidden_size;
     g_use_screlu = pending.use_screlu;
+    g_output_buckets = pending.output_buckets;
     g_loaded = true;
     error.clear();
     return true;
@@ -297,6 +377,10 @@ bool uses_screlu() {
     return g_use_screlu;
 }
 
+int output_bucket_count() {
+    return g_output_buckets;
+}
+
 void print_info() {
     std::cout << "info string NNUE path " << g_net_path << "\n"
               << "info string NNUE hash " << std::uppercase << std::hex
@@ -307,6 +391,7 @@ void print_info() {
               << (has_king_buckets() ? "Chess768xKingBuckets" : "Chess768")
               << " hidden=" << g_hidden_size
               << " king_buckets=" << g_king_buckets
+              << " output_buckets=" << g_output_buckets
               << " activation=" << (g_use_screlu ? "SCReLU" : "CReLU") << "\n"
               << "info string NNUE scales L1=" << L1_SCALE
               << " OUT=" << OUTPUT_SCALE << "\n";
@@ -428,14 +513,14 @@ void Accumulator::refresh_perspective(const Board &board, int perspective) {
 }
 
 #ifdef __AVX2__
-int evaluate_avx2(int side_to_move, const Accumulator &acc);
+int evaluate_avx2(int side_to_move, int piece_count, const Accumulator &acc);
 #endif
 
-int evaluate(int side_to_move, const Accumulator &acc) {
+int evaluate(int side_to_move, int piece_count, const Accumulator &acc) {
 #ifdef __AVX2__
-    return evaluate_avx2(side_to_move, acc);
+    return evaluate_avx2(side_to_move, piece_count, acc);
 #else
-    return evaluate_scalar(side_to_move, acc);
+    return evaluate_scalar(side_to_move, piece_count, acc);
 #endif
 }
 

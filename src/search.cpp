@@ -627,7 +627,10 @@ static_assert(sizeof(MovePicker) <= 5 * 1024);
 
 static inline int evaluate_position(const Board &b, const StackInfo *ss) {
     const int score = NNUE::is_enabled()
-        ? NNUE::evaluate(static_cast<int>(b.side_to_move), ss->acc)
+        ? NNUE::evaluate(
+            static_cast<int>(b.side_to_move),
+            __builtin_popcountll(b.occupied),
+            ss->acc)
         : evaluate(b);
     constexpr int MAX_EVAL = MATE_SCORE - MAX_PLY - 1;
     return std::clamp(score, -MAX_EVAL, MAX_EVAL);

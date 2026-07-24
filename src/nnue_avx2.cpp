@@ -47,7 +47,7 @@ __m256i screlu16_to_i32(__m128i x) {
 
 } // namespace
 
-int evaluate_avx2(int side_to_move, const Accumulator &acc) {
+int evaluate_avx2(int side_to_move, int piece_count, const Accumulator &acc) {
     const I16 *stm_acc = acc.vals[side_to_move];
     const I16 *nstm_acc = acc.vals[side_to_move ^ 1];
 
@@ -55,6 +55,9 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
     __m256i sum_nstm = _mm256_setzero_si256();
     const bool use_screlu = uses_screlu();
     const int hidden_size = active_hidden_size();
+    const int bucket = output_bucket_count() == 1
+        ? 0 : material_bucket(piece_count);
+    const I16 *weights = output_weights[bucket];
 
     constexpr int BLOCK_SIZE = 64;
     for (int base = 0; base < hidden_size; base += BLOCK_SIZE) {
@@ -65,7 +68,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
             const __m128i stm = _mm_loadu_si128(
                 reinterpret_cast<const __m128i *>(stm_acc + i));
             const __m128i stm_w = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(output_weights + i));
+                reinterpret_cast<const __m128i *>(weights + i));
             const __m256i stm32 = use_screlu
                 ? screlu16_to_i32(stm) : crelu16_to_i32(stm);
             const __m256i stm_w32 = _mm256_cvtepi16_epi32(stm_w);
@@ -75,7 +78,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
             const __m128i nstm = _mm_loadu_si128(
                 reinterpret_cast<const __m128i *>(nstm_acc + i));
             const __m128i nstm_w = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(output_weights + hidden_size + i));
+                reinterpret_cast<const __m128i *>(weights + hidden_size + i));
             const __m256i nstm32 = use_screlu
                 ? screlu16_to_i32(nstm) : crelu16_to_i32(nstm);
             const __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
@@ -88,7 +91,7 @@ int evaluate_avx2(int side_to_move, const Accumulator &acc) {
     }
 
     I64 total = hsum256_epi64(sum_stm) + hsum256_epi64(sum_nstm);
-    total += output_bias;
+    total += output_bias[bucket];
     int score = static_cast<int>(
         total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));
     return score;

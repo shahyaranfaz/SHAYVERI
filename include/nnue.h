@@ -4,6 +4,7 @@
 #include "board.h"
 #include "types.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 
@@ -15,14 +16,14 @@ inline constexpr int CHESS768_INPUT_SIZE = 768;
 inline constexpr int MAX_KING_BUCKETS    = 16;
 inline constexpr int MAX_INPUT_SIZE      = CHESS768_INPUT_SIZE * MAX_KING_BUCKETS;
 inline constexpr int MAX_HIDDEN_SIZE     = 512;
-inline constexpr int OUTPUT_SIZE         = 1;
+inline constexpr int MAX_OUTPUT_BUCKETS  = 8;
 inline constexpr int L1_SCALE            = 255;
 inline constexpr int OUTPUT_SCALE        = 400;
 
 extern I16 feature_weights[MAX_INPUT_SIZE][MAX_HIDDEN_SIZE];
 extern I16 feature_bias[MAX_HIDDEN_SIZE];
-extern I16 output_weights[MAX_HIDDEN_SIZE * 2];
-extern I32 output_bias;
+extern I16 output_weights[MAX_OUTPUT_BUCKETS][MAX_HIDDEN_SIZE * 2];
+extern I32 output_bias[MAX_OUTPUT_BUCKETS];
 
 extern const char EMBEDDED_DEFAULT_NET_NAME[];
 extern const U8 EMBEDDED_DEFAULT_NET[];
@@ -48,6 +49,11 @@ int king_bucket_count();
 int active_hidden_size();
 bool has_king_buckets();
 bool uses_screlu();
+int output_bucket_count();
+
+inline int material_bucket(int piece_count) {
+    return std::clamp((piece_count - 1) / 4, 0, MAX_OUTPUT_BUCKETS - 1);
+}
 
 inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
     if (bucket_count <= 1) return 0;
@@ -91,7 +97,7 @@ void print_info();
 
 inline constexpr const char *UCI_OPTION_NAME = "EvalFile";
 
-int evaluate(int side_to_move, const Accumulator &acc);
+int evaluate(int side_to_move, int piece_count, const Accumulator &acc);
 
 } // namespace NNUE
 
