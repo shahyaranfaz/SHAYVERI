@@ -35,6 +35,8 @@ scripts/elo_pin/current_run_id
 
 future_plans.txt
 
+dev
+
 *.pgn
 *.exe
 *.xml
