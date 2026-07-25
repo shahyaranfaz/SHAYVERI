@@ -1,4 +1,4 @@
-# Changelog
+# SHAYVERI Changelog
 
 This changelog records SHAYVERI engine releases. Each entry describes changes
 since the previous version. NNUE artifact names are recorded separately from

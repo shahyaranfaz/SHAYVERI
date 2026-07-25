@@ -120,6 +120,9 @@ To select between the `HCE` and `NNUE` evaluation paths, use the UCI option
 
 ## NNUE evaluation
 
+The supported NNUE architectures, binary formats, embedding behavior, and
+compatibility policy are documented in [`docs/NNUE.md`](docs/NNUE.md).
+
 The embedded default, `SHAYVERI2_5_0.nnue`, is a `KB16x512` network: Chess768
 features split across 16 mirrored king buckets, a 512-wide hidden layer, and
 SCReLU activation. Search keeps both perspectives in incrementally updated

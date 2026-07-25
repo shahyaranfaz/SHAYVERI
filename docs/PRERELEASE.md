@@ -1,4 +1,4 @@
-# Release Checklist
+# SHAYVERI Release Checklist
 
 Use this checklist for every published SHAYVERI release. Commands use
 `v2.9.0` as an example.
