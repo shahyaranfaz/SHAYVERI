@@ -29,13 +29,6 @@ extern const U8 EMBEDDED_DEFAULT_NET[];
 extern const std::size_t EMBEDDED_DEFAULT_NET_SIZE;
 
 struct Accumulator {
-    struct Delta {
-        int add_w;
-        int add_b;
-        int sub_w;
-        int sub_b;
-    };
-
     I16 vals[2][MAX_HIDDEN_SIZE]{};
 
     Accumulator() { reset(); }
@@ -43,8 +36,6 @@ struct Accumulator {
     void reset();
     void refresh(const Board &board);
     void refresh_perspective(const Board &board, int perspective);
-    void apply_delta(int add_white, int add_black, int sub_white, int sub_black);
-    void apply_deltas(const Delta *deltas, int count);
 };
 
 inline int chess768_index(int piece_type, int piece_colour, int sq, int perspective) {
@@ -83,12 +74,6 @@ inline int feature_index(int piece_type, int piece_colour, int sq, int perspecti
     const int base      = chess768_index(piece_type, piece_colour, sq, perspective);
     const int bucket    = king_bucket_index(perspective_king_sq, perspective, king_bucket_count());
     return bucket * CHESS768_INPUT_SIZE + (base ^ flip);
-}
-
-inline void chess768_indices(int piece_type, int piece_colour, int sq,
-                             int &white_idx, int &black_idx) {
-    white_idx = chess768_index(piece_type, piece_colour, sq, 0);
-    black_idx = chess768_index(piece_type, piece_colour, sq, 1);
 }
 
 inline void feature_indices(int piece_type, int piece_colour, int sq,

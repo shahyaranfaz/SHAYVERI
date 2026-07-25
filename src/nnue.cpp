@@ -380,6 +380,34 @@ void Accumulator::refresh_perspective(const Board &board, int perspective) {
     const Square perspective_king_sq = king_square(
         board, static_cast<Colour>(perspective));
 
+#ifdef __AVX2__
+    int indices[64];
+    int feature_count = 0;
+    for (int p = 1; p < PIECE_COUNT; ++p) {
+        U64 bb = board.bit_boards[p];
+        while (bb) {
+            const Square sq = pop_lsb(bb);
+            const Piece piece = Piece(p);
+            indices[feature_count++] = feature_index(
+                piece_type_index(piece), piece_colour_index(piece), sq,
+                perspective, perspective_king_sq);
+        }
+    }
+
+    constexpr int LANES = sizeof(__m256i) / sizeof(I16);
+    for (int i = 0; i < g_hidden_size; i += LANES) {
+        __m256i value = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i *>(feature_bias + i));
+        for (int feature = 0; feature < feature_count; ++feature) {
+            value = _mm256_add_epi16(
+                value, _mm256_loadu_si256(
+                    reinterpret_cast<const __m256i *>(
+                        feature_weights[indices[feature]] + i)));
+        }
+        _mm256_storeu_si256(
+            reinterpret_cast<__m256i *>(vals[perspective] + i), value);
+    }
+#else
     for (int i = 0; i < g_hidden_size; ++i)
         vals[perspective][i] = feature_bias[i];
 
@@ -395,31 +423,7 @@ void Accumulator::refresh_perspective(const Board &board, int perspective) {
                 vals[perspective][i] += feature_weights[index][i];
         }
     }
-}
-
-void Accumulator::apply_delta(int add_white, int add_black,
-                              int sub_white, int sub_black) {
-    for (int i = 0; i < g_hidden_size; ++i) {
-        const int white_value = static_cast<int>(vals[0][i])
-            + feature_weights[add_white][i] - feature_weights[sub_white][i];
-        const int black_value = static_cast<int>(vals[1][i])
-            + feature_weights[add_black][i] - feature_weights[sub_black][i];
-        vals[0][i] = static_cast<I16>(white_value);
-        vals[1][i] = static_cast<I16>(black_value);
-    }
-}
-
-void Accumulator::apply_deltas(const Delta *deltas, int count) {
-    for (int i = 0; i < g_hidden_size; ++i) {
-        int dw = 0;
-        int db = 0;
-        for (int k = 0; k < count; ++k) {
-            dw += feature_weights[deltas[k].add_w][i] - feature_weights[deltas[k].sub_w][i];
-            db += feature_weights[deltas[k].add_b][i] - feature_weights[deltas[k].sub_b][i];
-        }
-        vals[0][i] += static_cast<I16>(dw);
-        vals[1][i] += static_cast<I16>(db);
-    }
+#endif
 }
 
 #ifdef __AVX2__

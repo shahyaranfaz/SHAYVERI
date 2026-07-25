@@ -4,6 +4,7 @@
 #include "make.h"
 
 #include <cstdlib>
+#include <immintrin.h>
 
 namespace SHAYVERI {
 
@@ -15,15 +16,74 @@ int piece_type_index(PieceType pt) {
     return static_cast<int>(pt) - 1;
 }
 
+inline void add_row(I16 *destination, const I16 *source, int count) {
+    int i = 0;
+#ifdef __AVX2__
+    for (; i + 16 <= count; i += 16) {
+        const __m256i dst = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i *>(destination + i));
+        const __m256i add = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i *>(source + i));
+        _mm256_storeu_si256(reinterpret_cast<__m256i *>(destination + i),
+                            _mm256_add_epi16(dst, add));
+    }
+#endif
+    for (; i < count; ++i) destination[i] += source[i];
+}
+
+inline void sub_row(I16 *destination, const I16 *source, int count) {
+    int i = 0;
+#ifdef __AVX2__
+    for (; i + 16 <= count; i += 16) {
+        const __m256i dst = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i *>(destination + i));
+        const __m256i sub = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i *>(source + i));
+        _mm256_storeu_si256(reinterpret_cast<__m256i *>(destination + i),
+                            _mm256_sub_epi16(dst, sub));
+    }
+#endif
+    for (; i < count; ++i) destination[i] -= source[i];
+}
+
+inline void copy_add_sub(I16 *destination, const I16 *source,
+                         const I16 *add, const I16 *sub,
+                         const I16 *second_sub, int count) {
+    int i = 0;
+#ifdef __AVX2__
+    for (; i + 16 <= count; i += 16) {
+        __m256i value = _mm256_loadu_si256(
+            reinterpret_cast<const __m256i *>(source + i));
+        value = _mm256_add_epi16(
+            value, _mm256_loadu_si256(
+                reinterpret_cast<const __m256i *>(add + i)));
+        value = _mm256_sub_epi16(
+            value, _mm256_loadu_si256(
+                reinterpret_cast<const __m256i *>(sub + i)));
+        if (second_sub) {
+            value = _mm256_sub_epi16(
+                value, _mm256_loadu_si256(
+                    reinterpret_cast<const __m256i *>(second_sub + i)));
+        }
+        _mm256_storeu_si256(
+            reinterpret_cast<__m256i *>(destination + i), value);
+    }
+#endif
+    for (; i < count; ++i) {
+        int value = static_cast<int>(source[i]) + add[i] - sub[i];
+        if (second_sub) value -= second_sub[i];
+        destination[i] = static_cast<I16>(value);
+    }
+}
+
 void acc_add(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square black_king_sq) {
     int wi = 0;
     int bi = 0;
     feature_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
                     sq, white_king_sq, black_king_sq, wi, bi);
-    for (int i = 0; i < active_hidden_size(); ++i) {
-        acc.vals[0][i] += feature_weights[wi][i];
-        acc.vals[1][i] += feature_weights[bi][i];
-    }
+    const int hidden = active_hidden_size();
+    add_row(acc.vals[0], feature_weights[wi], hidden);
+    add_row(acc.vals[1], feature_weights[bi], hidden);
 }
 
 void acc_sub(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square black_king_sq) {
@@ -31,10 +91,9 @@ void acc_sub(Accumulator &acc, Piece p, Square sq, Square white_king_sq, Square 
     int bi = 0;
     feature_indices(piece_type_index(get_type(p)), static_cast<int>(get_colour(p)),
                     sq, white_king_sq, black_king_sq, wi, bi);
-    for (int i = 0; i < active_hidden_size(); ++i) {
-        acc.vals[0][i] -= feature_weights[wi][i];
-        acc.vals[1][i] -= feature_weights[bi][i];
-    }
+    const int hidden = active_hidden_size();
+    sub_row(acc.vals[0], feature_weights[wi], hidden);
+    sub_row(acc.vals[1], feature_weights[bi], hidden);
 }
 
 } // namespace
@@ -68,12 +127,11 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
                 piece_type, piece_colour, from,
                 stable_perspective, stable_king_sq);
 
-            for (int i = 0; i < active_hidden_size(); ++i) {
-                child.vals[stable_perspective][i] = static_cast<I16>(
-                    static_cast<int>(parent.vals[stable_perspective][i])
-                    + feature_weights[add_index][i]
-                    - feature_weights[sub_index][i]);
-            }
+            copy_add_sub(child.vals[stable_perspective],
+                         parent.vals[stable_perspective],
+                         feature_weights[add_index],
+                         feature_weights[sub_index], nullptr,
+                         active_hidden_size());
             child.refresh_perspective(post, refreshed_perspective);
             return;
         }
@@ -101,14 +159,13 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
         feature_indices(piece_type, piece_colour, from,
                         white_king_sq, black_king_sq,
                         sub_white, sub_black);
-        for (int i = 0; i < active_hidden_size(); ++i) {
-            child.vals[0][i] = static_cast<I16>(
-                static_cast<int>(parent.vals[0][i])
-                + feature_weights[add_white][i] - feature_weights[sub_white][i]);
-            child.vals[1][i] = static_cast<I16>(
-                static_cast<int>(parent.vals[1][i])
-                + feature_weights[add_black][i] - feature_weights[sub_black][i]);
-        }
+        const int hidden = active_hidden_size();
+        copy_add_sub(child.vals[0], parent.vals[0],
+                     feature_weights[add_white], feature_weights[sub_white],
+                     nullptr, hidden);
+        copy_add_sub(child.vals[1], parent.vals[1],
+                     feature_weights[add_black], feature_weights[sub_black],
+                     nullptr, hidden);
         return;
     }
 
@@ -134,18 +191,15 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
                         white_king_sq, black_king_sq,
                         capture_sub_white, capture_sub_black);
 
-        for (int i = 0; i < active_hidden_size(); ++i) {
-            child.vals[0][i] = static_cast<I16>(
-                static_cast<int>(parent.vals[0][i])
-                + feature_weights[add_white][i]
-                - feature_weights[move_sub_white][i]
-                - feature_weights[capture_sub_white][i]);
-            child.vals[1][i] = static_cast<I16>(
-                static_cast<int>(parent.vals[1][i])
-                + feature_weights[add_black][i]
-                - feature_weights[move_sub_black][i]
-                - feature_weights[capture_sub_black][i]);
-        }
+        const int hidden = active_hidden_size();
+        copy_add_sub(child.vals[0], parent.vals[0],
+                     feature_weights[add_white],
+                     feature_weights[move_sub_white],
+                     feature_weights[capture_sub_white], hidden);
+        copy_add_sub(child.vals[1], parent.vals[1],
+                     feature_weights[add_black],
+                     feature_weights[move_sub_black],
+                     feature_weights[capture_sub_black], hidden);
         return;
     }
 
