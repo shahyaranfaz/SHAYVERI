@@ -24,6 +24,51 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
+### v2.9.0 - Design Debt and Speed Overhaul
+
+**Default network:** embedded `SHAYVERI2_5_0.nnue`.
+
+- Reduced the sliding-attack allocation from approximately 35.3 MiB to
+  approximately 0.82 MiB by excluding irrelevant edge occupancy and packing
+  exact-size PEXT tables. Added exhaustive subset comparison against ray
+  generation.
+- Batched shared node publication instead of incrementing one atomic at every
+  node. Introduced explicit search contexts for TT, stop, and node-limit
+  ownership; removed the thread-local active-TT switch; reused per-thread
+  heuristic and search-stack storage; and removed the main-thread history
+  copy-in/copy-out. Fixed-node searches remain exact.
+- Replaced the unaligned, bucket-locked TT with an aligned four-way,
+  two-cache-line cluster using independently published race-safe slots.
+  Preserved four-way replacement behavior, added child-position prefetching,
+  and expanded collision, replacement, and concurrent-publication tests.
+- Vectorized common NNUE accumulator add/subtract, copy-plus-delta, and
+  perspective-refresh operations with AVX2 while retaining bit-identical
+  accumulator tests across classic, king-bucketed, and default networks.
+- Added an incremental pawn Zobrist key and comprehensive board consistency
+  checks. Unmake now restores saved hashes without repeating discarded hash
+  work.
+- Split trusted generated-move execution from checked external move handling.
+  Added malformed-move coverage and randomized checked-versus-trusted
+  equivalence checks across 109,846 make/unmake round trips.
+- Added threshold SEE fast exits, corrected an exchange back-propagation bug,
+  and removed Board copies from quiet SEE. Threshold results are checked
+  against numeric SEE across 5,598 deterministic randomized comparisons.
+- Moved generated opening-book data from a multiply included 1.87 MiB header
+  into one source file, and extracted move I/O and null-move mutation from the
+  search module.
+- Removed unused generic NNUE delta/index APIs and the obsolete classical
+  Texel-tuning implementation. The SPSA tuning registry and inline tuning
+  variables remain intact.
+- On the same 153-case, five-run profiling matrix, median bench NPS improved
+  by 45.9%; fixed-node NPS improved by 10.7% to 39.4% across the four
+  representative positions; and 16-thread timed NPS improved by 36.7% to
+  72.3%. The corrected fixed bench signature is `102293` nodes, a 0.42%
+  increase caused by the SEE correctness fix.
+- Rejected a two-way TT and deferred static-eval insertion after they changed
+  the fixed-depth search substantially without strength evidence. A 100-game
+  varied-opening smoke match completed without engine or protocol failures;
+  its result was statistically inconclusive, so no Elo claim is made.
+
 ### v2.8.0 - Speed Overhaul
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.

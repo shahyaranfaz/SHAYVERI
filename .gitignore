@@ -5,6 +5,7 @@ SHAYVERI_mac
 SHAYVERI_pgo
 
 build/
+dev/
 
 debug/perft
 debug/legality
