@@ -13,12 +13,17 @@ using SHAYVERI::Move;
 using SHAYVERI::MoveList;
 using SHAYVERI::Undo;
 using SHAYVERI::MOVE_NONE;
+using SHAYVERI::File;
+using SHAYVERI::Rank;
+using SHAYVERI::create_ep_move;
+using SHAYVERI::create_move;
 using SHAYVERI::find_first_legal_move;
 using SHAYVERI::generate_legal_moves;
 using SHAYVERI::generate_pseudo_legal_moves;
 using SHAYVERI::init_attacks;
 using SHAYVERI::is_legal_move;
 using SHAYVERI::make_move;
+using SHAYVERI::make_generated_move;
 using SHAYVERI::set_from_fen;
 using SHAYVERI::unmake_move;
 
@@ -27,6 +32,7 @@ static bool boards_equal(const Board &a, const Board &b) {
         && a.occupancies == b.occupancies
         && a.mailbox == b.mailbox
         && a.hash == b.hash
+        && a.pawn_hash == b.pawn_hash
         && a.occupied == b.occupied
         && a.side_to_move == b.side_to_move
         && a.en_passant == b.en_passant
@@ -44,7 +50,11 @@ static bool verify_roundtrip(Board &b, int depth, int &checked) {
         const Board before = b;
 
         Undo u;
-        if (!make_move(b, m, u)) continue;
+        if (!make_generated_move(b, m, u)) continue;
+        if (!b.is_consistent()
+            || b.hash != SHAYVERI::Zobrist::compute(b)
+            || b.pawn_hash != SHAYVERI::Zobrist::compute_pawns(b))
+            return false;
         ++checked;
 
         if (!verify_roundtrip(b, depth - 1, checked)) return false;
@@ -69,6 +79,22 @@ static bool verify_legality_helpers(Board &b) {
 
     const MoveList pseudo = generate_pseudo_legal_moves(b);
     for (int i = 0; i < pseudo.count; ++i) {
+        Board checked = b;
+        Board trusted = b;
+        Undo checked_undo;
+        Undo trusted_undo;
+        const bool checked_legal = make_move(checked, pseudo.moves[i], checked_undo);
+        const bool trusted_legal =
+            make_generated_move(trusted, pseudo.moves[i], trusted_undo);
+        if (checked_legal != trusted_legal || !boards_equal(checked, trusted))
+            return false;
+        if (checked_legal) {
+            unmake_move(checked, pseudo.moves[i], checked_undo);
+            unmake_move(trusted, pseudo.moves[i], trusted_undo);
+            if (!boards_equal(checked, b) || !boards_equal(trusted, b))
+                return false;
+        }
+
         bool legal_match = false;
         for (int j = 0; j < legal.count; ++j) {
             if (pseudo.moves[i] == legal.moves[j]) {
@@ -84,9 +110,40 @@ static bool verify_legality_helpers(Board &b) {
     return true;
 }
 
+static bool verify_malformed_moves() {
+    Board b;
+    if (!SHAYVERI::set_startpos(b)) return false;
+    const Board before = b;
+
+    const Move malformed[] = {
+        create_move(SHAYVERI::make_square(File::FILE_A, Rank::RANK_1),
+                    SHAYVERI::make_square(File::FILE_A, Rank::RANK_4)),
+        create_move(SHAYVERI::make_square(File::FILE_E, Rank::RANK_2),
+                    SHAYVERI::make_square(File::FILE_E, Rank::RANK_5)),
+        create_move(SHAYVERI::make_square(File::FILE_B, Rank::RANK_1),
+                    SHAYVERI::make_square(File::FILE_D, Rank::RANK_2)),
+        create_move(SHAYVERI::make_square(File::FILE_E, Rank::RANK_2),
+                    SHAYVERI::make_square(File::FILE_E, Rank::RANK_3),
+                    SHAYVERI::QUEEN),
+        create_ep_move(SHAYVERI::make_square(File::FILE_E, Rank::RANK_2),
+                       SHAYVERI::make_square(File::FILE_D, Rank::RANK_3)),
+    };
+    for (Move move : malformed) {
+        Undo undo;
+        if (make_move(b, move, undo) || !boards_equal(b, before))
+            return false;
+    }
+    return true;
+}
+
 int main() {
     SHAYVERI::Zobrist::init();
     init_attacks();
+
+    if (!verify_malformed_moves()) {
+        std::cerr << "[FAIL] malformed move validation\n";
+        return 2;
+    }
 
     std::vector<std::pair<std::string, std::string>> roots = {
         {"Start position", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},

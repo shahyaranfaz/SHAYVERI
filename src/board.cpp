@@ -12,6 +12,7 @@ void Board::clear() {
     occupancies.fill(0);
     mailbox.fill(NONE_PIECE);
     hash         = 0;
+    pawn_hash    = 0;
     occupied     = 0;
     side_to_move = WHITE;
     castling     = 0;
@@ -39,6 +40,61 @@ void Board::recompute_all() {
 
 Piece Board::get_piece(Square s) const {
     return mailbox[s];
+}
+
+bool Board::is_consistent() const {
+    if (side_to_move != WHITE && side_to_move != BLACK) return false;
+    if (castling < 0 || castling > 15) return false;
+    if (en_passant != SQ_NONE && !is_valid(en_passant)) return false;
+
+    U64 white = 0;
+    U64 black = 0;
+    U64 all = 0;
+    for (int p = 1; p < PIECE_COUNT; ++p) {
+        const U64 pieces = bit_boards[p];
+        if (all & pieces) return false;
+        all |= pieces;
+        if (get_colour(Piece(p)) == WHITE) white |= pieces;
+        else                               black |= pieces;
+    }
+    if (occupancies[WHITE] != white || occupancies[BLACK] != black
+        || occupied != all || (white & black))
+        return false;
+
+    for (int sq = 0; sq < 64; ++sq) {
+        Piece expected = NONE_PIECE;
+        for (int p = 1; p < PIECE_COUNT; ++p) {
+            if (bit_boards[p] & bb_square(Square(sq))) {
+                expected = Piece(p);
+                break;
+            }
+        }
+        if (mailbox[sq] != expected) return false;
+    }
+
+    return hash == Zobrist::compute(*this)
+        && pawn_hash == Zobrist::compute_pawns(*this);
+}
+
+bool Board::is_plausible_position() const {
+    if (__builtin_popcountll(bit_boards[WK]) != 1
+        || __builtin_popcountll(bit_boards[BK]) != 1
+        || __builtin_popcountll(occupied) > 32
+        || half_move < 0 || full_move < 1)
+        return false;
+
+    if (en_passant != SQ_NONE) {
+        const Rank expected_rank = side_to_move == WHITE ? RANK_6 : RANK_3;
+        if (get_rank(en_passant) != expected_rank
+            || get_piece(en_passant) != NONE_PIECE)
+            return false;
+        const Square pawn_square = side_to_move == WHITE
+            ? en_passant - 8 : en_passant + 8;
+        const Piece expected_pawn = side_to_move == WHITE ? BP : WP;
+        if (!is_valid(pawn_square) || get_piece(pawn_square) != expected_pawn)
+            return false;
+    }
+    return true;
 }
 
 std::string square_to_coord(Square s) {

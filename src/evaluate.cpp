@@ -292,26 +292,11 @@ struct PawnHashEntry {
     bool valid = false;
 };
 
-static U64 pawn_hash_key(const Board &b) {
-    U64 key = 0;
-    U64 white = b.bit_boards[WP];
-    U64 black = b.bit_boards[BP];
-    while (white) {
-        Square sq = pop_lsb(white);
-        key ^= Zobrist::pieces[WP][sq];
-    }
-    while (black) {
-        Square sq = pop_lsb(black);
-        key ^= Zobrist::pieces[BP][sq];
-    }
-    return key;
-}
-
 static void evaluate_pawn_hash(const Board &b, int &mg, int &eg) {
     static constexpr std::size_t PAWN_HASH_SIZE = 1 << 16;
     thread_local std::array<PawnHashEntry, PAWN_HASH_SIZE> pawn_hash{};
 
-    U64 key = pawn_hash_key(b);
+    U64 key = b.pawn_hash;
     PawnHashEntry &entry = pawn_hash[static_cast<std::size_t>(key) & (PAWN_HASH_SIZE - 1)];
     if (entry.valid && entry.key == key) {
         mg += entry.mg;

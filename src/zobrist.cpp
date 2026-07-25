@@ -49,6 +49,18 @@ U64 compute(const Board &b) {
     return h;
 }
 
+U64 compute_pawns(const Board &b) {
+    U64 h = 0;
+    for (Piece pawn : {WP, BP}) {
+        U64 bb = b.bit_boards[pawn];
+        while (bb) {
+            const Square sq = pop_lsb(bb);
+            h ^= pieces[pawn][sq];
+        }
+    }
+    return h;
+}
+
 } // namespace Zobrist
 
 } // namespace SHAYVERI

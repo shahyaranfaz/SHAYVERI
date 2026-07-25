@@ -71,6 +71,7 @@ static Board mirror_and_swap(const Board &src) {
     out.full_move = src.full_move;
     out.recompute_all();
     out.hash = SHAYVERI::Zobrist::compute(out);
+    out.pawn_hash = SHAYVERI::Zobrist::compute_pawns(out);
     return out;
 }
 

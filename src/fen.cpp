@@ -2,6 +2,7 @@
 
 #include "zobrist.h"
 
+#include <cassert>
 #include <sstream>
 #include <string>
 
@@ -76,12 +77,12 @@ bool set_from_fen(Board &b, const std::string &fen) {
     // Preserve the invariants required by move generation and NNUE evaluation.
     // Promotions replace pawns, so no legally reachable position can contain
     // more than the initial 32 pieces.
-    if (__builtin_popcountll(parsed.bit_boards[WK]) != 1 ||
-        __builtin_popcountll(parsed.bit_boards[BK]) != 1 ||
-        __builtin_popcountll(parsed.occupied) > 32)
+    if (!parsed.is_plausible_position())
         return false;
 
     parsed.hash = Zobrist::compute(parsed);
+    parsed.pawn_hash = Zobrist::compute_pawns(parsed);
+    assert(parsed.is_consistent());
     b = parsed;
     return true;
 }

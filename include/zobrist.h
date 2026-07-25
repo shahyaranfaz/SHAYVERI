@@ -14,6 +14,7 @@ extern U64 en_passants[8];
 
 void init();
 U64  compute(const Board &b);
+U64  compute_pawns(const Board &b);
 
 } // namespace Zobrist
 

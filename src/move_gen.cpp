@@ -132,7 +132,7 @@ static Move find_matching_legal_move(Board &b, Move target, bool find_first) {
         if (!find_first && move != target) continue;
 
         Undo u;
-        if (!make_move(b, move, u)) continue;
+        if (!make_generated_move(b, move, u)) continue;
         unmake_move(b, move, u);
         return move;
     }
@@ -186,7 +186,7 @@ MoveList generate_legal_moves(Board &b) {
     for (int i = 0; i < pseudo.count; ++i) {
         const Move move = pseudo.moves[i];
         Undo u;
-        if (!make_move(b, move, u)) continue;
+        if (!make_generated_move(b, move, u)) continue;
         legal.add(move);
         unmake_move(b, move, u);
     }

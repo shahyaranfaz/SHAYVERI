@@ -1,6 +1,7 @@
 #include "make.h"
 
 #include "attacks.h"
+#include "move_gen.h"
 #include "zobrist.h"
 
 #include <cassert>
@@ -18,20 +19,32 @@ static const int CASTLING_RIGHTS_MASK[64] = {
      7, 15, 15, 15,  3, 15, 15, 11
 };
 
-static void remove_piece(Board &b, Piece p, Square sq) {
+static void remove_piece_no_hash(Board &b, Piece p, Square sq) {
     b.bit_boards[p]               &= ~bb_square(sq);
     b.occupancies[get_colour(p)]  &= ~bb_square(sq);
     b.occupied                    &= ~bb_square(sq);
     b.mailbox[sq]                  = NONE_PIECE;
-    b.hash                        ^= Zobrist::pieces[p][sq];
 }
 
-static void add_piece(Board &b, Piece p, Square sq) {
+static void add_piece_no_hash(Board &b, Piece p, Square sq) {
     b.bit_boards[p]              |= bb_square(sq);
     b.occupancies[get_colour(p)] |= bb_square(sq);
     b.occupied                   |= bb_square(sq);
     b.mailbox[sq]                 = p;
+}
+
+static void remove_piece(Board &b, Piece p, Square sq) {
+    remove_piece_no_hash(b, p, sq);
+    b.hash                        ^= Zobrist::pieces[p][sq];
+    if (get_type(p) == PAWN)
+        b.pawn_hash ^= Zobrist::pieces[p][sq];
+}
+
+static void add_piece(Board &b, Piece p, Square sq) {
+    add_piece_no_hash(b, p, sq);
     b.hash                       ^= Zobrist::pieces[p][sq];
+    if (get_type(p) == PAWN)
+        b.pawn_hash ^= Zobrist::pieces[p][sq];
 }
 
 static void update_castling(Board &b, Square from, Square to) {
@@ -41,13 +54,12 @@ static void update_castling(Board &b, Square from, Square to) {
     b.hash     ^= Zobrist::castlings[b.castling];
 }
 
-bool make_move(Board &b, Move m, Undo &u) {
+bool make_generated_move(Board &b, Move m, Undo &u) {
     Square    from     = move_from(m);
     Square    to       = move_to(m);
     PieceType promo    = move_promo(m);
 
-    if (!is_valid(from) || !is_valid(to))
-        return false;
+    assert(is_valid(from) && is_valid(to));
 
     Piece     moved    = b.get_piece(from);
     Piece     captured = b.get_piece(to);
@@ -55,35 +67,29 @@ bool make_move(Board &b, Move m, Undo &u) {
         std::abs(get_file(from) - get_file(to)) == 2;
     CastleInfo castle{};
 
-    if (moved == NONE_PIECE || get_colour(moved) != b.side_to_move)
-        return false;
-    if (captured != NONE_PIECE && get_colour(captured) == b.side_to_move)
-        return false;
+    assert(moved != NONE_PIECE && get_colour(moved) == b.side_to_move);
+    assert(captured == NONE_PIECE || get_colour(captured) != b.side_to_move);
     if (promo != NONE_PTYPE) {
-        if (promo != KNIGHT && promo != BISHOP && promo != ROOK && promo != QUEEN)
-            return false;
-        if (get_type(moved) != PAWN)
-            return false;
-        Rank promo_rank = get_rank(to);
-        if ((b.side_to_move == WHITE && promo_rank != RANK_8) ||
-            (b.side_to_move == BLACK && promo_rank != RANK_1))
-            return false;
+        assert(promo == KNIGHT || promo == BISHOP || promo == ROOK || promo == QUEEN);
+        assert(get_type(moved) == PAWN);
+        assert((b.side_to_move == WHITE && get_rank(to) == RANK_8)
+            || (b.side_to_move == BLACK && get_rank(to) == RANK_1));
     }
     if (is_ep_move(m)) {
-        if (get_type(moved) != PAWN || to != b.en_passant || captured != NONE_PIECE)
-            return false;
-        Square cap_sq = (b.side_to_move == WHITE) ? to - 8 : to + 8;
-        if (!is_valid(cap_sq) || b.get_piece(cap_sq) != (b.side_to_move == WHITE ? BP : WP))
-            return false;
+        assert(get_type(moved) == PAWN && to == b.en_passant
+            && captured == NONE_PIECE);
+        assert(is_valid((b.side_to_move == WHITE) ? to - 8 : to + 8)
+            && b.get_piece((b.side_to_move == WHITE) ? to - 8 : to + 8)
+                == (b.side_to_move == WHITE ? BP : WP));
     }
     if (is_castle) {
         const Rank home = b.side_to_move == WHITE ? RANK_1 : RANK_8;
         const bool kingside = to == make_square(FILE_G, home);
-        if (from != make_square(FILE_E, home) ||
-            (!kingside && to != make_square(FILE_C, home))) return false;
+        assert(from == make_square(FILE_E, home)
+            && (kingside || to == make_square(FILE_C, home)));
         castle = castle_info(b.side_to_move, kingside);
-        if (!(b.castling & castle.required_right) ||
-            b.get_piece(castle.rook_from) != castle.rook) return false;
+        assert((b.castling & castle.required_right)
+            && b.get_piece(castle.rook_from) == castle.rook);
     }
 
     u.hash       = b.hash;
@@ -94,6 +100,7 @@ bool make_move(Board &b, Move m, Undo &u) {
     u.captured   = captured;
     u.was_ep     = false;
     u.was_castle = false;
+    u.pawn_hash  = b.pawn_hash;
 
     if (b.en_passant != SQ_NONE)
         b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
@@ -139,7 +146,18 @@ bool make_move(Board &b, Move m, Undo &u) {
         unmake_move(b, m, u);
         return false;
     }
+    assert(b.is_consistent());
     return true;
+}
+
+bool make_move(Board &b, Move m, Undo &u) {
+    if (m == MOVE_NONE) return false;
+    const MoveList pseudo = generate_pseudo_legal_moves(b);
+    for (int i = 0; i < pseudo.count; ++i) {
+        if (pseudo.moves[i] == m)
+            return make_generated_move(b, m, u);
+    }
+    return false;
 }
 
 void unmake_move(Board &b, Move m, const Undo &u) {
@@ -149,23 +167,23 @@ void unmake_move(Board &b, Move m, const Undo &u) {
     Square to          = move_to(m);
     Piece  moved_to_sq = b.get_piece(to);
 
-    remove_piece(b, moved_to_sq, to);
+    remove_piece_no_hash(b, moved_to_sq, to);
     Piece original = (move_promo(m) != NONE_PTYPE)
                      ? (b.side_to_move == WHITE ? WP : BP)
                      : moved_to_sq;
-    add_piece(b, original, from);
+    add_piece_no_hash(b, original, from);
 
     if (u.was_ep) {
         Square cap_sq = (b.side_to_move == WHITE) ? to - 8 : to + 8;
-        add_piece(b, u.captured, cap_sq);
+        add_piece_no_hash(b, u.captured, cap_sq);
     } else if (u.captured != NONE_PIECE) {
-        add_piece(b, u.captured, to);
+        add_piece_no_hash(b, u.captured, to);
     }
 
     if (u.was_castle) {
         const CastleInfo castle = castle_info(b.side_to_move, get_file(to) == FILE_G);
-        remove_piece(b, castle.rook, castle.rook_to);
-        add_piece(b, castle.rook, castle.rook_from);
+        remove_piece_no_hash(b, castle.rook, castle.rook_to);
+        add_piece_no_hash(b, castle.rook, castle.rook_from);
     }
 
     b.castling   = u.castling;
@@ -173,6 +191,38 @@ void unmake_move(Board &b, Move m, const Undo &u) {
     b.half_move  = u.half_move;
     b.full_move  = u.full_move;
     b.hash       = u.hash;
+    b.pawn_hash  = u.pawn_hash;
+    assert(b.is_consistent());
+}
+
+void make_null_move(Board &b, Undo &u) {
+    u.hash = b.hash;
+    u.pawn_hash = b.pawn_hash;
+    u.en_passant = b.en_passant;
+    u.half_move = b.half_move;
+    u.castling = b.castling;
+    u.captured = NONE_PIECE;
+    u.was_ep = false;
+    u.was_castle = false;
+
+    if (b.en_passant != SQ_NONE) {
+        b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
+        b.en_passant = SQ_NONE;
+    }
+    b.side_to_move = flip(b.side_to_move);
+    b.hash ^= Zobrist::sides;
+    ++b.half_move;
+    assert(b.is_consistent());
+}
+
+void unmake_null_move(Board &b, const Undo &u) {
+    b.side_to_move = flip(b.side_to_move);
+    b.en_passant = u.en_passant;
+    b.half_move = u.half_move;
+    b.castling = u.castling;
+    b.hash = u.hash;
+    b.pawn_hash = u.pawn_hash;
+    assert(b.is_consistent());
 }
 
 } // namespace SHAYVERI

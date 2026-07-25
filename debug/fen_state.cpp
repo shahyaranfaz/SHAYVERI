@@ -110,6 +110,10 @@ int main() {
         if (b.en_passant != tc.en_passant) ok = false;
         if (b.half_move != tc.halfmove) ok = false;
         if (b.full_move != tc.fullmove) ok = false;
+        if (!b.is_consistent() || !b.is_plausible_position()) ok = false;
+        if (b.hash != SHAYVERI::Zobrist::compute(b)
+            || b.pawn_hash != SHAYVERI::Zobrist::compute_pawns(b))
+            ok = false;
 
         for (const auto &p : tc.pieces) {
             if (b.get_piece(p.square) != p.piece) ok = false;
@@ -145,6 +149,20 @@ int main() {
             std::cerr << "[FAIL] malformed FEN accepted or changed board: " << fen << "\n";
             ++failures;
         }
+    }
+
+    Board corrupted;
+    set_startpos(corrupted);
+    corrupted.mailbox[make_square(File::FILE_A, Rank::RANK_2)] = NONE_PIECE;
+    if (corrupted.is_consistent()) {
+        std::cerr << "[FAIL] mailbox corruption was not detected\n";
+        ++failures;
+    }
+    set_startpos(corrupted);
+    corrupted.pawn_hash ^= 1;
+    if (corrupted.is_consistent()) {
+        std::cerr << "[FAIL] pawn-hash corruption was not detected\n";
+        ++failures;
     }
 
     if (failures == 0) {

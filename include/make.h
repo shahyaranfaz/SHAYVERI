@@ -15,6 +15,7 @@ struct Undo {
     bool   was_ep;
     bool   was_castle;
     U64    hash;
+    U64    pawn_hash;
 };
 
 struct CastleInfo {
@@ -41,8 +42,15 @@ constexpr Piece promotion_piece(Colour side, PieceType promotion) {
     return static_cast<Piece>(static_cast<int>(promotion) + (side == BLACK ? 6 : 0));
 }
 
+// Cold checked boundary for moves that did not come directly from the generator.
 bool make_move(Board &b, Move m, Undo &u);
+
+// Hot path for generator-produced moves. Structural validity is asserted in
+// debug builds; king safety is still checked and reported.
+bool make_generated_move(Board &b, Move m, Undo &u);
 void unmake_move(Board &b, Move m, const Undo &u);
+void make_null_move(Board &b, Undo &u);
+void unmake_null_move(Board &b, const Undo &u);
 
 } // namespace SHAYVERI
 

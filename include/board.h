@@ -21,6 +21,7 @@ struct Board {
     std::array<Piece, 64>          mailbox{};
 
     U64    hash         = 0;
+    U64    pawn_hash    = 0;
     U64    occupied     = 0;
     Colour side_to_move = WHITE;
     Square en_passant   = SQ_NONE;
@@ -31,6 +32,8 @@ struct Board {
     void  clear();
     void  recompute_all();
     Piece get_piece(Square s) const;
+    bool  is_consistent() const;
+    bool  is_plausible_position() const;
 };
 
 bool set_from_fen(Board &b, const std::string &fen);

@@ -167,7 +167,7 @@ static int check_position(Board &b, int &quiet_moves_checked,
 
         NNUE::Accumulator child;
         Undo u;
-        if (!make_move(copy, m, u))
+        if (!make_generated_move(copy, m, u))
             continue;
         NNUE::update_accumulator(child, parent, copy, m, u);
 
