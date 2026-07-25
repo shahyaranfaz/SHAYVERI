@@ -154,22 +154,57 @@ struct SearchHeuristics {
     }
 };
 
-static SearchHeuristics persistent_history;
-static thread_local std::unique_ptr<SearchHeuristics> worker_heuristics;
-static thread_local std::unique_ptr<StackInfo[]> worker_stack;
+struct SearchContext::Impl {
+    std::unique_ptr<SearchHeuristics> persistent_history;
 
-static StackInfo *prepare_worker_stack() {
-    if (!worker_stack)
-        worker_stack = std::make_unique<StackInfo[]>(MAX_PLY + 5);
-    for (int i = 0; i < MAX_PLY + 5; ++i) {
-        worker_stack[i].move = MOVE_NONE;
-        worker_stack[i].piece = NONE_PIECE;
-        worker_stack[i].excluded_move = MOVE_NONE;
-        worker_stack[i].static_eval = 0;
-        worker_stack[i].has_static_eval = false;
+    SearchHeuristics &histories() {
+        if (!persistent_history)
+            persistent_history = std::make_unique<SearchHeuristics>();
+        return *persistent_history;
     }
-    return worker_stack.get() + 2;
+};
+
+struct SearchWorker::Impl {
+    SearchThreadState thread;
+    SearchHeuristics heuristics;
+    std::unique_ptr<StackInfo[]> stack;
+
+    SearchThreadState &prepare_thread(
+        bool node_limited = false, U64 node_limit = 0) {
+        thread = {};
+        thread.local_node_limited_search = node_limited;
+        thread.local_node_limit = node_limit;
+        return thread;
+    }
+
+    StackInfo *prepare_stack() {
+        if (!stack)
+            stack = std::make_unique<StackInfo[]>(MAX_PLY + 5);
+        for (int i = 0; i < MAX_PLY + 5; ++i) {
+            stack[i].move = MOVE_NONE;
+            stack[i].piece = NONE_PIECE;
+            stack[i].excluded_move = MOVE_NONE;
+            stack[i].static_eval = 0;
+            stack[i].has_static_eval = false;
+        }
+        return stack.get() + 2;
+    }
+};
+
+SearchContext::SearchContext(TranspositionTable &transposition_table)
+    : table(transposition_table), impl(std::make_unique<Impl>()) {}
+
+SearchContext::~SearchContext() = default;
+
+void SearchContext::clear_histories() {
+    if (impl->persistent_history)
+        impl->persistent_history->clear();
 }
+
+SearchWorker::SearchWorker() : impl(std::make_unique<Impl>()) {}
+SearchWorker::~SearchWorker() = default;
+SearchWorker::SearchWorker(SearchWorker &&) noexcept = default;
+SearchWorker &SearchWorker::operator=(SearchWorker &&) noexcept = default;
 
 static inline int correction_history_index(const Board& b) {
     const U64 wp = b.bit_boards[WP];
@@ -208,10 +243,6 @@ static inline void update_correction_history(const Board& b, SearchHeuristics& H
     int abs_bonus = bonus < 0 ? -bonus : bonus;
     entry += bonus - entry * abs_bonus / max_entry;
     entry = std::clamp(entry, -max_entry, max_entry);
-}
-
-void clear_search_histories() {
-    persistent_history.clear();
 }
 
 static inline bool search_stopped(const SearchContext &context,
@@ -992,7 +1023,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
 static SearchResult search_impl(
     SearchContext &context, SearchThreadState &thread,
-    Board &b, int max_depth, const SearchRequest &request) {
+    Board &b, int max_depth, const SearchRequest &request,
+    SearchHeuristics &H, StackInfo *ss) {
 
     thread.node_count = 0;
     thread.pending_shared_nodes = 0;
@@ -1002,21 +1034,6 @@ static SearchResult search_impl(
         ~PendingNodePublisher() { publish_pending_nodes(context, thread); }
     } pending_node_publisher{context, thread};
 
-    const bool retain_history = request.emit_info && request.root_bias == 0;
-    SearchHeuristics *heuristics = nullptr;
-    if (retain_history) {
-        heuristics = &persistent_history;
-    } else {
-        if (!worker_heuristics)
-            worker_heuristics = std::make_unique<SearchHeuristics>();
-        else
-            worker_heuristics->clear();
-        heuristics = worker_heuristics.get();
-    }
-    SearchHeuristics &H = *heuristics;
-
-    // Stack setup to handle history states (allows up to ss[-2] safely at root)
-    StackInfo *ss = prepare_worker_stack();
     ss->acc.refresh(b);
 
     Move final_best_move  = MOVE_NONE;
@@ -1234,25 +1251,39 @@ static SearchResult search_impl(
 }
 
 SearchResult search(SearchContext &context,
+                    SearchWorker &worker,
                     Board &b, int max_depth,
                     const SearchRequest &request) {
-    SearchThreadState thread;
-    return search_impl(context, thread, b, max_depth, request);
+    SearchThreadState &thread = worker.impl->prepare_thread();
+    SearchHeuristics &heuristics = request.retain_history
+        ? context.impl->histories()
+        : worker.impl->heuristics;
+    if (!request.retain_history)
+        heuristics.clear();
+    StackInfo *stack = worker.impl->prepare_stack();
+    return search_impl(
+        context, thread, b, max_depth, request, heuristics, stack);
 }
 
 SearchResult search_nodes(SearchContext &context,
+                          SearchWorker &worker,
                           Board &b, U64 max_nodes,
                           const SearchRequest &request) {
-    SearchThreadState thread;
-    thread.local_node_limited_search = true;
-    thread.local_node_limit = max_nodes;
-    return search_impl(context, thread, b, MAX_PLY - 1, request);
+    SearchThreadState &thread =
+        worker.impl->prepare_thread(true, max_nodes);
+    SearchHeuristics &heuristics = request.retain_history
+        ? context.impl->histories()
+        : worker.impl->heuristics;
+    if (!request.retain_history)
+        heuristics.clear();
+    StackInfo *stack = worker.impl->prepare_stack();
+    return search_impl(
+        context, thread, b, MAX_PLY - 1, request, heuristics, stack);
 }
 
-int qsearch_score(SearchContext &context, Board &b) {
-    SearchThreadState thread;
-    thread.local_node_limited_search = true;
-    StackInfo *ss = prepare_worker_stack();
+int qsearch_score(SearchContext &context, SearchWorker &worker, Board &b) {
+    SearchThreadState &thread = worker.impl->prepare_thread(true);
+    StackInfo *ss = worker.impl->prepare_stack();
     ss->acc.refresh(b);
     U64 rep_stack[MAX_PLY * 2]{};
     rep_stack[0] = b.hash;

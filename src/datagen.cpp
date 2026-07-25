@@ -245,12 +245,13 @@ GameResult terminal_result(Board &b, const std::vector<U64> &history) {
     return {};
 }
 
-SearchResult fixed_node_search(SearchContext &context, Board &b,
+SearchResult fixed_node_search(SearchContext &context, SearchWorker &worker,
+                               Board &b,
                                const std::vector<U64> &history, U64 node_budget) {
     std::vector<Move> search_moves;
     context.table.new_search();
     return search_nodes(
-        context, b, node_budget,
+        context, worker, b, node_budget,
         SearchRequest{
             .repetition = history,
             .root_moves = search_moves,
@@ -580,6 +581,7 @@ void datagen_worker(int id,
     TranspositionTable local_tt;
     local_tt.resize(16);
     SearchContext search_context{local_tt};
+    SearchWorker search_worker;
 
     std::mt19937_64 rng(options.seed + static_cast<U64>(id) * DATAGEN_THREAD_PRIME);
     const std::string extension = output_is_bullet(options) ? ".bullet.bin" : ".plain";
@@ -618,9 +620,10 @@ void datagen_worker(int id,
             if (result.end != GameEnd::None) break;
 
             int qscore_white = score_to_white_pov(
-                b, qsearch_score(search_context, b));
+                b, qsearch_score(search_context, search_worker, b));
             SearchResult search_result = fixed_node_search(
-                search_context, b, history, options.search_nodes);
+                search_context, search_worker, b, history,
+                options.search_nodes);
 
             Move chosen = search_result.best_move;
             if (chosen == MOVE_NONE) {

@@ -8,19 +8,64 @@
 
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <span>
 #include <vector>
 
 namespace SHAYVERI {
 
+class SearchWorker;
+struct SearchRequest;
+struct SearchResult;
+
 struct SearchContext {
-    explicit SearchContext(TranspositionTable &transposition_table)
-        : table(transposition_table) {}
+    explicit SearchContext(TranspositionTable &transposition_table);
+    ~SearchContext();
+
+    SearchContext(const SearchContext &) = delete;
+    SearchContext &operator=(const SearchContext &) = delete;
+
+    void clear_histories();
 
     TranspositionTable &table;
     std::atomic<bool> stop{false};
     std::atomic<U64> nodes{0};
     std::atomic<U64> node_limit{0};
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl;
+
+    friend SearchResult search(
+        SearchContext &, SearchWorker &, Board &, int,
+        const SearchRequest &);
+    friend SearchResult search_nodes(
+        SearchContext &, SearchWorker &, Board &, U64,
+        const SearchRequest &);
+};
+
+class SearchWorker {
+public:
+    SearchWorker();
+    ~SearchWorker();
+
+    SearchWorker(SearchWorker &&) noexcept;
+    SearchWorker &operator=(SearchWorker &&) noexcept;
+
+    SearchWorker(const SearchWorker &) = delete;
+    SearchWorker &operator=(const SearchWorker &) = delete;
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl;
+
+    friend SearchResult search(
+        SearchContext &, SearchWorker &, Board &, int,
+        const SearchRequest &);
+    friend SearchResult search_nodes(
+        SearchContext &, SearchWorker &, Board &, U64,
+        const SearchRequest &);
+    friend int qsearch_score(SearchContext &, SearchWorker &, Board &);
 };
 
 // depth, best move, score, total nodes, elapsed ms, best-root-move node share
@@ -31,6 +76,7 @@ struct SearchRequest {
     std::span<const Move> root_moves{};
     IterCallback on_iteration{};
     bool emit_info = false;
+    bool retain_history = false;
     int root_bias = 0;
 };
 
@@ -55,15 +101,16 @@ SingularSearchDecision classify_singular_search(
 } // namespace SearchDetail
 
 SearchResult search(SearchContext &context,
+                    SearchWorker &worker,
                     Board &b, int max_depth,
                     const SearchRequest &request);
 
 SearchResult search_nodes(SearchContext &context,
+                          SearchWorker &worker,
                           Board &b, U64 max_nodes,
                           const SearchRequest &request);
 
-int qsearch_score(SearchContext &context, Board &b);
-void clear_search_histories();
+int qsearch_score(SearchContext &context, SearchWorker &worker, Board &b);
 
 } // namespace SHAYVERI
 

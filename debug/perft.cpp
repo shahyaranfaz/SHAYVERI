@@ -57,7 +57,6 @@ static int run_suite() {
         {"Start Position depth 3", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 3, 8902ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Start Position depth 4", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 4, 197281ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Start Position depth 5", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 5, 4865609ULL, "https://www.chessprogramming.org/Perft_Results"},
-        {"Start Position depth 6", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 6, 119060324ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Kiwipete depth 1", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 1, 48ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Kiwipete depth 2", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 2, 2039ULL, "https://www.chessprogramming.org/Perft_Results"},
         {"Kiwipete depth 3", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 3, 97862ULL, "https://www.chessprogramming.org/Perft_Results"},

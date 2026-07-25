@@ -49,7 +49,10 @@ pairing at LTC. The framework is described in
   between their transposition tables.
 - Replaced positional search configuration with an explicit request carrying
   repetition history, root-move restrictions, iteration callback, protocol
-  output policy, and helper-thread root bias.
+  output policy, history-retention policy, and helper-thread root bias.
+- Replaced process-global and thread-local search storage with explicit
+  ownership. Search contexts lazily own persistent history, while each UCI or
+  datagen worker owns its counters, scratch histories, and reusable ply stack.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
   two-cache-line cluster using independently published race-safe slots.
   Preserved four-way replacement behavior, added child-position prefetching,

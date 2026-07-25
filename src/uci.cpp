@@ -193,7 +193,7 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
         {"Hash", resize_hash_option},
         {"ClearHash", [](const std::string &) {
             TT.clear();
-            clear_search_histories();
+            uci_search_context.clear_histories();
         }},
         {"Threads", [](const std::string &v) { parse_spin(v, 1, 512, g_num_threads); }},
         {"UseNNUE", [](const std::string &v) {
@@ -201,7 +201,7 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
             if (!parse_bool_strict(v, enabled)) return;
             NNUE::set_enabled(enabled);
             TT.clear();
-            clear_search_histories();
+            uci_search_context.clear_histories();
         }},
         {NNUE::UCI_OPTION_NAME, [](const std::string &v) {
             std::string error;
@@ -211,7 +211,7 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
             }
             g_eval_file = v;
             TT.clear();
-            clear_search_histories();
+            uci_search_context.clear_histories();
             if (NNUE::is_enabled()) NNUE::print_info();
         }},
         {"OwnBook", [](const std::string &v) { parse_bool_strict(v, g_own_book); }},
@@ -531,7 +531,7 @@ int main(int argc, char **argv) {
             if (!handle_uci_option(opt_name, value) &&
                 Tune::handle_setoption(opt_name, value)) {
                 TT.clear();
-                clear_search_histories();
+                uci_search_context.clear_histories();
             }
         }
 
@@ -548,7 +548,7 @@ int main(int argc, char **argv) {
             hash_history.clear();
             hash_history.push_back(b.hash);
             TT.clear();
-            clear_search_histories();
+            uci_search_context.clear_histories();
             g_pondering.store(false);
         }
 
@@ -699,6 +699,7 @@ int main(int argc, char **argv) {
                 smp_threads.push_back(std::thread(
                     [b_copy, rep, searchmoves, root_depth, fixed_nodes,
                      book_info_search, book_move]() mutable {
+                        SearchWorker worker;
                         uci_search_context.nodes = 0;
                         uci_search_context.node_limit = fixed_nodes;
                         uci_search_context.stop = false;
@@ -708,13 +709,14 @@ int main(int argc, char **argv) {
                             .repetition = rep,
                             .root_moves = searchmoves,
                             .emit_info = true,
+                            .retain_history = true,
                         };
                         SearchResult result = fixed_nodes > 0
                             ? search_nodes(
-                                uci_search_context, b_copy, fixed_nodes,
+                                uci_search_context, worker, b_copy, fixed_nodes,
                                 request)
                             : search(
-                                uci_search_context, b_copy, root_depth,
+                                uci_search_context, worker, b_copy, root_depth,
                                 request);
                         uci_search_context.stop = true;
                         uci_search_context.node_limit = 0;
@@ -764,9 +766,10 @@ int main(int argc, char **argv) {
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
+                        SearchWorker worker;
                         std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
                         search(
-                            uci_search_context, b_copy, root_depth,
+                            uci_search_context, worker, b_copy, root_depth,
                             SearchRequest{
                                 .repetition = rep,
                                 .root_moves = searchmoves,
@@ -782,6 +785,7 @@ int main(int argc, char **argv) {
                 std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
                              book_info_search, book_move, time_manager]() mutable {
                     const Board root_board = b_copy;
+                    SearchWorker worker;
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
                     auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);
@@ -837,12 +841,13 @@ int main(int argc, char **argv) {
                     };
 
                     SearchResult result = search(
-                        uci_search_context, b_copy, root_depth,
+                        uci_search_context, worker, b_copy, root_depth,
                         SearchRequest{
                             .repetition = rep,
                             .root_moves = searchmoves,
                             .on_iteration = on_iter,
                             .emit_info = true,
+                            .retain_history = true,
                         });
 
                     // A ponder search that finishes naturally, for example on
@@ -898,10 +903,11 @@ int main(int argc, char **argv) {
             // discard state that could warm one invocation relative to another.
             stop_search();
             TT.clear();
-            clear_search_histories();
+            uci_search_context.clear_histories();
             uci_search_context.stop = false;
 
             U64 total_nodes = 0;
+            SearchWorker bench_worker;
             auto bench_start = std::chrono::steady_clock::now();
             std::cout << "Running bench...\n";
 
@@ -911,10 +917,11 @@ int main(int argc, char **argv) {
                 std::vector<Move> sm;
                 uci_search_context.nodes = 0;
                 SearchResult res = search(
-                    uci_search_context, bench_b, 10,
+                    uci_search_context, bench_worker, bench_b, 10,
                     SearchRequest{
                         .root_moves = sm,
                         .emit_info = true,
+                        .retain_history = true,
                     });
                 total_nodes += res.nodes;
             }
