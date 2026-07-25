@@ -3,6 +3,8 @@
 
 #include "board.h"
 #include "move.h"
+#include "move_io.h"
+#include "tt.h"
 
 #include <atomic>
 #include <functional>
@@ -10,9 +12,17 @@
 
 namespace SHAYVERI {
 
-extern std::atomic<bool> g_stop;
-extern std::atomic<U64>  node_count;
-extern std::atomic<U64>  node_limit;
+struct SearchContext {
+    explicit SearchContext(TranspositionTable &transposition_table)
+        : table(transposition_table) {}
+
+    TranspositionTable &table;
+    std::atomic<bool> stop{false};
+    std::atomic<U64> nodes{0};
+    std::atomic<U64> node_limit{0};
+};
+
+extern SearchContext DefaultSearchContext;
 
 // depth, best move, score, total nodes, elapsed ms, best-root-move node share
 using IterCallback = std::function<void(int, Move, int, U64, I64, double)>;
@@ -37,8 +47,13 @@ SingularSearchDecision classify_singular_search(
 
 } // namespace SearchDetail
 
-std::string move_to_uci(Move m);
-Move        uci_to_move(Board &b, const std::string &uci);
+SearchResult search(SearchContext &context,
+                    Board &b, int max_depth,
+                    const U64 *rep_init, int rep_init_len,
+                    const std::vector<Move> &search_moves,
+                    IterCallback on_iter = nullptr,
+                    bool silent = false,
+                    int root_bias = 0);
 
 SearchResult search(Board &b, int max_depth,
                     const U64 *rep_init, int rep_init_len,
@@ -47,12 +62,20 @@ SearchResult search(Board &b, int max_depth,
                     bool silent = false,
                     int root_bias = 0);
 
+SearchResult search_nodes(SearchContext &context,
+                          Board &b, U64 max_nodes,
+                          const U64 *rep_init, int rep_init_len,
+                          const std::vector<Move> &search_moves,
+                          bool silent = true,
+                          int root_bias = 0);
+
 SearchResult search_nodes(Board &b, U64 max_nodes,
                           const U64 *rep_init, int rep_init_len,
                           const std::vector<Move> &search_moves,
                           bool silent = true,
                           int root_bias = 0);
 
+int qsearch_score(SearchContext &context, Board &b);
 int qsearch_score(Board &b);
 void clear_search_histories();
 

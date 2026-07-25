@@ -28,26 +28,31 @@ struct TTEntry {
 
 static constexpr int TT_BUCKET_SIZE = 4;
 
-struct TTSlot {
+struct alignas(32) TTSlot {
+    std::atomic<U64> sequence{0};
     std::atomic<U64> key{0};
     std::atomic<U64> data{0};
     std::atomic<U64> meta{0};
 };
 
-struct TTBucket {
+struct alignas(64) TTBucket {
     TTSlot entries[TT_BUCKET_SIZE];
-    std::atomic<U64> sequence{0};
 };
+
+static_assert(sizeof(TTSlot) == 32);
+static_assert(sizeof(TTBucket) == 128);
 
 class TranspositionTable {
 public:
     void resize(SIZE_T mb);
     void clear();
     void new_search();
+    void prefetch(U64 key) const;
 
     const TTEntry *probe(U64 key) const;
 
-    void store(U64 key, int depth, int score, TTFlag flag, Move best);
+    void store(U64 key, int depth, int score, TTFlag flag, Move best,
+               int eval = 0, bool has_eval = false);
     void store_eval(U64 key, int eval);
 
 private:
@@ -58,9 +63,6 @@ private:
 };
 
 extern TranspositionTable TT;
-extern thread_local TranspositionTable *active_tt;
-
-TranspositionTable &tt();
 
 } // namespace SHAYVERI
 

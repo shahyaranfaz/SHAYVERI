@@ -245,11 +245,12 @@ GameResult terminal_result(Board &b, const std::vector<U64> &history) {
     return {};
 }
 
-SearchResult fixed_node_search(Board &b, const std::vector<U64> &history, U64 node_budget) {
+SearchResult fixed_node_search(SearchContext &context, Board &b,
+                               const std::vector<U64> &history, U64 node_budget) {
     std::vector<Move> search_moves;
-    tt().new_search();
+    context.table.new_search();
     return search_nodes(
-        b, node_budget,
+        context, b, node_budget,
         history.data(), static_cast<int>(history.size()),
         search_moves, true);
 }
@@ -387,7 +388,7 @@ bool play_twic_book_opening(Board &b,
         Move chosen = choose_opening_move(b, rng, legal, options);
 
         Undo u;
-        if (!make_move(b, chosen, u)) return false;
+        if (!make_generated_move(b, chosen, u)) return false;
         history.push_back(b.hash);
     }
 
@@ -576,6 +577,7 @@ void datagen_worker(int id,
 
     TranspositionTable local_tt;
     local_tt.resize(16);
+    SearchContext search_context{local_tt};
 
     std::mt19937_64 rng(options.seed + static_cast<U64>(id) * DATAGEN_THREAD_PRIME);
     const std::string extension = output_is_bullet(options) ? ".bullet.bin" : ".plain";
@@ -588,8 +590,6 @@ void datagen_worker(int id,
         failed.store(true, std::memory_order_relaxed);
         return;
     }
-    active_tt = &local_tt;
-
     Board b;
     std::vector<U64> history;
     history.reserve(512);
@@ -615,8 +615,10 @@ void datagen_worker(int id,
             result = terminal_result(b, history);
             if (result.end != GameEnd::None) break;
 
-            int qscore_white = score_to_white_pov(b, qsearch_score(b));
-            SearchResult search_result = fixed_node_search(b, history, options.search_nodes);
+            int qscore_white = score_to_white_pov(
+                b, qsearch_score(search_context, b));
+            SearchResult search_result = fixed_node_search(
+                search_context, b, history, options.search_nodes);
 
             Move chosen = search_result.best_move;
             if (chosen == MOVE_NONE) {
@@ -658,7 +660,7 @@ void datagen_worker(int id,
             }
 
             Undo u;
-            if (!make_move(b, chosen, u)) {
+            if (!make_generated_move(b, chosen, u)) {
                 result = {GameEnd::Draw, 1};
                 break;
             }
@@ -681,7 +683,6 @@ void datagen_worker(int id,
     }
 
     out.flush();
-    active_tt = &TT;
 }
 
 void write_summary(const DatagenOptions &options, const DatagenCounters &counters) {

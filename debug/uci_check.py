@@ -16,7 +16,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 101863
+BENCH_SIGNATURE_NODES = 102293
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:

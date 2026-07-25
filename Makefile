@@ -63,13 +63,14 @@ SRC := \
 	src/fen.cpp \
 	src/make.cpp \
 	src/move_gen.cpp \
+	src/move_io.cpp \
 	src/nnue.cpp \
 	src/nnue_avx2.cpp \
 	src/nnue_update.cpp \
+	src/opening_book.cpp \
 	src/search.cpp \
 	src/see.cpp \
 	src/uci.cpp \
-	src/texel.cpp \
 	src/time_manager.cpp \
 	src/tt.cpp \
 	src/zobrist.cpp
@@ -169,7 +170,7 @@ pgo-use: $(SRC) $(HEADERS)
 	printf 'uci\nisready\nbench 16 1 3 default depth\nquit\n' | ./$(PGO_BIN) > $(PGO_TRAIN_DIR)/optimized-check.txt
 	grep -q '^uciok$$' $(PGO_TRAIN_DIR)/optimized-check.txt
 	grep -q '^readyok$$' $(PGO_TRAIN_DIR)/optimized-check.txt
-	grep -q '^Nodes: 101863$$' $(PGO_TRAIN_DIR)/optimized-check.txt
+	grep -q '^Nodes: 102293$$' $(PGO_TRAIN_DIR)/optimized-check.txt
 
 pgo-report:
 	test -s $(PGO_TRAIN_DIR)/build-manifest.txt

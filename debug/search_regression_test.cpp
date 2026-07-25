@@ -31,11 +31,10 @@ Board board_from_fen(const char* fen) {
 
 void reset_search_state() {
     TT.clear();
-    active_tt = &TT;
     clear_search_histories();
-    g_stop = false;
-    node_count = 0;
-    node_limit = 0;
+    DefaultSearchContext.stop = false;
+    DefaultSearchContext.nodes = 0;
+    DefaultSearchContext.node_limit = 0;
 }
 
 void test_terminal_positions() {
@@ -127,12 +126,15 @@ void test_search_preserves_root_board() {
         "r3k2r/p1ppqpb1/bn2pnp1/2pP4/1p2P3/2N2N2/PPQBBPPP/R3K2R w KQkq - 0 1");
     const std::string before_fen = get_board_fen(board);
     const U64 before_hash = board.hash;
+    const U64 before_pawn_hash = board.pawn_hash;
 
     const SearchResult result = search(board, 5, nullptr, 0, {}, nullptr, true);
     expect(result.best_move != MOVE_NONE, "middlegame search returned no move");
     expect(get_board_fen(board) == before_fen,
            "search did not restore the root board state");
     expect(board.hash == before_hash, "search did not restore the root hash");
+    expect(board.pawn_hash == before_pawn_hash,
+           "search did not restore the root pawn hash");
 }
 
 void test_iteration_callback() {
@@ -257,7 +259,6 @@ int main() {
     Zobrist::init();
     init_attacks();
     TT.resize(16);
-    active_tt = &TT;
     NNUE::set_enabled(false);
 
     test_terminal_positions();

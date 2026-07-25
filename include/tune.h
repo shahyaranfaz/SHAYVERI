@@ -6,16 +6,10 @@
 #include "types.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <exception>
 #include <string>
 #include <unordered_map>
-#include <vector>
-
-#include <cstdint>
-
-namespace chess { class Board; }
 
 namespace SHAYVERI {
 
@@ -636,68 +630,6 @@ inline bool handle_setoption(const std::string& name, const std::string& value) 
     }
     return true;
 }
-
-#ifndef coefficients_t
-    #define coefficients_t std::vector<int16_t>
-#endif
-
-#ifndef tune_t
-    #define tune_t double
-#endif
-
-#ifndef pair_t
-    #define pair_t std::array<tune_t, 2>
-#endif
-
-#ifndef parameters_t
-    #define parameters_t std::vector<pair_t>
-#endif
-
-struct EvalResult {
-    coefficients_t coefficients;
-    tune_t         score         = 0;
-    tune_t         endgame_scale = 1;
-};
-
-enum class PhaseStages { Midgame = 0, Endgame = 1 };
-
-inline void push_pair(parameters_t& p, int mg, int eg) {
-    p.push_back({static_cast<tune_t>(mg), static_cast<tune_t>(eg)});
-}
-
-// Convert white and black feature counts into one coefficient.
-inline void push_coeff(coefficients_t& c, const I32 f[2]) {
-    c.push_back(static_cast<I16>(f[0] - f[1]));
-}
-inline void push_coeff_arr(coefficients_t& c, const I32 (*arr)[2], int n) {
-    for (int i = 0; i < n; ++i)
-        c.push_back(static_cast<I16>(arr[i][0] - arr[i][1]));
-}
-
-class TexelTuner {
-public:
-    // Texel tuner configuration.
-    constexpr static bool    includes_additional_score      = true;
-    constexpr static bool    supports_external_chess_eval   = false;
-    constexpr static bool    retune_from_zero               = false;
-    constexpr static tune_t  preferred_k                    = 0;
-    constexpr static I32     max_epoch                      = 4001;
-    constexpr static bool    enable_qsearch                 = false;
-    constexpr static bool    filter_in_check                = false;
-    constexpr static tune_t  initial_learning_rate          = 0.001;
-    constexpr static I32     learning_rate_drop_interval    = 1500;
-    constexpr static tune_t  learning_rate_drop_ratio       = 0.5;
-    constexpr static I32     data_load_print_interval       = 100000;
-
-    static parameters_t get_initial_parameters();
-
-    // Returns trace coefficients and static eval from White's perspective.
-    static EvalResult get_fen_eval_result(const std::string& fen);
-
-    static EvalResult get_external_eval_result(const chess::Board& board);
-
-    static void print_parameters(const parameters_t& parameters);
-};
 
 } // namespace Tune
 

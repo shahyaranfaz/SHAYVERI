@@ -59,6 +59,28 @@ int main() {
     if (!require(ee != nullptr, "probe eval-only key")) ++failures;
     if (ee && !require(ee->has_eval && ee->eval == -19, "eval-only payload mismatch")) ++failures;
 
+    // A normal 1 MiB table has 16,384 buckets. These keys therefore collide
+    // in one bucket and exercise four-way residency and depth replacement.
+    constexpr U64 bucket_stride = 16384;
+    const U64 collision_base = 0x1234;
+    for (int i = 0; i < 4; ++i)
+        tt.store(collision_base + static_cast<U64>(i) * bucket_stride,
+                 8 - i, 500 + i, TT_LOWER, MOVE_NONE);
+    for (int i = 0; i < 4; ++i) {
+        const TTEntry *collision =
+            tt.probe(collision_base + static_cast<U64>(i) * bucket_stride);
+        if (!require(collision != nullptr, "four-way collision entry missing"))
+            ++failures;
+    }
+    const U64 replacement_key = collision_base + 4 * bucket_stride;
+    tt.store(replacement_key, 9, 600, TT_EXACT, MOVE_NONE);
+    if (!require(tt.probe(replacement_key) != nullptr,
+                 "collision replacement entry missing"))
+        ++failures;
+    if (!require(tt.probe(collision_base + 3 * bucket_stride) == nullptr,
+                 "shallowest collision entry was not replaced"))
+        ++failures;
+
     // Multiple search threads share the TT. A probe must never observe the
     // score/depth pair from two different writers as one entry.
     const U64 shared_key = 0x55AA55AA55AA55AAULL;
