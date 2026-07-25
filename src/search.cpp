@@ -25,8 +25,6 @@
 
 namespace SHAYVERI {
 
-SearchContext DefaultSearchContext{TT};
-
 using namespace Tune;
 
 static constexpr U64 NODE_PUBLISH_BATCH = 1024;
@@ -1218,11 +1216,10 @@ static SearchResult search_impl(
                       << " nps " << nps
                       << " pv " << pv_line << "\n";
             std::cout.flush();
-
-            if (on_iter && !search_stopped(context, thread))
-                on_iter(depth, final_best_move, final_best_score, nodes, ms,
-                        best_move_node_fraction);
         }
+        if (on_iter && !search_stopped(context, thread))
+            on_iter(depth, final_best_move, final_best_score, nodes, ms,
+                    best_move_node_fraction);
 
         if (search_stopped(context, thread)) break;
     }
@@ -1242,15 +1239,6 @@ SearchResult search(SearchContext &context,
                        std::move(on_iter), silent, root_bias);
 }
 
-SearchResult search(Board &b, int max_depth,
-                    const U64 *rep_init, int rep_init_len,
-                    const std::vector<Move> &search_moves,
-                    IterCallback on_iter, bool silent, int root_bias) {
-    return search(DefaultSearchContext, b, max_depth,
-                  rep_init, rep_init_len, search_moves,
-                  std::move(on_iter), silent, root_bias);
-}
-
 SearchResult search_nodes(SearchContext &context,
                           Board &b, U64 max_nodes,
                           const U64 *rep_init, int rep_init_len,
@@ -1264,15 +1252,6 @@ SearchResult search_nodes(SearchContext &context,
                        nullptr, silent, root_bias);
 }
 
-SearchResult search_nodes(Board &b, U64 max_nodes,
-                          const U64 *rep_init, int rep_init_len,
-                          const std::vector<Move> &search_moves,
-                          bool silent, int root_bias) {
-    return search_nodes(DefaultSearchContext, b, max_nodes,
-                        rep_init, rep_init_len, search_moves,
-                        silent, root_bias);
-}
-
 int qsearch_score(SearchContext &context, Board &b) {
     SearchThreadState thread;
     thread.local_node_limited_search = true;
@@ -1284,10 +1263,6 @@ int qsearch_score(SearchContext &context, Board &b) {
         qsearch(context, thread, b, -INF, INF,
                 Tune::qs_start_depth, 0, ss, rep_stack, 1);
     return score;
-}
-
-int qsearch_score(Board &b) {
-    return qsearch_score(DefaultSearchContext, b);
 }
 
 } // namespace SHAYVERI

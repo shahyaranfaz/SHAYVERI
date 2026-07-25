@@ -40,6 +40,11 @@ pairing at LTC. The framework is described in
   found batching neutral at one thread while restoring per-node publication
   reduced timed NPS by roughly 23% to 41% at 8 threads and 46% to 60% at
   24 threads.
+- Removed the implicit global search-context entry points. UCI now owns and
+  passes its search context explicitly, and silent searches retain iteration
+  callback behavior independently of protocol output. Added a concurrent
+  regression that stops one context without affecting another and verifies
+  isolation between their transposition tables.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
   two-cache-line cluster using independently published race-safe slots.
   Preserved four-way replacement behavior, added child-position prefetching,

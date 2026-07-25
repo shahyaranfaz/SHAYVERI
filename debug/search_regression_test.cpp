@@ -10,11 +10,15 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <thread>
 #include <vector>
 
 using namespace SHAYVERI;
 
 namespace {
+
+TranspositionTable test_tt;
+SearchContext test_context{test_tt};
 
 void expect(bool condition, const char* message) {
     if (condition)
@@ -30,29 +34,32 @@ Board board_from_fen(const char* fen) {
 }
 
 void reset_search_state() {
-    TT.clear();
+    test_tt.clear();
     clear_search_histories();
-    DefaultSearchContext.stop = false;
-    DefaultSearchContext.nodes = 0;
-    DefaultSearchContext.node_limit = 0;
+    test_context.stop = false;
+    test_context.nodes = 0;
+    test_context.node_limit = 0;
 }
 
 void test_terminal_positions() {
     reset_search_state();
     Board mate = board_from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1");
-    SearchResult result = search(mate, 2, nullptr, 0, {}, nullptr, true);
+    SearchResult result = search(
+        test_context, mate, 2, nullptr, 0, {}, nullptr, true);
     expect(result.best_move == MOVE_NONE, "checkmate returned a root move");
     expect(result.score == -Tune::MATE_SCORE, "checkmate returned the wrong score");
 
     reset_search_state();
     Board mate_at_fifty = board_from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 100 1");
-    result = search(mate_at_fifty, 2, nullptr, 0, {}, nullptr, true);
+    result = search(
+        test_context, mate_at_fifty, 2, nullptr, 0, {}, nullptr, true);
     expect(result.score == -Tune::MATE_SCORE,
            "fifty-move handling overrode checkmate at the root");
 
     reset_search_state();
     Board stalemate = board_from_fen("7k/5Q2/7K/8/8/8/8/8 b - - 0 1");
-    result = search(stalemate, 2, nullptr, 0, {}, nullptr, true);
+    result = search(
+        test_context, stalemate, 2, nullptr, 0, {}, nullptr, true);
     expect(result.best_move == MOVE_NONE, "stalemate returned a root move");
     expect(result.score == 0, "stalemate returned a non-draw score");
 }
@@ -60,12 +67,14 @@ void test_terminal_positions() {
 void test_draw_rules() {
     reset_search_state();
     Board fifty_move = board_from_fen("7k/8/8/8/8/8/R7/K7 w - - 100 1");
-    SearchResult result = search(fifty_move, 2, nullptr, 0, {}, nullptr, true);
+    SearchResult result = search(
+        test_context, fifty_move, 2, nullptr, 0, {}, nullptr, true);
     expect(result.score == 0, "fifty-move position returned a non-draw score");
 
     reset_search_state();
     Board insufficient = board_from_fen("7k/8/8/8/8/8/8/K7 w - - 0 1");
-    result = search(insufficient, 2, nullptr, 0, {}, nullptr, true);
+    result = search(
+        test_context, insufficient, 2, nullptr, 0, {}, nullptr, true);
     expect(result.score == 0, "insufficient material returned a non-draw score");
 
     reset_search_state();
@@ -74,7 +83,8 @@ void test_draw_rules() {
     const Move repeated_move = uci_to_move(repetition, "g2f4");
     expect(repeated_move != MOVE_NONE, "failed to parse repetition test move");
     SearchResult baseline = search(
-        repetition, 1, nullptr, 0, {repeated_move}, nullptr, true);
+        test_context, repetition, 1, nullptr, 0,
+        {repeated_move}, nullptr, true);
     expect(baseline.score != 0, "repetition baseline unexpectedly scored as a draw");
 
     Board repeated_child = repetition;
@@ -84,19 +94,22 @@ void test_draw_rules() {
     const U64 history[] = {repetition.hash, repeated_child.hash, repetition.hash};
 
     reset_search_state();
-    result = search(repetition, 1, history, 3, {repeated_move}, nullptr, true);
+    result = search(
+        test_context, repetition, 1, history, 3,
+        {repeated_move}, nullptr, true);
     expect(result.score == 0, "repeated position returned a non-draw score");
 }
 
 void test_checked_qsearch() {
     reset_search_state();
     Board mate = board_from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1");
-    expect(qsearch_score(mate) == -Tune::MATE_SCORE,
+    expect(qsearch_score(test_context, mate) == -Tune::MATE_SCORE,
            "qsearch did not recognize checkmate");
 
     reset_search_state();
     Board evasion = board_from_fen("7k/8/8/8/8/8/7r/7K w - - 0 1");
-    expect(qsearch_score(evasion) > -Tune::MATE_SCORE + Tune::MAX_PLY,
+    expect(qsearch_score(test_context, evasion)
+               > -Tune::MATE_SCORE + Tune::MAX_PLY,
            "qsearch treated a position with a legal evasion as mate");
 }
 
@@ -106,12 +119,13 @@ void test_searchmoves_and_node_limit() {
     expect(set_startpos(board), "failed to initialize start position");
     const Move forced = uci_to_move(board, "e2e4");
     expect(forced != MOVE_NONE, "failed to parse forced root move");
-    SearchResult result = search(board, 2, nullptr, 0, {forced}, nullptr, true);
+    SearchResult result = search(
+        test_context, board, 2, nullptr, 0, {forced}, nullptr, true);
     expect(result.best_move == forced, "searchmoves restriction was not respected");
 
     reset_search_state();
     expect(set_startpos(board), "failed to reset start position");
-    result = search_nodes(board, 500, nullptr, 0, {});
+    result = search_nodes(test_context, board, 500, nullptr, 0, {});
     expect(result.nodes == 500, "fixed-node search missed its exact node limit");
     expect(result.best_move != MOVE_NONE, "fixed-node search returned no move");
     Board after = board;
@@ -128,7 +142,8 @@ void test_search_preserves_root_board() {
     const U64 before_hash = board.hash;
     const U64 before_pawn_hash = board.pawn_hash;
 
-    const SearchResult result = search(board, 5, nullptr, 0, {}, nullptr, true);
+    const SearchResult result = search(
+        test_context, board, 5, nullptr, 0, {}, nullptr, true);
     expect(result.best_move != MOVE_NONE, "middlegame search returned no move");
     expect(get_board_fen(board) == before_fen,
            "search did not restore the root board state");
@@ -152,7 +167,8 @@ void test_iteration_callback() {
         node_fractions.push_back(best_move_node_fraction);
     };
 
-    const SearchResult result = search(board, 4, nullptr, 0, {}, callback);
+    const SearchResult result = search(
+        test_context, board, 4, nullptr, 0, {}, callback);
     expect(result.depth == 4 && callback_depths.size() == 4,
            "iteration callback did not report every completed depth");
     for (int i = 0; i < 4; ++i) {
@@ -164,6 +180,83 @@ void test_iteration_callback() {
     expect(callback_moves.back() == result.best_move,
            "final callback best move differs from the search result");
     expect(result.nodes > 0, "search callback test visited no nodes");
+}
+
+void test_concurrent_context_isolation() {
+    TranspositionTable first_tt;
+    TranspositionTable second_tt;
+    first_tt.resize(4);
+    second_tt.resize(4);
+    SearchContext first_context{first_tt};
+    SearchContext second_context{second_tt};
+
+    Board first_board;
+    Board second_board;
+    expect(set_startpos(first_board), "failed to initialize first context board");
+    expect(set_startpos(second_board), "failed to initialize second context board");
+
+    std::atomic<int> ready{0};
+    std::atomic<bool> start{false};
+    SearchResult first_result;
+    SearchResult second_result;
+
+    std::thread first([&] {
+        ready.fetch_add(1, std::memory_order_release);
+        while (!start.load(std::memory_order_acquire)) {
+        }
+        IterCallback stop_after_first_iteration =
+            [&](int, Move, int, U64, I64, double) {
+                first_context.stop.store(true, std::memory_order_relaxed);
+            };
+        first_result = search(
+            first_context, first_board, 6, nullptr, 0, {},
+            stop_after_first_iteration, true, 1);
+    });
+
+    std::thread second([&] {
+        ready.fetch_add(1, std::memory_order_release);
+        while (!start.load(std::memory_order_acquire)) {
+        }
+        second_result = search(
+            second_context, second_board, 4, nullptr, 0, {},
+            nullptr, true, 2);
+    });
+
+    while (ready.load(std::memory_order_acquire) != 2) {
+    }
+    start.store(true, std::memory_order_release);
+    first.join();
+    second.join();
+
+    expect(first_context.stop.load(std::memory_order_relaxed),
+           "first context did not publish its requested stop");
+    expect(!second_context.stop.load(std::memory_order_relaxed),
+           "first context stop leaked into the second context");
+    expect(first_result.depth == 1,
+           "first context did not stop after its first iteration");
+    expect(second_result.depth == 4,
+           "second context did not finish independently");
+    expect(first_result.best_move != MOVE_NONE
+               && second_result.best_move != MOVE_NONE,
+           "concurrent context search returned no move");
+    constexpr U64 first_sentinel = 0x13579BDF2468ACE1ULL;
+    constexpr U64 second_sentinel = 0x2468ACE113579BDFULL;
+    first_context.table.store(
+        first_sentinel, 1, 11, TT_EXACT, first_result.best_move);
+    second_context.table.store(
+        second_sentinel, 1, 22, TT_EXACT, second_result.best_move);
+    expect(first_tt.probe(first_sentinel) != nullptr,
+           "first context did not write to its own TT");
+    expect(first_tt.probe(second_sentinel) == nullptr,
+           "second context TT write leaked into the first TT");
+    expect(second_tt.probe(second_sentinel) != nullptr,
+           "second context did not write to its own TT");
+    expect(second_tt.probe(first_sentinel) == nullptr,
+           "first context TT write leaked into the second TT");
+
+    first_tt.clear();
+    expect(second_tt.probe(second_sentinel) != nullptr,
+           "clearing the first context altered the second TT");
 }
 
 void test_singular_search_decisions() {
@@ -258,7 +351,7 @@ int main() {
     std::cout << std::unitbuf;
     Zobrist::init();
     init_attacks();
-    TT.resize(16);
+    test_tt.resize(16);
     NNUE::set_enabled(false);
 
     test_terminal_positions();
@@ -273,6 +366,8 @@ int main() {
     std::cout << "[PASS] root board restoration\n";
     test_iteration_callback();
     std::cout << "[PASS] iteration callback\n";
+    test_concurrent_context_isolation();
+    std::cout << "[PASS] concurrent context isolation\n";
     test_singular_search_decisions();
     std::cout << "[PASS] singular search decisions\n";
 

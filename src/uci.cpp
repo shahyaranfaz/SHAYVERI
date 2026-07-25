@@ -52,17 +52,18 @@ static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
+static SearchContext uci_search_context{TT};
 
 static int active_thread_limit() {
     return static_cast<int>(std::max(1u, std::thread::hardware_concurrency()));
 }
 
 static void stop_search() {
-    DefaultSearchContext.stop = true;
+    uci_search_context.stop = true;
     for (auto &t : smp_threads)
         if (t.joinable()) t.join();
     smp_threads.clear();
-    DefaultSearchContext.node_limit = 0;
+    uci_search_context.node_limit = 0;
 }
 
 static Move first_legal_move(Board b) {
@@ -649,8 +650,8 @@ int main(int argc, char **argv) {
             }
 
             stop_search();
-            DefaultSearchContext.stop = false;
-            DefaultSearchContext.nodes = 0;
+            uci_search_context.stop = false;
+            uci_search_context.nodes = 0;
 
             if (book_hit && g_book_info_depth == 0) {
                 std::cout << "info string book\n"
@@ -697,22 +698,22 @@ int main(int argc, char **argv) {
                 smp_threads.push_back(std::thread(
                     [b_copy, rep, searchmoves, root_depth, fixed_nodes,
                      book_info_search, book_move]() mutable {
-                        DefaultSearchContext.nodes = 0;
-                        DefaultSearchContext.node_limit = fixed_nodes;
-                        DefaultSearchContext.stop = false;
+                        uci_search_context.nodes = 0;
+                        uci_search_context.node_limit = fixed_nodes;
+                        uci_search_context.stop = false;
                         const Board root_board = b_copy;
                         const auto search_start = std::chrono::steady_clock::now();
                         SearchResult result = fixed_nodes > 0
                             ? search_nodes(
-                                b_copy, fixed_nodes,
+                                uci_search_context, b_copy, fixed_nodes,
                                 rep.data(), static_cast<int>(rep.size()),
                                 searchmoves, false)
                             : search(
-                                b_copy, root_depth,
+                                uci_search_context, b_copy, root_depth,
                                 rep.data(), static_cast<int>(rep.size()),
                                 searchmoves, nullptr, false);
-                        DefaultSearchContext.stop = true;
-                        DefaultSearchContext.node_limit = 0;
+                        uci_search_context.stop = true;
+                        uci_search_context.node_limit = 0;
                         const auto elapsed_ms =
                             std::chrono::duration_cast<std::chrono::milliseconds>(
                                 std::chrono::steady_clock::now() - search_start).count();
@@ -760,7 +761,7 @@ int main(int argc, char **argv) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
                         std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
-                        search(b_copy, root_depth,
+                        search(uci_search_context, b_copy, root_depth,
                                rep.data(), static_cast<int>(rep.size()),
                                searchmoves, nullptr, true, t);
                     })
@@ -795,9 +796,9 @@ int main(int argc, char **argv) {
 
                         if (pondering) {
                             while (*timer_active && g_pondering.load()
-                                   && !DefaultSearchContext.stop.load())
+                                   && !uci_search_context.stop.load())
                                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                            if (!*timer_active || DefaultSearchContext.stop.load())
+                            if (!*timer_active || uci_search_context.stop.load())
                                 return;
 
                             g_time_manager.init(real_tc);
@@ -806,14 +807,14 @@ int main(int argc, char **argv) {
                             const I64 ponderhit_remaining_ms = std::max<I64>(
                                 0, ponderhit_hard_ms - g_time_manager.elapsed_ms());
                             if (wait_for_limit(ponderhit_remaining_ms))
-                                DefaultSearchContext.stop = true;
+                                uci_search_context.stop = true;
                             return;
                         }
 
                         const I64 remaining_ms = std::max<I64>(
                             0, hard_ms - g_time_manager.elapsed_ms());
                         if (wait_for_limit(remaining_ms))
-                            DefaultSearchContext.stop = true;
+                            uci_search_context.stop = true;
                     });
 
                     IterCallback on_iter = [clock_ready](int depth, Move best, int score,
@@ -822,11 +823,11 @@ int main(int argc, char **argv) {
                         if (clock_ready->load()
                             && g_time_manager.on_iter(depth, best, score,
                                                       best_move_node_fraction))
-                            DefaultSearchContext.stop = true;
+                            uci_search_context.stop = true;
                     };
 
                     SearchResult result = search(
-                        b_copy, root_depth,
+                        uci_search_context, b_copy, root_depth,
                         rep.data(), static_cast<int>(rep.size()),
                         searchmoves,
                         on_iter, false);
@@ -835,18 +836,18 @@ int main(int argc, char **argv) {
                     // a terminal position, must still wait for ponderhit or
                     // stop before returning a move.
                     while (pondering && g_pondering.load()
-                           && !DefaultSearchContext.stop.load())
+                           && !uci_search_context.stop.load())
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
                     *timer_active = false;
-                    DefaultSearchContext.stop = true;
+                    uci_search_context.stop = true;
                     timer.join();
 
                     if (book_info_search)
                         result.best_move = book_move;
                     else if (result.best_move == MOVE_NONE)
                         result.best_move = first_legal_move(root_board);
-                    DefaultSearchContext.node_limit = 0;
+                    uci_search_context.node_limit = 0;
                     char bestmove[6];
                     format_uci_move(result.best_move, bestmove);
                     char ponder_text[32] = "";
@@ -885,7 +886,7 @@ int main(int argc, char **argv) {
             stop_search();
             TT.clear();
             clear_search_histories();
-            DefaultSearchContext.stop = false;
+            uci_search_context.stop = false;
 
             U64 total_nodes = 0;
             auto bench_start = std::chrono::steady_clock::now();
@@ -895,8 +896,9 @@ int main(int argc, char **argv) {
                 Board bench_b;
                 set_from_fen(bench_b, fen);
                 std::vector<Move> sm;
-                DefaultSearchContext.nodes = 0;
-                SearchResult res = search(bench_b, 10, nullptr, 0, sm);
+                uci_search_context.nodes = 0;
+                SearchResult res = search(
+                    uci_search_context, bench_b, 10, nullptr, 0, sm);
                 total_nodes += res.nodes;
             }
 
