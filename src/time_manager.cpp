@@ -6,8 +6,6 @@
 
 namespace SHAYVERI {
 
-TimeManager g_time_manager;
-
 void TimeManager::init(const TimeControl &tc) {
     start_        = std::chrono::steady_clock::now();
     prev_best_    = MOVE_NONE;

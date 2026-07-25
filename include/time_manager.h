@@ -64,8 +64,6 @@ private:
     double last_scale_ = 1.0;
 };
 
-extern TimeManager g_time_manager;
-
 } // namespace SHAYVERI
 
 #endif // TIME_MANAGER_H

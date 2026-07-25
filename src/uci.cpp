@@ -676,7 +676,8 @@ int main(int argc, char **argv) {
             TimeControl real_tc = tc;
             if (fixed_depth > 0 || fixed_nodes > 0 || is_ponder_search)
                 tc.infinite = true;
-            g_time_manager.init(tc);
+            auto time_manager = std::make_shared<TimeManager>();
+            time_manager->init(tc);
 
             int   start = static_cast<int>(hash_history.size()) - 1 - b.half_move;
             if (start < 0) start = 0;
@@ -687,7 +688,7 @@ int main(int argc, char **argv) {
             if (num_thr != g_num_threads)
                 std::cout << "info string Threads clamped to " << num_thr
                           << " by hardware capacity\n";
-            I64   hard_ms   = g_time_manager.hard_ms();
+            I64   hard_ms   = time_manager->hard_ms();
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
             if (book_info_search)
@@ -772,13 +773,14 @@ int main(int argc, char **argv) {
             smp_threads.insert(
                 smp_threads.begin(),
                 std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
-                             book_info_search, book_move]() mutable {
+                             book_info_search, book_move, time_manager]() mutable {
                     const Board root_board = b_copy;
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
                     auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);
 
-                    std::thread timer([hard_ms, real_tc, pondering, timer_active, clock_ready]() {
+                    std::thread timer([hard_ms, real_tc, pondering, timer_active, clock_ready,
+                                       time_manager]() {
                         const auto wait_for_limit = [timer_active](I64 limit_ms) {
                             using namespace std::chrono;
                             const auto deadline = steady_clock::now()
@@ -801,28 +803,29 @@ int main(int argc, char **argv) {
                             if (!*timer_active || uci_search_context.stop.load())
                                 return;
 
-                            g_time_manager.init(real_tc);
+                            time_manager->init(real_tc);
                             clock_ready->store(true);
-                            const I64 ponderhit_hard_ms = g_time_manager.hard_ms();
+                            const I64 ponderhit_hard_ms = time_manager->hard_ms();
                             const I64 ponderhit_remaining_ms = std::max<I64>(
-                                0, ponderhit_hard_ms - g_time_manager.elapsed_ms());
+                                0, ponderhit_hard_ms - time_manager->elapsed_ms());
                             if (wait_for_limit(ponderhit_remaining_ms))
                                 uci_search_context.stop = true;
                             return;
                         }
 
                         const I64 remaining_ms = std::max<I64>(
-                            0, hard_ms - g_time_manager.elapsed_ms());
+                            0, hard_ms - time_manager->elapsed_ms());
                         if (wait_for_limit(remaining_ms))
                             uci_search_context.stop = true;
                     });
 
-                    IterCallback on_iter = [clock_ready](int depth, Move best, int score,
-                                                        U64, I64,
-                                                        double best_move_node_fraction) {
+                    IterCallback on_iter = [clock_ready, time_manager](
+                                               int depth, Move best, int score,
+                                               U64, I64,
+                                               double best_move_node_fraction) {
                         if (clock_ready->load()
-                            && g_time_manager.on_iter(depth, best, score,
-                                                      best_move_node_fraction))
+                            && time_manager->on_iter(
+                                depth, best, score, best_move_node_fraction))
                             uci_search_context.stop = true;
                     };
 
