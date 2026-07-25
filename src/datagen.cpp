@@ -251,8 +251,10 @@ SearchResult fixed_node_search(SearchContext &context, Board &b,
     context.table.new_search();
     return search_nodes(
         context, b, node_budget,
-        history.data(), static_cast<int>(history.size()),
-        search_moves, true);
+        SearchRequest{
+            .repetition = history,
+            .root_moves = search_moves,
+        });
 }
 
 int score_to_white_pov(const Board &b, int score_side_to_move_pov) {

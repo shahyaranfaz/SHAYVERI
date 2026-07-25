@@ -992,9 +992,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
 static SearchResult search_impl(
     SearchContext &context, SearchThreadState &thread,
-    Board &b, int max_depth, const U64 *rep_init, int rep_init_len,
-    const std::vector<Move> &search_moves, IterCallback on_iter,
-    bool silent, int root_bias) {
+    Board &b, int max_depth, const SearchRequest &request) {
 
     thread.node_count = 0;
     thread.pending_shared_nodes = 0;
@@ -1004,7 +1002,7 @@ static SearchResult search_impl(
         ~PendingNodePublisher() { publish_pending_nodes(context, thread); }
     } pending_node_publisher{context, thread};
 
-    const bool retain_history = !silent && root_bias == 0;
+    const bool retain_history = request.emit_info && request.root_bias == 0;
     SearchHeuristics *heuristics = nullptr;
     if (retain_history) {
         heuristics = &persistent_history;
@@ -1028,10 +1026,14 @@ static SearchResult search_impl(
     U64 rep_stack[MAX_PLY * 2];
     int rep_len = 0;
 
-    if (rep_init && rep_init_len > 0) {
-        rep_len = std::min(rep_init_len, MAX_PLY);
-        const int rep_offset = rep_init_len - rep_len;
-        for (int i = 0; i < rep_len; ++i) rep_stack[i] = rep_init[rep_offset + i];
+    if (!request.repetition.empty()) {
+        rep_len = std::min(
+            static_cast<int>(request.repetition.size()), MAX_PLY);
+        const int rep_offset =
+            static_cast<int>(request.repetition.size()) - rep_len;
+        for (int i = 0; i < rep_len; ++i)
+            rep_stack[i] = request.repetition[
+                static_cast<std::size_t>(rep_offset + i)];
     }
     if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
         if (rep_len < MAX_PLY) rep_stack[rep_len++] = b.hash;
@@ -1059,7 +1061,8 @@ static SearchResult search_impl(
             Move m = pseudo.moves[i];
             int  s = order_score(b, m, 0, H, ss);
             if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
-            if (root_bias != 0) s += ((i + root_bias) & 7) * 2;
+            if (request.root_bias != 0)
+                s += ((i + request.root_bias) & 7) * 2;
             ordered[i] = {m, s};
         }
         int root_count = pseudo.count;
@@ -1079,9 +1082,10 @@ static SearchResult search_impl(
 
                 Move m = ordered[i].m;
 
-                if (!search_moves.empty()) {
+                if (!request.root_moves.empty()) {
                     bool found = false;
-                    for (Move sm : search_moves) if (sm == m) { found = true; break; }
+                    for (Move sm : request.root_moves)
+                        if (sm == m) { found = true; break; }
                     if (!found) continue;
                 }
 
@@ -1207,7 +1211,7 @@ static SearchResult search_impl(
             score_str = "cp " + std::to_string(final_best_score);
         }
 
-        if (!silent) {
+        if (request.emit_info) {
             std::lock_guard<std::mutex> output_lock(uci_output_mutex);
             std::cout << "info depth " << depth
                       << " score " << score_str
@@ -1217,9 +1221,10 @@ static SearchResult search_impl(
                       << " pv " << pv_line << "\n";
             std::cout.flush();
         }
-        if (on_iter && !search_stopped(context, thread))
-            on_iter(depth, final_best_move, final_best_score, nodes, ms,
-                    best_move_node_fraction);
+        if (request.on_iteration && !search_stopped(context, thread))
+            request.on_iteration(
+                depth, final_best_move, final_best_score, nodes, ms,
+                best_move_node_fraction);
 
         if (search_stopped(context, thread)) break;
     }
@@ -1230,26 +1235,18 @@ static SearchResult search_impl(
 
 SearchResult search(SearchContext &context,
                     Board &b, int max_depth,
-                    const U64 *rep_init, int rep_init_len,
-                    const std::vector<Move> &search_moves,
-                    IterCallback on_iter, bool silent, int root_bias) {
+                    const SearchRequest &request) {
     SearchThreadState thread;
-    return search_impl(context, thread, b, max_depth,
-                       rep_init, rep_init_len, search_moves,
-                       std::move(on_iter), silent, root_bias);
+    return search_impl(context, thread, b, max_depth, request);
 }
 
 SearchResult search_nodes(SearchContext &context,
                           Board &b, U64 max_nodes,
-                          const U64 *rep_init, int rep_init_len,
-                          const std::vector<Move> &search_moves,
-                          bool silent, int root_bias) {
+                          const SearchRequest &request) {
     SearchThreadState thread;
     thread.local_node_limited_search = true;
     thread.local_node_limit = max_nodes;
-    return search_impl(context, thread, b, MAX_PLY - 1,
-                       rep_init, rep_init_len, search_moves,
-                       nullptr, silent, root_bias);
+    return search_impl(context, thread, b, MAX_PLY - 1, request);
 }
 
 int qsearch_score(SearchContext &context, Board &b) {

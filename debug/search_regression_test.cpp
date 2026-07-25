@@ -44,22 +44,19 @@ void reset_search_state() {
 void test_terminal_positions() {
     reset_search_state();
     Board mate = board_from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1");
-    SearchResult result = search(
-        test_context, mate, 2, nullptr, 0, {}, nullptr, true);
+    SearchResult result = search(test_context, mate, 2, SearchRequest{});
     expect(result.best_move == MOVE_NONE, "checkmate returned a root move");
     expect(result.score == -Tune::MATE_SCORE, "checkmate returned the wrong score");
 
     reset_search_state();
     Board mate_at_fifty = board_from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 100 1");
-    result = search(
-        test_context, mate_at_fifty, 2, nullptr, 0, {}, nullptr, true);
+    result = search(test_context, mate_at_fifty, 2, SearchRequest{});
     expect(result.score == -Tune::MATE_SCORE,
            "fifty-move handling overrode checkmate at the root");
 
     reset_search_state();
     Board stalemate = board_from_fen("7k/5Q2/7K/8/8/8/8/8 b - - 0 1");
-    result = search(
-        test_context, stalemate, 2, nullptr, 0, {}, nullptr, true);
+    result = search(test_context, stalemate, 2, SearchRequest{});
     expect(result.best_move == MOVE_NONE, "stalemate returned a root move");
     expect(result.score == 0, "stalemate returned a non-draw score");
 }
@@ -67,14 +64,13 @@ void test_terminal_positions() {
 void test_draw_rules() {
     reset_search_state();
     Board fifty_move = board_from_fen("7k/8/8/8/8/8/R7/K7 w - - 100 1");
-    SearchResult result = search(
-        test_context, fifty_move, 2, nullptr, 0, {}, nullptr, true);
+    SearchResult result =
+        search(test_context, fifty_move, 2, SearchRequest{});
     expect(result.score == 0, "fifty-move position returned a non-draw score");
 
     reset_search_state();
     Board insufficient = board_from_fen("7k/8/8/8/8/8/8/K7 w - - 0 1");
-    result = search(
-        test_context, insufficient, 2, nullptr, 0, {}, nullptr, true);
+    result = search(test_context, insufficient, 2, SearchRequest{});
     expect(result.score == 0, "insufficient material returned a non-draw score");
 
     reset_search_state();
@@ -82,9 +78,10 @@ void test_draw_rules() {
         "7k/8/8/8/8/8/Q5N1/6K1 w - - 4 3");
     const Move repeated_move = uci_to_move(repetition, "g2f4");
     expect(repeated_move != MOVE_NONE, "failed to parse repetition test move");
+    const std::vector<Move> repeated_moves{repeated_move};
     SearchResult baseline = search(
-        test_context, repetition, 1, nullptr, 0,
-        {repeated_move}, nullptr, true);
+        test_context, repetition, 1,
+        SearchRequest{.root_moves = repeated_moves});
     expect(baseline.score != 0, "repetition baseline unexpectedly scored as a draw");
 
     Board repeated_child = repetition;
@@ -95,8 +92,11 @@ void test_draw_rules() {
 
     reset_search_state();
     result = search(
-        test_context, repetition, 1, history, 3,
-        {repeated_move}, nullptr, true);
+        test_context, repetition, 1,
+        SearchRequest{
+            .repetition = history,
+            .root_moves = repeated_moves,
+        });
     expect(result.score == 0, "repeated position returned a non-draw score");
 }
 
@@ -119,13 +119,15 @@ void test_searchmoves_and_node_limit() {
     expect(set_startpos(board), "failed to initialize start position");
     const Move forced = uci_to_move(board, "e2e4");
     expect(forced != MOVE_NONE, "failed to parse forced root move");
+    const std::vector<Move> forced_moves{forced};
     SearchResult result = search(
-        test_context, board, 2, nullptr, 0, {forced}, nullptr, true);
+        test_context, board, 2,
+        SearchRequest{.root_moves = forced_moves});
     expect(result.best_move == forced, "searchmoves restriction was not respected");
 
     reset_search_state();
     expect(set_startpos(board), "failed to reset start position");
-    result = search_nodes(test_context, board, 500, nullptr, 0, {});
+    result = search_nodes(test_context, board, 500, SearchRequest{});
     expect(result.nodes == 500, "fixed-node search missed its exact node limit");
     expect(result.best_move != MOVE_NONE, "fixed-node search returned no move");
     Board after = board;
@@ -142,8 +144,8 @@ void test_search_preserves_root_board() {
     const U64 before_hash = board.hash;
     const U64 before_pawn_hash = board.pawn_hash;
 
-    const SearchResult result = search(
-        test_context, board, 5, nullptr, 0, {}, nullptr, true);
+    const SearchResult result =
+        search(test_context, board, 5, SearchRequest{});
     expect(result.best_move != MOVE_NONE, "middlegame search returned no move");
     expect(get_board_fen(board) == before_fen,
            "search did not restore the root board state");
@@ -168,7 +170,11 @@ void test_iteration_callback() {
     };
 
     const SearchResult result = search(
-        test_context, board, 4, nullptr, 0, {}, callback);
+        test_context, board, 4,
+        SearchRequest{
+            .on_iteration = callback,
+            .emit_info = true,
+        });
     expect(result.depth == 4 && callback_depths.size() == 4,
            "iteration callback did not report every completed depth");
     for (int i = 0; i < 4; ++i) {
@@ -209,8 +215,11 @@ void test_concurrent_context_isolation() {
                 first_context.stop.store(true, std::memory_order_relaxed);
             };
         first_result = search(
-            first_context, first_board, 6, nullptr, 0, {},
-            stop_after_first_iteration, true, 1);
+            first_context, first_board, 6,
+            SearchRequest{
+                .on_iteration = stop_after_first_iteration,
+                .root_bias = 1,
+            });
     });
 
     std::thread second([&] {
@@ -218,8 +227,8 @@ void test_concurrent_context_isolation() {
         while (!start.load(std::memory_order_acquire)) {
         }
         second_result = search(
-            second_context, second_board, 4, nullptr, 0, {},
-            nullptr, true, 2);
+            second_context, second_board, 4,
+            SearchRequest{.root_bias = 2});
     });
 
     while (ready.load(std::memory_order_acquire) != 2) {

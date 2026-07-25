@@ -47,6 +47,9 @@ pairing at LTC. The framework is described in
   behavior independently of protocol output. Added a concurrent regression
   that stops one context without affecting another and verifies isolation
   between their transposition tables.
+- Replaced positional search configuration with an explicit request carrying
+  repetition history, root-move restrictions, iteration callback, protocol
+  output policy, and helper-thread root bias.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
   two-cache-line cluster using independently published race-safe slots.
   Preserved four-way replacement behavior, added child-position prefetching,

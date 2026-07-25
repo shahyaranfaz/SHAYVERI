@@ -704,15 +704,18 @@ int main(int argc, char **argv) {
                         uci_search_context.stop = false;
                         const Board root_board = b_copy;
                         const auto search_start = std::chrono::steady_clock::now();
+                        const SearchRequest request{
+                            .repetition = rep,
+                            .root_moves = searchmoves,
+                            .emit_info = true,
+                        };
                         SearchResult result = fixed_nodes > 0
                             ? search_nodes(
                                 uci_search_context, b_copy, fixed_nodes,
-                                rep.data(), static_cast<int>(rep.size()),
-                                searchmoves, false)
+                                request)
                             : search(
                                 uci_search_context, b_copy, root_depth,
-                                rep.data(), static_cast<int>(rep.size()),
-                                searchmoves, nullptr, false);
+                                request);
                         uci_search_context.stop = true;
                         uci_search_context.node_limit = 0;
                         const auto elapsed_ms =
@@ -762,9 +765,13 @@ int main(int argc, char **argv) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
                         std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
-                        search(uci_search_context, b_copy, root_depth,
-                               rep.data(), static_cast<int>(rep.size()),
-                               searchmoves, nullptr, true, t);
+                        search(
+                            uci_search_context, b_copy, root_depth,
+                            SearchRequest{
+                                .repetition = rep,
+                                .root_moves = searchmoves,
+                                .root_bias = t,
+                            });
                     })
                 );
             }
@@ -831,9 +838,12 @@ int main(int argc, char **argv) {
 
                     SearchResult result = search(
                         uci_search_context, b_copy, root_depth,
-                        rep.data(), static_cast<int>(rep.size()),
-                        searchmoves,
-                        on_iter, false);
+                        SearchRequest{
+                            .repetition = rep,
+                            .root_moves = searchmoves,
+                            .on_iteration = on_iter,
+                            .emit_info = true,
+                        });
 
                     // A ponder search that finishes naturally, for example on
                     // a terminal position, must still wait for ponderhit or
@@ -901,7 +911,11 @@ int main(int argc, char **argv) {
                 std::vector<Move> sm;
                 uci_search_context.nodes = 0;
                 SearchResult res = search(
-                    uci_search_context, bench_b, 10, nullptr, 0, sm);
+                    uci_search_context, bench_b, 10,
+                    SearchRequest{
+                        .root_moves = sm,
+                        .emit_info = true,
+                    });
                 total_nodes += res.nodes;
             }
 

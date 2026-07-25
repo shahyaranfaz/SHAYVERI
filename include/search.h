@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <functional>
+#include <span>
 #include <vector>
 
 namespace SHAYVERI {
@@ -24,6 +25,14 @@ struct SearchContext {
 
 // depth, best move, score, total nodes, elapsed ms, best-root-move node share
 using IterCallback = std::function<void(int, Move, int, U64, I64, double)>;
+
+struct SearchRequest {
+    std::span<const U64> repetition{};
+    std::span<const Move> root_moves{};
+    IterCallback on_iteration{};
+    bool emit_info = false;
+    int root_bias = 0;
+};
 
 struct SearchResult {
     Move best_move  = MOVE_NONE;
@@ -47,18 +56,11 @@ SingularSearchDecision classify_singular_search(
 
 SearchResult search(SearchContext &context,
                     Board &b, int max_depth,
-                    const U64 *rep_init, int rep_init_len,
-                    const std::vector<Move> &search_moves,
-                    IterCallback on_iter = nullptr,
-                    bool silent = false,
-                    int root_bias = 0);
+                    const SearchRequest &request);
 
 SearchResult search_nodes(SearchContext &context,
                           Board &b, U64 max_nodes,
-                          const U64 *rep_init, int rep_init_len,
-                          const std::vector<Move> &search_moves,
-                          bool silent = true,
-                          int root_bias = 0);
+                          const SearchRequest &request);
 
 int qsearch_score(SearchContext &context, Board &b);
 void clear_search_histories();
