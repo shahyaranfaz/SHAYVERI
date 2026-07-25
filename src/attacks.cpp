@@ -10,8 +10,6 @@ U64 PAWN_ATTACKS[2][64];
 U64 KNIGHT_ATTACKS[64];
 U64 KING_ATTACKS[64];
 
-U64 Ray[64][8];
-
 enum Dir { N, S, E, W, NE, NW, SE, SW };
 
 static constexpr int FILE_STEP[8] = {0, 0, 1, -1, 1, -1, 1, -1};
@@ -25,35 +23,33 @@ struct PextSlider {
 static PextSlider Bishop[64];
 static PextSlider Rook[64];
 
-static U64 BishopTable[524288];
-static U64 RookTable[4096000];
+alignas(64) static U64 BishopTable[5248];
+alignas(64) static U64 RookTable[102400];
 
 static bool is_valid_square(int f, int r) {
     return f >= 0 && f < 8 && r >= 0 && r < 8;
 }
 
-static U64 bishop_mask(Square sq) {
-    return Ray[sq][NE] | Ray[sq][NW] | Ray[sq][SE] | Ray[sq][SW];
-}
+static U64 slider_mask(Square sq, bool bishop) {
+    const int start = bishop ? NE : N;
+    const int end   = bishop ? SW + 1 : W + 1;
+    const int f = get_file(sq);
+    const int r = get_rank(sq);
+    U64 mask = 0;
 
-static U64 rook_mask(Square sq) {
-    return Ray[sq][N] | Ray[sq][S] | Ray[sq][E] | Ray[sq][W];
-}
-
-static void init_rays() {
-    for (int sq = 0; sq < 64; ++sq) {
-        for (int d = 0; d < 8; ++d) Ray[sq][d] = 0;
-
-        int f = sq % 8, r = sq / 8;
-        for (int d = 0; d < 8; ++d) {
-            int nf = f + FILE_STEP[d], nr = r + RANK_STEP[d];
-            while (is_valid_square(nf, nr)) {
-                Ray[sq][d] |= bb_square(make_square(File(nf), Rank(nr)));
-                nf += FILE_STEP[d];
-                nr += RANK_STEP[d];
-            }
+    for (int d = start; d < end; ++d) {
+        int nf = f + FILE_STEP[d];
+        int nr = r + RANK_STEP[d];
+        while (is_valid_square(nf, nr)) {
+            const int next_file = nf + FILE_STEP[d];
+            const int next_rank = nr + RANK_STEP[d];
+            if (!is_valid_square(next_file, next_rank)) break;
+            mask |= bb_square(make_square(File(nf), Rank(nr)));
+            nf = next_file;
+            nr = next_rank;
         }
     }
+    return mask;
 }
 
 static U64 compute_pawn_attacks(Colour c, Square from) {
@@ -133,16 +129,17 @@ void init_attacks() {
         KING_ATTACKS[sq]        = compute_king_attacks(Square(sq));
     }
 
-    init_rays();
-
     U64 *b_ptr = BishopTable;
     U64 *r_ptr = RookTable;
 
     for (int sq = 0; sq < 64; ++sq) {
         const Square square = Square(sq);
-        init_slider(Bishop[sq], b_ptr, square, bishop_mask(square), true);
-        init_slider(Rook[sq], r_ptr, square, rook_mask(square), false);
+        init_slider(Bishop[sq], b_ptr, square, slider_mask(square, true), true);
+        init_slider(Rook[sq], r_ptr, square, slider_mask(square, false), false);
     }
+
+    assert(b_ptr == BishopTable + sizeof(BishopTable) / sizeof(BishopTable[0]));
+    assert(r_ptr == RookTable + sizeof(RookTable) / sizeof(RookTable[0]));
 }
 
 U64 bishop_attacks(Square sq, U64 occupied) {
@@ -155,6 +152,20 @@ U64 rook_attacks(Square sq, U64 occupied) {
 
 U64 queen_attacks(Square sq, U64 occupied) {
     return bishop_attacks(sq, occupied) | rook_attacks(sq, occupied);
+}
+
+U64 attackers_to(const Board &b, Square sq, U64 occupied) {
+    U64 attacks = pawn_attacks(BLACK, sq) & b.bit_boards[WP];
+    attacks |= pawn_attacks(WHITE, sq) & b.bit_boards[BP];
+    attacks |= knight_attacks(sq) & (b.bit_boards[WN] | b.bit_boards[BN]);
+    attacks |= king_attacks(sq) & (b.bit_boards[WK] | b.bit_boards[BK]);
+    attacks |= bishop_attacks(sq, occupied)
+        & (b.bit_boards[WB] | b.bit_boards[BB]
+           | b.bit_boards[WQ] | b.bit_boards[BQ]);
+    attacks |= rook_attacks(sq, occupied)
+        & (b.bit_boards[WR] | b.bit_boards[BR]
+           | b.bit_boards[WQ] | b.bit_boards[BQ]);
+    return attacks & occupied;
 }
 
 Square king_square(const Board &b, Colour c) {

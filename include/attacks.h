@@ -17,6 +17,7 @@ inline U64 king_attacks(Square from)            { return KING_ATTACKS[from]; }
 U64 bishop_attacks(Square from, U64 occupied);
 U64 rook_attacks(Square from, U64 occupied);
 U64 queen_attacks(Square from, U64 occupied);
+U64 attackers_to(const Board &b, Square sq, U64 occupied);
 
 bool is_square_attacked(const Board &b, Square sq, Colour attacker);
 Square king_square(const Board &b, Colour c);
