@@ -36,23 +36,36 @@ pairing at LTC. The framework is described in
   node. Introduced explicit search contexts for TT, stop, and node-limit
   ownership; removed the thread-local active-TT switch; reused per-thread
   heuristic and search-stack storage; and removed the main-thread history
-  copy-in/copy-out. Fixed-node searches remain exact.
+  copy-in/copy-out. Fixed-node searches remain exact. An independent ablation
+  found batching neutral at one thread while restoring per-node publication
+  reduced timed NPS by roughly 23% to 41% at 8 threads and 46% to 60% at
+  24 threads.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
   two-cache-line cluster using independently published race-safe slots.
   Preserved four-way replacement behavior, added child-position prefetching,
   and expanded collision, replacement, and concurrent-publication tests.
+  An independent ablation found prefetch neutral at 1 MiB Hash and beneficial
+  at 64 and 1024 MiB, where disabling it reduced representative NPS by roughly
+  3% to 9%.
 - Vectorized common NNUE accumulator add/subtract, copy-plus-delta, and
   perspective-refresh operations with AVX2 while retaining bit-identical
-  accumulator tests across classic, king-bucketed, and default networks.
+  accumulator tests across classic, king-bucketed, and default networks. An
+  independent scalar-update ablation measured approximately 1.6% to 4.3%
+  lower NPS on longer one-thread fixed-node and timed workloads.
 - Added an incremental pawn Zobrist key and comprehensive board consistency
   checks. Unmake now restores saved hashes without repeating discarded hash
   work.
 - Split trusted generated-move execution from checked external move handling.
   Added malformed-move coverage and randomized checked-versus-trusted
-  equivalence checks across 109,846 make/unmake round trips.
+  equivalence checks across 109,846 make/unmake round trips. Independently
+  restoring pseudo-legal membership checks on the hot generated-move path
+  reduced representative one-thread fixed-node NPS by roughly 14% to 31%.
 - Added threshold SEE fast exits, corrected an exchange back-propagation bug,
   and removed Board copies from quiet SEE. Threshold results are checked
-  against numeric SEE across 5,598 deterministic randomized comparisons.
+  against numeric SEE across 5,598 deterministic randomized comparisons. An
+  independent numeric-SEE ablation found the retained fast exits modestly
+  beneficial, improving the longer fixed-node cases by approximately 0.5% to
+  2.3%.
 - Moved generated opening-book data from a multiply included 1.87 MiB header
   into one source file, and extracted move I/O and null-move mutation from the
   search module.

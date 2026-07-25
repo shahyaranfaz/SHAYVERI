@@ -93,6 +93,8 @@ def metadata(engine: Path, arguments: argparse.Namespace) -> dict[str, object]:
         "nodes": arguments.nodes,
         "movetime_ms": arguments.movetime,
         "threads": arguments.threads,
+        "hash_mb": arguments.hash_mb,
+        "expected_bench_nodes": arguments.expected_bench_nodes,
         "fixed_threads": arguments.fixed_threads,
         "fixed_depth_threads": arguments.fixed_depth_threads,
         "fixed_node_threads": arguments.fixed_node_threads,
@@ -103,7 +105,8 @@ def metadata(engine: Path, arguments: argparse.Namespace) -> dict[str, object]:
 
 
 class Engine:
-    def __init__(self, executable: Path, cpu: str, timeout: float) -> None:
+    def __init__(self, executable: Path, cpu: str, timeout: float,
+                 hash_mb: int) -> None:
         command = [str(executable)]
         if cpu:
             if shutil.which("taskset") is None:
@@ -122,6 +125,7 @@ class Engine:
         self.wait_for("uciok")
         self.send("setoption name OwnBook value false")
         self.send("setoption name BookInfoDepth value 0")
+        self.send(f"setoption name Hash value {hash_mb}")
         self.send("isready")
         self.wait_for("readyok")
 
@@ -160,6 +164,8 @@ class Engine:
         self.send(f"setoption name Threads value {threads}")
         self.send("ucinewgame")
         self.send(f"position {position}")
+        self.send("isready")
+        self.wait_for("readyok")
         started = time.perf_counter_ns()
         self.send(go)
         lines = self.wait_for("bestmove ")
@@ -181,7 +187,7 @@ class Engine:
             "wall_ms": round(wall_ms, 3),
         }
 
-    def bench(self) -> dict[str, int | float]:
+    def bench(self, expected_nodes: int) -> dict[str, int | float]:
         self.send("bench 16 1 3 default depth")
         lines = self.wait_for("===========================")
         # The first separator opens the summary; consume through its close.
@@ -197,9 +203,9 @@ class Engine:
                 nps = int(line.split()[2])
         if nodes is None or time_ms is None or nps is None:
             raise RuntimeError("malformed bench summary")
-        if nodes != EXPECTED_BENCH_NODES:
+        if expected_nodes != 0 and nodes != expected_nodes:
             raise RuntimeError(
-                f"bench signature mismatch: {nodes} != {EXPECTED_BENCH_NODES}"
+                f"bench signature mismatch: {nodes} != {expected_nodes}"
             )
         return {"nodes": nodes, "time_ms": time_ms, "nps": nps}
 
@@ -322,6 +328,14 @@ def main() -> int:
     parser.add_argument("--depth", type=int, default=10)
     parser.add_argument("--nodes", type=int, default=100_000)
     parser.add_argument("--movetime", type=int, default=250)
+    parser.add_argument(
+        "--hash-mb", type=int, default=64,
+        help="UCI Hash size in MiB",
+    )
+    parser.add_argument(
+        "--expected-bench-nodes", type=int, default=EXPECTED_BENCH_NODES,
+        help="required bench signature, or 0 to accept Hash-dependent signatures",
+    )
     parser.add_argument("--threads", type=parse_threads, default=parse_threads("1,2,4,8"))
     parser.add_argument(
         "--fixed-threads", type=parse_threads, default=parse_threads("1"),
@@ -352,8 +366,11 @@ def main() -> int:
         help="exact compiler/linker flags used for the measured engine",
     )
     args = parser.parse_args()
-    if any(value < 1 for value in (args.runs, args.depth, args.nodes, args.movetime)):
-        parser.error("runs, depth, nodes, and movetime must be positive")
+    if any(value < 1 for value in
+           (args.runs, args.depth, args.nodes, args.movetime, args.hash_mb)):
+        parser.error("runs, depth, nodes, movetime, and hash-mb must be positive")
+    if args.expected_bench_nodes < 0:
+        parser.error("expected-bench-nodes must be non-negative")
     args.fixed_depth_threads = args.fixed_depth_threads or args.fixed_threads
     args.fixed_node_threads = args.fixed_node_threads or args.fixed_threads
     if args.fixed_depth_threads != [1] or args.fixed_node_threads != [1]:
@@ -375,10 +392,13 @@ def main() -> int:
 
     results: list[dict[str, object]] = []
     position_cases = list(PGO_POSITION_CASES if args.pgo_cases else POSITION_CASES)
-    engine = Engine(engine_path, args.cpu, args.timeout)
+    engine = Engine(engine_path, args.cpu, args.timeout, args.hash_mb)
     try:
         for run in range(1, args.runs + 1):
-            add_result(results, "bench", "trusted", run, 1, engine.bench())
+            add_result(
+                results, "bench", "trusted", run, 1,
+                engine.bench(args.expected_bench_nodes),
+            )
         for threads in args.fixed_depth_threads:
             for case, position in position_cases:
                 for run in range(1, args.runs + 1):
@@ -427,7 +447,11 @@ def main() -> int:
             + "; ".join(errors)
         )
     print(f"baseline written: {run_dir}")
-    print(f"results={len(results)} bench_nodes={EXPECTED_BENCH_NODES}")
+    bench_nodes = next(
+        int(result["nodes"]) for result in results
+        if result["category"] == "bench"
+    )
+    print(f"results={len(results)} bench_nodes={bench_nodes}")
     return 0
 
 
