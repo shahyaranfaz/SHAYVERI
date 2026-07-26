@@ -302,17 +302,17 @@ int main(int argc, char **argv) {
             std::cout
                 << "id name SHAYVERI\n"
                 << "id author Shahyar Anfaz and Averi Wylie\n"
-                << "option name Hash type spin default 64 min 1 max 32768\n"
-                << "option name ClearHash type button\n"
-                << "option name Threads type spin default 1 min 1 max 512\n"
-                << "option name UseNNUE type check default true\n"
+                << "option name Hash                type spin   default 64         min 1 max 32768\n"
+                << "option name ClearHash           type button\n"
+                << "option name Threads             type spin   default 1          min 1 max 512\n"
+                << "option name UseNNUE             type check  default true\n"
                 << "option name " << NNUE::UCI_OPTION_NAME
-                << " type string default " << g_eval_file << "\n"
-                << "option name OwnBook type check default true\n"
-                << "option name BookInfoDepth type spin default 8 min 0 max 32\n"
-                << "option name Ponder type check default false\n"
-                << "option name MinimumThinkingTime type spin default 0 min 0 max 5000\n"
-                << "option name MoveOverhead type spin default 10 min 0 max 5000\n";
+                << "            type string default " << g_eval_file << "\n"
+                << "option name OwnBook             type check  default true\n"
+                << "option name BookInfoDepth       type spin   default 8          min 0 max 32\n"
+                << "option name Ponder              type check  default false\n"
+                << "option name MinimumThinkingTime type spin   default 0          min 0 max 5000\n"
+                << "option name MoveOverhead        type spin   default 10         min 0 max 5000\n";
 
             for (auto const& [name, opt] : Tune::tuning_registry) {
                 if (opt.type == Tune::TuningOption::INT)
