@@ -55,6 +55,15 @@ pairing at LTC. The framework is described in
   datagen worker owns its counters, scratch histories, and reusable ply stack.
   Scratch history is allocated only for workers that use it, and UCI retains
   worker storage across searches instead of reallocating it for every `go`.
+- Audited Lazy SMP with temporary root-effort, TT-attribution, and worker-
+  lifecycle instrumentation. A 108-search Linux matrix over 2, 8, and 24
+  threads and 1, 64, and 1024 MiB Hash found complete root-move overlap but
+  extensive useful TT sharing. At normal Hash sizes, helper publications
+  supplied roughly 68-96% of main-thread TT hits at 8-24 threads and caused
+  approximately 105,000-599,000 median main-thread cutoffs per representative
+  case. Existing Lazy SMP is retained without changing TT policy, root
+  coordination, affinity, or NUMA behavior; the temporary instrumentation was
+  removed after the audit.
 - Compacted continuation and capture-history piece dimensions by removing
   unreachable piece-type-zero rows and columns. Stored history and correction
   entries as saturating signed 16-bit values while retaining 32-bit update and
