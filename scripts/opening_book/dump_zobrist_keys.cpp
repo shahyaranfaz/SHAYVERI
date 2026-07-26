@@ -9,7 +9,7 @@
 using namespace SHAYVERI;
 
 // Minimal JSON writer (no extra deps)
-// Writes schema expected by build_header.py:
+// Writes schema expected by build_source.py:
 // {
 //   "pieces": [[...64...], ... 13 ...],
 //   "sides": <u64>,

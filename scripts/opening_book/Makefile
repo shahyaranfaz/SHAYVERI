@@ -32,7 +32,7 @@ DUMP_KEYS_BIN := outputs/dump_zobrist_keys
 OUTPUTS_DIR := outputs
 ZOBRIST_KEYS := $(OUTPUTS_DIR)/zobrist_keys.json
 TABLE_CSV := $(OUTPUTS_DIR)/table.csv
-BOOK_HEADER := ../../include/opening_book.h
+BOOK_SOURCE := ../../src/opening_book.cpp
 
 DUMP_KEYS_SRC := \
 	dump_zobrist_keys.cpp \
@@ -47,7 +47,7 @@ all: run_all
 
 run_all: fetch table keys book
 
-book: $(BOOK_HEADER)
+book: $(BOOK_SOURCE)
 
 outputs:
 	mkdir -p $(OUTPUTS_DIR)
@@ -77,8 +77,8 @@ $(ZOBRIST_KEYS): $(DUMP_KEYS_BIN) | outputs
 $(TABLE_CSV): build_table.py $(OUTPUTS_DIR)/twic.pgn | outputs
 	python3 build_table.py
 
-$(BOOK_HEADER): build_header.py $(TABLE_CSV) $(ZOBRIST_KEYS) | outputs
-	python3 build_header.py
+$(BOOK_SOURCE): build_source.py $(TABLE_CSV) $(ZOBRIST_KEYS) | outputs
+	python3 build_source.py
 
 clean:
 	rm -f $(DUMP_KEYS_BIN)

@@ -15,12 +15,12 @@ from a documented corpus keeps the process repeatable.
 
 1. Download The Week in Chess PGNs.
 2. Keep standard games where both players are rated at least 2600.
-3. Record up to 24 plies from each accepted game.
+3. Record up to 30 plies from each accepted game.
 4. Aggregate observed continuations for every reached position.
 5. Keep positions with at least five cumulative plays and select the most
    frequent legal move.
 6. Generate SHAYVERI-compatible Zobrist keys and write the sorted table to
-   `include/opening_book.h`.
+   `src/opening_book.cpp`.
 
 The generated book stores one move per position. Ties retain the pipeline's
 deterministic lexicographic ordering.
@@ -44,4 +44,5 @@ make -C scripts/opening_book table keys book
 Python dependencies include `python-chess`. Fetching also requires `wget` and
 `unzip`. Generated corpus, table, key, and helper files stay under `outputs/`.
 
-Do not edit `include/opening_book.h` manually.
+`include/opening_book.h` is the small, handwritten API declaration used by the
+engine. Do not edit the generated `src/opening_book.cpp` manually.
