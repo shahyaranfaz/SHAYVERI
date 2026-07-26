@@ -363,6 +363,22 @@ void test_singular_search_decisions() {
     Tune::se_triple_extension           = saved_triple_amount;
 }
 
+void test_bounded_history_storage() {
+    using SearchDetail::clamp_history_value;
+    using SearchDetail::gravity_history_update;
+
+    expect(gravity_history_update(1000, 500, 16384) == 1470,
+           "representable history update changed value");
+    expect(gravity_history_update(-32768, 4500, 1024) == 32767,
+           "positive history overflow did not saturate");
+    expect(gravity_history_update(32767, 4500, 1024) == -32768,
+           "negative history overflow did not saturate");
+    expect(clamp_history_value(32768) == 32767,
+           "positive correction history did not saturate");
+    expect(clamp_history_value(-32769) == -32768,
+           "negative correction history did not saturate");
+}
+
 } // namespace
 
 int main() {
@@ -388,6 +404,8 @@ int main() {
     std::cout << "[PASS] concurrent context isolation\n";
     test_singular_search_decisions();
     std::cout << "[PASS] singular search decisions\n";
+    test_bounded_history_storage();
+    std::cout << "[PASS] bounded history storage\n";
 
     std::cout << "search regression tests passed\n";
     return 0;

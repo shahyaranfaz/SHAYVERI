@@ -55,6 +55,11 @@ pairing at LTC. The framework is described in
   datagen worker owns its counters, scratch histories, and reusable ply stack.
   Scratch history is allocated only for workers that use it, and UCI retains
   worker storage across searches instead of reallocating it for every `go`.
+- Compacted continuation and capture-history piece dimensions by removing
+  unreachable piece-type-zero rows and columns. Stored history and correction
+  entries as saturating signed 16-bit values while retaining 32-bit update and
+  scoring arithmetic. The SPSA registry, variables, and ranges remain
+  unchanged.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
   two-cache-line cluster using independently published race-safe slots.
   Preserved four-way replacement behavior, added child-position prefetching,

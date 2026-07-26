@@ -16,10 +16,12 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <mutex>
 
 #include <climits>
+#include <cassert>
 #include <cmath>
 #include <cstring>
 
@@ -74,6 +76,23 @@ SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(
     return {};
 }
 
+I16 SearchDetail::clamp_history_value(int value) {
+    return static_cast<I16>(std::clamp(
+        value,
+        static_cast<int>(std::numeric_limits<I16>::min()),
+        static_cast<int>(std::numeric_limits<I16>::max())));
+}
+
+I16 SearchDetail::gravity_history_update(
+    I16 entry, int bonus, int history_max) {
+    const int bounded_max = std::max(1, history_max);
+    const int abs_bonus = bonus < 0 ? -bonus : bonus;
+    const int current = static_cast<int>(entry);
+    const int updated =
+        current + bonus - current * abs_bonus / bounded_max;
+    return clamp_history_value(updated);
+}
+
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
     static const auto depth_log = [] {
@@ -114,19 +133,25 @@ struct StackInfo {
 };
 
 struct SearchHeuristics {
+    static constexpr int HISTORY_PIECE_TYPES = 6;
+    using HistoryEntry = I16;
+
     Move killers[MAX_PLY][2];
     Move counter_moves[7][64];
-    int history[2][64][64]; // [side_to_move][from][to]
+    HistoryEntry history[2][64][64]; // [side_to_move][from][to]
 
-    // Continuation histories use PieceType indices 1=PAWN..6=KING.
-    int counter_move_history[7][64][7][64]; // [prev_pt][prev_to][curr_pt][curr_to]
-    int follow_up_history[7][64][7][64];    // [prev2_pt][prev2_to][curr_pt][curr_to]
+    // PieceType 1=PAWN..6=KING is stored compactly at indices 0..5.
+    HistoryEntry counter_move_history[HISTORY_PIECE_TYPES][64]
+                                     [HISTORY_PIECE_TYPES][64];
+    HistoryEntry follow_up_history[HISTORY_PIECE_TYPES][64]
+                                  [HISTORY_PIECE_TYPES][64];
 
     // Capture history, indexed by [attacker_pt][to_sq][captured_pt].
-    int capture_history[7][64][7];
+    HistoryEntry capture_history[HISTORY_PIECE_TYPES][64]
+                                [HISTORY_PIECE_TYPES];
 
     // Static eval correction history, indexed by side and pawn-structure key.
-    int correction_history[2][Tune::CORRHIST_TABLE_SIZE];
+    HistoryEntry correction_history[2][Tune::CORRHIST_TABLE_SIZE];
 
     SearchHeuristics() { clear(); }
 
@@ -148,9 +173,15 @@ struct SearchHeuristics {
     }
 
     // Gravity-based, SPSA-friendly history update (branchless abs)
-    inline void update_history(int& entry, int bonus) {
-        int abs_bonus = bonus < 0 ? -bonus : bonus;
-        entry += bonus - entry * abs_bonus / Tune::history_max;
+    inline void update_history(HistoryEntry& entry, int bonus) {
+        entry = SearchDetail::gravity_history_update(
+            entry, bonus, Tune::history_max);
+    }
+
+    static inline int piece_index(int piece_type) {
+        assert(piece_type >= static_cast<int>(PAWN)
+               && piece_type <= static_cast<int>(KING));
+        return piece_type - static_cast<int>(PAWN);
     }
 };
 
@@ -240,7 +271,8 @@ static inline void update_correction_history(const Board& b, SearchHeuristics& H
     if (!useful) return;
 
     const int stm = static_cast<int>(b.side_to_move) & 1;
-    int& entry = H.correction_history[stm][correction_history_index(b)];
+    SearchHeuristics::HistoryEntry& entry =
+        H.correction_history[stm][correction_history_index(b)];
     const int max_entry = std::max(1, Tune::corrhist_max);
     const int diff = std::clamp(score - raw_eval, -max_entry, max_entry);
     const int depth_cap = std::max(1, Tune::corrhist_depth_cap);
@@ -249,8 +281,11 @@ static inline void update_correction_history(const Board& b, SearchHeuristics& H
     const int bonus = std::clamp(diff * Tune::corrhist_bonus_mult * depth_weight / depth_cap,
                                  -bonus_limit, bonus_limit);
     int abs_bonus = bonus < 0 ? -bonus : bonus;
-    entry += bonus - entry * abs_bonus / max_entry;
-    entry = std::clamp(entry, -max_entry, max_entry);
+    const int updated =
+        static_cast<int>(entry) + bonus
+        - static_cast<int>(entry) * abs_bonus / max_entry;
+    entry = SearchDetail::clamp_history_value(
+        std::clamp(updated, -max_entry, max_entry));
 }
 
 static inline bool search_stopped(const SearchContext &context,
@@ -386,7 +421,10 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
             int attacker_pt = static_cast<int>(get_type(b.get_piece(move_from(m))));
             PieceType victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(to));
             if (victim_pt != NONE_PTYPE)
-                ch = H.capture_history[attacker_pt][to][static_cast<int>(victim_pt)]
+                ch = H.capture_history[
+                         SearchHeuristics::piece_index(attacker_pt)][to]
+                     [SearchHeuristics::piece_index(
+                         static_cast<int>(victim_pt))]
                      * Tune::capture_history_weight / 100;
         }
         if (see_val >= 0) return 1000000 + (see_val * 100) + cap + ch;
@@ -414,12 +452,18 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
     if (ply >= 1 && ss[-1].move != MOVE_NONE) {
         int prev_pt = static_cast<int>(get_type(ss[-1].piece));
         int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
-        history_score += H.counter_move_history[prev_pt][prev_to][pt][to] * Tune::cmh_weight;
+        history_score += H.counter_move_history[
+                             SearchHeuristics::piece_index(prev_pt)][prev_to]
+                         [SearchHeuristics::piece_index(pt)][to]
+                         * Tune::cmh_weight;
     }
     if (ply >= 2 && ss[-2].move != MOVE_NONE) {
         int prev2_pt = static_cast<int>(get_type(ss[-2].piece));
         int prev2_to = static_cast<int>(move_to(ss[-2].move)) & 63;
-        history_score += H.follow_up_history[prev2_pt][prev2_to][pt][to] * Tune::fmh_weight;
+        history_score += H.follow_up_history[
+                             SearchHeuristics::piece_index(prev2_pt)][prev2_to]
+                         [SearchHeuristics::piece_index(pt)][to]
+                         * Tune::fmh_weight;
     }
 
     return history_score / 100;
@@ -435,12 +479,18 @@ static inline int quiet_history_score(const Board &b, Move m, int ply, const Sea
     if (ply >= 1 && ss[-1].move != MOVE_NONE) {
         int prev_pt = static_cast<int>(get_type(ss[-1].piece));
         int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
-        score += H.counter_move_history[prev_pt][prev_to][pt][to] * Tune::cmh_weight;
+        score += H.counter_move_history[
+                     SearchHeuristics::piece_index(prev_pt)][prev_to]
+                 [SearchHeuristics::piece_index(pt)][to]
+                 * Tune::cmh_weight;
     }
     if (ply >= 2 && ss[-2].move != MOVE_NONE) {
         int prev2_pt = static_cast<int>(get_type(ss[-2].piece));
         int prev2_to = static_cast<int>(move_to(ss[-2].move)) & 63;
-        score += H.follow_up_history[prev2_pt][prev2_to][pt][to] * Tune::fmh_weight;
+        score += H.follow_up_history[
+                     SearchHeuristics::piece_index(prev2_pt)][prev2_to]
+                 [SearchHeuristics::piece_index(pt)][to]
+                 * Tune::fmh_weight;
     }
 
     return score / 100;
@@ -970,12 +1020,20 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                     if (ss[-1].move != MOVE_NONE) {
                         int p1 = static_cast<int>(get_type(ss[-1].piece));
                         int t1 = static_cast<int>(move_to(ss[-1].move)) & 63;
-                        H.update_history(H.counter_move_history[p1][t1][pt_idx][t], bns);
+                        H.update_history(
+                            H.counter_move_history[
+                                SearchHeuristics::piece_index(p1)][t1]
+                            [SearchHeuristics::piece_index(pt_idx)][t],
+                            bns);
                     }
                     if (ss[-2].move != MOVE_NONE) {
                         int p2 = static_cast<int>(get_type(ss[-2].piece));
                         int t2 = static_cast<int>(move_to(ss[-2].move)) & 63;
-                        H.update_history(H.follow_up_history[p2][t2][pt_idx][t], bns);
+                        H.update_history(
+                            H.follow_up_history[
+                                SearchHeuristics::piece_index(p2)][t2]
+                            [SearchHeuristics::piece_index(pt_idx)][t],
+                            bns);
                     }
                 };
 
@@ -995,10 +1053,20 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                 int bonus = std::min(Tune::history_bonus_limit, Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
                 int attacker_pt = static_cast<int>(get_type(moved_piece));
                 int to = static_cast<int>(move_to(m)) & 63;
-                H.update_history(H.capture_history[attacker_pt][to][cap_victim_pt], bonus);
+                H.update_history(
+                    H.capture_history[
+                        SearchHeuristics::piece_index(attacker_pt)][to]
+                    [SearchHeuristics::piece_index(cap_victim_pt)],
+                    bonus);
                 for (int j = 0; j < capture_tried_count - 1; ++j) {
                     int t2 = static_cast<int>(move_to(captures_tried[j].m)) & 63;
-                    H.update_history(H.capture_history[captures_tried[j].attacker_pt][t2][captures_tried[j].captured_pt], -bonus);
+                    H.update_history(
+                        H.capture_history[
+                            SearchHeuristics::piece_index(
+                                captures_tried[j].attacker_pt)][t2]
+                        [SearchHeuristics::piece_index(
+                            captures_tried[j].captured_pt)],
+                        -bonus);
                 }
             }
             return score;

@@ -98,6 +98,9 @@ struct SingularSearchDecision {
 SingularSearchDecision classify_singular_search(
     int singular_score, int singular_beta, int beta, int tt_score, bool cut_node);
 
+I16 clamp_history_value(int value);
+I16 gravity_history_update(I16 entry, int bonus, int history_max);
+
 } // namespace SearchDetail
 
 SearchResult search(SearchContext &context,
