@@ -149,6 +149,8 @@ pairing at LTC. The framework is described in
 - Moved datagen-only option mapping and usage presentation out of the UCI
   translation unit, with exact strict value conversions shared by both CLI
   surfaces.
+- Kept repetition-history slicing in unsigned container-size arithmetic,
+  satisfying strict static analysis without changing the selected history.
 - Removed unused generic NNUE delta/index APIs and the obsolete classical
   Texel-tuning implementation. The SPSA tuning registry and inline tuning
   variables remain intact.

@@ -1195,13 +1195,14 @@ static SearchResult search_impl(
     int rep_len = 0;
 
     if (!request.repetition.empty()) {
-        rep_len = std::min(
-            static_cast<int>(request.repetition.size()), MAX_PLY);
-        const int rep_offset =
-            static_cast<int>(request.repetition.size()) - rep_len;
+        const std::size_t rep_count = std::min(
+            request.repetition.size(), static_cast<std::size_t>(MAX_PLY));
+        const std::size_t rep_offset =
+            request.repetition.size() - rep_count;
+        rep_len = static_cast<int>(rep_count);
         for (int i = 0; i < rep_len; ++i)
             rep_stack[i] = request.repetition[
-                static_cast<std::size_t>(rep_offset + i)];
+                rep_offset + static_cast<std::size_t>(i)];
     }
     if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
         if (rep_len < MAX_PLY) rep_stack[rep_len++] = b.hash;
