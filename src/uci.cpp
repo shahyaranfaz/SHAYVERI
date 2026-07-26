@@ -52,6 +52,7 @@ static std::atomic<bool> g_pondering{false};  // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
+static std::vector<SearchWorker> uci_search_workers;
 static SearchContext uci_search_context{TT};
 
 static int active_thread_limit() {
@@ -688,6 +689,7 @@ int main(int argc, char **argv) {
             if (num_thr != g_num_threads)
                 std::cout << "info string Threads clamped to " << num_thr
                           << " by hardware capacity\n";
+            uci_search_workers.resize(static_cast<std::size_t>(num_thr));
             I64   hard_ms   = time_manager->hard_ms();
             bool  pondering = is_ponder_search;
             int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
@@ -699,7 +701,7 @@ int main(int argc, char **argv) {
                 smp_threads.push_back(std::thread(
                     [b_copy, rep, searchmoves, root_depth, fixed_nodes,
                      book_info_search, book_move]() mutable {
-                        SearchWorker worker;
+                        SearchWorker &worker = uci_search_workers[0];
                         uci_search_context.nodes = 0;
                         uci_search_context.node_limit = fixed_nodes;
                         uci_search_context.stop = false;
@@ -766,7 +768,8 @@ int main(int argc, char **argv) {
             for (int t = 1; t < num_thr; ++t) {
                 smp_threads.push_back(
                     std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
-                        SearchWorker worker;
+                        SearchWorker &worker =
+                            uci_search_workers[static_cast<std::size_t>(t)];
                         std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
                         search(
                             uci_search_context, worker, b_copy, root_depth,
@@ -785,7 +788,7 @@ int main(int argc, char **argv) {
                 std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
                              book_info_search, book_move, time_manager]() mutable {
                     const Board root_board = b_copy;
-                    SearchWorker worker;
+                    SearchWorker &worker = uci_search_workers[0];
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
                     auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);

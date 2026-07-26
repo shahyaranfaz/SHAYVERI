@@ -53,6 +53,8 @@ pairing at LTC. The framework is described in
 - Replaced process-global and thread-local search storage with explicit
   ownership. Search contexts lazily own persistent history, while each UCI or
   datagen worker owns its counters, scratch histories, and reusable ply stack.
+  Scratch history is allocated only for workers that use it, and UCI retains
+  worker storage across searches instead of reallocating it for every `go`.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
   two-cache-line cluster using independently published race-safe slots.
   Preserved four-way replacement behavior, added child-position prefetching,

@@ -166,8 +166,16 @@ struct SearchContext::Impl {
 
 struct SearchWorker::Impl {
     SearchThreadState thread;
-    SearchHeuristics heuristics;
+    std::unique_ptr<SearchHeuristics> heuristics;
     std::unique_ptr<StackInfo[]> stack;
+
+    SearchHeuristics &prepare_histories() {
+        if (!heuristics)
+            heuristics = std::make_unique<SearchHeuristics>();
+        else
+            heuristics->clear();
+        return *heuristics;
+    }
 
     SearchThreadState &prepare_thread(
         bool node_limited = false, U64 node_limit = 0) {
@@ -1257,9 +1265,7 @@ SearchResult search(SearchContext &context,
     SearchThreadState &thread = worker.impl->prepare_thread();
     SearchHeuristics &heuristics = request.retain_history
         ? context.impl->histories()
-        : worker.impl->heuristics;
-    if (!request.retain_history)
-        heuristics.clear();
+        : worker.impl->prepare_histories();
     StackInfo *stack = worker.impl->prepare_stack();
     return search_impl(
         context, thread, b, max_depth, request, heuristics, stack);
@@ -1273,9 +1279,7 @@ SearchResult search_nodes(SearchContext &context,
         worker.impl->prepare_thread(true, max_nodes);
     SearchHeuristics &heuristics = request.retain_history
         ? context.impl->histories()
-        : worker.impl->heuristics;
-    if (!request.retain_history)
-        heuristics.clear();
+        : worker.impl->prepare_histories();
     StackInfo *stack = worker.impl->prepare_stack();
     return search_impl(
         context, thread, b, MAX_PLY - 1, request, heuristics, stack);
