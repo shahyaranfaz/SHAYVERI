@@ -15,7 +15,7 @@ Use this checklist for every published SHAYVERI release. Commands use
 ```sh
 make -j23
 make test -j23
-make -C debug sanitize -j23
+make -C debug ASAN=1 UBSAN=1 LSAN=0 sanitize -j23
 printf 'uci\nisready\nquit\n' | ./SHAYVERI
 printf 'bench 16 1 3 default depth\nquit\n' | ./SHAYVERI
 ```

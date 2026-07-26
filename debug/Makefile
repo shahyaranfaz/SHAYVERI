@@ -202,9 +202,7 @@ sanitize_cutechess:
 		-engine cmd=../$(SANITIZE_BIN) name=SHAYVERI-sanitize-A option.Threads=1 option.OwnBook=false \
 		-engine cmd=../$(SANITIZE_BIN) name=SHAYVERI-sanitize-B option.Threads=1 option.OwnBook=false \
 		-each proto=uci tc=$(SANITIZE_CUTECHESS_TC) \
-		-games 2 -rounds $$(( $(SANITIZE_CUTECHESS_GAMES) / 2 )) -repeat -concurrency $(SANITIZE_CUTECHESS_CONCURRENCY) \
-		-draw movenumber=20 movecount=5 score=10 \
-		-resign movecount=3 score=800
+		-games 2 -rounds $$(( $(SANITIZE_CUTECHESS_GAMES) / 2 )) -repeat -concurrency $(SANITIZE_CUTECHESS_CONCURRENCY)
 
 strict:
 	$(CXX) $(STRICT_CXXFLAGS) $(INCLUDES) -fsyntax-only $(STRICT_SRC)
