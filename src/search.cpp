@@ -1,12 +1,12 @@
 #include "search.h"
 
-#include "attacks.h"
 #include "evaluate.h"
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
 #include "nnue.h"
 #include "nnue_update.h"
+#include "position_rules.h"
 #include "see.h"
 #include "tt.h"
 #include "uci_output.h"
@@ -351,36 +351,9 @@ static inline bool has_non_pawn_material(const Board &b, Colour c) {
             b.bit_boards[Piece(off + WQ)]) != 0;
 }
 
-static inline bool has_search_insufficient_material(const Board &b) {
-    if (b.bit_boards[WP] | b.bit_boards[BP]
-        | b.bit_boards[WR] | b.bit_boards[BR]
-        | b.bit_boards[WQ] | b.bit_boards[BQ])
-        return false;
-
-    const U64 knights = b.bit_boards[WN] | b.bit_boards[BN];
-    U64 bishops = b.bit_boards[WB] | b.bit_boards[BB];
-    if (__builtin_popcountll(knights | bishops) <= 1)
-        return true;
-    if (knights != 0 || bishops == 0)
-        return false;
-
-    const Square first = static_cast<Square>(__builtin_ctzll(bishops));
-    const int square_colour = (static_cast<int>(get_file(first))
-        + static_cast<int>(get_rank(first))) & 1;
-    while (bishops) {
-        const Square sq = pop_lsb(bishops);
-        const int colour = (static_cast<int>(get_file(sq))
-            + static_cast<int>(get_rank(sq))) & 1;
-        if (colour != square_colour)
-            return false;
-    }
-    return true;
-}
-
 static int rule_draw_score(Board &b, int ply) {
-    const Square king = king_square(b, b.side_to_move);
-    const bool in_check = is_square_attacked(b, king, flip(b.side_to_move));
-    if (in_check && generate_legal_moves(b).count == 0)
+    if (PositionRules::is_in_check(b)
+        && generate_legal_moves(b).count == 0)
         return -MATE_SCORE + ply;
     return 0;
 }
@@ -653,15 +626,6 @@ private:
 
 static_assert(sizeof(MovePicker) <= 5 * 1024);
 
-// Step by 2 (same side to move), limit search to last half_move plies.
-static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len, int half_move) {
-    int limit = rep_len - half_move;
-    if (limit < 0) limit = 0;
-    for (int i = rep_len - 2; i >= limit; i -= 2)
-        if (rep_stack[i] == key) return true;
-    return false;
-}
-
 static inline int evaluate_position(const Board &b, const StackInfo *ss) {
     const int score = NNUE::is_enabled()
         ? NNUE::evaluate(static_cast<int>(b.side_to_move), ss->acc)
@@ -671,9 +635,7 @@ static inline int evaluate_position(const Board &b, const StackInfo *ss) {
 }
 
 static int max_ply_score(Board &b, int alpha, int ply, const StackInfo *ss) {
-    const Square king = king_square(b, b.side_to_move);
-    const bool in_check = is_square_attacked(b, king, flip(b.side_to_move));
-    if (!in_check)
+    if (!PositionRules::is_in_check(b))
         return evaluate_position(b, ss);
 
     const MoveList legal = generate_legal_moves(b);
@@ -686,9 +648,12 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
     if (search_stopped(context, thread)) return 0;
     count_node(context, thread);
 
-    if (has_search_insufficient_material(b)) return 0;
+    if (PositionRules::has_insufficient_material(b)) return 0;
     if (b.half_move >= 100) return rule_draw_score(b, ply);
-    if (rep_len > 1 && is_repetition(b.hash, rep_stack, rep_len - 1, b.half_move)) return 0;
+    if (rep_len > 1
+        && PositionRules::has_search_repetition(
+            b.hash, rep_stack, rep_len - 1, b.half_move))
+        return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
@@ -708,8 +673,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
         if (e->flag == TT_UPPER && s <= alpha) return s;
     }
 
-    Square ksq    = king_square(b, b.side_to_move);
-    bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
+    const bool in_check = PositionRules::is_in_check(b);
 
     int stand_pat = 0;
     if (!in_check) {
@@ -761,8 +725,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
             && move_promo(m) == NONE_PTYPE
             && stand_pat + victim_val + Tune::qs_futility_margin < alpha;
         if (qs_see_reject || qs_delta_reject || qs_futility_reject) {
-            const Square king = king_square(b, b.side_to_move);
-            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
+            const bool gives_check = PositionRules::is_in_check(b);
             if (!gives_check) {
                 unmake_move(b, m, u);
                 continue;
@@ -800,9 +763,12 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
     // Basic draw detection. Checkmate takes precedence if the mating move also
     // reaches the reversible-move limit.
-    if (has_search_insufficient_material(b)) return 0;
+    if (PositionRules::has_insufficient_material(b)) return 0;
     if (b.half_move >= 100) return rule_draw_score(b, ply);
-    if (rep_len > 1 && is_repetition(key, rep_stack, rep_len - 1, b.half_move)) return 0;
+    if (rep_len > 1
+        && PositionRules::has_search_repetition(
+            key, rep_stack, rep_len - 1, b.half_move))
+        return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
@@ -844,8 +810,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         return qsearch(context, thread, b, alpha, beta,
                        Tune::qs_start_depth, ply, ss, rep_stack, rep_len);
 
-    Square ksq    = king_square(b, b.side_to_move);
-    bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
+    const bool in_check = PositionRules::is_in_check(b);
     if (in_check && ply < MAX_PLY - Tune::check_extension)
         depth += Tune::check_extension;
 
@@ -1049,8 +1014,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
             && move_history < Tune::history_pruning_threshold;
         if (lmp_reject || futility_reject || see_reject || history_reject) {
-            const Square king = king_square(b, b.side_to_move);
-            const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
+            const bool gives_check = PositionRules::is_in_check(b);
             if (!gives_check) {
                 if (lmp_reject || futility_reject || see_reject
                     || history_reject) {
@@ -1337,8 +1301,7 @@ static SearchResult search_impl(
             if (search_stopped(context, thread)) break;
 
             if (legal_root_count == 0) {
-                Square ksq = king_square(b, b.side_to_move);
-                bool in_check = is_square_attacked(b, ksq, flip(b.side_to_move));
+                const bool in_check = PositionRules::is_in_check(b);
                 return {MOVE_NONE, MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, 0};
             }
 
@@ -1386,7 +1349,10 @@ static SearchResult search_impl(
 
         for (int i = 0; i < depth && pv_move != MOVE_NONE; ++i) {
             if (b_pv.half_move >= 100) break;
-            if (pv_rep_len > 1 && is_repetition(b_pv.hash, pv_rep_stack, pv_rep_len - 1, b_pv.half_move))
+            if (pv_rep_len > 1
+                && PositionRules::has_search_repetition(
+                    b_pv.hash, pv_rep_stack, pv_rep_len - 1,
+                    b_pv.half_move))
                 break;
 
             Undo u_pv;

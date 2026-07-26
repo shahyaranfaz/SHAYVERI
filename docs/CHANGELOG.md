@@ -142,6 +142,10 @@ pairing at LTC. The framework is described in
 - Moved generated opening-book data from a multiply included 1.87 MiB header
   into one source file, and extracted move I/O and null-move mutation from the
   search module.
+- Consolidated check, insufficient-material, search-repetition, and played-game
+  threefold rules under one tested position-rules owner. Datagen now recognizes
+  all-bishop same-colour dead positions consistently with search, while its
+  threefold claim remains distinct from search's prior-occurrence pruning rule.
 - Removed unused generic NNUE delta/index APIs and the obsolete classical
   Texel-tuning implementation. The SPSA tuning registry and inline tuning
   variables remain intact.

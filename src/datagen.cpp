@@ -5,6 +5,7 @@
 #include "make.h"
 #include "move_gen.h"
 #include "opening_book.h"
+#include "position_rules.h"
 #include "search.h"
 #include "tt.h"
 #include "tune.h"
@@ -118,40 +119,10 @@ void pin_worker_to_core(int id) {
 #endif
 }
 
-bool is_in_check(const Board &b) {
-    Square ksq = king_square(b, b.side_to_move);
-    return is_square_attacked(b, ksq, flip(b.side_to_move));
-}
-
 bool is_capture_or_promo(const Board &b, Move m) {
     if (move_promo(m) != NONE_PTYPE) return true;
     if (is_ep_move(m)) return true;
     return b.get_piece(move_to(m)) != NONE_PIECE;
-}
-
-bool is_repetition(const std::vector<U64> &history, U64 key) {
-    int seen = 0;
-    for (U64 h : history) {
-        if (h == key && ++seen >= 3) return true;
-    }
-    return false;
-}
-
-bool has_insufficient_material(const Board &b) {
-    if (b.bit_boards[WP] | b.bit_boards[BP] |
-        b.bit_boards[WR] | b.bit_boards[BR] |
-        b.bit_boards[WQ] | b.bit_boards[BQ]) {
-        return false;
-    }
-
-    int minor_count = 0;
-    U64 minors = b.bit_boards[WN] | b.bit_boards[BN] |
-                 b.bit_boards[WB] | b.bit_boards[BB];
-    while (minors) {
-        pop_lsb(minors);
-        ++minor_count;
-    }
-    return minor_count <= 1;
 }
 
 int popcount64(U64 bb) {
@@ -236,12 +207,14 @@ int cp_bucket(int cp) {
 GameResult terminal_result(Board &b, const std::vector<U64> &history) {
     MoveList legal = generate_legal_moves(b);
     if (legal.count == 0) {
-        if (!is_in_check(b)) return {GameEnd::Draw, 1};
+        if (!PositionRules::is_in_check(b)) return {GameEnd::Draw, 1};
         return {GameEnd::Checkmate, b.side_to_move == WHITE ? 0 : 2};
     }
     if (b.half_move >= 100) return {GameEnd::Draw, 1};
-    if (is_repetition(history, b.hash)) return {GameEnd::Draw, 1};
-    if (has_insufficient_material(b)) return {GameEnd::Draw, 1};
+    if (PositionRules::is_threefold_repetition(history, b.hash))
+        return {GameEnd::Draw, 1};
+    if (PositionRules::has_insufficient_material(b))
+        return {GameEnd::Draw, 1};
     return {};
 }
 
@@ -438,7 +411,7 @@ FilterReason filter_position(const Board &b,
                              int sample_index,
                              const DatagenOptions &options,
                              std::unordered_set<U64> *seen) {
-    if (!options.include_checks && is_in_check(b))
+    if (!options.include_checks && PositionRules::is_in_check(b))
         return FilterReason::InCheck;
 
     if (!options.include_captures && is_capture_or_promo(b, chosen))

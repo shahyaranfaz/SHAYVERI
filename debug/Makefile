@@ -81,6 +81,12 @@ EVAL_SYM_SRC := $(COMMON_SRC) eval_symmetry.cpp
 TT_SAFETY_SRC := ../src/tt.cpp tt_safety.cpp
 ATTACK_TABLE_SRC := ../src/attacks.cpp ../src/board.cpp ../src/zobrist.cpp attack_tables.cpp
 TIME_MANAGER_SRC := ../src/time_manager.cpp time_manager_test.cpp
+POSITION_RULES_SRC := \
+	../src/attacks.cpp \
+	../src/board.cpp \
+	../src/fen.cpp \
+	../src/zobrist.cpp \
+	position_rules.cpp
 SEARCH_REGRESSION_SRC := $(COMMON_SRC) search_regression_test.cpp
 NNUE_TEST_SRC := \
 	../src/attacks.cpp \
@@ -128,6 +134,7 @@ TIDY_SRC := \
 	attack_tables.cpp \
 	tt_safety.cpp \
 	time_manager_test.cpp \
+	position_rules.cpp \
 	search_regression_test.cpp \
 	nnue_test.cpp
 
@@ -140,10 +147,11 @@ EVAL_SYM_BIN := eval_symmetry
 TT_SAFETY_BIN := tt_safety
 ATTACK_TABLE_BIN := attack_tables
 TIME_MANAGER_BIN := time_manager
+POSITION_RULES_BIN := position_rules
 SEARCH_REGRESSION_BIN := search_regression
 NNUE_TEST_BIN := nnue_test
 
-all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN)
+all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(POSITION_RULES_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN)
 
 TEST_TARGETS := \
 	perft_suite \
@@ -155,6 +163,7 @@ TEST_TARGETS := \
 	attack_table_suite \
 	tt_safety_suite \
 	time_manager_suite \
+	position_rules_suite \
 	search_regression_suite \
 	nnue_suite \
 	datagen_check \
@@ -229,6 +238,9 @@ $(ATTACK_TABLE_BIN): $(ATTACK_TABLE_SRC)
 $(TIME_MANAGER_BIN): $(TIME_MANAGER_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(TIME_MANAGER_SRC)
 
+$(POSITION_RULES_BIN): $(POSITION_RULES_SRC)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(POSITION_RULES_SRC)
+
 $(SEARCH_REGRESSION_BIN): $(SEARCH_REGRESSION_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SEARCH_REGRESSION_SRC)
 
@@ -268,6 +280,9 @@ attack_table_suite: $(ATTACK_TABLE_BIN)
 time_manager_suite: $(TIME_MANAGER_BIN)
 	./$(TIME_MANAGER_BIN)
 
+position_rules_suite: $(POSITION_RULES_BIN)
+	./$(POSITION_RULES_BIN)
+
 search_regression_suite: $(SEARCH_REGRESSION_BIN)
 	./$(SEARCH_REGRESSION_BIN)
 
@@ -295,7 +310,7 @@ tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py
 
 clean:
-	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
+	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(POSITION_RULES_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test runtime_tests strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite attack_table_suite time_manager_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration fixed_search_integration tactical_regression clean
+.PHONY: all test runtime_tests strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite attack_table_suite time_manager_suite position_rules_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration fixed_search_integration tactical_regression clean
