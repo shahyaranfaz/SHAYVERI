@@ -139,6 +139,14 @@ int main() {
         "k7/8/8/8/8/8/8/KK6 w - - 0 1",
         "kk6/8/8/8/8/8/8/K7 w - - 0 1",
         "kppppppp/pppppppp/pppppppp/8/8/PPPPPPPP/PPPPPPPP/KPPPPPPP w - - 0 1",
+        "4k3/8/8/8/8/8/8/4K3 w KK - 0 1",
+        "4k3/8/8/8/8/8/8/4K3 w K - 0 1",
+        "4k3/8/8/8/8/8/8/R3K3 w K - 0 1",
+        "4k3/8/8/8/8/8/8/P3K3 w - - 0 1",
+        "4k3/pppppppp/p7/8/8/8/8/4K3 w - - 0 1",
+        "4k3/8/8/8/8/8/PPPPPPPP/P3K3 w - - 0 1",
+        "8/8/8/8/8/8/4k3/4K3 w - - 0 1",
+        "4k3/6p1/8/6p1/8/8/8/4K3 w - g6 0 1",
     };
     for (const std::string &fen : invalid) {
         Board b;

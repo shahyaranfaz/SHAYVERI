@@ -52,11 +52,14 @@ bool set_from_fen(Board &b, const std::string &fen) {
 
     if (castle != "-") {
         for (char c : castle) {
-            if      (c == 'K') parsed.castling |= WHITE_KINGSIDE;
-            else if (c == 'Q') parsed.castling |= WHITE_QUEENSIDE;
-            else if (c == 'k') parsed.castling |= BLACK_KINGSIDE;
-            else if (c == 'q') parsed.castling |= BLACK_QUEENSIDE;
+            int right = 0;
+            if      (c == 'K') right = WHITE_KINGSIDE;
+            else if (c == 'Q') right = WHITE_QUEENSIDE;
+            else if (c == 'k') right = BLACK_KINGSIDE;
+            else if (c == 'q') right = BLACK_QUEENSIDE;
             else               return false;
+            if (parsed.castling & right) return false;
+            parsed.castling |= right;
         }
     }
 

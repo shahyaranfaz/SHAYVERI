@@ -2,6 +2,7 @@
 
 #include "zobrist.h"
 
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
@@ -83,6 +84,47 @@ bool Board::is_plausible_position() const {
         || half_move < 0 || full_move < 1)
         return false;
 
+    constexpr U64 back_ranks = 0xFF000000000000FFULL;
+    if ((bit_boards[WP] | bit_boards[BP]) & back_ranks)
+        return false;
+    if (__builtin_popcountll(bit_boards[WP]) > 8
+        || __builtin_popcountll(bit_boards[BP]) > 8
+        || __builtin_popcountll(occupancies[WHITE]) > 16
+        || __builtin_popcountll(occupancies[BLACK]) > 16)
+        return false;
+
+    const Square white_king = __builtin_ctzll(bit_boards[WK]);
+    const Square black_king = __builtin_ctzll(bit_boards[BK]);
+    const int king_file_distance =
+        std::abs(static_cast<int>(get_file(white_king))
+                 - static_cast<int>(get_file(black_king)));
+    const int king_rank_distance =
+        std::abs(static_cast<int>(get_rank(white_king))
+                 - static_cast<int>(get_rank(black_king)));
+    if (king_file_distance <= 1 && king_rank_distance <= 1)
+        return false;
+
+    const Square e1 = make_square(FILE_E, RANK_1);
+    const Square e8 = make_square(FILE_E, RANK_8);
+    if ((castling & (WHITE_KINGSIDE | WHITE_QUEENSIDE))
+            && get_piece(e1) != WK)
+        return false;
+    if ((castling & (BLACK_KINGSIDE | BLACK_QUEENSIDE))
+            && get_piece(e8) != BK)
+        return false;
+    if ((castling & WHITE_KINGSIDE)
+            && get_piece(make_square(FILE_H, RANK_1)) != WR)
+        return false;
+    if ((castling & WHITE_QUEENSIDE)
+            && get_piece(make_square(FILE_A, RANK_1)) != WR)
+        return false;
+    if ((castling & BLACK_KINGSIDE)
+            && get_piece(make_square(FILE_H, RANK_8)) != BR)
+        return false;
+    if ((castling & BLACK_QUEENSIDE)
+            && get_piece(make_square(FILE_A, RANK_8)) != BR)
+        return false;
+
     if (en_passant != SQ_NONE) {
         const Rank expected_rank = side_to_move == WHITE ? RANK_6 : RANK_3;
         if (get_rank(en_passant) != expected_rank
@@ -92,6 +134,11 @@ bool Board::is_plausible_position() const {
             ? en_passant - 8 : en_passant + 8;
         const Piece expected_pawn = side_to_move == WHITE ? BP : WP;
         if (!is_valid(pawn_square) || get_piece(pawn_square) != expected_pawn)
+            return false;
+        const Square origin_square = side_to_move == WHITE
+            ? en_passant + 8 : en_passant - 8;
+        if (!is_valid(origin_square)
+            || get_piece(origin_square) != NONE_PIECE)
             return false;
     }
     return true;

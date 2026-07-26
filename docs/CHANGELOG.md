@@ -90,7 +90,9 @@ pairing at LTC. The framework is described in
   lower NPS on longer one-thread fixed-node and timed workloads.
 - Added an incremental pawn Zobrist key and comprehensive board consistency
   checks. Unmake now restores saved hashes without repeating discarded hash
-  work.
+  work. FEN validation now also rejects duplicate or placement-inconsistent
+  castling rights, impossible pawn ranks and counts, excess per-side material,
+  adjacent kings, and occupied en-passant origin squares.
 - Split trusted generated-move execution from checked external move handling.
   Added malformed-move coverage and randomized checked-versus-trusted
   equivalence checks across 109,846 make/unmake round trips. Independently
