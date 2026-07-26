@@ -12,6 +12,7 @@ using SHAYVERI::TT_UPPER;
 using SHAYVERI::TTEntry;
 using SHAYVERI::TranspositionTable;
 using SHAYVERI::U64;
+using SHAYVERI::create_ep_move;
 
 static bool require(bool cond, const char *msg) {
     if (!cond) std::cerr << "[FAIL] " << msg << "\n";
@@ -58,6 +59,25 @@ int main() {
     const TTEntry *ee = tt.probe(eval_only_key);
     if (!require(ee != nullptr, "probe eval-only key")) ++failures;
     if (ee && !require(ee->has_eval && ee->eval == -19, "eval-only payload mismatch")) ++failures;
+
+    // Compact payload boundaries and the full 17-bit move encoding must
+    // round-trip exactly.
+    const U64 boundary_key = 0x8000000000000222ULL;
+    const auto boundary_move = create_ep_move(63, 63);
+    tt.store(boundary_key, 127, -32000, TT_UPPER, boundary_move,
+             31871, true);
+    const TTEntry *boundary = tt.probe(boundary_key);
+    if (!require(boundary != nullptr, "probe compact boundary key"))
+        ++failures;
+    if (boundary
+        && !require(boundary->depth == 127
+                        && boundary->score == -32000
+                        && boundary->eval == 31871
+                        && boundary->best == boundary_move
+                        && boundary->flag == TT_UPPER
+                        && boundary->has_eval,
+                    "compact payload boundary mismatch"))
+        ++failures;
 
     // A normal 1 MiB table has 16,384 buckets. These keys therefore collide
     // in one bucket and exercise four-way residency and depth replacement.

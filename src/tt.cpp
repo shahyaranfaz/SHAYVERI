@@ -1,130 +1,151 @@
 #include "tt.h"
 
 #include <algorithm>
+#include <bit>
+#include <limits>
 
 namespace SHAYVERI {
 
 TranspositionTable TT;
 static thread_local TTEntry probe_scratch;
 
-class SlotWriteGuard {
-public:
-    explicit SlotWriteGuard(TTSlot &slot) : slot_(slot) {
-        U64 expected = slot_.sequence.load(std::memory_order_relaxed);
-        while (true) {
-            if ((expected & 1ULL) == 0
-                && slot_.sequence.compare_exchange_weak(
-                    expected, expected + 1,
-                    std::memory_order_acquire,
-                    std::memory_order_relaxed))
-                break;
-            expected = slot_.sequence.load(std::memory_order_relaxed);
-        }
-        stable_sequence_ = expected;
+namespace {
+
+constexpr U64 PRESENT_BIT = 1ULL << 63;
+constexpr U64 LOCKED_VALUE = 1ULL << 62;
+constexpr U64 AGE_MASK = 0xFFULL;
+constexpr U64 KEY_MASK = ~(PRESENT_BIT | LOCKED_VALUE | AGE_MASK);
+constexpr U64 MOVE_MASK = (1ULL << 17) - 1;
+
+U64 pack_payload(int score, int eval, int depth, TTFlag flag,
+                 Move best, bool has_eval) {
+    const I16 packed_score = static_cast<I16>(
+        std::clamp(score, static_cast<int>(std::numeric_limits<I16>::min()),
+                  static_cast<int>(std::numeric_limits<I16>::max())));
+    const I16 packed_eval = static_cast<I16>(
+        std::clamp(eval, static_cast<int>(std::numeric_limits<I16>::min()),
+                  static_cast<int>(std::numeric_limits<I16>::max())));
+    const U8 packed_depth =
+        static_cast<U8>(std::clamp(depth, -1, 127) + 1);
+
+    return static_cast<U16>(packed_score)
+         | (static_cast<U64>(static_cast<U16>(packed_eval)) << 16)
+         | ((static_cast<U64>(best) & MOVE_MASK) << 32)
+         | (static_cast<U64>(packed_depth) << 49)
+         | (static_cast<U64>(flag) << 57)
+         | (static_cast<U64>(has_eval ? 1 : 0) << 59);
+}
+
+TTEntry unpack_entry(U64 key, U64 key_age, U64 payload) {
+    TTEntry entry;
+    entry.key = key;
+    entry.score = static_cast<I16>(payload & 0xFFFFULL);
+    entry.eval = static_cast<I16>((payload >> 16) & 0xFFFFULL);
+    entry.best = static_cast<Move>((payload >> 32) & MOVE_MASK);
+    entry.depth = static_cast<I8>(((payload >> 49) & 0xFFULL) - 1);
+    entry.flag = static_cast<U8>((payload >> 57) & 0x3ULL);
+    entry.has_eval = ((payload >> 59) & 1ULL) != 0;
+    entry.age = static_cast<U8>(key_age & AGE_MASK);
+    return entry;
+}
+
+U64 publication_value(U64 key, U8 age, unsigned index_bits) {
+    return PRESENT_BIT | ((key >> index_bits) << 8) | age;
+}
+
+bool publication_matches(U64 key_age, U64 key, unsigned index_bits) {
+    return (key_age & KEY_MASK)
+        == (publication_value(key, 0, index_bits) & KEY_MASK);
+}
+
+bool read_slot(const TTSlot &slot, U64 key, unsigned index_bits,
+               TTEntry &entry, U64 *observed = nullptr) {
+    const U64 key_age_before =
+        slot.key_age.load(std::memory_order_acquire);
+    if ((key_age_before & PRESENT_BIT) == 0
+        || !publication_matches(key_age_before, key, index_bits))
+        return false;
+
+    const U64 payload = slot.payload.load(std::memory_order_relaxed);
+    const U64 key_age_after =
+        slot.key_age.load(std::memory_order_acquire);
+    if (key_age_before != key_age_after) return false;
+
+    entry = unpack_entry(key, key_age_after, payload);
+    if (observed) *observed = key_age_after;
+    return true;
+}
+
+bool read_slot_any(const TTSlot &slot, unsigned index_bits, SIZE_T bucket_index,
+                   TTEntry &entry, U64 &observed) {
+    const U64 key_age_before =
+        slot.key_age.load(std::memory_order_acquire);
+    if ((key_age_before & PRESENT_BIT) == 0) {
+        observed = key_age_before;
+        return false;
     }
 
-    ~SlotWriteGuard() {
-        slot_.sequence.store(stable_sequence_ + 2, std::memory_order_release);
-    }
+    const U64 payload = slot.payload.load(std::memory_order_relaxed);
+    const U64 key_age_after =
+        slot.key_age.load(std::memory_order_acquire);
+    if (key_age_before != key_age_after) return false;
 
-    SlotWriteGuard(const SlotWriteGuard &) = delete;
-    SlotWriteGuard &operator=(const SlotWriteGuard &) = delete;
+    const U64 high_key = (key_age_after & KEY_MASK) >> 8;
+    const U64 key = (high_key << index_bits) | bucket_index;
+    entry = unpack_entry(key, key_age_after, payload);
+    observed = key_age_after;
+    return true;
+}
 
-private:
-    TTSlot &slot_;
-    U64 stable_sequence_ = 0;
-};
+bool lock_slot(TTSlot &slot, U64 expected) {
+    if (expected == LOCKED_VALUE) return false;
+    return slot.key_age.compare_exchange_strong(
+        expected, LOCKED_VALUE,
+        std::memory_order_acquire,
+        std::memory_order_relaxed);
+}
 
-static SIZE_T round_down_power2(SIZE_T n) {
+void publish_slot(TTSlot &slot, const TTEntry &entry,
+                  unsigned index_bits) {
+    slot.payload.store(
+        pack_payload(entry.score, entry.eval, entry.depth,
+                     static_cast<TTFlag>(entry.flag),
+                     entry.best, entry.has_eval),
+        std::memory_order_relaxed);
+    slot.key_age.store(
+        publication_value(entry.key, entry.age, index_bits),
+        std::memory_order_release);
+}
+
+SIZE_T round_down_power2(SIZE_T n) {
     SIZE_T p = 1;
     while ((p << 1) <= n) p <<= 1;
     return p;
 }
 
-static U64 pack_data(int score, int eval) {
-    return static_cast<U32>(score) |
-           (static_cast<U64>(static_cast<U32>(eval)) << 32);
-}
-
-static U64 pack_meta(int depth, U8 flag, U8 age, bool has_eval, Move best) {
-    const U8 packed_depth = static_cast<U8>(std::clamp(depth, -128, 127) + 128);
-    return static_cast<U64>(best) |
-           (static_cast<U64>(packed_depth) << 32) |
-           (static_cast<U64>(flag) << 40) |
-           (static_cast<U64>(age) << 48) |
-           (static_cast<U64>(has_eval ? 1 : 0) << 56);
-}
-
-static TTEntry unpack_entry(U64 key, U64 data, U64 meta) {
-    TTEntry e;
-    e.key = key;
-    e.score = static_cast<int>(static_cast<I32>(data & 0xFFFFFFFFULL));
-    e.eval = static_cast<int>(static_cast<I32>(data >> 32));
-    e.best = static_cast<Move>(meta & 0xFFFFFFFFULL);
-    e.depth = static_cast<I8>(static_cast<int>((meta >> 32) & 0xFF) - 128);
-    e.flag = static_cast<U8>((meta >> 40) & 0xFF);
-    e.age = static_cast<U8>((meta >> 48) & 0xFF);
-    e.has_eval = ((meta >> 56) & 1ULL) != 0;
-    return e;
-}
-
-static bool read_slot(const TTSlot &slot, TTEntry &out) {
-    for (int attempt = 0; attempt < 3; ++attempt) {
-        const U64 sequence_before =
-            slot.sequence.load(std::memory_order_acquire);
-        if (sequence_before & 1ULL) continue;
-
-        const U64 key = slot.key.load(std::memory_order_relaxed);
-        const U64 data = slot.data.load(std::memory_order_relaxed);
-        const U64 meta = slot.meta.load(std::memory_order_relaxed);
-        const U64 sequence_after =
-            slot.sequence.load(std::memory_order_acquire);
-        if (sequence_before != sequence_after || (sequence_after & 1ULL))
-            continue;
-        if (key == 0) return false;
-        out = unpack_entry(key, data, meta);
-        return true;
-    }
-    return false;
-}
-
-static bool read_locked_slot(const TTSlot &slot, TTEntry &out) {
-    const U64 key = slot.key.load(std::memory_order_relaxed);
-    if (key == 0) return false;
-    const U64 data = slot.data.load(std::memory_order_relaxed);
-    const U64 meta = slot.meta.load(std::memory_order_relaxed);
-    out = unpack_entry(key, data, meta);
-    return true;
-}
-
-static void write_locked_slot(TTSlot &slot, const TTEntry &entry) {
-    slot.data.store(pack_data(entry.score, entry.eval), std::memory_order_relaxed);
-    slot.meta.store(pack_meta(entry.depth, entry.flag, entry.age, entry.has_eval, entry.best),
-                    std::memory_order_relaxed);
-    slot.key.store(entry.key, std::memory_order_relaxed);
-}
+} // namespace
 
 void TranspositionTable::resize(SIZE_T mb) {
-    SIZE_T bytes = mb * 1024ULL * 1024ULL;
+    const SIZE_T bytes = mb * 1024ULL * 1024ULL;
     SIZE_T n = round_down_power2(bytes / sizeof(TTBucket));
     if (n < 1024) n = 1024;
 
-    auto new_table = std::make_unique<TTBucket[]>(n);
-    table = std::move(new_table);
+    table = std::make_unique<TTBucket[]>(n);
     bucket_count = n;
     mask = n - 1;
+    index_bits = std::countr_zero(bucket_count);
     generation.store(0, std::memory_order_relaxed);
 }
 
 void TranspositionTable::clear() {
     if (!table) return;
     for (SIZE_T i = 0; i < bucket_count; ++i) {
-        TTBucket &bucket = table[i];
-        for (TTSlot &slot : bucket.entries) {
-            SlotWriteGuard guard(slot);
-            slot.key.store(0, std::memory_order_relaxed);
-            slot.data.store(0, std::memory_order_relaxed);
-            slot.meta.store(0, std::memory_order_relaxed);
+        for (TTSlot &slot : table[i].entries) {
+            U64 expected = slot.key_age.load(std::memory_order_relaxed);
+            while (!lock_slot(slot, expected))
+                expected = slot.key_age.load(std::memory_order_relaxed);
+            slot.payload.store(0, std::memory_order_relaxed);
+            slot.key_age.store(0, std::memory_order_release);
         }
     }
     generation.store(0, std::memory_order_relaxed);
@@ -140,12 +161,12 @@ void TranspositionTable::prefetch(U64 key) const {
 }
 
 const TTEntry *TranspositionTable::probe(U64 key) const {
-    if (!table || bucket_count == 0) return nullptr;
+    if (!table || bucket_count == 0 || key == 0) return nullptr;
 
     const TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
     for (const TTSlot &slot : bucket.entries) {
         TTEntry entry;
-        if (read_slot(slot, entry) && entry.key == key) {
+        if (read_slot(slot, key, index_bits, entry)) {
             probe_scratch = entry;
             return &probe_scratch;
         }
@@ -153,105 +174,104 @@ const TTEntry *TranspositionTable::probe(U64 key) const {
     return nullptr;
 }
 
-void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move best,
-                               int eval, bool has_eval) {
+void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag,
+                               Move best, int eval, bool has_eval) {
     if (!table || bucket_count == 0 || key == 0) return;
 
-    TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
+    const SIZE_T bucket_index = static_cast<SIZE_T>(key) & mask;
+    TTBucket &bucket = table[bucket_index];
     const U8 age = generation.load(std::memory_order_relaxed);
 
-    auto update = [&](TTSlot &slot, TTEntry entry) {
+    auto update = [&](TTEntry &entry) {
+        bool changed = false;
         if (depth >= static_cast<int>(entry.depth) || flag == TT_EXACT) {
-            entry.depth = static_cast<I8>(std::clamp(depth, -128, 127));
+            entry.depth = static_cast<I8>(std::clamp(depth, -1, 127));
             entry.score = score;
             entry.flag = static_cast<U8>(flag);
-            entry.age = age;
             if (best != MOVE_NONE) entry.best = best;
             if (has_eval) {
                 entry.eval = eval;
                 entry.has_eval = true;
             }
-            write_locked_slot(slot, entry);
+            changed = true;
         } else if (best != MOVE_NONE && entry.best == MOVE_NONE) {
             entry.best = best;
-            entry.age = age;
             if (has_eval) {
                 entry.eval = eval;
                 entry.has_eval = true;
             }
-            write_locked_slot(slot, entry);
+            changed = true;
         } else if (has_eval && !entry.has_eval) {
             entry.eval = eval;
             entry.has_eval = true;
-            entry.age = age;
-            write_locked_slot(slot, entry);
+            changed = true;
         }
+        if (changed) entry.age = age;
     };
 
     for (int attempt = 0; attempt < 4; ++attempt) {
         for (TTSlot &slot : bucket.entries) {
-            TTEntry snapshot;
-            if (!read_slot(slot, snapshot) || snapshot.key != key) continue;
-
-            SlotWriteGuard guard(slot);
-            TTEntry current;
-            if (!read_locked_slot(slot, current) || current.key != key)
-                break;
-            update(slot, current);
+            TTEntry entry;
+            U64 observed;
+            if (!read_slot(slot, key, index_bits, entry, &observed)) continue;
+            if (!lock_slot(slot, observed)) break;
+            update(entry);
+            publish_slot(slot, entry, index_bits);
             return;
         }
 
-        TTSlot *replace = nullptr;
-        TTEntry replace_entry;
-        bool replace_valid = false;
+        TTSlot *victim = nullptr;
+        TTEntry victim_entry;
+        U64 victim_publication = 0;
 
         for (TTSlot &slot : bucket.entries) {
             TTEntry candidate;
-            if (!read_slot(slot, candidate)) {
-                replace = &slot;
-                replace_valid = false;
-                break;
+            U64 observed = 0;
+            if (!read_slot_any(
+                    slot, index_bits, bucket_index, candidate, observed)) {
+                if (observed == 0) {
+                    victim = &slot;
+                    victim_publication = 0;
+                    break;
+                }
+                continue;
             }
-            if (!replace) {
-                replace = &slot;
-                replace_entry = candidate;
-                replace_valid = true;
+
+            if (!victim) {
+                victim = &slot;
+                victim_entry = candidate;
+                victim_publication = observed;
                 continue;
             }
 
             const bool candidate_old = candidate.age != age;
-            const bool replace_old = replace_entry.age != age;
-            if ((candidate_old && !replace_old)
-                || (candidate_old == replace_old
-                    && candidate.depth < replace_entry.depth)) {
-                replace = &slot;
-                replace_entry = candidate;
-                replace_valid = true;
+            const bool victim_old = victim_entry.age != age;
+            if ((candidate_old && !victim_old)
+                || (candidate_old == victim_old
+                    && candidate.depth < victim_entry.depth)) {
+                victim = &slot;
+                victim_entry = candidate;
+                victim_publication = observed;
             }
         }
 
-        if (!replace) return;
-        const U64 expected_key = replace_valid ? replace_entry.key : 0;
-        SlotWriteGuard guard(*replace);
-        TTEntry current;
-        const bool current_valid = read_locked_slot(*replace, current);
-        const U64 current_key = current_valid ? current.key : 0;
-        if (current_key == key) {
-            update(*replace, current);
+        if (!victim || !lock_slot(*victim, victim_publication)) continue;
+        if (victim_publication != 0 && victim_entry.key == key) {
+            update(victim_entry);
+            publish_slot(*victim, victim_entry, index_bits);
             return;
         }
-        if (current_key != expected_key) continue;
 
         TTEntry fresh;
         fresh.key = key;
-        fresh.depth = static_cast<I8>(std::clamp(depth, -128, 127));
+        fresh.depth = static_cast<I8>(std::clamp(depth, -1, 127));
         fresh.score = score;
         fresh.flag = static_cast<U8>(flag);
         fresh.age = age;
         fresh.best = best;
         fresh.has_eval = has_eval;
         fresh.eval = has_eval ? eval : 0;
-        write_locked_slot(*replace, fresh);
+        publish_slot(*victim, fresh, index_bits);
         return;
     }
 }
@@ -259,52 +279,35 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move 
 void TranspositionTable::store_eval(U64 key, int eval) {
     if (!table || bucket_count == 0 || key == 0) return;
 
-    TTBucket &bucket = table[static_cast<SIZE_T>(key) & mask];
+    const SIZE_T bucket_index = static_cast<SIZE_T>(key) & mask;
+    TTBucket &bucket = table[bucket_index];
     const U8 age = generation.load(std::memory_order_relaxed);
 
     for (int attempt = 0; attempt < 4; ++attempt) {
         for (TTSlot &slot : bucket.entries) {
-            TTEntry snapshot;
-            if (!read_slot(slot, snapshot) || snapshot.key != key) continue;
-
-            SlotWriteGuard guard(slot);
-            TTEntry current;
-            if (!read_locked_slot(slot, current) || current.key != key)
-                break;
-            current.eval = eval;
-            current.has_eval = true;
-            current.age = age;
-            write_locked_slot(slot, current);
+            TTEntry entry;
+            U64 observed;
+            if (!read_slot(slot, key, index_bits, entry, &observed)) continue;
+            if (!lock_slot(slot, observed)) break;
+            entry.eval = eval;
+            entry.has_eval = true;
+            entry.age = age;
+            publish_slot(slot, entry, index_bits);
             return;
         }
 
         for (TTSlot &slot : bucket.entries) {
-            TTEntry snapshot;
-            if (read_slot(slot, snapshot)) continue;
-
-            SlotWriteGuard guard(slot);
-            TTEntry current;
-            if (read_locked_slot(slot, current)) {
-                if (current.key == key) {
-                    current.eval = eval;
-                    current.has_eval = true;
-                    current.age = age;
-                    write_locked_slot(slot, current);
-                    return;
-                }
-                break;
-            }
+            U64 expected = 0;
+            if (!lock_slot(slot, expected)) continue;
 
             TTEntry fresh;
             fresh.key = key;
             fresh.depth = -1;
-            fresh.score = 0;
             fresh.flag = TT_EXACT;
             fresh.age = age;
-            fresh.best = MOVE_NONE;
             fresh.eval = eval;
             fresh.has_eval = true;
-            write_locked_slot(slot, fresh);
+            publish_slot(slot, fresh, index_bits);
             return;
         }
     }

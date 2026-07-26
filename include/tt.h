@@ -28,19 +28,18 @@ struct TTEntry {
 
 static constexpr int TT_BUCKET_SIZE = 4;
 
-struct alignas(32) TTSlot {
-    std::atomic<U64> sequence{0};
-    std::atomic<U64> key{0};
-    std::atomic<U64> data{0};
-    std::atomic<U64> meta{0};
+struct alignas(16) TTSlot {
+    std::atomic<U64> key_age{0};
+    std::atomic<U64> payload{0};
 };
 
 struct alignas(64) TTBucket {
     TTSlot entries[TT_BUCKET_SIZE];
 };
 
-static_assert(sizeof(TTSlot) == 32);
-static_assert(sizeof(TTBucket) == 128);
+static_assert(sizeof(TTSlot) == 16);
+static_assert(sizeof(TTBucket) == 64);
+static_assert(std::atomic<U64>::is_always_lock_free);
 
 class TranspositionTable {
 public:
@@ -59,6 +58,7 @@ private:
     std::unique_ptr<TTBucket[]> table;
     SIZE_T                     bucket_count = 0;
     SIZE_T                     mask = 0;
+    unsigned                   index_bits = 0;
     std::atomic<U8>            generation{0};
 };
 

@@ -61,12 +61,19 @@ pairing at LTC. The framework is described in
   scoring arithmetic. The SPSA registry, variables, and ranges remain
   unchanged.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
-  two-cache-line cluster using independently published race-safe slots.
-  Preserved four-way replacement behavior, added child-position prefetching,
-  and expanded collision, replacement, and concurrent-publication tests.
-  An independent ablation found prefetch neutral at 1 MiB Hash and beneficial
-  at 64 and 1024 MiB, where disabling it reduced representative NPS by roughly
-  3% to 9%.
+  one-cache-line cluster using independently published race-safe 16-byte
+  slots. Full Zobrist identity is preserved between the bucket index and
+  stored high key bits; score, eval, move, depth, flag, and eval presence are
+  published together. The internal mate band is now +/-32,000 and ordinary
+  evaluation is bounded below it so TT scores and evals fit signed 16-bit
+  fields. Expanded compact-boundary, collision, replacement, and concurrent-
+  publication tests.
+- Retained child-position TT prefetching after an independent ablation found
+  it neutral at 1 MiB Hash and beneficial at 64 and 1024 MiB, where disabling
+  it reduced representative NPS by roughly 3% to 9%. A separate 15-run compact-
+  layout ablation found approximately 0.7-1.4% higher one-thread fixed-node NPS
+  and 1.7-5.1% higher 24-thread timed NPS at 64 MiB, with no systematic
+  overhead at 1024 MiB.
 - Vectorized common NNUE accumulator add/subtract, copy-plus-delta, and
   perspective-refresh operations with AVX2 while retaining bit-identical
   accumulator tests across classic, king-bucketed, and default networks. An

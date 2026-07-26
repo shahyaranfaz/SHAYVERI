@@ -19,8 +19,8 @@ namespace Tune {
 
 // Compile-time limits.
 static constexpr int MAX_PLY             =     128;
-static constexpr int INF                 = 1000000;
-static constexpr int MATE_SCORE          =  900000;
+static constexpr int INF                 =   32001;
+static constexpr int MATE_SCORE          =   32000;
 static constexpr int CORRHIST_TABLE_SIZE =   16384;
 
 // Internal SEE and move-ordering values. These are not evaluation terms.
