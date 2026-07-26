@@ -14,7 +14,10 @@ debug/make_unmake
 debug/see_tests
 debug/eval_symmetry
 debug/tt_safety
+debug/tt_safety_*
+debug/attack_tables
 debug/time_manager
+debug/position_rules
 debug/search_regression
 debug/nnue_test
 SHAYVERI_sanitize
@@ -26,6 +29,7 @@ nnue/extra_nets
 nnue/README.md
 
 scripts/*/outputs
+scripts/*/__pycache__
 scripts/elo_pin/.work/
 scripts/elo_pin/current_run_id
 
