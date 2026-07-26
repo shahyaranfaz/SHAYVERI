@@ -69,6 +69,15 @@ def require(text: str, needle: str) -> None:
         raise AssertionError(f"missing '{needle}' in output: {text[-TAIL_CHARS:]}")
 
 
+def require_normalized_line(text: str, expected: str) -> None:
+    normalized_expected = " ".join(expected.split())
+    normalized_lines = {" ".join(line.split()) for line in text.splitlines()}
+    if normalized_expected not in normalized_lines:
+        raise AssertionError(
+            f"missing normalized line '{expected}' in output: {text[-TAIL_CHARS:]}"
+        )
+
+
 def require_bestmove(text: str) -> None:
     if not re.search(r"^bestmove\s+\S+", text, flags=re.MULTILINE):
         raise AssertionError(f"missing bestmove in output: {text[-TAIL_CHARS:]}")
@@ -117,16 +126,22 @@ def main() -> int:
         handshake = run_engine(["uci", "isready"])
         require(handshake, "uciok")
         require(handshake, "readyok")
-        require(handshake, "option name Hash type spin default 64 min 1 max 32768")
-        require(handshake, "option name ClearHash type button")
-        require(handshake, "option name Threads type spin default 1 min 1 max 512")
-        require(handshake, "option name UseNNUE type check default true")
-        require(handshake, "option name EvalFile type string default <embedded>")
-        require(handshake, "option name OwnBook type check default true")
-        require(handshake, "option name BookInfoDepth type spin default 8 min 0 max 32")
-        require(handshake, "option name Ponder type check default false")
-        require(handshake, "option name MinimumThinkingTime type spin default 0 min 0 max 5000")
-        require(handshake, "option name MoveOverhead type spin default 10 min 0 max 5000")
+        require_normalized_line(handshake, "option name Hash type spin default 64 min 1 max 32768")
+        require_normalized_line(handshake, "option name ClearHash type button")
+        require_normalized_line(handshake, "option name Threads type spin default 1 min 1 max 512")
+        require_normalized_line(handshake, "option name UseNNUE type check default true")
+        require_normalized_line(handshake, "option name EvalFile type string default <embedded>")
+        require_normalized_line(handshake, "option name OwnBook type check default true")
+        require_normalized_line(handshake, "option name BookInfoDepth type spin default 8 min 0 max 32")
+        require_normalized_line(handshake, "option name Ponder type check default false")
+        require_normalized_line(
+            handshake,
+            "option name MinimumThinkingTime type spin default 0 min 0 max 5000",
+        )
+        require_normalized_line(
+            handshake,
+            "option name MoveOverhead type spin default 10 min 0 max 5000",
+        )
 
         startpos = run_engine([
             "setoption name OwnBook value false",
