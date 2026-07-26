@@ -399,7 +399,9 @@ static inline int capture_order_score(const Board& b, Move m) {
     }
 
     PieceType attacker = get_type(b.get_piece(move_from(m)));
-    return 100000 + (10 * PTYPE_VALUES[victim]) - PTYPE_VALUES[attacker];
+    return 100000
+        + (10 * CAPTURE_ORDER_PIECE_VALUES[victim])
+        - CAPTURE_ORDER_PIECE_VALUES[attacker];
 }
 
 static inline bool is_capture_or_promo(const Board& b, Move m) {
@@ -738,8 +740,11 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
 
         if (!in_check) {
             Piece vp = b.get_piece(move_to(m));
-            victim_val = (vp != NONE_PIECE) ? PTYPE_VALUES[get_type(vp)] : (is_ep_move(m) ? PTYPE_VALUES[PAWN] : 0);
-            if (move_promo(m) != NONE_PTYPE) victim_val += PTYPE_VALUES[move_promo(m)];
+            victim_val = (vp != NONE_PIECE)
+                ? CAPTURE_ORDER_PIECE_VALUES[get_type(vp)]
+                : (is_ep_move(m) ? CAPTURE_ORDER_PIECE_VALUES[PAWN] : 0);
+            if (move_promo(m) != NONE_PTYPE)
+                victim_val += CAPTURE_ORDER_PIECE_VALUES[move_promo(m)];
 
             const bool non_promotion_capture = move_promo(m) == NONE_PTYPE
                 && b.get_piece(move_to(m)) != NONE_PIECE;

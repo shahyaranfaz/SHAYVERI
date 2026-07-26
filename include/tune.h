@@ -18,14 +18,16 @@ namespace Tune {
 // ===== SEARCH CONSTANTS =====
 
 // Compile-time limits.
-static constexpr int MAX_PLY             =     128;
-static constexpr int INF                 =   32001;
-static constexpr int MATE_SCORE          =   32000;
-static constexpr int CORRHIST_TABLE_SIZE =   16384;
+static constexpr int MAX_PLY             =   128;
+static constexpr int INF                 = 32001;
+static constexpr int MATE_SCORE          = 32000;
+static constexpr int CORRHIST_TABLE_SIZE = 16384;
 
-// Internal SEE and move-ordering values. These are not evaluation terms.
-static constexpr int PTYPE_VALUE[7]  = { 0, 100, 320, 330, 500, 900, 20000 };
-static constexpr int PTYPE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
+// Internal tactical and move-ordering values. These are not tuned material terms.
+// Tactical exchange/threat analysis needs a prohibitive king value; capture
+// ordering does not.
+static constexpr int TACTICAL_PIECE_VALUES[7]      = { 0, 100, 320, 330, 500, 900, 20000 };
+static constexpr int CAPTURE_ORDER_PIECE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
 
 // Aspiration windows.
 inline int asp_delta     = 41;

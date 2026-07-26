@@ -143,6 +143,8 @@ pairing at LTC. The framework is described in
 - Removed unused generic NNUE delta/index APIs and the obsolete classical
   Texel-tuning implementation. The SPSA tuning registry and inline tuning
   variables remain intact.
+- Clarified the distinct internal piece values used by tactical analysis and
+  capture ordering, including their intentionally different king handling.
 - On the same 153-case, five-run profiling matrix, median bench NPS improved
   by 45.9%; fixed-node NPS improved by 10.7% to 39.4% across the four
   representative positions; and 16-thread timed NPS improved by 36.7% to

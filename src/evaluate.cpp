@@ -665,7 +665,7 @@ static void evaluate_threats(const Board &b, Colour c,
             Square sq = pop_lsb(tmp);
             Piece p   = b.mailbox[sq];
             if (p == own_king) continue;
-            int val    = PTYPE_VALUE[get_type(p)];
+            int val    = TACTICAL_PIECE_VALUES[get_type(p)];
             int mg_pen = HANGING_BASE_PENALTY_MG + val / HANGING_VALUE_DIVISOR;
             int eg_pen = HANGING_BASE_PENALTY_EG + val / HANGING_VALUE_DIVISOR;
             // Penalise the side being evaluated.
