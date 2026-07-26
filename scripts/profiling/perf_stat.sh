@@ -10,7 +10,7 @@ RUNS="${RUNS:-7}"
 REPEATS="${REPEATS:-25}"
 THREADS="${THREADS:-1}"
 EVENTS="${EVENTS:-task-clock,cycles,instructions,branches,branch-misses,cache-references,cache-misses}"
-EXPECTED_NODES="${EXPECTED_NODES:-102293}"
+EXPECTED_NODES="${EXPECTED_NODES:-97262}"
 OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/outputs}"
 OUT="${OUT:-$OUTPUT_DIR/shayveri-bench.perf-stat.txt}"
 

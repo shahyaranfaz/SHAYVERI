@@ -93,6 +93,16 @@ pairing at LTC. The framework is described in
   independent numeric-SEE ablation found the retained fast exits modestly
   beneficial, improving the longer fixed-node cases by approximately 0.5% to
   2.3%.
+- Replaced full-list move scoring and tail-wide selection sorting with staged
+  move picking: TT move, good captures and promotions, killers/countermove,
+  history-scored quiets, then losing captures. Qsearch, checked evasions, and
+  ProbCut share the same incremental noisy-move policy. A matched 15-run Linux
+  ablation improved one-thread fixed-node NPS by approximately 15.6-25.4% and
+  24-thread timed NPS by 9.7-12.7%. The fixed bench signature is now `97262`
+  nodes. In a 3,000-game round robin at `5+0.05`, the staged picker led its
+  immediate predecessor by approximately 46.7 fitted Elo (`+46.31 +/-10.08`
+  versus `-0.35 +/-10.05`) while both used the same network and 1,000 paired
+  games per matchup.
 - Moved generated opening-book data from a multiply included 1.87 MiB header
   into one source file, and extracted move I/O and null-move mutation from the
   search module.

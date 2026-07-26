@@ -496,6 +496,161 @@ static inline int quiet_history_score(const Board &b, Move m, int ply, const Sea
     return score / 100;
 }
 
+struct PickedMove {
+    Move m = MOVE_NONE;
+    int score = 0;
+    int see_value = 0;
+};
+
+class NoisyMovePicker {
+public:
+    NoisyMovePicker(Board &b, bool evasions, Move priority = MOVE_NONE)
+        : priority_(priority) {
+        const MoveList generated = evasions
+            ? generate_pseudo_legal_moves(b)
+            : generate_pseudo_legal_captures(b);
+        for (int i = 0; i < generated.count; ++i) {
+            const Move move = generated.moves[i];
+            if (move == priority_) {
+                priority_available_ = true;
+                continue;
+            }
+            assert(count_ < 256);
+            moves_[count_++] = {move, capture_order_score(b, move), 0};
+        }
+    }
+
+    bool next(PickedMove &picked) {
+        if (priority_available_) {
+            priority_available_ = false;
+            picked = {priority_, 0, 0};
+            return true;
+        }
+        if (index_ >= count_) return false;
+        for (int i = index_ + 1; i < count_; ++i)
+            if (moves_[i].score > moves_[index_].score)
+                std::swap(moves_[i], moves_[index_]);
+        picked = moves_[index_++];
+        return true;
+    }
+
+private:
+    Move priority_ = MOVE_NONE;
+    bool priority_available_ = false;
+    PickedMove moves_[256];
+    int count_ = 0;
+    int index_ = 0;
+};
+
+class MovePicker {
+public:
+    MovePicker(Board &b, Move tt_move, Move excluded_move, int ply,
+               const SearchHeuristics &history, StackInfo *ss)
+        : tt_move_(tt_move) {
+        const MoveList generated = generate_pseudo_legal_moves(b);
+        for (int i = 0; i < generated.count; ++i) {
+            const Move move = generated.moves[i];
+            if (move == excluded_move) continue;
+            if (move == tt_move_) {
+                tt_available_ = true;
+                continue;
+            }
+
+            if (is_capture_or_promo(b, move)) {
+                int see_value = 0;
+                const int score =
+                    order_score(b, move, ply, history, ss, &see_value);
+                PickedMove scored{move, score, see_value};
+                const U8 index = add(scored);
+                if (move_promo(move) != NONE_PTYPE || see_value >= 0)
+                    good_captures_[good_count_++] = index;
+                else
+                    bad_captures_[bad_count_++] = index;
+                continue;
+            }
+
+            const int score = order_score(b, move, ply, history, ss);
+            PickedMove scored{move, score, 0};
+            const U8 index = add(scored);
+            if (is_special_quiet(move, ply, history, ss)) {
+                assert(special_count_ < 3);
+                special_quiets_[special_count_++] = index;
+            } else {
+                quiets_[quiet_count_++] = index;
+            }
+        }
+    }
+
+    bool next(PickedMove &picked) {
+        if (tt_available_) {
+            tt_available_ = false;
+            picked = {tt_move_, 0, 0};
+            return true;
+        }
+        if (next_best(good_captures_, good_count_, good_index_, picked))
+            return true;
+        if (next_best(special_quiets_, special_count_, special_index_, picked))
+            return true;
+        if (next_best(quiets_, quiet_count_, quiet_index_, picked))
+            return true;
+        return next_best(bad_captures_, bad_count_, bad_index_, picked);
+    }
+
+private:
+    static bool is_special_quiet(
+        Move move, int ply, const SearchHeuristics &history, StackInfo *ss) {
+        if (ply >= 0 && ply < MAX_PLY
+            && (move == history.killers[ply][0]
+                || move == history.killers[ply][1]))
+            return true;
+        if (ply >= 1 && ss[-1].move != MOVE_NONE
+            && ss[-1].piece != NONE_PIECE) {
+            const int previous_type =
+                static_cast<int>(get_type(ss[-1].piece));
+            const int previous_to =
+                static_cast<int>(move_to(ss[-1].move)) & 63;
+            return move == history.counter_moves[previous_type][previous_to];
+        }
+        return false;
+    }
+
+    U8 add(const PickedMove &move) {
+        assert(move_count_ < 256);
+        const int index = move_count_++;
+        moves_[index] = move;
+        return static_cast<U8>(index);
+    }
+
+    bool next_best(
+        U8 *stage, int count, int &index, PickedMove &picked) {
+        if (index >= count) return false;
+        for (int i = index + 1; i < count; ++i)
+            if (moves_[stage[i]].score > moves_[stage[index]].score)
+                std::swap(stage[i], stage[index]);
+        picked = moves_[stage[index++]];
+        return true;
+    }
+
+    Move tt_move_ = MOVE_NONE;
+    bool tt_available_ = false;
+    PickedMove moves_[256];
+    U8 good_captures_[256];
+    U8 special_quiets_[3];
+    U8 quiets_[256];
+    U8 bad_captures_[256];
+    int move_count_ = 0;
+    int good_count_ = 0;
+    int special_count_ = 0;
+    int quiet_count_ = 0;
+    int bad_count_ = 0;
+    int good_index_ = 0;
+    int special_index_ = 0;
+    int quiet_index_ = 0;
+    int bad_index_ = 0;
+};
+
+static_assert(sizeof(MovePicker) <= 5 * 1024);
+
 // Step by 2 (same side to move), limit search to last half_move plies.
 static inline bool is_repetition(U64 key, const U64* rep_stack, int rep_len, int half_move) {
     int limit = rep_len - half_move;
@@ -570,32 +725,13 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
         // The absolute ply guard above bounds pathological checking sequences.
     }
 
-    MoveList moves;
-    ScoredMove noisy[256];
-    int noisy_count = 0;
-
-    if (in_check) {
-        // In check: search all pseudo-legal moves
-        moves = generate_pseudo_legal_moves(b);
-        for (int i = 0; i < moves.count; ++i) {
-            Move m = moves.moves[i];
-            int s  = capture_order_score(b, m);
-            noisy[noisy_count++] = {m, s};
-        }
-    } else {
-        // Not in check: only captures and promotions
-        moves = generate_pseudo_legal_captures(b);
-        for (int i = 0; i < moves.count; ++i)
-            noisy[noisy_count++] = {moves.moves[i], capture_order_score(b, moves.moves[i])};
-    }
-
+    NoisyMovePicker move_picker(
+        b, in_check, tte ? tte->best : MOVE_NONE);
     int legal_count = 0;
 
-    for (int i = 0; i < noisy_count; ++i) {
-        // Lazy selection sort: pick the best remaining move
-        for (int j = i + 1; j < noisy_count; ++j)
-            if (noisy[j].score > noisy[i].score) std::swap(noisy[i], noisy[j]);
-        Move m = noisy[i].m;
+    PickedMove picked;
+    while (move_picker.next(picked)) {
+        const Move m = picked.m;
         bool qs_see_reject = false;
         bool qs_delta_reject = false;
         int victim_val = 0;
@@ -791,20 +927,12 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         const int pc_beta = std::min(beta + margin, MATE_SCORE - ply - 1);
 
         if (reduced_depth > 0 && pc_beta > beta) {
-            MoveList pc_moves = generate_pseudo_legal_captures(b);
-            ScoredMove pc_ordered[256];
-            for (int i = 0; i < pc_moves.count; ++i)
-                pc_ordered[i] = {pc_moves.moves[i], capture_order_score(b, pc_moves.moves[i]), 0};
-
+            NoisyMovePicker pc_picker(b, false, tt_move);
             int pc_tried = 0;
             const int pc_limit = std::max(1, Tune::probcut_max_captures);
-            for (int i = 0; i < pc_moves.count && pc_tried < pc_limit; ++i) {
-                for (int j = i + 1; j < pc_moves.count; ++j)
-                    if (pc_ordered[j].score > pc_ordered[i].score)
-                        std::swap(pc_ordered[i], pc_ordered[j]);
-
-                Move m = pc_ordered[i].m;
-                if (m == ss->excluded_move) continue;
+            PickedMove picked;
+            while (pc_tried < pc_limit && pc_picker.next(picked)) {
+                const Move m = picked.m;
                 if (move_promo(m) == NONE_PTYPE && !see_ge(b, m, 0)) continue;
 
                 Piece moved_piece = b.get_piece(move_from(m));
@@ -865,17 +993,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         depth -= Tune::iir_reduction;
     }
 
-    MoveList pseudo = generate_pseudo_legal_moves(b);
-    ScoredMove ordered[256];
-    for (int i = 0; i < pseudo.count; ++i) {
-        Move m = pseudo.moves[i];
-        int see_value = 0;
-        int s  = order_score(b, m, ply, H, ss, &see_value);
-        if (tt_move != MOVE_NONE && m == tt_move) s += 2000000;
-        ordered[i] = {m, s, see_value};
-    }
-    int ordered_count = pseudo.count;
-
+    MovePicker move_picker(b, tt_move, ss->excluded_move, ply, H, ss);
     Move best_move = MOVE_NONE;
     int legal_count = 0;
     int quiet_count = 0;
@@ -886,15 +1004,10 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     CaptureEntry captures_tried[256];
     int capture_tried_count = 0;
 
-    for (int i = 0; i < ordered_count; ++i) {
-        // Lazy selection sort: swap best remaining move to position i
-        for (int j = i + 1; j < ordered_count; ++j)
-            if (ordered[j].score > ordered[i].score) std::swap(ordered[i], ordered[j]);
-
-        Move m = ordered[i].m;
-        if (m == ss->excluded_move) continue;
-
-        bool is_quiet = !is_capture_or_promo(b, m);
+    PickedMove picked;
+    while (move_picker.next(picked)) {
+        const Move m = picked.m;
+        const bool is_quiet = !is_capture_or_promo(b, m);
         const int move_history = is_quiet ? quiet_history_score(b, m, ply, H, ss) : 0;
         bool lmp_reject = false;
         bool futility_reject = false;
@@ -911,7 +1024,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             see_reject = !is_quiet
                 && move_promo(m) == NONE_PTYPE
                 && depth <= Tune::see_max_depth
-                && ordered[i].see_value < Tune::see_margin * depth;
+                && picked.see_value < Tune::see_margin * depth;
 
             pvs_see_reject = is_quiet
                 && Tune::pvs_see_margin < 0
