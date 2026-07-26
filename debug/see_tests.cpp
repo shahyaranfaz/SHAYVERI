@@ -81,6 +81,9 @@ int main() {
         {"Rook exchange with queen recapture", "3qk3/8/8/3rR3/8/8/8/4K3 w - - 0 1", "e5d5", 0},
         {"En-passant capture", "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1", "e5d6", 100},
         {"Promotion capture", "r3k3/1P6/8/8/8/8/8/4K3 w - - 0 1", "b7a8q", 500},
+        {"Continue exchange past negative intermediate",
+         "r1b1kbnr/ppp3p1/3p4/4pp1p/1nP2P1q/PPNP2P1/4P3/R1BQKBNR b KQkq - 0 10",
+         "h4f4", -800},
     };
     const std::vector<int> thresholds = {
         -1000, -500, -161, -1, 0, 1, 100, 330, 500, 900,

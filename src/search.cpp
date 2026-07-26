@@ -1012,9 +1012,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         bool lmp_reject = false;
         bool futility_reject = false;
         bool see_reject = false;
-        bool pvs_see_reject = false;
 
-        // Pruning (LMP, futility, and promoted quiet SEE).
+        // Late-move, futility, and capture SEE pruning.
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
             lmp_reject = is_quiet
                 && legal_count > Tune::lmp_base + Tune::lmp_mult * depth * depth;
@@ -1026,12 +1025,6 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                 && depth <= Tune::see_max_depth
                 && picked.see_value < Tune::see_margin * depth;
 
-            pvs_see_reject = is_quiet
-                && Tune::pvs_see_margin < 0
-                && depth >= Tune::pvs_see_min_depth
-                && legal_count + 1 >= Tune::pvs_see_min_moves
-                && m != tt_move
-                && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]));
         }
 
         Piece moved_piece = b.get_piece(move_from(m));
@@ -1050,14 +1043,12 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             && m != tt_move
             && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
             && move_history < Tune::history_pruning_threshold;
-        if (lmp_reject || futility_reject || see_reject || pvs_see_reject || history_reject) {
+        if (lmp_reject || futility_reject || see_reject || history_reject) {
             const Square king = king_square(b, b.side_to_move);
             const bool gives_check = is_square_attacked(b, king, flip(b.side_to_move));
             if (!gives_check) {
-                const bool quiet_see_reject = pvs_see_reject
-                    && quiet_see_after_move(b, move_to(m)) < Tune::pvs_see_margin;
                 if (lmp_reject || futility_reject || see_reject
-                    || quiet_see_reject || history_reject) {
+                    || history_reject) {
                     unmake_move(b, m, u);
                     continue;
                 }

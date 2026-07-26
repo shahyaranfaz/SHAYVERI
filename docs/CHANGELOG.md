@@ -101,7 +101,19 @@ pairing at LTC. The framework is described in
   against numeric SEE across 5,598 deterministic randomized comparisons. An
   independent numeric-SEE ablation found the retained fast exits modestly
   beneficial, improving the longer fixed-node cases by approximately 0.5% to
-  2.3%.
+  2.3%. A second correctness fix removed premature numeric-exchange
+  termination that could omit a later recapture; the fixed bench signature
+  changed from `97047` to `94602`. Fully early-terminating threshold SEE was
+  rejected after an identical-tree ablation was mixed at 24 threads.
+  Threshold-only picker staging was also rejected: it was neutral to slower at
+  24 threads and the corrected numeric picker led by `+3.47 +/-9.88` Elo in a
+  statistically inconclusive 2,000-game match.
+- Removed quiet SEE pruning after instrumentation found that it made and
+  unmade up to approximately 594,000 candidate recaptures per two million
+  representative nodes. Disabling it improved one-thread fixed-node NPS by
+  approximately 1.2-4.5% and 24-thread timed NPS by 1.0-8.1%. A 2,000-game
+  paired match at `5+0.05` was statistically neutral: the retained-pruning
+  control scored 50.10%, equivalent to `+0.69 +/-9.34` Elo.
 - Replaced full-list move scoring and tail-wide selection sorting with staged
   move picking: TT move, good captures and promotions, killers/countermove,
   history-scored quiets, then losing captures. Qsearch, checked evasions, and

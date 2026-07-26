@@ -128,11 +128,6 @@ inline int corrhist_bonus_limit =  768;
 inline int corrhist_max         = 8192;
 inline int corrhist_depth_cap   =    4;
 
-// PVS SEE pruning.
-inline int pvs_see_margin    = -125;
-inline int pvs_see_min_depth =    3;
-inline int pvs_see_min_moves =    6;
-
 // ProbCut.
 inline int probcut_margin       = 50;
 inline int probcut_reduction    =  3;
@@ -509,7 +504,6 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {             "NMP_Margin_Mult", {               &nmp_margin_mult,    TuningOption::INT,     0,    60,      "15"}},
     {           "NMP_Reduction_Max", {             &nmp_reduction_max,    TuningOption::INT,     2,    12,       "8"}},
     {        "NMP_Verify_Min_Depth", {          &nmp_verify_min_depth,    TuningOption::INT,     8,    20,      "10"}},
-    {           "PVS_SEE_Min_Moves", {             &pvs_see_min_moves,    TuningOption::INT,     1,     8,       "6"}},
     {             "SE_Depth_Margin", {               &se_depth_margin,    TuningOption::INT,     1,     8,       "2"}},
     {                   "SE_Margin", {                     &se_margin,    TuningOption::INT,    25,   100,      "74"}},
     {                "SE_Min_Depth", {                  &se_min_depth,    TuningOption::INT,     1,    16,      "11"}},
@@ -582,8 +576,6 @@ inline std::unordered_map<std::string, TuningOption> tuning_registry = {
     {         "LMR_Extra_Reduction", {           &lmr_extra_reduction,    TuningOption::INT,     0,     2,       "1"}},
     {  "LMR_Good_History_Reduction", {    &lmr_good_history_reduction,    TuningOption::INT,    -2,     0,      "-1"}},
     {               "NMP_Min_Depth", {                 &nmp_min_depth,    TuningOption::INT,     1,    12,       "3"}},
-    {              "PVS_SEE_Margin", {                &pvs_see_margin,    TuningOption::INT,  -200,     0,    "-125"}},
-    {           "PVS_SEE_Min_Depth", {             &pvs_see_min_depth,    TuningOption::INT,     1,    12,       "3"}},
     {              "QS_Start_Depth", {                &qs_start_depth,    TuningOption::INT,     1,    16,       "8"}},
     {                "SE_Extension", {                  &se_extension,    TuningOption::INT,     0,     2,       "1"}},
     {                 "SE_MultiCut", {                   &se_multicut,    TuningOption::INT,     0,     1,       "1"}},

@@ -8,7 +8,6 @@ namespace SHAYVERI {
 
 int  see(const Board &b, Move m);
 bool see_ge(const Board &b, Move m, int threshold);
-int  quiet_see_after_move(Board &b, Square target);
 
 } // namespace SHAYVERI
 

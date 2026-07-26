@@ -1,7 +1,6 @@
 #include "see.h"
 
 #include "attacks.h"
-#include "make.h"
 #include "move.h"
 #include "tune.h"
 
@@ -75,12 +74,7 @@ int see(const Board &b, Move m) {
         Piece picked_piece;
         U64 pick = pick_least_valuable_attacker(b, side, atks, picked_piece);
         if (!pick) break;
-
         gain[depth] = ptype_value(last_attacker) - gain[depth - 1];
-        if (std::max(-gain[depth - 1], gain[depth]) < 0) {
-            ++depth;
-            break;
-        }
 
         occ  &= ~pick;
         atks  = attackers_to(b, to, occ) & ~bb_square(to);
@@ -110,33 +104,11 @@ bool see_ge(const Board &b, Move m, int threshold) {
     }
     if (captured == NONE_PIECE) return threshold <= 0;
 
-    const int captured_value = ptype_value(captured);
-    if (captured_value < threshold) return false;
-    if (captured_value - ptype_value(attacker) >= threshold) return true;
+    int swap = ptype_value(captured) - threshold;
+    if (swap < 0) return false;
+    swap = ptype_value(attacker) - swap;
+    if (swap <= 0) return true;
     return see(b, m) >= threshold;
-}
-
-int quiet_see_after_move(Board &b, Square target) {
-    U64 attackers = attackers_to(b, target, b.occupied)
-        & b.occupancies[b.side_to_move];
-    int best_gain = 0;
-    while (attackers) {
-        Piece attacker_piece;
-        U64 attacker = pick_least_valuable_attacker(b, b.side_to_move,
-                                                     attackers, attacker_piece);
-        if (!attacker) break;
-        attackers &= ~attacker;
-
-        const Square from = static_cast<Square>(__builtin_ctzll(attacker));
-        Move reply = create_move(from, target);
-
-        Undo reply_undo;
-        if (!make_generated_move(b, reply, reply_undo)) continue;
-        unmake_move(b, reply, reply_undo);
-        best_gain = std::max(best_gain, see(b, reply));
-    }
-
-    return -best_gain;
 }
 
 } // namespace SHAYVERI

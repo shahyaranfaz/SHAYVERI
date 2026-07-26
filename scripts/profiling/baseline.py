@@ -28,7 +28,7 @@ from workloads import PGO_POSITION_CASES, POSITION_CASES, TACTICAL_CASES, TIMED_
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
 DEFAULT_ENGINE = REPO_ROOT / ("SHAYVERI.exe" if os.name == "nt" else "SHAYVERI")
-EXPECTED_BENCH_NODES = 93023
+EXPECTED_BENCH_NODES = 94602
 INFO_RE = re.compile(
     r"^info depth (?P<depth>\d+) score (?P<score_type>cp|mate) "
     r"(?P<score>-?\d+).*?\bnodes (?P<nodes>\d+)\s+nps (?P<nps>\d+)"
