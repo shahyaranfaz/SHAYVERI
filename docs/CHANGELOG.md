@@ -146,6 +146,9 @@ pairing at LTC. The framework is described in
   threefold rules under one tested position-rules owner. Datagen now recognizes
   all-bishop same-colour dead positions consistently with search, while its
   threefold claim remains distinct from search's prior-occurrence pruning rule.
+- Moved datagen-only option mapping and usage presentation out of the UCI
+  translation unit, with exact strict value conversions shared by both CLI
+  surfaces.
 - Removed unused generic NNUE delta/index APIs and the obsolete classical
   Texel-tuning implementation. The SPSA tuning registry and inline tuning
   variables remain intact.

@@ -1,6 +1,8 @@
 #include "attacks.h"
 #include "board.h"
+#include "parse_cli.h"
 #include "datagen.h"
+#include "datagen_cli.h"
 #include "evaluate.h"
 #include "make.h"
 #include "move.h"
@@ -95,79 +97,9 @@ static void format_uci_move(Move move, char (&text)[6]) {
     }
 }
 
-static bool parse_bool_strict(const std::string &value, bool &out) {
-    std::string v = value;
-    std::transform(v.begin(), v.end(), v.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-
-    if (v == "true" || v == "1" || v == "yes" || v == "on") {
-        out = true;
-        return true;
-    }
-    if (v == "false" || v == "0" || v == "no" || v == "off") {
-        out = false;
-        return true;
-    }
-    return false;
-}
-
-static std::string trim(std::string value) {
-    auto first = std::find_if_not(value.begin(), value.end(),
-                                  [](unsigned char c) { return std::isspace(c); });
-    auto last = std::find_if_not(value.rbegin(), value.rend(),
-                                 [](unsigned char c) { return std::isspace(c); }).base();
-    if (first >= last) return "";
-    return std::string(first, last);
-}
-
-static bool parse_int(const std::string &value, int &out) {
-    std::string v = trim(value);
-    if (v.empty()) return false;
-
-    char *end = nullptr;
-    errno = 0;
-    long parsed = std::strtol(v.c_str(), &end, 10);
-    if (end == v.c_str() || *end != '\0' || errno == ERANGE)
-        return false;
-    if (parsed < std::numeric_limits<int>::min() ||
-        parsed > std::numeric_limits<int>::max())
-        return false;
-
-    out = static_cast<int>(parsed);
-    return true;
-}
-
-static bool parse_int_64(const std::string &value, U64 &out) {
-    std::string v = trim(value);
-    if (v.empty() || v.front() == '-') return false;
-
-    char *end = nullptr;
-    errno = 0;
-    unsigned long long parsed = std::strtoull(v.c_str(), &end, 10);
-    if (end == v.c_str() || *end != '\0' || errno == ERANGE)
-        return false;
-
-    out = static_cast<U64>(parsed);
-    return true;
-}
-
-static bool parse_double_value(const std::string &value, double &out) {
-    std::string v = trim(value);
-    if (v.empty()) return false;
-
-    char *end = nullptr;
-    errno = 0;
-    double parsed = std::strtod(v.c_str(), &end);
-    if (end == v.c_str() || *end != '\0' || errno == ERANGE || !std::isfinite(parsed))
-        return false;
-
-    out = parsed;
-    return true;
-}
-
 static bool parse_spin(const std::string &value, int min_value, int max_value, int &out) {
     int parsed = 0;
-    if (!parse_int(value, parsed)) return false;
+    if (!ParseCLI::integer(value, parsed)) return false;
     out = std::clamp(parsed, min_value, max_value);
     return true;
 }
@@ -199,7 +131,7 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
         {"Threads", [](const std::string &v) { parse_spin(v, 1, 512, g_num_threads); }},
         {"UseNNUE", [](const std::string &v) {
             bool enabled;
-            if (!parse_bool_strict(v, enabled)) return;
+            if (!ParseCLI::boolean(v, enabled)) return;
             NNUE::set_enabled(enabled);
             TT.clear();
             uci_search_context.clear_histories();
@@ -215,11 +147,11 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
             uci_search_context.clear_histories();
             if (NNUE::is_enabled()) NNUE::print_info();
         }},
-        {"OwnBook", [](const std::string &v) { parse_bool_strict(v, g_own_book); }},
+        {"OwnBook", [](const std::string &v) { ParseCLI::boolean(v, g_own_book); }},
         {"BookInfoDepth", [](const std::string &v) {
             parse_spin(v, 0, 32, g_book_info_depth);
         }},
-        {"Ponder", [](const std::string &v) { parse_bool_strict(v, g_ponder); }},
+        {"Ponder", [](const std::string &v) { ParseCLI::boolean(v, g_ponder); }},
         {"MinimumThinkingTime", [](const std::string &v) {
             parse_spin(v, 0, 5000, g_min_think_ms);
         }},
@@ -264,122 +196,6 @@ static bool load_eval_file_or_default(const std::string &path, std::string &erro
 
     if (loaded) NNUE::set_enabled(true);
     return loaded;
-}
-
-static void print_datagen_usage(const char *argv0) {
-    std::cerr
-        << "usage: " << argv0 << " datagen"
-        << " --threads <n>"
-        << " [--positions <n>]"
-        << " [--games <n>]"
-        << " --output-prefix <path>"
-        << " [--output-format shayveri-plain-v1|bullet-v1]"
-        << " [--eval-file <path|<embedded>|<hce>>]"
-        << " [--nodes <n>]"
-        << " [--opening-min-plies <n>]"
-        << " [--opening-max-plies <n>]"
-        << " [--book-prob <0..1>]"
-        << " [--start-file <fen-or-epd-file>]"
-        << " [--start-file-prob <0..1>]"
-        << " [--seed <n>]"
-        << " [--max-abs-cp <n>]"
-        << " [--include-checks <bool>]"
-        << " [--include-captures <bool>]"
-        << " [--include-mate-scores <bool>]"
-        << " [--include-duplicates <bool>]"
-        << " [--min-ply <n>]"
-        << " [--max-ply <n>]"
-        << " [--sample-stride <n>]"
-        << " [--max-samples-per-game <n>]"
-        << " [--enable-adjudication <bool>]"
-        << " [--adjudication-cp <n>]"
-        << " [--adjudication-plies <n>]"
-        << " [--print-interval <games>]\n";
-}
-
-static bool require_value(int argc, char **argv, int &i, std::string &value) {
-    if (i + 1 >= argc) return false;
-    value = argv[++i];
-    return true;
-}
-
-static bool parse_datagen_args(int argc, char **argv, DatagenOptions &options) {
-    for (int i = 2; i < argc; ++i) {
-        std::string key = argv[i];
-        std::string value;
-
-        auto need_int = [&](int &out) {
-            return require_value(argc, argv, i, value) && parse_int(value, out);
-        };
-        auto need_u64 = [&](U64 &out) {
-            return require_value(argc, argv, i, value) && parse_int_64(value, out);
-        };
-        auto need_double = [&](double &out) {
-            return require_value(argc, argv, i, value) && parse_double_value(value, out);
-        };
-        auto need_bool = [&](bool &out) {
-            if (!require_value(argc, argv, i, value)) return false;
-            return parse_bool_strict(value, out);
-        };
-
-        if (key == "--threads") {
-            if (!need_int(options.threads)) return false;
-        } else if (key == "--positions") {
-            if (!need_u64(options.target_positions)) return false;
-        } else if (key == "--games") {
-            if (!need_u64(options.target_games)) return false;
-        } else if (key == "--output-prefix") {
-            if (!require_value(argc, argv, i, options.output_prefix)) return false;
-        } else if (key == "--output-format") {
-            if (!require_value(argc, argv, i, options.output_format)) return false;
-        } else if (key == "--eval-file") {
-            if (!require_value(argc, argv, i, options.eval_file)) return false;
-        } else if (key == "--nodes") {
-            if (!need_u64(options.search_nodes)) return false;
-        } else if (key == "--opening-min-plies") {
-            if (!need_int(options.opening_min_plies)) return false;
-        } else if (key == "--opening-max-plies") {
-            if (!need_int(options.opening_max_plies)) return false;
-        } else if (key == "--book-prob") {
-            if (!need_double(options.book_move_probability)) return false;
-        } else if (key == "--start-file") {
-            if (!require_value(argc, argv, i, options.start_file)) return false;
-        } else if (key == "--start-file-prob") {
-            if (!need_double(options.start_file_probability)) return false;
-        } else if (key == "--seed") {
-            if (!need_u64(options.seed)) return false;
-        } else if (key == "--max-abs-cp") {
-            if (!need_int(options.max_abs_cp)) return false;
-        } else if (key == "--include-checks") {
-            if (!need_bool(options.include_checks)) return false;
-        } else if (key == "--include-captures") {
-            if (!need_bool(options.include_captures)) return false;
-        } else if (key == "--include-mate-scores") {
-            if (!need_bool(options.include_mate_scores)) return false;
-        } else if (key == "--include-duplicates") {
-            if (!need_bool(options.include_duplicates)) return false;
-        } else if (key == "--min-ply") {
-            if (!need_int(options.min_ply)) return false;
-        } else if (key == "--max-ply") {
-            if (!need_int(options.max_ply)) return false;
-        } else if (key == "--sample-stride") {
-            if (!need_int(options.sample_stride)) return false;
-        } else if (key == "--max-samples-per-game") {
-            if (!need_int(options.max_samples_per_game)) return false;
-        } else if (key == "--enable-adjudication") {
-            if (!need_bool(options.enable_adjudication)) return false;
-        } else if (key == "--adjudication-cp") {
-            if (!need_int(options.adjudication_cp)) return false;
-        } else if (key == "--adjudication-plies") {
-            if (!need_int(options.adjudication_plies)) return false;
-        } else if (key == "--print-interval") {
-            if (!need_u64(options.print_interval)) return false;
-        } else {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 static Move find_ponder_move(const Board &root, Move best) {
@@ -448,11 +264,11 @@ int main(int argc, char **argv) {
     if (argc > 1) {
         if (std::string(argv[1]) == "datagen") {
             DatagenOptions options;
-            if (!parse_datagen_args(argc, argv, options) ||
+            if (!DatagenCLI::parse_args(argc, argv, options) ||
                 options.threads <= 0 ||
                 (options.target_positions == 0 && options.target_games == 0) ||
                 options.output_prefix.empty()) {
-                print_datagen_usage(argv[0]);
+                DatagenCLI::print_usage(argv[0]);
                 return 1;
             }
             if (options.eval_file.empty())
@@ -470,7 +286,7 @@ int main(int argc, char **argv) {
             }
             return generate_data(options);
         }
-        print_datagen_usage(argv[0]);
+        DatagenCLI::print_usage(argv[0]);
         return 1;
     }
 

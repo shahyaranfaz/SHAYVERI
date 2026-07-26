@@ -59,6 +59,7 @@ SRC := \
 	src/attacks.cpp \
 	src/board.cpp \
 	src/datagen.cpp \
+	src/datagen_cli.cpp \
 	src/evaluate.cpp \
 	src/fen.cpp \
 	src/make.cpp \
