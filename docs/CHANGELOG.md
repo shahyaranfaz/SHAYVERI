@@ -103,6 +103,19 @@ pairing at LTC. The framework is described in
   immediate predecessor by approximately 46.7 fitted Elo (`+46.31 +/-10.08`
   versus `-0.35 +/-10.05`) while both used the same network and 1,000 paired
   games per matchup.
+- Replaced make-and-unmake legality filtering with direct legal move
+  generation. Check evasions, absolute pins, king post-occupancy attacks,
+  castling transit, and en-passant discovered checks are handled while
+  generating moves; search then uses a trusted legal-move executor without a
+  redundant king-safety test. Direct and retained checked generators produced
+  identical ordered move lists across 12,183 deterministic randomized
+  positions, and the full regression and sanitizer suites pass. A matched
+  Linux ablation found representative one-thread fixed-node NPS changes from
+  -3.4% to +13.5% and 24-thread timed changes from -1.0% to +8.0%, with the
+  largest gains in attack-heavy positions. The fixed bench signature is now
+  `93023` nodes. A 2,000-game paired match at `5+0.05` was statistically
+  neutral: the direct generator scored 50.38%, equivalent to approximately
+  `+2.61 +/-10.00` Elo over the staged-picker baseline.
 - Moved generated opening-book data from a multiply included 1.87 MiB header
   into one source file, and extracted move I/O and null-move mutation from the
   search module.

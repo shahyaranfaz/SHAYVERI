@@ -15,6 +15,8 @@ struct MoveList {
 MoveList generate_pseudo_legal_moves(Board &b);
 MoveList generate_pseudo_legal_captures(Board &b);
 MoveList generate_legal_moves(Board &b);
+MoveList generate_legal_captures(Board &b);
+MoveList generate_legal_moves_checked(Board &b);
 Move find_first_legal_move(Board &b);
 bool is_legal_move(Board &b, Move move);
 

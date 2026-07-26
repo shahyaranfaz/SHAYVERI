@@ -54,7 +54,8 @@ static void update_castling(Board &b, Square from, Square to) {
     b.hash     ^= Zobrist::castlings[b.castling];
 }
 
-bool make_generated_move(Board &b, Move m, Undo &u) {
+static bool make_generated_move_impl(
+    Board &b, Move m, Undo &u, bool verify_king_safety) {
     Square    from     = move_from(m);
     Square    to       = move_to(m);
     PieceType promo    = move_promo(m);
@@ -142,12 +143,28 @@ bool make_generated_move(Board &b, Move m, Undo &u) {
     b.side_to_move = flip(b.side_to_move);
     b.hash ^= Zobrist::sides;
 
-    if (is_square_attacked(b, king_square(b, flip(b.side_to_move)), b.side_to_move)) {
+    if (verify_king_safety
+        && is_square_attacked(
+            b, king_square(b, flip(b.side_to_move)), b.side_to_move)) {
         unmake_move(b, m, u);
         return false;
     }
     assert(b.is_consistent());
     return true;
+}
+
+bool make_generated_move(Board &b, Move m, Undo &u) {
+    return make_generated_move_impl(b, m, u, true);
+}
+
+void make_legal_move(Board &b, Move m, Undo &u) {
+#ifdef SHAYVERI_VERIFY_LEGAL_MAKE
+    const bool made = make_generated_move_impl(b, m, u, true);
+#else
+    const bool made = make_generated_move_impl(b, m, u, false);
+#endif
+    assert(made);
+    (void)made;
 }
 
 bool make_move(Board &b, Move m, Undo &u) {

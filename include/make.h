@@ -48,6 +48,11 @@ bool make_move(Board &b, Move m, Undo &u);
 // Hot path for generator-produced moves. Structural validity is asserted in
 // debug builds; king safety is still checked and reported.
 bool make_generated_move(Board &b, Move m, Undo &u);
+
+// Hot path for moves already proven legal by the direct legal generator.
+// Structural and king-safety preconditions are asserted by generator tests.
+void make_legal_move(Board &b, Move m, Undo &u);
+
 void unmake_move(Board &b, Move m, const Undo &u);
 void make_null_move(Board &b, Undo &u);
 void unmake_null_move(Board &b, const Undo &u);

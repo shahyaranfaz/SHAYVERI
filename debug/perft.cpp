@@ -15,7 +15,7 @@ using SHAYVERI::Undo;
 using SHAYVERI::U64;
 using SHAYVERI::generate_legal_moves;
 using SHAYVERI::init_attacks;
-using SHAYVERI::make_move;
+using SHAYVERI::make_legal_move;
 using SHAYVERI::set_from_fen;
 using SHAYVERI::set_startpos;
 using SHAYVERI::unmake_move;
@@ -26,7 +26,7 @@ U64 perft(Board &b, int depth) {
     MoveList moves = generate_legal_moves(b);
     for (int i = 0; i < moves.count; ++i) {
         Undo u;
-        if (!make_generated_move(b, moves.moves[i], u)) continue;
+        make_legal_move(b, moves.moves[i], u);
         count += perft(b, depth - 1);
         unmake_move(b, moves.moves[i], u);
     }

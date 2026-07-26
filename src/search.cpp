@@ -507,8 +507,8 @@ public:
     NoisyMovePicker(Board &b, bool evasions, Move priority = MOVE_NONE)
         : priority_(priority) {
         const MoveList generated = evasions
-            ? generate_pseudo_legal_moves(b)
-            : generate_pseudo_legal_captures(b);
+            ? generate_legal_moves(b)
+            : generate_legal_captures(b);
         for (int i = 0; i < generated.count; ++i) {
             const Move move = generated.moves[i];
             if (move == priority_) {
@@ -547,7 +547,7 @@ public:
     MovePicker(Board &b, Move tt_move, Move excluded_move, int ply,
                const SearchHeuristics &history, StackInfo *ss)
         : tt_move_(tt_move) {
-        const MoveList generated = generate_pseudo_legal_moves(b);
+        const MoveList generated = generate_legal_moves(b);
         for (int i = 0; i < generated.count; ++i) {
             const Move move = generated.moves[i];
             if (move == excluded_move) continue;
@@ -750,7 +750,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
         }
 
         Undo u;
-        if (!make_generated_move(b, m, u)) continue;
+        make_legal_move(b, m, u);
         const bool qs_futility_reject = !in_check
             && Tune::qs_futility_margin > 0
             && move_promo(m) == NONE_PTYPE
@@ -937,7 +937,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
                 Piece moved_piece = b.get_piece(move_from(m));
                 Undo u;
-                if (!make_generated_move(b, m, u)) continue;
+                make_legal_move(b, m, u);
                 context.table.prefetch(b.hash);
                 NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
                 if (rep_len < MAX_PLY * 2) rep_stack[rep_len] = b.hash;
@@ -1042,7 +1042,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             cap_victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(move_to(m)));
 
         Undo u;
-        if (!make_generated_move(b, m, u)) continue;
+        make_legal_move(b, m, u);
         const bool history_reject = Tune::history_pruning_threshold < 0
             && is_quiet
             && depth >= Tune::history_pruning_min_depth
@@ -1261,7 +1261,7 @@ static SearchResult search_impl(
         }
 
         // Generate and order root moves once per depth (outside aspiration retry loop).
-        MoveList pseudo = generate_pseudo_legal_moves(b);
+        MoveList pseudo = generate_legal_moves(b);
         Move tt_root = MOVE_NONE;
         if (const TTEntry* e = context.table.probe(b.hash)) tt_root = e->best;
         ScoredMove ordered[256];
@@ -1299,7 +1299,7 @@ static SearchResult search_impl(
 
                 Undo u;
                 Piece root_piece = b.get_piece(move_from(m));
-                if (!make_generated_move(b, m, u)) continue;
+                make_legal_move(b, m, u);
                 const U64 nodes_before = thread.node_count;
                 context.table.prefetch(b.hash);
                 NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);

@@ -9,7 +9,7 @@ ENGINE="${ENGINE:-$REPO_ROOT/SHAYVERI}"
 CPU="${CPU:-0}"
 RUNS="${RUNS:-11}"
 THREADS="${THREADS:-1}"
-EXPECTED_NODES="${EXPECTED_NODES:-97262}"
+EXPECTED_NODES="${EXPECTED_NODES:-93023}"
 
 if [[ ! -x "$ENGINE" ]]; then
     echo "engine not executable: $ENGINE (build it with: make)" >&2

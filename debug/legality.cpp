@@ -2,8 +2,12 @@
 #include "board.h"
 #include "move.h"
 #include "move_gen.h"
+#include "make.h"
+#include "zobrist.h"
 
+#include <algorithm>
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -16,7 +20,9 @@ using SHAYVERI::Rank;
 using SHAYVERI::Square;
 using SHAYVERI::SQ_NONE;
 using SHAYVERI::generate_legal_moves;
+using SHAYVERI::generate_legal_moves_checked;
 using SHAYVERI::init_attacks;
+using SHAYVERI::make_generated_move;
 using SHAYVERI::move_from;
 using SHAYVERI::move_promo;
 using SHAYVERI::move_to;
@@ -27,6 +33,7 @@ using SHAYVERI::KNIGHT;
 using SHAYVERI::NONE_PTYPE;
 using SHAYVERI::QUEEN;
 using SHAYVERI::ROOK;
+using SHAYVERI::Undo;
 
 struct MoveLegalityCase {
     const char *name;
@@ -72,6 +79,37 @@ static bool contains_legal_move(Board &b, const std::string &uci) {
     return false;
 }
 
+static std::vector<Move> sorted_moves(const MoveList &moves) {
+    std::vector<Move> result(moves.moves, moves.moves + moves.count);
+    std::sort(result.begin(), result.end());
+    return result;
+}
+
+static bool generators_match(Board &b) {
+    const MoveList direct = generate_legal_moves(b);
+    const MoveList checked = generate_legal_moves_checked(b);
+    if (direct.count != checked.count) return false;
+    for (int i = 0; i < direct.count; ++i)
+        if (direct.moves[i] != checked.moves[i]) return false;
+    return true;
+}
+
+static void print_generator_difference(Board &b) {
+    const std::vector<Move> direct =
+        sorted_moves(generate_legal_moves(b));
+    const std::vector<Move> checked =
+        sorted_moves(generate_legal_moves_checked(b));
+    std::cerr << "  FEN: " << SHAYVERI::get_board_fen(b) << "\n  direct-only:";
+    for (Move move : direct)
+        if (!std::binary_search(checked.begin(), checked.end(), move))
+            std::cerr << " " << move;
+    std::cerr << "\n  checked-only:";
+    for (Move move : checked)
+        if (!std::binary_search(direct.begin(), direct.end(), move))
+            std::cerr << " " << move;
+    std::cerr << "\n";
+}
+
 int main() {
     // Source: niklasf/python-chess test suite (en passant legality edge cases).
     const std::vector<MoveLegalityCase> cases = {
@@ -84,6 +122,7 @@ int main() {
     };
 
     init_attacks();
+    SHAYVERI::Zobrist::init();
 
     int failures = 0;
     for (const auto &tc : cases) {
@@ -107,8 +146,66 @@ int main() {
         }
     }
 
+    const std::vector<const char *> equality_fens = {
+        "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+        "4k3/8/8/8/8/2b5/3r4/4K3 w - - 0 1",
+        "4k3/8/8/8/8/8/4r3/4K3 w - - 0 1",
+        "4r1k1/8/8/8/8/8/4R3/4K3 w - - 0 1",
+        "4k3/P6P/8/8/8/8/p6p/4K3 w - - 0 1",
+    };
+    for (const char *fen : equality_fens) {
+        Board b;
+        if (!set_from_fen(b, fen) || !generators_match(b)) {
+            std::cerr << "[FAIL] direct/checked mismatch for FEN: "
+                      << fen << "\n";
+            if (b.is_consistent()) print_generator_difference(b);
+            ++failures;
+        }
+    }
+
+    std::mt19937_64 rng(0x6C6567616C4D6F76ULL);
+    int randomized_positions = 0;
+    for (int game = 0; game < 128; ++game) {
+        Board b;
+        if (!set_from_fen(
+                b,
+                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/"
+                "RNBQKBNR w KQkq - 0 1")) {
+            ++failures;
+            break;
+        }
+        for (int ply = 0; ply < 96; ++ply) {
+            const MoveList direct = generate_legal_moves(b);
+            const MoveList checked = generate_legal_moves_checked(b);
+            ++randomized_positions;
+            bool equal = direct.count == checked.count;
+            for (int i = 0; equal && i < direct.count; ++i)
+                equal = direct.moves[i] == checked.moves[i];
+            if (!equal) {
+                std::cerr << "[FAIL] randomized direct/checked mismatch"
+                          << " game=" << game << " ply=" << ply << "\n";
+                print_generator_difference(b);
+                ++failures;
+                break;
+            }
+            if (direct.count == 0) break;
+
+            const Move move =
+                direct.moves[static_cast<int>(rng() % direct.count)];
+            Undo undo;
+            if (!make_generated_move(b, move, undo)) {
+                std::cerr << "[FAIL] direct generator emitted illegal move"
+                          << " game=" << game << " ply=" << ply << "\n";
+                ++failures;
+                break;
+            }
+        }
+    }
+
     if (failures == 0) {
-        std::cout << "Legality suite passed: " << cases.size() << "/" << cases.size() << "\n";
+        std::cout << "Legality suite passed: " << cases.size() << "/"
+                  << cases.size() << ", direct/checked equality across "
+                  << randomized_positions << " randomized positions\n";
         return 0;
     }
 

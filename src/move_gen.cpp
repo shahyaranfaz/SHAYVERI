@@ -3,6 +3,8 @@
 #include "attacks.h"
 #include "make.h"
 
+#include <cstdlib>
+
 namespace SHAYVERI {
 
 static void push_moves_from_mask(MoveList &out, Square from, U64 mask) {
@@ -126,17 +128,165 @@ static void generate_castling_moves(const Board &b, MoveList &moves) {
 }
 
 static Move find_matching_legal_move(Board &b, Move target, bool find_first) {
-    MoveList pseudo = generate_pseudo_legal_moves(b);
-    for (int i = 0; i < pseudo.count; ++i) {
-        const Move move = pseudo.moves[i];
+    const MoveList legal = generate_legal_moves(b);
+    for (int i = 0; i < legal.count; ++i) {
+        const Move move = legal.moves[i];
         if (!find_first && move != target) continue;
-
-        Undo u;
-        if (!make_generated_move(b, move, u)) continue;
-        unmake_move(b, move, u);
         return move;
     }
     return MOVE_NONE;
+}
+
+static bool attacked_with_occupancy(
+    const Board &b, Square square, U64 attacker_occupied, U64 occupied) {
+    return (attackers_to(b, square, occupied)
+            & attacker_occupied) != 0;
+}
+
+struct LegalContext {
+    Square king = SQ_NONE;
+    U64 enemy_occupied = 0;
+    U64 checkers = 0;
+    U64 evasion_mask = ~0ULL;
+    U64 pin_rays[64]{};
+    int check_count = 0;
+};
+
+static U64 squares_between(Square from, Square to) {
+    const int file_delta =
+        (get_file(to) > get_file(from)) - (get_file(to) < get_file(from));
+    const int rank_delta =
+        (get_rank(to) > get_rank(from)) - (get_rank(to) < get_rank(from));
+    const int file_distance =
+        std::abs(static_cast<int>(get_file(to))
+                 - static_cast<int>(get_file(from)));
+    const int rank_distance =
+        std::abs(static_cast<int>(get_rank(to))
+                 - static_cast<int>(get_rank(from)));
+    if (file_delta != 0 && rank_delta != 0
+        && file_distance != rank_distance)
+        return 0;
+    if (file_delta == 0 && rank_delta == 0) return 0;
+
+    U64 between = 0;
+    int file = static_cast<int>(get_file(from)) + file_delta;
+    int rank = static_cast<int>(get_rank(from)) + rank_delta;
+    while (file != static_cast<int>(get_file(to))
+           || rank != static_cast<int>(get_rank(to))) {
+        between |= bb_square(
+            make_square(static_cast<File>(file), static_cast<Rank>(rank)));
+        file += file_delta;
+        rank += rank_delta;
+    }
+    return between & ~bb_square(to);
+}
+
+static LegalContext make_legal_context(const Board &b) {
+    LegalContext context;
+    const Colour side = b.side_to_move;
+    const Colour enemy = flip(side);
+    context.king = king_square(b, side);
+    context.enemy_occupied =
+        b.occupancies[static_cast<int>(enemy)];
+    context.checkers =
+        attackers_to(b, context.king, b.occupied)
+        & context.enemy_occupied;
+    context.check_count = __builtin_popcountll(context.checkers);
+    if (context.check_count == 1) {
+        const Square checker = __builtin_ctzll(context.checkers);
+        context.evasion_mask =
+            bb_square(checker) | squares_between(context.king, checker);
+    } else if (context.check_count > 1) {
+        context.evasion_mask = 0;
+    }
+
+    const U64 own = b.occupancies[static_cast<int>(side)];
+    const U64 enemy_rook_sliders =
+        side == WHITE
+            ? (b.bit_boards[BR] | b.bit_boards[BQ])
+            : (b.bit_boards[WR] | b.bit_boards[WQ]);
+    const U64 enemy_bishop_sliders =
+        side == WHITE
+            ? (b.bit_boards[BB] | b.bit_boards[BQ])
+            : (b.bit_boards[WB] | b.bit_boards[WQ]);
+    U64 snipers =
+        (rook_attacks(context.king, b.occupied ^ own)
+             & enemy_rook_sliders)
+        | (bishop_attacks(context.king, b.occupied ^ own)
+             & enemy_bishop_sliders);
+    while (snipers) {
+        const Square sniper = pop_lsb(snipers);
+        const U64 between = squares_between(context.king, sniper);
+        const U64 blockers = between & own;
+        if (__builtin_popcountll(blockers) == 1) {
+            const Square pinned = __builtin_ctzll(blockers);
+            context.pin_rays[pinned] = between | bb_square(sniper);
+        }
+    }
+    return context;
+}
+
+static bool is_directly_legal(
+    const Board &b, Move move, const LegalContext &context) {
+    const Colour side = b.side_to_move;
+    const Square from = move_from(move);
+    const Square to = move_to(move);
+    const Piece moved = b.get_piece(from);
+    const bool king_move = get_type(moved) == KING;
+    U64 enemy_occupied = context.enemy_occupied;
+
+    U64 occupied = b.occupied & ~bb_square(from);
+    if (is_ep_move(move)) {
+        const Square captured_square = side == WHITE ? to - 8 : to + 8;
+        occupied &= ~bb_square(captured_square);
+        enemy_occupied &= ~bb_square(captured_square);
+    } else {
+        occupied &= ~bb_square(to);
+        enemy_occupied &= ~bb_square(to);
+    }
+    occupied |= bb_square(to);
+
+    if (king_move) {
+        const bool castling =
+            std::abs(static_cast<int>(get_file(from))
+                     - static_cast<int>(get_file(to))) == 2;
+        if (castling) {
+            const CastleInfo castle =
+                castle_info(side, to > from);
+            occupied &= ~bb_square(castle.rook_from);
+            occupied |= bb_square(castle.rook_to);
+            const Square transit =
+                from + (to > from ? 1 : -1);
+            const U64 transit_occupied =
+                (b.occupied & ~bb_square(from)) | bb_square(transit);
+            if (attacked_with_occupancy(
+                    b, transit, enemy_occupied, transit_occupied))
+                return false;
+        }
+        return !attacked_with_occupancy(
+            b, to, enemy_occupied, occupied);
+    }
+
+    if (context.check_count > 1) return false;
+
+    const Square captured_square = is_ep_move(move)
+        ? (side == WHITE ? to - 8 : to + 8)
+        : to;
+    if (context.check_count == 1
+        && !(context.evasion_mask & bb_square(to))
+        && !(context.checkers & bb_square(captured_square)))
+        return false;
+
+    const U64 pin_ray = context.pin_rays[from];
+    if (pin_ray && !(pin_ray & bb_square(to))) return false;
+
+    // En passant removes a pawn from a square other than the destination and
+    // can expose a horizontal, vertical, or diagonal attack on the king.
+    if (is_ep_move(move))
+        return !attacked_with_occupancy(
+            b, context.king, enemy_occupied, occupied);
+
+    return true;
 }
 
 MoveList generate_pseudo_legal_moves(Board &b) {
@@ -181,7 +331,29 @@ MoveList generate_pseudo_legal_captures(Board &b) {
 }
 
 MoveList generate_legal_moves(Board &b) {
-    MoveList pseudo = generate_pseudo_legal_moves(b);
+    const MoveList pseudo = generate_pseudo_legal_moves(b);
+    const LegalContext context = make_legal_context(b);
+    MoveList legal;
+    for (int i = 0; i < pseudo.count; ++i) {
+        const Move move = pseudo.moves[i];
+        if (is_directly_legal(b, move, context)) legal.add(move);
+    }
+    return legal;
+}
+
+MoveList generate_legal_captures(Board &b) {
+    const MoveList pseudo = generate_pseudo_legal_captures(b);
+    const LegalContext context = make_legal_context(b);
+    MoveList legal;
+    for (int i = 0; i < pseudo.count; ++i) {
+        const Move move = pseudo.moves[i];
+        if (is_directly_legal(b, move, context)) legal.add(move);
+    }
+    return legal;
+}
+
+MoveList generate_legal_moves_checked(Board &b) {
+    const MoveList pseudo = generate_pseudo_legal_moves(b);
     MoveList legal;
     for (int i = 0; i < pseudo.count; ++i) {
         const Move move = pseudo.moves[i];

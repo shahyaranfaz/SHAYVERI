@@ -13,7 +13,7 @@ REPEATS="${REPEATS:-25}"
 OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/outputs}"
 OUT="${OUT:-$OUTPUT_DIR/shayveri-bench.perf.data}"
 META="${META:-$OUT.meta.txt}"
-EXPECTED_NODES="${EXPECTED_NODES:-97262}"
+EXPECTED_NODES="${EXPECTED_NODES:-93023}"
 if [[ -z "${EVENT:-}" ]]; then
     if [[ -d /sys/bus/event_source/devices/cpu_core ]]; then
         # Select the P-core PMU explicitly on hybrid Intel CPUs.
