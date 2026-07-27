@@ -24,147 +24,42 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
-### v2.9.0 - Design Debt and Speed Overhaul
+### v2.9.0 - Fixing Design Debts
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
 
-- Reduced the sliding-attack allocation from approximately 35.3 MiB to
-  approximately 0.82 MiB by excluding irrelevant edge occupancy and packing
-  exact-size PEXT tables. Added exhaustive subset comparison against ray
-  generation.
-- Batched shared node publication instead of incrementing one atomic at every
-  node. Introduced explicit search contexts for TT, stop, and node-limit
-  ownership; removed the thread-local active-TT switch; reused per-thread
-  heuristic and search-stack storage; and removed the main-thread history
-  copy-in/copy-out. Fixed-node searches remain exact. An independent ablation
-  found batching neutral at one thread while restoring per-node publication
-  reduced timed NPS by roughly 23% to 41% at 8 threads and 46% to 60% at
-  24 threads.
-- Removed the implicit global search-context entry points. UCI now owns and
-  passes its search context explicitly. Each UCI search session now owns its
-  time manager, including ponder-to-normal clock handoff, instead of relying
-  on a global timing policy. Silent searches retain iteration callback
-  behavior independently of protocol output. Added a concurrent regression
-  that stops one context without affecting another and verifies isolation
-  between their transposition tables.
-- Replaced positional search configuration with an explicit request carrying
-  repetition history, root-move restrictions, iteration callback, protocol
-  output policy, history-retention policy, and helper-thread root bias.
-- Replaced process-global and thread-local search storage with explicit
-  ownership. Search contexts lazily own persistent history, while each UCI or
-  datagen worker owns its counters, scratch histories, and reusable ply stack.
-  Scratch history is allocated only for workers that use it, and UCI retains
-  worker storage across searches instead of reallocating it for every `go`.
-- Audited Lazy SMP with temporary root-effort, TT-attribution, and worker-
-  lifecycle instrumentation. A 108-search Linux matrix over 2, 8, and 24
-  threads and 1, 64, and 1024 MiB Hash found complete root-move overlap but
-  extensive useful TT sharing. At normal Hash sizes, helper publications
-  supplied roughly 68-96% of main-thread TT hits at 8-24 threads and caused
-  approximately 105,000-599,000 median main-thread cutoffs per representative
-  case. Existing Lazy SMP is retained without changing TT policy, root
-  coordination, affinity, or NUMA behavior; the temporary instrumentation was
-  removed after the audit.
-- Compacted continuation and capture-history piece dimensions by removing
-  unreachable piece-type-zero rows and columns. Stored history and correction
-  entries as saturating signed 16-bit values while retaining 32-bit update and
-  scoring arithmetic. The SPSA registry, variables, and ranges remain
-  unchanged.
-- Replaced the unaligned, bucket-locked TT with an aligned four-way,
-  one-cache-line cluster using independently published race-safe 16-byte
-  slots. Full Zobrist identity is preserved between the bucket index and
-  stored high key bits; score, eval, move, depth, flag, and eval presence are
-  published together. The internal mate band is now +/-32,000 and ordinary
-  evaluation is bounded below it so TT scores and evals fit signed 16-bit
-  fields. Expanded compact-boundary, collision, replacement, and concurrent-
-  publication tests.
-- Retained child-position TT prefetching after an independent ablation found
-  it neutral at 1 MiB Hash and beneficial at 64 and 1024 MiB, where disabling
-  it reduced representative NPS by roughly 3% to 9%. A separate 15-run compact-
-  layout ablation found approximately 0.7-1.4% higher one-thread fixed-node NPS
-  and 1.7-5.1% higher 24-thread timed NPS at 64 MiB, with no systematic
-  overhead at 1024 MiB.
-- Vectorized common NNUE accumulator add/subtract, copy-plus-delta, and
-  perspective-refresh operations with AVX2 while retaining bit-identical
-  accumulator tests across classic, king-bucketed, and default networks. An
-  independent scalar-update ablation measured approximately 1.6% to 4.3%
-  lower NPS on longer one-thread fixed-node and timed workloads.
-- Added an incremental pawn Zobrist key and comprehensive board consistency
-  checks. Unmake now restores saved hashes without repeating discarded hash
-  work. FEN validation now also rejects duplicate or placement-inconsistent
-  castling rights, impossible pawn ranks and counts, excess per-side material,
-  adjacent kings, and occupied en-passant origin squares.
-- Split trusted generated-move execution from checked external move handling.
-  Added malformed-move coverage and randomized checked-versus-trusted
-  equivalence checks across 109,846 make/unmake round trips. Independently
-  restoring pseudo-legal membership checks on the hot generated-move path
-  reduced representative one-thread fixed-node NPS by roughly 14% to 31%.
-- Added threshold SEE fast exits, corrected an exchange back-propagation bug,
-  and removed Board copies from quiet SEE. Threshold results are checked
-  against numeric SEE across 5,598 deterministic randomized comparisons. An
-  independent numeric-SEE ablation found the retained fast exits modestly
-  beneficial, improving the longer fixed-node cases by approximately 0.5% to
-  2.3%. A second correctness fix removed premature numeric-exchange
-  termination that could omit a later recapture; the fixed bench signature
-  changed from `97047` to `94602`. Fully early-terminating threshold SEE was
-  rejected after an identical-tree ablation was mixed at 24 threads.
-  Threshold-only picker staging was also rejected: it was neutral to slower at
-  24 threads and the corrected numeric picker led by `+3.47 +/-9.88` Elo in a
-  statistically inconclusive 2,000-game match.
-- Removed quiet SEE pruning after instrumentation found that it made and
-  unmade up to approximately 594,000 candidate recaptures per two million
-  representative nodes. Disabling it improved one-thread fixed-node NPS by
-  approximately 1.2-4.5% and 24-thread timed NPS by 1.0-8.1%. A 2,000-game
-  paired match at `5+0.05` was statistically neutral: the retained-pruning
-  control scored 50.10%, equivalent to `+0.69 +/-9.34` Elo.
-- Replaced full-list move scoring and tail-wide selection sorting with staged
-  move picking: TT move, good captures and promotions, killers/countermove,
-  history-scored quiets, then losing captures. Qsearch, checked evasions, and
-  ProbCut share the same incremental noisy-move policy. A matched 15-run Linux
-  ablation improved one-thread fixed-node NPS by approximately 15.6-25.4% and
-  24-thread timed NPS by 9.7-12.7%. The fixed bench signature is now `97262`
-  nodes. In a 3,000-game round robin at `5+0.05`, the staged picker led its
-  immediate predecessor by approximately 46.7 fitted Elo (`+46.31 +/-10.08`
-  versus `-0.35 +/-10.05`) while both used the same network and 1,000 paired
-  games per matchup.
-- Replaced make-and-unmake legality filtering with direct legal move
-  generation. Check evasions, absolute pins, king post-occupancy attacks,
-  castling transit, and en-passant discovered checks are handled while
-  generating moves; search then uses a trusted legal-move executor without a
-  redundant king-safety test. Direct and retained checked generators produced
-  identical ordered move lists across 12,183 deterministic randomized
-  positions, and the full regression and sanitizer suites pass. A matched
-  Linux ablation found representative one-thread fixed-node NPS changes from
-  -3.4% to +13.5% and 24-thread timed changes from -1.0% to +8.0%, with the
-  largest gains in attack-heavy positions. The fixed bench signature is now
-  `93023` nodes. A 2,000-game paired match at `5+0.05` was statistically
-  neutral: the direct generator scored 50.38%, equivalent to approximately
-  `+2.61 +/-10.00` Elo over the staged-picker baseline.
-- Moved generated opening-book data from a multiply included 1.87 MiB header
-  into one source file, and extracted move I/O and null-move mutation from the
-  search module.
-- Consolidated check, insufficient-material, search-repetition, and played-game
-  threefold rules under one tested position-rules owner. Datagen now recognizes
-  all-bishop same-colour dead positions consistently with search, while its
-  threefold claim remains distinct from search's prior-occurrence pruning rule.
-- Moved datagen-only option mapping and usage presentation out of the UCI
-  translation unit, with exact strict value conversions shared by both CLI
-  surfaces.
-- Kept repetition-history slicing in unsigned container-size arithmetic,
-  satisfying strict static analysis without changing the selected history.
-- Removed unused generic NNUE delta/index APIs and the obsolete classical
-  Texel-tuning implementation. The SPSA tuning registry and inline tuning
-  variables remain intact.
-- Clarified the distinct internal piece values used by tactical analysis and
-  capture ordering, including their intentionally different king handling.
-- On the same 153-case, five-run profiling matrix, median bench NPS improved
-  by 45.9%; fixed-node NPS improved by 10.7% to 39.4% across the four
-  representative positions; and 16-thread timed NPS improved by 36.7% to
-  72.3%. The corrected fixed bench signature is `102293` nodes, a 0.42%
-  increase caused by the SEE correctness fix.
-- Rejected a two-way TT and deferred static-eval insertion after they changed
-  the fixed-depth search substantially without strength evidence. A 100-game
-  varied-opening smoke match completed without engine or protocol failures;
-  its result was statistically inconclusive, so no Elo claim is made.
+- Packed exact-size PEXT sliding-attack tables, reducing their allocation from
+  approximately 35.3 MiB to 0.82 MiB.
+- Batched shared node publication and reused worker histories, scratch storage,
+  and ply stacks across searches. Compacted history dimensions and stored
+  history and correction entries as saturating signed 16-bit values.
+- Replaced the bucket-locked transposition table with aligned, race-safe
+  four-way cache-line clusters. Compact signed 16-bit scores and evaluations,
+  a bounded mate-safe score range, full-key verification, and child-position
+  prefetching are retained.
+- Vectorized NNUE accumulator updates and refreshes with AVX2. Added an
+  incremental pawn hash and restored saved hashes directly during unmake.
+- Added staged move picking, direct legal move generation, trusted execution
+  for generated moves, and faster threshold SEE. Removed Board copies from
+  quiet SEE and removed quiet SEE pruning.
+- Improved the normal fixed bench by `+43.44%` on the same machine, from
+  `1,645,632` to `2,360,593` median NPS. The new bench signature is `94602`
+  nodes.
+- Replaced implicit global search state with explicit search contexts,
+  requests, time managers, and worker storage. Fixed-node limits remain exact,
+  concurrent searches are isolated, and ponder clock handoff is session-owned.
+- Corrected SEE exchange back-propagation and later-recapture handling.
+  Hardened FEN, castling, pawn, material, king, and en-passant validation.
+- Consolidated check, repetition, and insufficient-material rules. Datagen now
+  shares strict CLI parsing and recognizes same-colour bishop dead positions
+  consistently with search.
+- Moved generated opening-book data from a multiply-included header into one
+  source file. Split move I/O, null-move mutation, datagen CLI handling, and
+  shared parsing into focused modules.
+- Recorded `3194.4 +/-15.3` at STC and `3270.3 +/-30.0` at LTC, changes of
+  +64.4 STC and +34.7 LTC relative to v2.8.0 in the same pool.
+- Recorded `3194.4 +/-15.3` at STC and `3270.3 +/-30.0` at LTC, improvements
+  of +64.4 STC and +34.7 LTC over v2.8.0 in the same pool.
 
 ### v2.8.0 - Speed Overhaul
 
