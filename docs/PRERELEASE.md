@@ -6,6 +6,7 @@ Use this checklist for every published SHAYVERI release. Commands use
 ## 1. Finalize the engine
 
 - [ ] Choose the version according to [`VERSIONING.md`](VERSIONING.md).
+- [ ] Add the new version's number to the GitHub actions workflow.
 - [ ] Freeze the release scope, production defaults, and default NNUE.
 - [ ] Remove temporary gates and unfinished experimental behaviour.
 - [ ] Confirm tuning-only options are absent from the production UCI handshake.
