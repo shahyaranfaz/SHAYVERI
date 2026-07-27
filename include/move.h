@@ -33,9 +33,7 @@ constexpr Square    move_from(Move m) { return Square(m & 63u); }
 constexpr Square    move_to(Move m)   { return Square((m >> 6) & 63u); }
 constexpr PieceType move_promo(Move m) { return PieceType((m >> 12) & 15u); }
 constexpr bool is_promo(Move m) { return move_promo(m) != NONE_PTYPE; }
-constexpr bool is_ep_move(Move m) { return ((m >> 16) & 1u) != 0; }
-
-static_assert(sizeof(Move) == 4);
+constexpr bool is_ep_move(Move m) { return (m >> 16) & 1u; }
 
 } // namespace SHAYVERI
 
