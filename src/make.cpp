@@ -56,14 +56,14 @@ static void update_castling(Board &b, Square from, Square to) {
 
 static bool make_generated_move_impl(
     Board &b, Move m, Undo &u, bool verify_king_safety) {
-    Square    from     = move_from(m);
-    Square    to       = move_to(m);
+    Square from = move_from(m);
+    Square to = move_to(m);
     PieceType promo    = move_promo(m);
 
     assert(is_valid(from) && is_valid(to));
 
-    Piece     moved    = b.get_piece(from);
-    Piece     captured = b.get_piece(to);
+    Piece moved = b.get_piece(from);
+    Piece captured = b.get_piece(to);
     const bool is_castle = get_type(moved) == KING &&
         std::abs(get_file(from) - get_file(to)) == 2;
     CastleInfo castle{};
@@ -126,7 +126,7 @@ static bool make_generated_move_impl(
     update_castling(b, from, to);
     remove_piece(b, moved, from);
     if (promo != NONE_PTYPE) add_piece(b, promotion_piece(b.side_to_move, promo), to);
-    else                     add_piece(b, moved, to);
+    else add_piece(b, moved, to);
 
     b.en_passant = SQ_NONE;
     if (get_type(moved) == PAWN) {
@@ -182,7 +182,7 @@ void unmake_move(Board &b, Move m, const Undo &u) {
 
     Square from        = move_from(m);
     Square to          = move_to(m);
-    Piece  moved_to_sq = b.get_piece(to);
+    Piece moved_to_sq = b.get_piece(to);
 
     remove_piece_no_hash(b, moved_to_sq, to);
     Piece original = (move_promo(m) != NONE_PTYPE)

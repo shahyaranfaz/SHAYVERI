@@ -1,12 +1,12 @@
+#include "attacks.h"
 #include "board.h"
 #include "evaluate.h"
 #include "types.h"
 #include "zobrist.h"
-#include "attacks.h"
 
+#include <cstdlib>
 #include <iostream>
 #include <vector>
-#include <cstdlib>
 
 using SHAYVERI::BLACK;
 using SHAYVERI::Board;

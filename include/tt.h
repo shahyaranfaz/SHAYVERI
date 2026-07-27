@@ -16,14 +16,14 @@ using SIZE_T = std::size_t;
 enum TTFlag : U8 { TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2 };
 
 struct TTEntry {
-    U64  key   = 0;
-    int  score = 0;
-    I8   depth = -1;
-    U8   flag  = TT_EXACT;
-    U8   age   = 0;
+    U64 key = 0;
+    int score = 0;
+    I8 depth = -1;
+    U8 flag = TT_EXACT;
+    U8 age = 0;
     bool has_eval = false;
-    int  eval  = 0;
-    Move best  = MOVE_NONE;
+    int eval = 0;
+    Move best = MOVE_NONE;
 };
 
 static constexpr int TT_BUCKET_SIZE = 4;
@@ -56,10 +56,10 @@ public:
 
 private:
     std::unique_ptr<TTBucket[]> table;
-    SIZE_T                     bucket_count = 0;
-    SIZE_T                     mask = 0;
-    unsigned                   index_bits = 0;
-    std::atomic<U8>            generation{0};
+    SIZE_T bucket_count = 0;
+    SIZE_T mask = 0;
+    unsigned index_bits = 0;
+    std::atomic<U8> generation{0};
 };
 
 extern TranspositionTable TT;

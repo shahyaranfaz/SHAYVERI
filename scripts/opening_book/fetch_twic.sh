@@ -80,7 +80,7 @@ while [ "$CONT" == "true" ]; do
     else
         echo -e "\033[31m failed or invalid archive!"
         rm -f "$zip_path"
-	echo $(($i -1)) > "$IDFILE"
+        echo $((i - 1)) > "$IDFILE"
         CONT="false"
     fi
     if [ $i -gt ${last_i} ]; then
@@ -88,20 +88,20 @@ while [ "$CONT" == "true" ]; do
     fi
 done
 
-echo 
+echo
 echo -e "\033[33m ---------------------------------"
-echo 
+echo
 echo -en "\033[31m Updating PGN file \033[32m$PGNFILE\033[31m (filtering for 2600+ rated players)...."
 
 for fname in ${DOWNLOADED}; do
     # Extract to temporary file
     unzip -c "$ZIPDIR/${fname}" > "$TEMPFILE"
-    
+
     # Filter games where both players are rated 2600+
     awk '
     BEGIN { game = ""; white_elo = 0; black_elo = 0; in_game = 0 }
-    
-    /^\[Event / { 
+
+    /^\[Event / {
         if (in_game && white_elo >= 2600 && black_elo >= 2600) {
             print game
         }
@@ -111,42 +111,42 @@ for fname in ${DOWNLOADED}; do
         in_game = 1
         next
     }
-    
+
     /^\[WhiteElo "([0-9]+)"\]/ {
         match($0, /"([0-9]+)"/, arr)
         white_elo = arr[1]
         game = game $0 "\n"
         next
     }
-    
+
     /^\[BlackElo "([0-9]+)"\]/ {
         match($0, /"([0-9]+)"/, arr)
         black_elo = arr[1]
         game = game $0 "\n"
         next
     }
-    
+
     in_game { game = game $0 "\n" }
-    
+
     END {
         if (in_game && white_elo >= 2600 && black_elo >= 2600) {
             print game
         }
     }
     ' "$TEMPFILE" >> "$PGNFILE"
-    
+
     # Clean up temp file
     rm -f "$TEMPFILE"
 done
 
 echo -e "\033[32m done! \033[0m"
-echo 
+echo
 echo -e "\033[33m ---------------------------------"
-echo 
+echo
 #echo -e "\033[31m Rebuilding SCID DB....\033[33m"
 #pgnscid -f ${PGNFILE}
-#echo 
+#echo
 echo -e "\033[32m done! \033[0m"
-echo 
+echo
 echo -e "\033[33m --------------------------------- \033[0m"
 echo

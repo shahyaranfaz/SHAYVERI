@@ -34,7 +34,11 @@ int main() {
     // Shall not replace with shallower non-exact.
     tt.store(key, 2, 222, TT_UPPER, MOVE_NONE);
     e = tt.probe(key);
-    if (e && !require(e->depth == 4 && e->score == 111 && e->flag == TT_LOWER, "shallow non-exact replaced deeper entry")) ++failures;
+    if (e
+        && !require(
+            e->depth == 4 && e->score == 111 && e->flag == TT_LOWER,
+            "shallow non-exact replaced deeper entry"))
+        ++failures;
 
     // Exact replaces even if shallower.
     tt.store(key, 2, 333, TT_EXACT, MOVE_NONE);

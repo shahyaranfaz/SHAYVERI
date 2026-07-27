@@ -645,7 +645,9 @@ void datagen_worker(int id,
             history.push_back(b.hash);
         }
 
-        U64 written = write_game_entries(out, game_entries, stms, phases, result.wdl, counters, options, options.target_positions);
+        U64 written = write_game_entries(
+            out, game_entries, stms, phases, result.wdl, counters, options,
+            options.target_positions);
         counters.game_position_sum.fetch_add(written, std::memory_order_relaxed);
         update_max(counters.max_positions_in_game, written);
         record_game_end(counters, result, ply_number(b));

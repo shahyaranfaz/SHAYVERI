@@ -54,7 +54,7 @@ static void generate_pawn_moves(const Board &b, MoveList &moves, U64 enemy) {
         while (captures) {
             const Square to = pop_lsb(captures);
             if (rank == promotion_rank) add_promotions(moves, from, to);
-            else                        moves.add(create_move(from, to));
+            else moves.add(create_move(from, to));
         }
 
         if (b.en_passant != SQ_NONE &&
@@ -301,13 +301,13 @@ MoveList generate_pseudo_legal_moves(Board &b) {
     U64 other_occupied = b.occupancies[other_idx];
 
     if (curr == WHITE) generate_pawn_moves<WHITE, false>(b, moves, other_occupied);
-    else               generate_pawn_moves<BLACK, false>(b, moves, other_occupied);
+    else generate_pawn_moves<BLACK, false>(b, moves, other_occupied);
 
     if (curr == WHITE) generate_piece_moves<WHITE>(b, moves, ~curr_occupied);
-    else               generate_piece_moves<BLACK>(b, moves, ~curr_occupied);
+    else generate_piece_moves<BLACK>(b, moves, ~curr_occupied);
 
     if (curr == WHITE) generate_castling_moves<WHITE>(b, moves);
-    else               generate_castling_moves<BLACK>(b, moves);
+    else generate_castling_moves<BLACK>(b, moves);
 
     return moves;
 }
@@ -322,10 +322,10 @@ MoveList generate_pseudo_legal_captures(Board &b) {
     U64 other_occupied = b.occupancies[other_idx];
 
     if (curr == WHITE) generate_pawn_moves<WHITE, true>(b, moves, other_occupied);
-    else               generate_pawn_moves<BLACK, true>(b, moves, other_occupied);
+    else generate_pawn_moves<BLACK, true>(b, moves, other_occupied);
 
     if (curr == WHITE) generate_piece_moves<WHITE>(b, moves, other_occupied);
-    else               generate_piece_moves<BLACK>(b, moves, other_occupied);
+    else generate_piece_moves<BLACK>(b, moves, other_occupied);
 
     return moves;
 }

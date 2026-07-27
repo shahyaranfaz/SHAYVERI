@@ -1,8 +1,8 @@
 #include "attacks.h"
 #include "board.h"
+#include "make.h"
 #include "move.h"
 #include "move_gen.h"
-#include "make.h"
 #include "zobrist.h"
 
 #include <algorithm>

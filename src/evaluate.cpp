@@ -87,7 +87,7 @@ static void add_attacks(AttackInfo &info, U64 attacks, PieceType pt) {
     info.all             |= attacks;
     info.by_type[pt]     |= attacks;
     if (pt == PAWN) info.pawn     |= attacks;
-    else            info.non_pawn |= attacks;
+    else info.non_pawn |= attacks;
 }
 
 static U64 build_pawn_attack_bb(U64 pawns, Colour c) {
@@ -271,7 +271,7 @@ static void evaluate_pawns(const Board &b, Colour c,
 
     // Pawn storm toward the enemy king.
     Square enemy_king  = king_square(b, flip(c));
-    int    king_file   = get_file(enemy_king);
+    int king_file = get_file(enemy_king);
     temp = pawns;
     while (temp) {
         Square sq = pop_lsb(temp);
@@ -511,7 +511,7 @@ static U64 piece_attacks_bb(Piece p, Square sq, U64 occupied) {
         case ROOK:   return rook_attacks(sq, occupied);
         case QUEEN:  return queen_attacks(sq, occupied);
         case KING:   return king_attacks(sq);
-        default:     return 0;
+        default: return 0;
     }
 }
 
@@ -530,13 +530,13 @@ static int count_pins(const Board &b, Colour attacker) {
         if      (df == 0 && dr != 0)                       { if (!ortho) return; sr = (dr>0)?1:-1; }
         else if (dr == 0 && df != 0)                       { if (!ortho) return; sf = (df>0)?1:-1; }
         else if (std::abs(df) == std::abs(dr))             { if (!diag)  return; sf=(df>0)?1:-1; sr=(dr>0)?1:-1; }
-        else                                                return;
+        else return;
 
         int cf = f + sf, cr = r + sr;
         Square pinned = SQ_NONE;
         while ((cf != king_f || cr != king_r) && cf >= 0 && cf < 8 && cr >= 0 && cr < 8) {
             Square sq = make_square(File(cf), Rank(cr));
-            Piece  p  = b.mailbox[sq];
+            Piece p = b.mailbox[sq];
             if (p != NONE_PIECE) {
                 if (pinned == SQ_NONE) {
                     if (get_colour(p) == defender && p != defender_king) pinned = sq;
@@ -619,8 +619,8 @@ static void evaluate_threats(const Board &b, Colour c,
                               const AttackInfo &enemy_attacks,
                               int &mg, int &eg) {
     Colour them        = flip(c);
-    U64    enemy       = b.occupancies[them];
-    Piece  enemy_pawn  = (them == WHITE) ? WP : BP;
+    U64 enemy = b.occupancies[them];
+    Piece enemy_pawn = (them == WHITE) ? WP : BP;
 
     // Pawn threats against enemy non-pawns.
     {
@@ -765,13 +765,13 @@ int evaluate(const Board &b) {
     for (int p = 1; p < PIECE_COUNT; ++p) {
         U64 bitboard = b.bit_boards[p];
         if (!bitboard) continue;
-        Colour    c   = get_colour(Piece(p));
+        Colour c = get_colour(Piece(p));
         PieceType pt  = get_type(Piece(p));
-        int       sign = (c == WHITE) ? 1 : -1;
+        int sign = (c == WHITE) ? 1 : -1;
         const int* mg_pst = PST_MG_TABLE[pt];
         const int* eg_pst = PST_EG_TABLE[pt];
-        int        mg_val = PIECE_VALUES_MG[p];
-        int        eg_val = PIECE_VALUES_EG[p];
+        int mg_val = PIECE_VALUES_MG[p];
+        int eg_val = PIECE_VALUES_EG[p];
         while (bitboard) {
             int sq     = __builtin_ctzll(bitboard);
             bitboard  &= bitboard - 1;
@@ -781,7 +781,7 @@ int evaluate(const Board &b) {
         }
         if (pt == BISHOP) {
             if (c == WHITE) wb++;
-            else            bb_cnt++;
+            else bb_cnt++;
         }
     }
     if (wb     >= 2) { mg += BISHOP_PAIR_BONUS_MG; eg += BISHOP_PAIR_BONUS_EG; }

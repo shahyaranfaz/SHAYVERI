@@ -81,18 +81,18 @@ struct SearchRequest {
 };
 
 struct SearchResult {
-    Move best_move  = MOVE_NONE;
+    Move best_move = MOVE_NONE;
     Move ponder_move = MOVE_NONE;
-    int  score      = 0;
-    int  depth      = 0;
-    U64  nodes      = 0;
+    int score = 0;
+    int depth = 0;
+    U64 nodes = 0;
 };
 
 namespace SearchDetail {
 
 struct SingularSearchDecision {
-    int  extension = 0;
-    bool multicut  = false;
+    int extension = 0;
+    bool multicut = false;
 };
 
 SingularSearchDecision classify_singular_search(

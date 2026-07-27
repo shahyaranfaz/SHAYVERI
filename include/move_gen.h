@@ -8,7 +8,7 @@ namespace SHAYVERI {
 
 struct MoveList {
     Move moves[256];
-    int  count = 0;
+    int count = 0;
     void add(Move m) { moves[count++] = m; }
 };
 

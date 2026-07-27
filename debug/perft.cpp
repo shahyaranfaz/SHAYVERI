@@ -1,6 +1,6 @@
+#include "attacks.h"
 #include "board.h"
 #include "make.h"
-#include "attacks.h"
 #include "move_gen.h"
 #include "types.h"
 

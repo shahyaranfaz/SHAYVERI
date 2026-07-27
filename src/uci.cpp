@@ -1,6 +1,5 @@
 #include "attacks.h"
 #include "board.h"
-#include "parse_cli.h"
 #include "datagen.h"
 #include "datagen_cli.h"
 #include "evaluate.h"
@@ -9,6 +8,7 @@
 #include "move_gen.h"
 #include "nnue.h"
 #include "opening_book.h"
+#include "parse_cli.h"
 #include "search.h"
 #include "time_manager.h"
 #include "tt.h"
@@ -19,7 +19,12 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cctype>
+#include <cerrno>
 #include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -29,12 +34,6 @@
 #include <string>
 #include <thread>
 #include <vector>
-
-#include <cerrno>
-#include <cctype>
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
 
 namespace SHAYVERI {
 
@@ -258,7 +257,7 @@ int main(int argc, char **argv) {
     Board b;
     set_startpos(b);
 
-    std::vector<U64>         hash_history;
+    std::vector<U64> hash_history;
     hash_history.push_back(b.hash);
 
     if (argc > 1) {
@@ -323,7 +322,7 @@ int main(int argc, char **argv) {
                 else
                     std::cout << "option name " << name
                               << " type string default " << opt.default_str << "\n";
-                 }
+            }
             std::cout << "uciok\n";
         }
 
@@ -496,19 +495,19 @@ int main(int argc, char **argv) {
             auto time_manager = std::make_shared<TimeManager>();
             time_manager->init(tc);
 
-            int   start = static_cast<int>(hash_history.size()) - 1 - b.half_move;
+            int start = static_cast<int>(hash_history.size()) - 1 - b.half_move;
             if (start < 0) start = 0;
             std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
 
             Board b_copy    = b;
-            int   num_thr   = std::min(g_num_threads, active_thread_limit());
+            int num_thr = std::min(g_num_threads, active_thread_limit());
             if (num_thr != g_num_threads)
                 std::cout << "info string Threads clamped to " << num_thr
                           << " by hardware capacity\n";
             uci_search_workers.resize(static_cast<std::size_t>(num_thr));
-            I64   hard_ms   = time_manager->hard_ms();
-            bool  pondering = is_ponder_search;
-            int   root_depth = fixed_depth > 0 ? fixed_depth : 64;
+            I64 hard_ms = time_manager->hard_ms();
+            bool pondering = is_ponder_search;
+            int root_depth = fixed_depth > 0 ? fixed_depth : 64;
             if (book_info_search)
                 root_depth = fixed_depth > 0
                     ? std::min(fixed_depth, g_book_info_depth)

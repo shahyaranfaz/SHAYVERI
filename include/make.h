@@ -7,15 +7,15 @@
 namespace SHAYVERI {
 
 struct Undo {
-    int    castling;
+    int castling;
     Square en_passant;
-    int    half_move;
-    int    full_move;
-    Piece  captured;
-    bool   was_ep;
-    bool   was_castle;
-    U64    hash;
-    U64    pawn_hash;
+    int half_move;
+    int full_move;
+    Piece captured;
+    bool was_ep;
+    bool was_castle;
+    U64 hash;
+    U64 pawn_hash;
 };
 
 struct CastleInfo {
@@ -46,7 +46,7 @@ constexpr Piece promotion_piece(Colour side, PieceType promotion) {
 bool make_move(Board &b, Move m, Undo &u);
 
 // Hot path for generator-produced moves. Structural validity is asserted in
-// debug builds; king safety is still checked and reported.
+// debug builds. King safety is still checked and reported.
 bool make_generated_move(Board &b, Move m, Undo &u);
 
 // Hot path for moves already proven legal by the direct legal generator.

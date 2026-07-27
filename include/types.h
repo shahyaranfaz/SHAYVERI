@@ -34,17 +34,19 @@ enum File : int { FILE_A = 0, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FI
 
 enum Rank : int { RANK_1 = 0, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_COUNT };
 
-constexpr Colour   flip(Colour c)    { return c == NONE_COLOUR ? NONE_COLOUR : Colour(c ^ 1); }
+constexpr Colour flip(Colour c) {
+    return c == NONE_COLOUR ? NONE_COLOUR : Colour(c ^ 1);
+}
 constexpr PieceType get_type(Piece p) { return PieceType(p > WK ? p - 6 : p); }
 constexpr Colour get_colour(Piece p) {
     return p == NONE_PIECE ? NONE_COLOUR : Colour(p > WK);
 }
 
 constexpr Square make_square(File f, Rank r) { return Square(int(r) * 8 + int(f)); }
-constexpr File   get_file(Square s)          { return File(s & 7); }
-constexpr Rank   get_rank(Square s)          { return Rank(s >> 3); }
-constexpr bool   is_valid(Square s)          { return s >= 0 && s < 64; }
-constexpr U64    bb_square(Square s) {
+constexpr File get_file(Square s) { return File(s & 7); }
+constexpr Rank get_rank(Square s) { return Rank(s >> 3); }
+constexpr bool is_valid(Square s) { return s >= 0 && s < 64; }
+constexpr U64 bb_square(Square s) {
     return is_valid(s) ? (1ULL << static_cast<unsigned>(s)) : 0;
 }
 static_assert(bb_square(SQ_NONE) == 0);

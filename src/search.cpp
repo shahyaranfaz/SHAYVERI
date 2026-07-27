@@ -14,16 +14,15 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <chrono>
+#include <climits>
+#include <cmath>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <mutex>
-
-#include <climits>
-#include <cassert>
-#include <cmath>
-#include <cstring>
 
 namespace SHAYVERI {
 
@@ -43,7 +42,7 @@ struct SearchThreadState {
 SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(
     int singular_score, int singular_beta, int beta, int tt_score, bool cut_node) {
     if (singular_score < singular_beta) {
-        int       extension        = Tune::se_extension;
+        int extension = Tune::se_extension;
         const int double_margin    = std::max(0, Tune::se_double_margin);
         const int double_extension = std::max(extension, Tune::se_double_extension);
         const int triple_margin = Tune::se_double_extensions
@@ -1080,12 +1079,16 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             if (have_static_eval && !in_check && ss->excluded_move == MOVE_NONE)
                 update_correction_history(b, H, raw_static_eval, score, depth, TT_LOWER);
             if (ss->excluded_move == MOVE_NONE) {
-                int tt_s = (score > MATE_SCORE - MAX_PLY) ? score + ply : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
+                int tt_s = score > MATE_SCORE - MAX_PLY
+                    ? score + ply
+                    : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
                 context.table.store(key, depth, tt_s, TT_LOWER, m);
             }
             if (is_quiet) {
                 H.store_killer(ply, m);
-                int bonus = std::min(Tune::history_bonus_limit, Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
+                int bonus = std::min(
+                    Tune::history_bonus_limit,
+                    Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
 
                 auto update_all = [&](Move move, int pt_idx, int bns) {
                     int f = move_from(move);
@@ -1120,12 +1123,15 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                 }
                 update_all(m, moved_pc_idx, bonus);
                 for (int j = 0; j < quiet_count - 1; ++j) {
-                    int q_pc_idx = static_cast<int>(get_type(b.get_piece(move_from(quiets_played[j]))));
+                    int q_pc_idx = static_cast<int>(
+                        get_type(b.get_piece(move_from(quiets_played[j]))));
                     update_all(quiets_played[j], q_pc_idx, -bonus);
                 }
             } else if (cap_victim_pt != NONE_PTYPE) {
                 // Update capture history: reward the cutting capture, penalise prior ones
-                int bonus = std::min(Tune::history_bonus_limit, Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
+                int bonus = std::min(
+                    Tune::history_bonus_limit,
+                    Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
                 int attacker_pt = static_cast<int>(get_type(moved_piece));
                 int to = static_cast<int>(move_to(m)) & 63;
                 H.update_history(
@@ -1188,8 +1194,8 @@ static SearchResult search_impl(
     ss->acc.refresh(b);
 
     Move final_best_move  = MOVE_NONE;
-    int  final_best_score = -INF;
-    int  completed_depth  = 0;
+    int final_best_score = -INF;
+    int completed_depth = 0;
 
     U64 rep_stack[MAX_PLY * 2];
     int rep_len = 0;
@@ -1206,7 +1212,7 @@ static SearchResult search_impl(
     }
     if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
         if (rep_len < MAX_PLY) rep_stack[rep_len++] = b.hash;
-        else                   rep_stack[MAX_PLY - 1] = b.hash;
+        else rep_stack[MAX_PLY - 1] = b.hash;
     }
 
     auto start_time = std::chrono::steady_clock::now();
@@ -1228,7 +1234,7 @@ static SearchResult search_impl(
         ScoredMove ordered[256];
         for (int i = 0; i < pseudo.count; ++i) {
             Move m = pseudo.moves[i];
-            int  s = order_score(b, m, 0, H, ss);
+            int s = order_score(b, m, 0, H, ss);
             if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
             if (request.root_bias != 0)
                 s += ((i + request.root_bias) & 7) * 2;

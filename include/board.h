@@ -16,24 +16,24 @@ enum Castling : int {
 };
 
 struct Board {
-    std::array<U64, PIECE_COUNT>   bit_boards{};
-    std::array<U64, COLOUR_COUNT>  occupancies{};
-    std::array<Piece, 64>          mailbox{};
+    std::array<U64, PIECE_COUNT> bit_boards{};
+    std::array<U64, COLOUR_COUNT> occupancies{};
+    std::array<Piece, 64> mailbox{};
 
-    U64    hash         = 0;
-    U64    pawn_hash    = 0;
-    U64    occupied     = 0;
+    U64 hash = 0;
+    U64 pawn_hash = 0;
+    U64 occupied = 0;
     Colour side_to_move = WHITE;
-    Square en_passant   = SQ_NONE;
-    int    castling     = 0;
-    int    half_move    = 0;
-    int    full_move    = 1;
+    Square en_passant = SQ_NONE;
+    int castling = 0;
+    int half_move = 0;
+    int full_move = 1;
 
-    void  clear();
-    void  recompute_all();
+    void clear();
+    void recompute_all();
     Piece get_piece(Square s) const;
-    bool  is_consistent() const;
-    bool  is_plausible_position() const;
+    bool is_consistent() const;
+    bool is_plausible_position() const;
 };
 
 bool set_from_fen(Board &b, const std::string &fen);

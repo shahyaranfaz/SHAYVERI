@@ -24,7 +24,7 @@ static constexpr int MATE_SCORE          = 32000;
 static constexpr int CORRHIST_TABLE_SIZE = 16384;
 
 // Internal tactical and move-ordering values. These are not tuned material terms.
-// Tactical exchange/threat analysis needs a prohibitive king value; capture
+// Tactical exchange and threat analysis needs a prohibitive king value. Capture
 // ordering does not.
 static constexpr int TACTICAL_PIECE_VALUES[7]      = { 0, 100, 320, 330, 500, 900, 20000 };
 static constexpr int CAPTURE_ORDER_PIECE_VALUES[7] = { 0, 100, 320, 330, 500, 900,     0 };
@@ -458,10 +458,10 @@ static constexpr int CASTLED_BONUS     =  4;
 // ===== TUNING INFRASTRUCTURE =====
 
 struct TuningOption {
-    void*       ptr;
+    void* ptr;
     enum Type { INT, DOUBLE } type;
-    int         min_val;
-    int         max_val;
+    int min_val;
+    int max_val;
     std::string default_str;
 };
 

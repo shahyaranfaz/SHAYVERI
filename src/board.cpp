@@ -56,7 +56,7 @@ bool Board::is_consistent() const {
         if (all & pieces) return false;
         all |= pieces;
         if (get_colour(Piece(p)) == WHITE) white |= pieces;
-        else                               black |= pieces;
+        else black |= pieces;
     }
     if (occupancies[WHITE] != white || occupancies[BLACK] != black
         || occupied != all || (white & black))

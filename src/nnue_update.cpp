@@ -4,6 +4,7 @@
 #include "make.h"
 
 #include <cstdlib>
+
 #include <immintrin.h>
 
 namespace SHAYVERI {
@@ -141,7 +142,7 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
 
     if (get_type(moved) == KING) {
         if (stm == WHITE) white_king_sq = from;
-        else              black_king_sq = from;
+        else black_king_sq = from;
     }
 
     if (captured == NONE_PIECE && promo == NONE_PTYPE &&
@@ -228,7 +229,7 @@ void update_accumulator(Accumulator &child, const Accumulator &parent,
 
     acc_sub(child, moved, from, white_king_sq, black_king_sq);
     if (promo != NONE_PTYPE) acc_add(child, promotion_piece(stm, promo), to, white_king_sq, black_king_sq);
-    else                     acc_add(child, moved, to, white_king_sq, black_king_sq);
+    else acc_add(child, moved, to, white_king_sq, black_king_sq);
 }
 
 } // namespace NNUE

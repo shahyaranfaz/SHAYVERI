@@ -1,4 +1,5 @@
 #include "nnue.h"
+
 #include "attacks.h"
 
 #include <algorithm>

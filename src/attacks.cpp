@@ -1,8 +1,8 @@
 #include "attacks.h"
 
-#include <immintrin.h>
-
 #include <cassert>
+
+#include <immintrin.h>
 
 namespace SHAYVERI {
 

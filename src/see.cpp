@@ -47,7 +47,7 @@ int see(const Board &b, Move m) {
     Piece attacker_orig = b.get_piece(from);
     if (attacker_orig == NONE_PIECE) return 0;
 
-    Piece  captured_orig = b.get_piece(to);
+    Piece captured_orig = b.get_piece(to);
     Square ep_cap_sq     = SQ_NONE;
     if (captured_orig == NONE_PIECE) {
         if (is_ep_move(m)) {
@@ -66,7 +66,7 @@ int see(const Board &b, Move m) {
 
     Colour side         = flip(get_colour(attacker_orig));
     occ                |= bb_square(to);
-    U64   atks          = attackers_to(b, to, occ) & ~bb_square(to);
+    U64 atks = attackers_to(b, to, occ) & ~bb_square(to);
     Piece last_attacker = attacker_orig;
     depth++;
 

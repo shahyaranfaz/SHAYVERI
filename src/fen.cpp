@@ -48,7 +48,7 @@ bool set_from_fen(Board &b, const std::string &fen) {
 
     if (side_str == "w")       parsed.side_to_move = WHITE;
     else if (side_str == "b")  parsed.side_to_move = BLACK;
-    else                       return false;
+    else return false;
 
     if (castle != "-") {
         for (char c : castle) {
@@ -57,7 +57,7 @@ bool set_from_fen(Board &b, const std::string &fen) {
             else if (c == 'Q') right = WHITE_QUEENSIDE;
             else if (c == 'k') right = BLACK_KINGSIDE;
             else if (c == 'q') right = BLACK_QUEENSIDE;
-            else               return false;
+            else return false;
             if (parsed.castling & right) return false;
             parsed.castling |= right;
         }
