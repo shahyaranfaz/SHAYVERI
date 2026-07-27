@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080b0a">
-  <meta name="description" content="SHAYVERI v2.8.0 — a fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta name="description" content="SHAYVERI v2.9.0 — a fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
   <title>SHAYVERI Chess Engine</title>
   <style>
     :root {
@@ -358,17 +358,17 @@
           <div class="identity">
             <div class="name-lockup">
               <h1>Shayveri</h1>
-              <span class="version" aria-label="version 2.8.0">v2.8.0</span>
+              <span class="version" aria-label="version 2.9.0">v2.9.0</span>
             </div>
             <p class="expanded-name">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence</p>
           </div>
           <p class="hero-intro">A C++ Chess Engine.</p>
         </div>
         <div class="hero-metrics" aria-label="Engine highlights">
-          <article class="metric"><div><span class="metric-value">3130.0</span> <span class="metric-error">+/- 15.0</span></div><p>Anchored Ordo STC rating for SHAYVERI NNUE Evaluation</p></article>
-          <article class="metric"><div><span class="metric-value">3235.6</span> <span class="metric-error">+/- 29.6</span></div><p>Anchored Ordo LTC rating for SHAYVERI NNUE Evaluation</p></article>
-          <article class="metric"><div><span class="metric-value">+21.64%</span></div><p>Fixed-bench speedup compared to SHAYVERI v2.7.0</p></article>
-          <article class="metric"><div><span class="metric-value">+35.3</span> <span class="metric-error">+/- 21.1</span></div><p>Elo gained at STC compared to SHAYVERI v2.7.0</p></article>
+          <article class="metric"><div><span class="metric-value">3194.4</span> <span class="metric-error">+/- 15.3</span></div><p>Anchored Ordo STC rating for SHAYVERI NNUE Evaluation</p></article>
+          <article class="metric"><div><span class="metric-value">3270.3</span> <span class="metric-error">+/- 30.0</span></div><p>Anchored Ordo LTC rating for SHAYVERI NNUE Evaluation</p></article>
+          <article class="metric"><div><span class="metric-value">+43.44%</span></div><p>Fixed-bench speedup compared to SHAYVERI v2.8.0</p></article>
+          <article class="metric"><div><span class="metric-value">+64.4</span> <span class="metric-error">+/- 21.4</span></div><p>Elo gained at STC compared to SHAYVERI v2.8.0</p></article>
         </div>
       </div>
     </section>
@@ -382,9 +382,9 @@
           <div class="overview-item"><h3>Protocol</h3><p>Implements UCI for command-line use and integration with chess GUIs, tournament managers, and bot frameworks.</p></div>
           <div class="overview-item"><h3>Configuration</h3><p>Exposes runtime controls for hash memory, threads, evaluation path and network, opening-book use, pondering, and time allocation.</p></div>
           <div class="overview-item"><h3>Search</h3><p>Combines iterative deepening, Principal Variation Search, transposition-table reuse, selective pruning, extensions, and history-based move ordering.</p></div>
-          <div class="overview-item"><h3>Evaluation</h3><p>Provides an embedded KB16x512 NNUE evaluation and an independently tuned HCE-classical evaluation path.</p></div>
+          <div class="overview-item"><h3>Evaluation</h3><p>Provides an embedded KB16x512 NNUE evaluation and an independently tuned HCE evaluation path.</p></div>
           <div class="overview-item"><h3>Time And Parallelism</h3><p>Supports deterministic single-thread search and timed Lazy SMP with adaptive soft and hard time limits.</p></div>
-          <div class="overview-item"><h3>Opening Book</h3><p>The self-built embedded book uses standard-chess games from TWIC where both players are rated at least 2600. Its reproducible pipeline keeps the first 24 plies, aggregates observed moves for positions with at least five weighted plays, and compiles the majority move without evaluator-specific metadata.</p></div>
+          <div class="overview-item"><h3>Opening Book</h3><p>The self-built embedded book uses standard-chess games from TWIC where both players are rated at least 2600. Its reproducible pipeline keeps the first 30 plies, aggregates observed moves for positions with at least five weighted plays, and compiles the majority move without evaluator-specific metadata.</p></div>
           <div class="overview-item"><h3>Platform</h3><p>Targets modern x86-64 CPUs with BMI/BMI2, LZCNT, and POPCNT support, with build targets for Linux, Windows, and Intel macOS.</p></div>
         </div>
       </div>
@@ -398,16 +398,16 @@
         <p class="section-copy">The public rating numbers come from controlled multi-engine round-robin gauntlets analyzed with Ordo. They are pool-relative, anchored to fixed-strength <code>SF2850</code> and <code>SF3000</code>, and should not be read as universal CCRL ratings.</p>
         <div class="table-shell">
           <table>
-            <thead><tr><th>Engine</th><th>Evaluation</th><th>Network</th><th>Time Control</th><th>Rating</th><th>Error</th><th>Gap to SF2850</th><th>Gap to SF3000</th></tr></thead>
+            <thead><tr><th>Engine</th><th>Evaluation</th><th>Time Control</th><th>Rating</th><th>Error</th></tr></thead>
             <tbody>
-              <tr><td>SHAYVERI v2.8.0</td><td>HCE-classical</td><td>none</td><td>STC 10+0.1</td><td>2643.6</td><td>±18.8</td><td>−206.4</td><td>−356.4</td></tr>
-              <tr><td>SHAYVERI v2.8.0</td><td>HCE-classical</td><td>none</td><td>LTC 90+0.5</td><td>2771.4</td><td>±31.3</td><td>−78.6</td><td>−228.6</td></tr>
-              <tr><td>SHAYVERI v2.8.0</td><td>NNUE</td><td>SHAYVERI2_5_0</td><td>STC 10+0.1</td><td class="good">3130.0</td><td>±15.0</td><td>+280.0</td><td>+130.0</td></tr>
-              <tr><td>SHAYVERI v2.8.0</td><td>NNUE</td><td>SHAYVERI2_5_0</td><td>LTC 90+0.5</td><td class="good">3235.6</td><td>±29.6</td><td>+385.6</td><td>+235.6</td></tr>
+              <tr><td>SHAYVERI v2.9.0</td><td>HCE</td><td>STC 10+0.1</td><td>2692.8</td><td>±17.7</td></tr>
+              <tr><td>SHAYVERI v2.9.0</td><td>HCE</td><td>LTC 90+0.5</td><td>2779.7</td><td>±31.2</td></tr>
+              <tr><td>SHAYVERI v2.9.0</td><td>NNUE</td><td>STC 10+0.1</td><td class="good">3194.4</td><td>±15.3</td></tr>
+              <tr><td>SHAYVERI v2.9.0</td><td>NNUE</td><td>LTC 90+0.5</td><td class="good">3270.3</td><td>±30.0</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="note">SHAYVERI v2.8.0 / NNUE leads HCE-classical by about <strong>+486.4 Elo at STC</strong> and <strong>+464.2 Elo at LTC</strong> in this anchored pool. It is above SF3000 at both time controls.</p>
+        <p class="note">SHAYVERI v2.9.0 / NNUE leads HCE by about <strong>+501.6 Elo at STC</strong> and <strong>+490.6 Elo at LTC</strong> in this anchored pool. It is above SF3000 at both time controls.</p>
       </div>
     </section>
 
@@ -428,13 +428,13 @@
             <li>Capture-only ProbCut searches test likely fail-highs before the full move loop.</li>
             <li>Late move reductions adapt to PV status, cut nodes, improving positions, move count, and history quality.</li>
             <li>Singular extensions, double/triple extensions, multi-cut pruning, and reduced TT-move handling use excluded-move verification.</li>
-            <li>SEE, quiet SEE, delta, futility, and promotion-aware gates constrain main search and quiescence pruning.</li>
+            <li>SEE, delta, futility, and promotion-aware gates constrain main search and quiescence pruning.</li>
           </ul></article>
           <article class="detail-card"><h3>Ordering And State</h3><ul>
-            <li>TT moves, SEE-scored captures, killers, countermoves, and history scores drive lazy move ordering.</li>
+            <li>Staged TT, capture, promotion, killer, countermove, quiet, and losing-capture phases drive move ordering.</li>
             <li>Gravity-based main, continuation, follow-up, and capture histories reward cutoffs and penalize failed moves.</li>
             <li>Pawn-keyed correction history adjusts static evaluation and persists between searches.</li>
-            <li>An atomic four-entry bucketed transposition table stores bounds, moves, and reusable static evaluations.</li>
+            <li>A race-safe four-way cache-line transposition table stores bounds, moves, and reusable static evaluations.</li>
           </ul></article>
           <article class="detail-card"><h3>Time Management</h3><ul>
             <li>Soft and hard limits account for the remaining clock, increment, moves to go, and move overhead.</li>
@@ -451,7 +451,7 @@
         <div class="section-head">
           <div><p class="eyebrow">04 / Evaluation</p><h2>Evaluation Paths</h2></div>
         </div>
-        <p class="section-copy">To select between the HCE-classical and NNUE evaluation paths, use the UCI option <code>UseNNUE</code>.</p>
+        <p class="section-copy">To select between the HCE and NNUE evaluation paths, use the UCI option <code>UseNNUE</code>.</p>
         <div class="evaluation-grid">
           <article class="detail-card"><h3>Handcrafted Evaluation</h3><ul>
             <li>Tapered middlegame/endgame material, piece-square tables, bishop-pair scoring, development, and tempo.</li>
@@ -486,7 +486,7 @@
         </dl>
         <h3 class="option-group">Evaluation</h3>
         <dl class="option-list">
-          <div class="option"><dt>UseNNUE</dt><dd>Toggles between the NNUE and HCE-classical evaluation paths without changing the configured network path.</dd></div>
+          <div class="option"><dt>UseNNUE</dt><dd>Toggles between the NNUE and HCE evaluation paths without changing the configured network path.</dd></div>
           <div class="option"><dt>EvalFile</dt><dd>Specifies the path to a compatible external NNUE network. The embedded default is used when left unchanged.</dd></div>
         </dl>
         <h3 class="option-group">Opening Book</h3>
@@ -554,7 +554,7 @@
   </main>
 
   <footer>
-    <div class="shell footer-inner">SHAYVERI v2.8.0, built by Shahyar Anfaz and Averi Wylie.</div>
+    <div class="shell footer-inner">SHAYVERI v2.9.0, built by Shahyar Anfaz and Averi Wylie.</div>
   </footer>
   <script>
     const header = document.querySelector(".topbar");

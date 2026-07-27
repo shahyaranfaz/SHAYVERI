@@ -56,8 +56,6 @@ pairing at LTC. The framework is described in
 - Moved generated opening-book data from a multiply-included header into one
   source file. Split move I/O, null-move mutation, datagen CLI handling, and
   shared parsing into focused modules.
-- Recorded `3194.4 +/-15.3` at STC and `3270.3 +/-30.0` at LTC, changes of
-  +64.4 STC and +34.7 LTC relative to v2.8.0 in the same pool.
 - Recorded `3194.4 +/-15.3` at STC and `3270.3 +/-30.0` at LTC, improvements
   of +64.4 STC and +34.7 LTC over v2.8.0 in the same pool.
 

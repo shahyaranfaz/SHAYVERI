@@ -63,18 +63,17 @@ Examples: `v1.0.0`, `v1.1.0`, `v1.2.0`, then `v2.0.0`, `v2.1.0`.
 - A patch must never be listed after a later `Y` release. For example,
   `v2.7.2` must precede `v2.8.0`.
 
-## Source Releases and NNUE Networks
+## Release and Evaluator Labels
 
-SHAYVERI source versions and NNUE network artifact names are independent.
+Public engine labels identify the source release and evaluation path:
 
 - Source release: `SHAYVERI v2.6.0`
-- Evaluator: `NNUE` or `HCE-classical`
-- Network artifact: `SHAYVERI2_5_0.nnue`
+- Evaluator: `NNUE` or `HCE`
 
-The network artifact does not determine the source version. A complete result
-label names all applicable parts:
+Each release has a packaged default network. Its artifact name is release
+metadata and does not belong in the engine label:
 
 ```text
-SHAYVERI v2.6.0 / NNUE SHAYVERI2_5_0
-SHAYVERI v2.6.0 / HCE-classical
+SHAYVERI v2.6.0 / NNUE
+SHAYVERI v2.6.0 / HCE
 ```

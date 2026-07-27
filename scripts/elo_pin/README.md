@@ -89,7 +89,7 @@ Validate a completed phase manually:
 python3 scripts/elo_pin/validate_run.py \
   --pgn outputs/v0.0.0/stc/rating_pool.pgn \
   --games-per-pair 800 \
-  --player "SHAYVERI v0.0.0 / HCE-classical" \
+  --player "SHAYVERI v0.0.0 / HCE" \
   --player "SHAYVERI v0.0.0 / NNUE" \
   --player Alexandria9 --player Berserk13 --player Ethereal14 \
   --player PlentyChess7 --player Weiss2 --player SF2850 --player SF3000 \

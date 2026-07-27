@@ -8,20 +8,21 @@ public strength numbers come from controlled multi-engine round-robin gauntlets
 analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
 
-Release labels separate the SHAYVERI source version, evaluator, and network. The
-current release is `SHAYVERI v2.8.0 / NNUE SHAYVERI2_5_0`.
+The current release is `SHAYVERI v2.9.0`, which embeds `SHAYVERI2_5_0.nnue` as 
+its default network. The versioning scheme is explained in
+[`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## Elo results
 
-|          Engine |    Evaluation |       Network | Time control | Rating |   Error | Gap to SF2850 | Gap to SF3000 |
-|----------------:|--------------:|--------------:|-------------:|-------:|--------:|--------------:|--------------:|
-| SHAYVERI v2.8.0 |          NNUE | SHAYVERI2_5_0 |   STC 10+0.1 | 3130.0 | +/-15.0 |        +280.0 |        +130.0 |
-| SHAYVERI v2.8.0 |          NNUE | SHAYVERI2_5_0 |   LTC 90+0.5 | 3235.6 | +/-29.6 |        +385.6 |        +235.6 |
-| SHAYVERI v2.8.0 | HCE-classical |          none |   STC 10+0.1 | 2643.6 | +/-18.8 |        -206.4 |        -356.4 |
-| SHAYVERI v2.8.0 | HCE-classical |          none |   LTC 90+0.5 | 2771.4 | +/-31.3 |         -78.6 |        -228.6 |
+|          Engine | Evaluation | Time control | Rating |   Error |
+|----------------:|-----------:|-------------:|-------:|--------:|
+| SHAYVERI v2.9.0 |       NNUE |   STC 10+0.1 | 3194.4 | +/-15.3 |
+| SHAYVERI v2.9.0 |       NNUE |   LTC 90+0.5 | 3270.3 | +/-30.0 |
+| SHAYVERI v2.9.0 |        HCE |   STC 10+0.1 | 2692.8 | +/-17.7 |
+| SHAYVERI v2.9.0 |        HCE |   LTC 90+0.5 | 2779.7 | +/-31.2 |
 
-The v2.8.0 NNUE configuration is about +486.4 Elo over HCE-classical at STC and
-+464.2 Elo at LTC in this anchored pool.
+The v2.9.0 NNUE configuration is about +501.6 Elo over HCE at STC and
++490.6 Elo at LTC in this anchored pool.
 
 ## How to build
 
@@ -80,12 +81,11 @@ go movetime 1000
 - History pruning
 - Delta pruning
 - SEE (Static Exchange Evaluation) for move ordering
-- Conservative quiescence SEE pruning for non-promotion captures
-- TT moves, SEE-scored captures, killers, countermoves, and history-based move
-  ordering
+- Staged TT, capture, promotion, killer, countermove, quiet, and losing-capture
+  move ordering
 - Gravity-based main, continuation, follow-up, and capture histories
 - Pawn-keyed static-evaluation correction history persisted between searches
-- Atomic 4-entry bucketed transposition table with Zobrist hashing
+- Race-safe four-way cache-line transposition table with Zobrist hashing
 - Repetition detection (2-fold during search, 3-fold draw claim)
 - Terminal, fifty-move, and insufficient-material handling inside search
 - Lazy SMP with shared TT for timed multi-threaded search
@@ -98,8 +98,8 @@ go movetime 1000
 
 ## Evaluation paths
 
-To select between the `HCE-classical` and `NNUE` evaluation paths, use the UCI
-option `UseNNUE`.
+To select between the `HCE` and `NNUE` evaluation paths, use the UCI option 
+`UseNNUE`.
 
 ## Handcrafted evaluation
 
@@ -139,7 +139,7 @@ RobotMoon/Stockfish corpora, which are not included in this repository.
 
 The self-built embedded book uses standard-chess games from The Week in Chess
 (TWIC) where both players are rated at least 2600. Its reproducible pipeline
-keeps the first 24 plies, aggregates observed moves for positions with at least
+keeps the first 30 plies, aggregates observed moves for positions with at least
 five weighted plays, and compiles the majority move without evaluator-specific
 metadata.
 
@@ -167,8 +167,8 @@ make -C scripts/opening_book run_all
 
 ### Evaluation
 
-- `UseNNUE`: toggle between the NNUE and HCE-classical evaluation paths without
-  changing the configured network path.
+- `UseNNUE`: toggle between the NNUE and HCE evaluation paths without changing
+  the configured network path.
 - `EvalFile`: specify the path to a compatible external NNUE network. The
   embedded default is used when left unchanged.
 
