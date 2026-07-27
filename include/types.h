@@ -46,11 +46,7 @@ constexpr Square make_square(File f, Rank r) { return Square(int(r) * 8 + int(f)
 constexpr File get_file(Square s) { return File(s & 7); }
 constexpr Rank get_rank(Square s) { return Rank(s >> 3); }
 constexpr bool is_valid(Square s) { return s >= 0 && s < 64; }
-constexpr U64 bb_square(Square s) {
-    return is_valid(s) ? (1ULL << static_cast<unsigned>(s)) : 0;
-}
-static_assert(bb_square(SQ_NONE) == 0);
-static_assert(bb_square(63) == (1ULL << 63));
+constexpr U64 bb_square(Square s) { return 1ULL << s; }
 
 inline Square pop_lsb(U64 &bb) {
     Square s = __builtin_ctzll(bb);

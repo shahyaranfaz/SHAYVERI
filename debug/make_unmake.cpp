@@ -11,8 +11,6 @@
 using SHAYVERI::Board;
 using SHAYVERI::Move;
 using SHAYVERI::MoveList;
-using SHAYVERI::PieceType;
-using SHAYVERI::Square;
 using SHAYVERI::Undo;
 using SHAYVERI::MOVE_NONE;
 using SHAYVERI::File;
@@ -23,49 +21,11 @@ using SHAYVERI::find_first_legal_move;
 using SHAYVERI::generate_legal_moves;
 using SHAYVERI::generate_pseudo_legal_moves;
 using SHAYVERI::init_attacks;
-using SHAYVERI::is_ep_move;
 using SHAYVERI::is_legal_move;
-using SHAYVERI::is_promo;
 using SHAYVERI::make_move;
 using SHAYVERI::make_generated_move;
-using SHAYVERI::move_from;
-using SHAYVERI::move_promo;
-using SHAYVERI::move_to;
 using SHAYVERI::set_from_fen;
 using SHAYVERI::unmake_move;
-
-static bool verify_move_encoding() {
-    if (sizeof(Move) != 2 || MOVE_NONE != 0) return false;
-
-    for (int from = 0; from < 64; ++from) {
-        for (int to = 0; to < 64; ++to) {
-            const Square from_square = static_cast<Square>(from);
-            const Square to_square = static_cast<Square>(to);
-            const Move normal = create_move(from_square, to_square);
-            if (move_from(normal) != from_square || move_to(normal) != to_square
-                || is_promo(normal) || is_ep_move(normal))
-                return false;
-
-            const Move ep = create_ep_move(from_square, to_square);
-            if (move_from(ep) != from_square || move_to(ep) != to_square
-                || move_promo(ep) != SHAYVERI::NONE_PTYPE || !is_ep_move(ep))
-                return false;
-
-            for (int promo = SHAYVERI::KNIGHT; promo <= SHAYVERI::QUEEN;
-                ++promo) {
-                const PieceType piece_type = static_cast<PieceType>(promo);
-                const Move promotion =
-                    create_move(from_square, to_square, piece_type);
-                if (move_from(promotion) != from_square
-                    || move_to(promotion) != to_square
-                    || move_promo(promotion) != piece_type
-                    || !is_promo(promotion) || is_ep_move(promotion))
-                    return false;
-            }
-        }
-    }
-    return true;
-}
 
 static bool boards_equal(const Board &a, const Board &b) {
     return a.bit_boards == b.bit_boards
@@ -179,11 +139,6 @@ static bool verify_malformed_moves() {
 int main() {
     SHAYVERI::Zobrist::init();
     init_attacks();
-
-    if (!verify_move_encoding()) {
-        std::cerr << "[FAIL] compact move encoding\n";
-        return 2;
-    }
 
     if (!verify_malformed_moves()) {
         std::cerr << "[FAIL] malformed move validation\n";

@@ -69,12 +69,6 @@ pairing at LTC. The framework is described in
   entries as saturating signed 16-bit values while retaining 32-bit update and
   scoring arithmetic. The SPSA registry, variables, and ranges remain
   unchanged.
-- Compacted `Move` from a 32-bit, 17-bit encoding to an exact 16-bit encoding.
-  The special nibble distinguishes ordinary moves, explicit en passant, and
-  the four native promotion piece types. Added exhaustive from/to and special-
-  move round-trip coverage, and repacked the TT move field accordingly.
-  Invalid square-to-bitboard conversion now returns an empty mask instead of
-  invoking an undefined shift.
 - Replaced the unaligned, bucket-locked TT with an aligned four-way,
   one-cache-line cluster using independently published race-safe 16-byte
   slots. Full Zobrist identity is preserved between the bucket index and
