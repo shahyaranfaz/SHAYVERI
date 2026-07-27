@@ -15,7 +15,7 @@ constexpr U64 PRESENT_BIT = 1ULL << 63;
 constexpr U64 LOCKED_VALUE = 1ULL << 62;
 constexpr U64 AGE_MASK = 0xFFULL;
 constexpr U64 KEY_MASK = ~(PRESENT_BIT | LOCKED_VALUE | AGE_MASK);
-constexpr U64 MOVE_MASK = (1ULL << 17) - 1;
+constexpr U64 MOVE_MASK = (1ULL << 16) - 1;
 
 U64 pack_payload(int score, int eval, int depth, TTFlag flag,
                  Move best, bool has_eval) {
@@ -31,9 +31,9 @@ U64 pack_payload(int score, int eval, int depth, TTFlag flag,
     return static_cast<U16>(packed_score)
          | (static_cast<U64>(static_cast<U16>(packed_eval)) << 16)
          | ((static_cast<U64>(best) & MOVE_MASK) << 32)
-         | (static_cast<U64>(packed_depth) << 49)
-         | (static_cast<U64>(flag) << 57)
-         | (static_cast<U64>(has_eval ? 1 : 0) << 59);
+         | (static_cast<U64>(packed_depth) << 48)
+         | (static_cast<U64>(flag) << 56)
+         | (static_cast<U64>(has_eval ? 1 : 0) << 58);
 }
 
 TTEntry unpack_entry(U64 key, U64 key_age, U64 payload) {
@@ -42,9 +42,9 @@ TTEntry unpack_entry(U64 key, U64 key_age, U64 payload) {
     entry.score = static_cast<I16>(payload & 0xFFFFULL);
     entry.eval = static_cast<I16>((payload >> 16) & 0xFFFFULL);
     entry.best = static_cast<Move>((payload >> 32) & MOVE_MASK);
-    entry.depth = static_cast<I8>(((payload >> 49) & 0xFFULL) - 1);
-    entry.flag = static_cast<U8>((payload >> 57) & 0x3ULL);
-    entry.has_eval = ((payload >> 59) & 1ULL) != 0;
+    entry.depth = static_cast<I8>(((payload >> 48) & 0xFFULL) - 1);
+    entry.flag = static_cast<U8>((payload >> 56) & 0x3ULL);
+    entry.has_eval = ((payload >> 58) & 1ULL) != 0;
     entry.age = static_cast<U8>(key_age & AGE_MASK);
     return entry;
 }

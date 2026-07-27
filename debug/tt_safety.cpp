@@ -60,7 +60,7 @@ int main() {
     if (!require(ee != nullptr, "probe eval-only key")) ++failures;
     if (ee && !require(ee->has_eval && ee->eval == -19, "eval-only payload mismatch")) ++failures;
 
-    // Compact payload boundaries and the full 17-bit move encoding must
+    // Compact payload boundaries and the full 16-bit move encoding must
     // round-trip exactly.
     const U64 boundary_key = 0x8000000000000222ULL;
     const auto boundary_move = create_ep_move(63, 63);
