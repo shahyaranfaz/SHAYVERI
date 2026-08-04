@@ -114,7 +114,7 @@ windows: $(BIN_WIN)
 macos: $(BIN_MACOS)
 
 $(EMBED_NNUE): src/tools/embed_nnue.cpp
-	mkdir -p build
+	$(if $(wildcard build),,mkdir build)
 	$(CXX) -std=c++20 -O2 -Wall -Wextra -Wpedantic -o $@ src/tools/embed_nnue.cpp
 
 $(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) $(EMBED_NNUE)
