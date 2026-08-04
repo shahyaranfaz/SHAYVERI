@@ -3,6 +3,7 @@ SHAYVERI.exe
 SHAYVERI
 SHAYVERI_mac
 SHAYVERI_pgo
+SHAYVERI_sanitize
 
 build/
 dev/
@@ -20,22 +21,13 @@ debug/time_manager
 debug/position_rules
 debug/search_regression
 debug/nnue_test
-SHAYVERI_sanitize
 debug/nnue_*_test.nnue
 debug/__pycache__
-
-nnue/v*/
-nnue/extra_nets
-nnue/README.md
 
 scripts/*/outputs
 scripts/*/__pycache__
 scripts/elo_pin/.work/
 scripts/elo_pin/current_run_id
-
-future_plans.txt
-
-dev
 
 *.pgn
 *.exe
