@@ -10,15 +10,21 @@ There is no v1 SHAYVERI format. SHAYVERI's first runtime NNUE format was v2,
 marking the change in evaluation type. Format v1 is therefore unassigned and
 unsupported, not a removed historical format.
 
-| Format |     Architecture | Inputs | Hidden |   Activation |         Output heads | Release history |  Support |
-|-------:|-----------------:|-------:|-------:|-------------:|---------------------:|----------------:|---------:|
-|     v2 | `Chess768x256-L` |    768 |    256 | clipped ReLU |           one linear | v2.0-v2.1, v2.3 |      YES |
-|     v2 | `Chess768x512-L` |    768 |    512 | clipped ReLU |           one linear |           never |      YES |
-|     v3 |      `KB8x256-L` |  6,144 |    256 |       SCReLU |           one linear |            v2.2 |      YES |
-|     v3 |      `KB8x512-L` |  6,144 |    512 |       SCReLU |           one linear |           never |      YES |
-|     v3 |     `KB16x256-L` | 12,288 |    256 |       SCReLU |           one linear |            v2.4 |      YES |
-|     v3 |     `KB16x512-L` | 12,288 |    512 |       SCReLU |           one linear |       v2.5-v2.8 |      YES |
-|     v4 |    `KB16x512-L8` | 12,288 |    512 |       SCReLU |       eight material |           never |      YES |
+| Format |     Architecture | Inputs | Hidden |   Activation |                        Output heads | Release history |  Support |
+|-------:|-----------------:|-------:|-------:|-------------:|------------------------------------:|----------------:|---------:|
+|     v2 | `Chess768x256-L` |    768 |    256 | clipped ReLU |                          one linear | v2.0-v2.1, v2.3 |      YES |
+|     v2 | `Chess768x512-L` |    768 |    512 | clipped ReLU |                          one linear |           never |      YES |
+|     v3 |      `KB8x256-L` |  6,144 |    256 |       SCReLU |                          one linear |            v2.2 |      YES |
+|     v3 |      `KB8x512-L` |  6,144 |    512 |       SCReLU |                          one linear |           never |      YES |
+|     v3 |     `KB16x256-L` | 12,288 |    256 |       SCReLU |                          one linear |            v2.4 |      YES |
+|     v3 |     `KB16x512-L` | 12,288 |    512 |       SCReLU |                          one linear |       v2.5-v2.8 |      YES |
+|     v4 |    `KB16x512-L8` | 12,288 |    512 |       SCReLU | eight linear, chosen by piece count |           never |      YES |
+
+While a shared format number may imply that two networks belong to the same
+architectural family, it more precisely means that they share the same 
+on-disk schema and runtime interpretation. That is to say, the format number
+of a network serves as a compatibility identifier for SHAYVERI, but is not
+intended to be a human-facing classification of SHAYVERI networks.
 
 ## Feature Families
 
