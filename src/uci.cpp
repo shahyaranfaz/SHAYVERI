@@ -198,7 +198,7 @@ static bool load_eval_file_or_default(const std::string &path, std::string &erro
 }
 
 static Move find_ponder_move(const Board &root, Move best) {
-    if (!g_ponder || best == MOVE_NONE) return MOVE_NONE;
+    if (best == MOVE_NONE) return MOVE_NONE;
 
     Board b = root;
     Undo u;

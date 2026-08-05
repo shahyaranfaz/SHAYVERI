@@ -82,6 +82,10 @@ def require_bestmove(text: str) -> None:
     if not re.search(r"^bestmove\s+\S+", text, flags=re.MULTILINE):
         raise AssertionError(f"missing bestmove in output: {text[-TAIL_CHARS:]}")
 
+def require_ponder_move(text: str) -> None:
+    if not re.search(r"^bestmove\s+\S+\s+ponder\s+\S+", text, flags=re.MULTILINE):
+        raise AssertionError(f"missing ponder move in output: {text[-TAIL_CHARS:]}")
+
 def extract_bestmove(text: str) -> str:
     m = re.search(r"^bestmove\s+(\S+)", text, flags=re.MULTILINE)
     if not m:
@@ -150,6 +154,7 @@ def main() -> int:
             "go nodes 1000",
         ], wait_for_bestmove=True)
         require_bestmove(startpos)
+        require_ponder_move(startpos)
         if extract_max_info_nodes(startpos) > 1000:
             raise AssertionError("go nodes 1000 exceeded the requested node limit")
 
