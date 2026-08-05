@@ -209,7 +209,11 @@ static Move find_ponder_move(const Board &root, Move best) {
             return pe->best;
         }
     }
-    return MOVE_NONE;
+
+    // A legal fallback keeps GUI pondering functional even when the child
+    // position was not retained in the transposition table (for example, on
+    // an immediate opening-book move or after a very short search).
+    return first_legal_move(b);
 }
 
 static void format_ponder(Board &b, Move best, char (&text)[32]) {
@@ -566,12 +570,13 @@ int main(int argc, char **argv) {
                         char output[512];
                         const int output_size = std::snprintf(
                             output, sizeof(output),
-                            "info depth %d score %s time %lld nodes %llu nps %llu\n"
+                            "info depth %d seldepth %d score %s time %lld nodes %llu nps %llu hashfull %d tbhits 0\n"
                             "bestmove %s%s\n",
-                            result.depth, score,
+                            result.depth, result.selective_depth, score,
                             static_cast<long long>(elapsed_ms),
                             static_cast<unsigned long long>(result.nodes),
-                            static_cast<unsigned long long>(nps), bestmove, ponder);
+                            static_cast<unsigned long long>(nps),
+                            uci_search_context.table.hashfull(), bestmove, ponder);
                         write_search_output(output, output_size, sizeof(output));
                     }));
                 continue;

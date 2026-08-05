@@ -47,6 +47,7 @@ public:
     void clear();
     void new_search();
     void prefetch(U64 key) const;
+    int hashfull() const;
 
     const TTEntry *probe(U64 key) const;
 

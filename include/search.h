@@ -85,6 +85,7 @@ struct SearchResult {
     Move ponder_move = MOVE_NONE;
     int score = 0;
     int depth = 0;
+    int selective_depth = 0;
     U64 nodes = 0;
 };
 
