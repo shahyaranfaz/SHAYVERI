@@ -1,7 +1,7 @@
 # Release Checklist
 
 Use this checklist for every published SHAYVERI release. Commands use
-`v2.9.0` as an example.
+`v2.9.1` as an example.
 
 ## 1. Finalize the engine
 
@@ -38,7 +38,7 @@ Start the master:
 
 ```sh
 cd ~/elo_pin
-PIN_ROOT="$PWD" RELEASE_ID=v2.9.0 \
+PIN_ROOT="$PWD" RELEASE_ID=v2.9.1 \
   NET= REGISTER_SECONDS=300 ./master.sh
 ```
 
@@ -82,9 +82,9 @@ If the default NNUE changed:
   working tree is clean.
 
 ```sh
-git tag -a v2.9.0 -m "SHAYVERI v2.9.0"
+git tag -a v2.9.1 -m "SHAYVERI v2.9.1"
 git push origin main
-git push origin v2.9.0
+git push origin v2.9.1
 ```
 
 ## 6. Build and publish
@@ -95,7 +95,7 @@ The tag must be pushed before running the release workflow.
 gh workflow run build-release.yml \
   --repo shahyaranfaz/SHAYVERI \
   --ref main \
-  -f tag=v2.9.0 \
+  -f tag=v2.9.1 \
   -f publish=true
 ```
 
