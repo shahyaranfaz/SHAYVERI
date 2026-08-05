@@ -6,8 +6,12 @@ The release-pin workflow and configuration are documented in
 [`scripts/elo_pin/README.md`](../scripts/elo_pin/README.md). Ratings are
 pool-relative rather than universal CCRL ratings.
 
-- SHAYVERI source release: `SHAYVERI v2.9.0`.
+- SHAYVERI source release: `SHAYVERI v2.9.1`.
 - Embedded default network: `SHAYVERI2_5_0.nnue`.
+
+The current version, v2.9.1, has identical engine behaviour to v2.9.0 and has
+thus not been rigorously Elo-pinned. The results for the previous version are
+still applicable and included below.
 
 ## Current Public Ratings
 

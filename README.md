@@ -8,7 +8,7 @@ public strength numbers come from controlled multi-engine round-robin gauntlets
 analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
 
-The current release is `SHAYVERI v2.9.0`, which embeds `SHAYVERI2_5_0.nnue` as 
+The current release is `SHAYVERI v2.9.1`, which embeds `SHAYVERI2_5_0.nnue` as
 its default network. The versioning scheme is explained in
 [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
@@ -16,13 +16,15 @@ its default network. The versioning scheme is explained in
 
 |          Engine | Evaluation | Time control | Rating |   Error |
 |----------------:|-----------:|-------------:|-------:|--------:|
-| SHAYVERI v2.9.0 |       NNUE |   STC 10+0.1 | 3194.4 | +/-15.3 |
-| SHAYVERI v2.9.0 |       NNUE |   LTC 90+0.5 | 3270.3 | +/-30.0 |
-| SHAYVERI v2.9.0 |        HCE |   STC 10+0.1 | 2692.8 | +/-17.7 |
-| SHAYVERI v2.9.0 |        HCE |   LTC 90+0.5 | 2779.7 | +/-31.2 |
+| SHAYVERI v2.9.1 |       NNUE |   STC 10+0.1 | 3194.4 | +/-15.3 |
+| SHAYVERI v2.9.1 |       NNUE |   LTC 90+0.5 | 3270.3 | +/-30.0 |
+| SHAYVERI v2.9.1 |        HCE |   STC 10+0.1 | 2692.8 | +/-17.7 |
+| SHAYVERI v2.9.1 |        HCE |   LTC 90+0.5 | 2779.7 | +/-31.2 |
 
-The v2.9.0 NNUE configuration is about +501.6 Elo over HCE at STC and
-+490.6 Elo at LTC in this anchored pool.
+The v2.9.1 NNUE configuration is about +501.6 Elo over HCE at STC and
++490.6 Elo at LTC in this anchored pool. These anchored ratings are carried
+forward from v2.9.0 because v2.9.1 changes protocol reporting rather than
+playing strength.
 
 ## How to build
 

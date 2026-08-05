@@ -24,6 +24,21 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
+### v2.9.1 - GUI Search Reporting Fixes
+
+**Default network:** embedded `SHAYVERI2_5_0.nnue`.
+
+- Added UCI selective-depth, transposition-table occupancy, and tablebase-hit
+  reporting so chess GUIs can display complete search statistics. Tablebase
+  hits are reported as zero because SHAYVERI does not probe tablebases.
+- Made `bestmove` consistently include a legal predicted reply independently
+  of whether pondering is enabled. The engine prefers the searched
+  transposition-table continuation and uses a legal fallback when a short or
+  opening-book search did not retain one.
+- Retained the ratings of v2.9.0, which are `3194.4 +/-15.3` at STC and
+  `3270.3 +/-30.0` at LTC in the fixed pool. These ratings are retained
+  as the current patch does not affect engine behaviour.
+
 ### v2.9.0 - Fixing Design Debts
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.
