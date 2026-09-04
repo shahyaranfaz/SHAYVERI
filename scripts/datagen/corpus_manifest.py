@@ -34,9 +34,10 @@ def inspect_shard(path: Path) -> dict[str, object]:
         parts = line.split(maxsplit=1)
         if len(parts) != 2:
             raise ValueError(f"invalid SHA256SUMS line: {line!r}")
-        relative = parts[1].lstrip(" *")
-        if Path(relative).is_absolute() or ".." in Path(relative).parts:
-            raise ValueError(f"unsafe SHA256SUMS path: {relative}")
+        relative_path = Path(parts[1].lstrip(" *"))
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            raise ValueError(f"unsafe SHA256SUMS path: {relative_path}")
+        relative = relative_path.as_posix()
         declared[relative] = parts[0]
     for relative, expected in declared.items():
         artifact = path / relative

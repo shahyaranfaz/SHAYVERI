@@ -32,7 +32,8 @@ class CorpusManifestTest(unittest.TestCase):
         checks = []
         for filename in ("metadata.env", "data.DONE", "data.summary.txt", "data_0.bullet.bin"):
             digest = hashlib.sha256((shard / filename).read_bytes()).hexdigest()
-            checks.append(f"{digest}  {filename}\n")
+            checksum_name = f"./{filename}" if filename.endswith(".bullet.bin") else filename
+            checks.append(f"{digest}  {checksum_name}\n")
         (shard / "SHA256SUMS").write_text("".join(checks))
         return shard
 
