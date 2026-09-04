@@ -42,7 +42,8 @@ transfer_shard() {
 
   echo "== transfer $shard_name to $dest =="
   # shellcheck disable=SC2086
-  "${rsync_cmd[@]}" $RSYNC_ARGS "$claimed_dir/" "$dest"
+  "${rsync_cmd[@]}" $RSYNC_ARGS --exclude=/DONE "$claimed_dir/" "$dest"
+  # Publish the completion marker only after every shard artifact has arrived.
   # shellcheck disable=SC2086
   "${rsync_cmd[@]}" $RSYNC_ARGS "$claimed_dir/DONE" "$dest/DONE"
 

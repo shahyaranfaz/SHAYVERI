@@ -21,8 +21,8 @@ class CorpusManifestTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def shard(self, name: str = "shard_000001") -> Path:
-        shard = self.ready / name
+    def shard(self, name: str = "shard_000001", parent: Path | None = None) -> Path:
+        shard = (parent or self.ready) / name
         shard.mkdir()
         (shard / "DONE").touch()
         (shard / "data.DONE").write_text("positions 2\ngames 1\n")
@@ -46,6 +46,14 @@ class CorpusManifestTest(unittest.TestCase):
     def test_build_and_verify_complete_ready_shard(self) -> None:
         shard = self.shard()
         manifest = self.root / "manifest.json"
+        self.assertEqual(self.run_script("build", "--output", manifest, shard).returncode, 0)
+        self.assertEqual(self.run_script("verify", manifest).returncode, 0)
+
+    def test_accepts_completed_transferred_shard(self) -> None:
+        transferred = self.root / "bullet"
+        transferred.mkdir()
+        shard = self.shard(parent=transferred)
+        manifest = self.root / "transferred.json"
         self.assertEqual(self.run_script("build", "--output", manifest, shard).returncode, 0)
         self.assertEqual(self.run_script("verify", manifest).returncode, 0)
 

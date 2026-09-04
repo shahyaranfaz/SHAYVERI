@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)}"
+REPO_ROOT="${REPO_ROOT:-$(cd -- "$SCRIPT_DIR/../.." && pwd)}"
 
 RUN_ROOT="${RUN_ROOT:-$HOME/shayveri_v3_datagen}"
 INCOMPLETE_ROOT="${INCOMPLETE_ROOT:-$RUN_ROOT/incomplete}"
@@ -9,7 +10,7 @@ READY_ROOT="${READY_ROOT:-$RUN_ROOT/ready}"
 STATE_DIR="${STATE_DIR:-$RUN_ROOT/state}"
 LOG_DIR="${LOG_DIR:-$RUN_ROOT/logs}"
 
-ENGINE_DIR="${ENGINE_DIR:-$HOME/chess_arena/chess_bot}"
+ENGINE_DIR="${ENGINE_DIR:-$REPO_ROOT}"
 ENGINE="${ENGINE:-./SHAYVERI}"
 EVAL_FILE="${EVAL_FILE:-<embedded>}"
 
@@ -72,8 +73,12 @@ require_engine() {
   else
     [[ -x "$ENGINE_DIR/$ENGINE" ]] || die "missing engine: $ENGINE_DIR/$ENGINE"
   fi
-  if [[ "$EVAL_FILE" != "<hce>" && "$EVAL_FILE" != "<embedded>" && "$EVAL_FILE" != "<default>" && "$EVAL_FILE" != /* ]]; then
-    [[ -f "$ENGINE_DIR/$EVAL_FILE" ]] || die "missing EVAL_FILE: $ENGINE_DIR/$EVAL_FILE"
+  if [[ "$EVAL_FILE" != "<hce>" && "$EVAL_FILE" != "<embedded>" && "$EVAL_FILE" != "<default>" ]]; then
+    if [[ "$EVAL_FILE" == /* ]]; then
+      [[ -f "$EVAL_FILE" ]] || die "missing EVAL_FILE: $EVAL_FILE"
+    else
+      [[ -f "$ENGINE_DIR/$EVAL_FILE" ]] || die "missing EVAL_FILE: $ENGINE_DIR/$EVAL_FILE"
+    fi
   fi
 }
 

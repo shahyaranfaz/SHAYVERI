@@ -23,8 +23,8 @@ def sha256(path: Path) -> str:
 
 
 def inspect_shard(path: Path) -> dict[str, object]:
-    if not path.is_dir() or path.parent.name != "ready":
-        raise ValueError(f"shard is not a directory directly under ready/: {path}")
+    if not path.is_dir():
+        raise ValueError(f"shard is not a directory: {path}")
     for name in REQUIRED_FILES:
         if not (path / name).is_file():
             raise ValueError(f"missing {name}: {path}")
