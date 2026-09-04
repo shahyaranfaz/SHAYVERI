@@ -76,7 +76,17 @@ run_datagen() {
       --nodes "$NODES" \
       --threads "$THREADS" \
       --seed "$seed" \
+      --opening-min-plies "$OPENING_MIN_PLIES" \
+      --opening-max-plies "$OPENING_MAX_PLIES" \
+      --book-prob "$BOOK_MOVE_PROBABILITY" \
       "${start_file_arg[@]}" \
+      --max-abs-cp "$MAX_ABS_CP" \
+      --include-checks "$INCLUDE_CHECKS" \
+      --include-captures "$INCLUDE_CAPTURES" \
+      --include-mate-scores "$INCLUDE_MATE_SCORES" \
+      --include-duplicates "$INCLUDE_DUPLICATES" \
+      --min-ply "$MIN_PLY" \
+      --max-ply "$MAX_PLY" \
       --sample-stride "$SAMPLE_STRIDE" \
       --max-samples-per-game "$MAX_SAMPLES_PER_GAME" \
       --enable-adjudication "$ENABLE_ADJUDICATION" \
@@ -100,6 +110,22 @@ while (( SHARDS == 0 || made < SHARDS )); do
   seed=$((SEED_BASE + shard))
 
   mkdir "$tmp_dir"
+  engine_path="$ENGINE"
+  [[ "$engine_path" == /* ]] || engine_path="$ENGINE_DIR/${engine_path#./}"
+  engine_sha256="$(sha256sum "$engine_path" | awk '{print $1}')"
+  engine_commit="$(git -C "$ENGINE_DIR" rev-parse HEAD 2>/dev/null || printf '<unavailable>')"
+  evaluator_sha256="<${EVAL_FILE#<}"
+  if [[ "$EVAL_FILE" != \<*\> ]]; then
+    eval_path="$EVAL_FILE"
+    [[ "$eval_path" == /* ]] || eval_path="$ENGINE_DIR/$eval_path"
+    evaluator_sha256="$(sha256sum "$eval_path" | awk '{print $1}')"
+  fi
+  start_file_sha256="<none>"
+  if [[ -n "$START_FILE" ]]; then
+    start_path="$START_FILE"
+    [[ "$start_path" == /* ]] || start_path="$ENGINE_DIR/$start_path"
+    start_file_sha256="$(sha256sum "$start_path" | awk '{print $1}')"
+  fi
   {
     write_env_line shard "$shard"
     write_env_line shard_id "$shard_name"
@@ -107,6 +133,17 @@ while (( SHARDS == 0 || made < SHARDS )); do
     write_env_line positions "$SHARD_POSITIONS"
     write_env_line threads "$THREADS"
     write_env_line nodes "$NODES"
+    write_env_line output_format "bullet-v1"
+    write_env_line opening_min_plies "$OPENING_MIN_PLIES"
+    write_env_line opening_max_plies "$OPENING_MAX_PLIES"
+    write_env_line book_move_probability "$BOOK_MOVE_PROBABILITY"
+    write_env_line max_abs_cp "$MAX_ABS_CP"
+    write_env_line include_checks "$INCLUDE_CHECKS"
+    write_env_line include_captures "$INCLUDE_CAPTURES"
+    write_env_line include_mate_scores "$INCLUDE_MATE_SCORES"
+    write_env_line include_duplicates "$INCLUDE_DUPLICATES"
+    write_env_line min_ply "$MIN_PLY"
+    write_env_line max_ply "$MAX_PLY"
     write_env_line sample_stride "$SAMPLE_STRIDE"
     write_env_line max_samples_per_game "$MAX_SAMPLES_PER_GAME"
     write_env_line enable_adjudication "$ENABLE_ADJUDICATION"
@@ -120,6 +157,10 @@ while (( SHARDS == 0 || made < SHARDS )); do
     write_env_line engine_dir "$ENGINE_DIR"
     write_env_line engine "$ENGINE"
     write_env_line eval_file "$EVAL_FILE"
+    write_env_line engine_sha256 "$engine_sha256"
+    write_env_line engine_git_commit "$engine_commit"
+    write_env_line evaluator_sha256 "$evaluator_sha256"
+    write_env_line start_file_sha256 "$start_file_sha256"
     write_env_line started_at "$(date -Is)"
   } > "$tmp_dir/metadata.env"
 
@@ -131,6 +172,9 @@ while (( SHARDS == 0 || made < SHARDS )); do
     exit 1
   fi
 
+  [[ -f "$tmp_dir/data.DONE" ]] || die "engine completion marker missing: $tmp_dir/data.DONE"
+  [[ -f "$tmp_dir/data.summary.txt" ]] || die "engine summary missing: $tmp_dir/data.summary.txt"
+
   actual_positions="$(dir_bullet_positions "$tmp_dir")"
   {
     write_env_line actual_positions "$actual_positions"
@@ -138,8 +182,21 @@ while (( SHARDS == 0 || made < SHARDS )); do
   } >> "$tmp_dir/metadata.env"
 
   if (( actual_positions != SHARD_POSITIONS )); then
-    echo "warning: expected $SHARD_POSITIONS positions, found $actual_positions" >&2
+    die "expected $SHARD_POSITIONS positions, found $actual_positions"
   fi
+
+  mapfile -d '' bullet_files < <(find "$tmp_dir" -maxdepth 1 -type f -name '*.bullet.bin' -print0 | sort -z)
+  (( ${#bullet_files[@]} == THREADS )) || die "expected $THREADS Bullet files, found ${#bullet_files[@]}"
+  for bullet_file in "${bullet_files[@]}"; do
+    bullet_size="$(stat -c %s "$bullet_file")"
+    (( bullet_size % 32 == 0 )) || die "Bullet file size is not divisible by 32: $bullet_file ($bullet_size bytes)"
+  done
+
+  (
+    cd "$tmp_dir"
+    sha256sum metadata.env data.DONE data.summary.txt ./*.bullet.bin > SHA256SUMS
+    sha256sum -c SHA256SUMS >/dev/null
+  )
 
   touch "$tmp_dir/DONE"
   mv "$tmp_dir" "$ready_dir"

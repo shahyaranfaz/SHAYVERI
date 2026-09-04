@@ -15,6 +15,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -527,7 +528,8 @@ U64 write_game_entries(std::ofstream &out,
                        int wdl,
                        DatagenCounters &counters,
                        const DatagenOptions &options,
-                       U64 target_positions) {
+                        U64 target_positions,
+                        std::atomic<bool> &failed) {
     U64 written = 0;
     for (size_t i = 0; i < entries.size(); ++i) {
         if (!claim_position(counters, target_positions)) return written;
@@ -537,6 +539,10 @@ U64 write_game_entries(std::ofstream &out,
             out.write(reinterpret_cast<const char *>(&rec), sizeof(rec));
         } else {
             out << entry.fen << " | " << entry.score_white_pov << " | " << marlinflow_wdl(wdl) << '\n';
+        }
+        if (!out) {
+            failed.store(true, std::memory_order_relaxed);
+            return written;
         }
         record_stats(counters, entry, wdl, stms[i], phases[i]);
         ++written;
@@ -647,7 +653,7 @@ void datagen_worker(int id,
 
         U64 written = write_game_entries(
             out, game_entries, stms, phases, result.wdl, counters, options,
-            options.target_positions);
+            options.target_positions, failed);
         counters.game_position_sum.fetch_add(written, std::memory_order_relaxed);
         update_max(counters.max_positions_in_game, written);
         record_game_end(counters, result, ply_number(b));
@@ -660,14 +666,24 @@ void datagen_worker(int id,
                              static_cast<double>(std::max<U64>(1, games))
                       << '\n';
         }
+        if (failed.load(std::memory_order_relaxed)) break;
     }
 
     out.flush();
+    if (!out) {
+        std::cerr << "datagen worker " << id << " failed to flush output file\n";
+        failed.store(true, std::memory_order_relaxed);
+    }
+    out.close();
+    if (out.fail()) {
+        std::cerr << "datagen worker " << id << " failed to close output file\n";
+        failed.store(true, std::memory_order_relaxed);
+    }
 }
 
-void write_summary(const DatagenOptions &options, const DatagenCounters &counters) {
+bool write_summary(const DatagenOptions &options, const DatagenCounters &counters) {
     std::ofstream out(options.output_prefix + ".summary.txt");
-    if (!out) return;
+    if (!out) return false;
 
     out << "positions " << counters.total_positions.load() << '\n';
     out << "games " << counters.total_games.load() << '\n';
@@ -758,6 +774,10 @@ void write_summary(const DatagenOptions &options, const DatagenCounters &counter
     out << "late_1-9 " << counters.phase_buckets[1].load() << '\n';
     out << "middle_10-17 " << counters.phase_buckets[2].load() << '\n';
     out << "opening_18+ " << counters.phase_buckets[3].load() << '\n';
+    out.flush();
+    if (!out) return false;
+    out.close();
+    return !out.fail();
 }
 
 bool valid_options(const DatagenOptions &options) {
@@ -818,6 +838,14 @@ int generate_data(const DatagenOptions &options) {
         return 1;
     }
 
+    const std::string done_path = options.output_prefix + ".DONE";
+    std::error_code remove_error;
+    std::filesystem::remove(done_path, remove_error);
+    if (remove_error) {
+        std::cerr << "failed to remove stale completion marker: " << done_path << '\n';
+        return 1;
+    }
+
     DatagenCounters counters;
     std::vector<std::string> start_fens = load_start_fens(options, counters);
     if (!options.start_file.empty() && start_fens.empty()) {
@@ -853,18 +881,24 @@ int generate_data(const DatagenOptions &options) {
         if (worker.joinable()) worker.join();
     }
 
-    write_summary(options, counters);
+    if (failed.load(std::memory_order_relaxed)) return 1;
+    if (!write_summary(options, counters)) {
+        std::cerr << "failed to write datagen summary\n";
+        return 1;
+    }
 
     std::cerr << "datagen complete games=" << counters.total_games.load(std::memory_order_relaxed)
               << " positions=" << counters.total_positions.load(std::memory_order_relaxed)
               << " summary=" << options.output_prefix << ".summary.txt"
               << '\n';
-    std::ofstream done(options.output_prefix + ".DONE");
-    if (done) {
-        done << "positions " << counters.total_positions.load(std::memory_order_relaxed) << '\n';
-        done << "games " << counters.total_games.load(std::memory_order_relaxed) << '\n';
-    }
-    return failed.load(std::memory_order_relaxed) ? 1 : 0;
+    std::ofstream done(done_path);
+    if (!done) return 1;
+    done << "positions " << counters.total_positions.load(std::memory_order_relaxed) << '\n';
+    done << "games " << counters.total_games.load(std::memory_order_relaxed) << '\n';
+    done.flush();
+    if (!done) return 1;
+    done.close();
+    return done.fail() ? 1 : 0;
 }
 
 } // namespace SHAYVERI

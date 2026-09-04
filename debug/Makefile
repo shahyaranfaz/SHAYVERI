@@ -168,6 +168,7 @@ TEST_TARGETS := \
 	search_regression_suite \
 	nnue_suite \
 	datagen_check \
+	corpus_manifest_test \
 	uci_check \
 	time_control_integration \
 	fixed_search_integration \
@@ -293,6 +294,9 @@ nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue $(DEFAULT
 datagen_check: ensure_engine
 	$(PYTHON) datagen_check.py
 
+corpus_manifest_test:
+	$(PYTHON) corpus_manifest_test.py
+
 ensure_engine:
 	@if [ ! -x "$(ENGINE)" ]; then echo "engine binary not found: $(ENGINE)" >&2; exit 1; fi
 
@@ -312,4 +316,4 @@ clean:
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(POSITION_RULES_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-.PHONY: all test runtime_tests strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite attack_table_suite time_manager_suite position_rules_suite search_regression_suite nnue_suite datagen_check ensure_engine uci_check time_control_integration fixed_search_integration tactical_regression clean
+.PHONY: all test runtime_tests strict tidy sanitize sanitize_cutechess perft_suite fen_state_suite make_unmake_suite legality_suite see_suite eval_symmetry_suite tt_safety_suite attack_table_suite time_manager_suite position_rules_suite search_regression_suite nnue_suite datagen_check corpus_manifest_test ensure_engine uci_check time_control_integration fixed_search_integration tactical_regression clean

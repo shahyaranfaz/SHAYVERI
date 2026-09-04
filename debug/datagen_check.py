@@ -145,7 +145,6 @@ def run_matrix(root: Path) -> None:
         nodes=8,
         include_duplicates=False,
     )
-
     starts = root / "sanitizer_starts.fen"
     starts.write_text(
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\n"
@@ -179,6 +178,28 @@ def run_matrix(root: Path) -> None:
     )
 
 
+def require_no_done_when_summary_fails(root: Path) -> None:
+    prefix = root / "summary_failure"
+    Path(str(prefix) + ".summary.txt").mkdir()
+    stale_done = Path(str(prefix) + ".DONE")
+    stale_done.write_text("stale\n")
+    completed = subprocess.run(
+        [
+            ENGINE_PATH, "datagen", "--threads", "1", "--games", "1",
+            "--output-prefix", str(prefix), "--output-format", "bullet-v1",
+            "--eval-file", "<hce>", "--nodes", "1",
+            "--opening-min-plies", "0", "--opening-max-plies", "0",
+            "--book-prob", "0", "--print-interval", "0",
+        ],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        timeout=TIMEOUT_SEC, check=False,
+    )
+    if completed.returncode == 0:
+        raise AssertionError("datagen succeeded after summary write failure")
+    if stale_done.exists():
+        raise AssertionError("datagen retained or created DONE after summary write failure")
+
+
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
         print(
@@ -199,6 +220,7 @@ def main() -> int:
                 root, "nan_probability",
                 "--threads", "1", "--games", "1", "--book-prob", "nan",
             )
+            require_no_done_when_summary_fails(root)
             if RUN_MATRIX:
                 run_matrix(root)
             else:
