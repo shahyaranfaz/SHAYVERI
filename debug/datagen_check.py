@@ -18,6 +18,7 @@ TIMEOUT_SEC = float(os.environ.get("SHAYVERI_DATAGEN_TIMEOUT_SEC", "20"))
 GAMES = int(os.environ.get("SHAYVERI_DATAGEN_GAMES", "1"))
 THREADS = int(os.environ.get("SHAYVERI_DATAGEN_THREADS", "1"))
 RUN_MATRIX = os.environ.get("SHAYVERI_DATAGEN_MATRIX", "0") == "1"
+AUDIT_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "datagen" / "audit_bullet.py"
 
 
 def require_invalid_arguments(root: Path, name: str, *arguments: str) -> None:
@@ -128,6 +129,12 @@ def run_format(
         shards = sorted(root.glob(prefix.name + "_*.bullet.bin"))
         if sum(shard.stat().st_size for shard in shards) != positions * 32:
             raise AssertionError("Bullet datagen output is not composed of 32-byte records")
+        audit = subprocess.run(
+            [sys.executable, str(AUDIT_SCRIPT), *(str(shard) for shard in shards)],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False,
+        )
+        if audit.returncode != 0:
+            raise AssertionError(f"Bullet records failed decoder validation:\n{audit.stdout}")
 
 
 def run_matrix(root: Path) -> None:

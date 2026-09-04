@@ -279,16 +279,20 @@ BulletChessBoard make_bullet_record(const Board &b, int score_white_pov, int wdl
         result = 2 - result;
     }
 
-    int idx = 0;
+    U64 packed_occ = 0;
     U64 occ = b.occupied;
-    while (occ) {
-        Square sq = pop_lsb(occ);
+    while (occ)
+        packed_occ |= bb_square(bullet_square(pop_lsb(occ), stm));
+    rec.occ = packed_occ;
+
+    int idx = 0;
+    while (packed_occ) {
+        Square packed_sq = pop_lsb(packed_occ);
+        Square sq = bullet_square(packed_sq, stm);
         Piece p = b.get_piece(sq);
         if (p == NONE_PIECE || idx >= 32)
             continue;
 
-        Square packed_sq = bullet_square(sq, stm);
-        rec.occ |= bb_square(packed_sq);
         U8 piece = bullet_piece_code(p, stm);
         rec.pcs[idx / 2] |= static_cast<U8>(piece << (4 * (idx & 1)));
 
