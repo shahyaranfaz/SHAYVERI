@@ -37,6 +37,7 @@ struct SearchThreadState {
     U64 local_node_limit = 0;
     U64 node_count = 0;
     U64 pending_shared_nodes = 0;
+    int selective_depth = 0;
 };
 
 SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(
@@ -650,6 +651,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
     if (search_stopped(context, thread)) return 0;
     count_node(context, thread);
 
+    thread.selective_depth = std::max(thread.selective_depth, ply);
     if (PositionRules::has_insufficient_material(b)) return 0;
     if (b.half_move >= 100) return rule_draw_score(b, ply);
     if (rep_len > 1
@@ -765,6 +767,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
     // Basic draw detection. Checkmate takes precedence if the mating move also
     // reaches the reversible-move limit.
+    thread.selective_depth = std::max(thread.selective_depth, ply);
     if (PositionRules::has_insufficient_material(b)) return 0;
     if (b.half_move >= 100) return rule_draw_score(b, ply);
     if (rep_len > 1
@@ -1188,6 +1191,7 @@ static SearchResult search_impl(
 
     thread.node_count = 0;
     thread.pending_shared_nodes = 0;
+    thread.selective_depth = 0;
     struct PendingNodePublisher {
         SearchContext &context;
         SearchThreadState &thread;
@@ -1312,7 +1316,8 @@ static SearchResult search_impl(
 
             if (legal_root_count == 0) {
                 const bool in_check = PositionRules::is_in_check(b);
-                return {MOVE_NONE, MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, 0};
+                return {MOVE_NONE, MOVE_NONE, in_check ? -MATE_SCORE : 0,
+                        0, thread.selective_depth, 0};
             }
 
             if (best_score_this_depth <= window_alpha && window_alpha > -INF) {
@@ -1394,10 +1399,13 @@ static SearchResult search_impl(
         if (request.emit_info) {
             std::lock_guard<std::mutex> output_lock(uci_output_mutex);
             std::cout << "info depth " << depth
+                      << " seldepth " << thread.selective_depth
                       << " score " << score_str
                       << " time " << ms
                       << " nodes " << nodes
                       << " nps " << nps
+                      << " hashfull " << context.table.hashfull()
+                      << " tbhits 0"
                       << " pv " << pv_line << "\n";
             std::cout.flush();
         }
@@ -1410,6 +1418,7 @@ static SearchResult search_impl(
     }
 
     return {final_best_move, MOVE_NONE, final_best_score, completed_depth,
+            thread.selective_depth,
             searched_nodes(context, thread)};
 }
 

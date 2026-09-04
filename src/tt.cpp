@@ -160,6 +160,26 @@ void TranspositionTable::prefetch(U64 key) const {
     __builtin_prefetch(&table[static_cast<SIZE_T>(key) & mask], 0, 1);
 }
 
+int TranspositionTable::hashfull() const {
+    if (!table || bucket_count == 0) return 0;
+
+    constexpr SIZE_T SAMPLE_SLOTS = 1000;
+    const SIZE_T slots = std::min(
+        SAMPLE_SLOTS, bucket_count * static_cast<SIZE_T>(TT_BUCKET_SIZE));
+    const U8 age = generation.load(std::memory_order_relaxed);
+    SIZE_T occupied = 0;
+
+    for (SIZE_T i = 0; i < slots; ++i) {
+        const TTSlot &slot = table[i / TT_BUCKET_SIZE].entries[i % TT_BUCKET_SIZE];
+        const U64 key_age = slot.key_age.load(std::memory_order_relaxed);
+        if ((key_age & PRESENT_BIT) != 0
+            && static_cast<U8>(key_age & AGE_MASK) == age)
+            ++occupied;
+    }
+
+    return static_cast<int>(occupied * 1000 / slots);
+}
+
 const TTEntry *TranspositionTable::probe(U64 key) const {
     if (!table || bucket_count == 0 || key == 0) return nullptr;
 
