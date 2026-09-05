@@ -18,7 +18,7 @@ compared on the same machine.
 
 `baseline.py` runs four kinds of checks:
 
-1. The trusted single-threaded bench, whose expected node count is `94602`.
+1. The trusted single-threaded bench, whose expected node count is `110889`.
 2. Fixed-depth and fixed-node searches for deterministic best-move checks.
 3. Timed searches at several thread counts for Lazy SMP scaling.
 4. A small tactical best-move signature for correctness.

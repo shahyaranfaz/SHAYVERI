@@ -171,7 +171,7 @@ pgo-use: $(SRC) $(HEADERS)
 	printf 'uci\nisready\nbench 16 1 3 default depth\nquit\n' | ./$(PGO_BIN) > $(PGO_TRAIN_DIR)/optimized-check.txt
 	grep -q '^uciok$$' $(PGO_TRAIN_DIR)/optimized-check.txt
 	grep -q '^readyok$$' $(PGO_TRAIN_DIR)/optimized-check.txt
-	grep -q '^Nodes: 94602$$' $(PGO_TRAIN_DIR)/optimized-check.txt
+	grep -q '^Nodes: 110889$$' $(PGO_TRAIN_DIR)/optimized-check.txt
 
 pgo-report:
 	test -s $(PGO_TRAIN_DIR)/build-manifest.txt
