@@ -24,7 +24,7 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
-### v2.10.0 - Corrected Self-Data NNUE
+### v2.10.0 - Corrected Self-Datagen NNUE
 
 **Default network:** embedded `SHAYVERI2_10_4.nnue`.
 
