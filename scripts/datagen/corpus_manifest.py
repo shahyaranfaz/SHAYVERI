@@ -86,12 +86,34 @@ def canonical_bytes(payload: dict[str, object]) -> bytes:
     return (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode()
 
 
+def validate_unique_payloads(records: list[dict[str, object]]) -> None:
+    seen_shards: dict[tuple[tuple[int, str], ...], str] = {}
+    seen_files: dict[tuple[int, str], str] = {}
+    for record in records:
+        shard = str(record["shard"])
+        files = record["files"]
+        fingerprint = tuple(sorted((int(item["size"]), str(item["sha256"])) for item in files))
+        previous_shard = seen_shards.get(fingerprint)
+        if previous_shard is not None:
+            raise ValueError(f"duplicate shard payload: {shard} matches {previous_shard}")
+        seen_shards[fingerprint] = shard
+
+        for item in files:
+            identity = (int(item["size"]), str(item["sha256"]))
+            path = str(item["path"])
+            previous_file = seen_files.get(identity)
+            if previous_file is not None:
+                raise ValueError(f"duplicate Bullet file: {path} matches {previous_file}")
+            seen_files[identity] = path
+
+
 def build(output: Path, shards: list[Path]) -> None:
     if output.exists():
         raise ValueError(f"refusing to overwrite manifest: {output}")
     records = [inspect_shard(path) for path in sorted(shards, key=lambda item: str(item.resolve()))]
     if not records:
         raise ValueError("at least one ready shard is required")
+    validate_unique_payloads(records)
     body: dict[str, object] = {
         "format": "shayveri-corpus-manifest-v1",
         "record_size": RECORD_SIZE,
@@ -113,12 +135,15 @@ def verify(manifest: Path) -> None:
     if document.get("format") != "shayveri-corpus-manifest-v1" or document.get("record_size") != RECORD_SIZE:
         raise ValueError("unsupported manifest format")
     total = 0
+    current_records: list[dict[str, object]] = []
     for shard in document.get("shards", []):
         shard_path = Path(shard["shard"])
         current = inspect_shard(shard_path)
         if current != shard:
             raise ValueError(f"shard identity changed: {shard_path}")
+        current_records.append(current)
         total += int(current["positions"])
+    validate_unique_payloads(current_records)
     if total != document.get("positions"):
         raise ValueError("manifest position total mismatch")
     print(f"verified manifest_sha256={actual_hash} positions={total}")

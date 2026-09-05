@@ -21,14 +21,16 @@ class CorpusManifestTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def shard(self, name: str = "shard_000001", parent: Path | None = None) -> Path:
+    def shard(
+        self, name: str = "shard_000001", parent: Path | None = None, fill: int = 0
+    ) -> Path:
         shard = (parent or self.ready) / name
         shard.mkdir()
         (shard / "DONE").touch()
         (shard / "data.DONE").write_text("positions 2\ngames 1\n")
         (shard / "data.summary.txt").write_text("positions 2\n")
         (shard / "metadata.env").write_text("source=shayveri-v3\n")
-        (shard / "data_0.bullet.bin").write_bytes(bytes(64))
+        (shard / "data_0.bullet.bin").write_bytes(bytes([fill]) * 64)
         checks = []
         for filename in ("metadata.env", "data.DONE", "data.summary.txt", "data_0.bullet.bin"):
             digest = hashlib.sha256((shard / filename).read_bytes()).hexdigest()
@@ -76,6 +78,34 @@ class CorpusManifestTest(unittest.TestCase):
         (shard / "data_0.bullet.bin").write_bytes(bytes(32) + bytes([1]) * 32)
         result = self.run_script("verify", manifest)
         self.assertNotEqual(result.returncode, 0)
+
+    def test_rejects_duplicate_shard_payload(self) -> None:
+        first = self.shard("shard_000001")
+        second = self.shard("shard_000002")
+        result = self.run_script("build", "--output", self.root / "manifest.json", first, second)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate shard payload", result.stderr)
+
+    def test_rejects_duplicate_bullet_file_across_distinct_shards(self) -> None:
+        first = self.shard("shard_000001", fill=1)
+        second = self.shard("shard_000002", fill=2)
+        duplicate = second / "data_1.bullet.bin"
+        duplicate.write_bytes((first / "data_0.bullet.bin").read_bytes())
+        (second / "data.DONE").write_text("positions 4\ngames 1\n")
+        (second / "data.summary.txt").write_text("positions 4\n")
+        checks = []
+        for filename in (
+            "metadata.env", "data.DONE", "data.summary.txt",
+            "data_0.bullet.bin", "data_1.bullet.bin",
+        ):
+            digest = hashlib.sha256((second / filename).read_bytes()).hexdigest()
+            checksum_name = f"./{filename}" if filename.endswith(".bullet.bin") else filename
+            checks.append(f"{digest}  {checksum_name}\n")
+        (second / "SHA256SUMS").write_text("".join(checks))
+
+        result = self.run_script("build", "--output", self.root / "manifest.json", first, second)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate Bullet file", result.stderr)
 
 
 if __name__ == "__main__":
