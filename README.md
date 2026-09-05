@@ -8,7 +8,7 @@ public strength numbers come from controlled multi-engine round-robin gauntlets
 analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
 
-The current release is `SHAYVERI v2.9.1`, which embeds `SHAYVERI2_5_0.nnue` as
+The current release is `SHAYVERI v2.9.1`, which embeds `SHAYVERI2_10_4.nnue` as
 its default network. The versioning scheme is explained in
 [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
@@ -48,8 +48,8 @@ searches, then rebuilds it using the collected profile. This machine-native
 build takes longer but provides the best local performance. Release binaries
 remain portable non-PGO builds.
 
-The default net, `SHAYVERI2_5_0.nnue`, is automatically embedded into the 
-binary while building. Hence, the `.nnue` file must be at root-level only 
+The default net, `SHAYVERI2_10_4.nnue`, is automatically embedded into the
+binary while building. Hence, the `.nnue` file must be at root-level only
 while building. At runtime, the UCI option `EvalFile` can be used to load
 a compatible external network instead.
 
@@ -125,7 +125,7 @@ To select between the `HCE` and `NNUE` evaluation paths, use the UCI option
 The supported NNUE architectures, binary formats, embedding behavior, and
 compatibility policy are documented in [`docs/NNUE.md`](docs/NNUE.md).
 
-The embedded default, `SHAYVERI2_5_0.nnue`, is a `KB16x512` network: Chess768
+The embedded default, `SHAYVERI2_10_4.nnue`, is a `KB16x512` network: Chess768
 features split across 16 mirrored king buckets, a 512-wide hidden layer, and
 SCReLU activation. Search keeps both perspectives in incrementally updated
 accumulators as moves are made and unmade.

@@ -462,7 +462,7 @@
             <li>Evaluation and search parameters refined through Texel tuning and SPSA.</li>
           </ul></article>
           <article class="detail-card"><h3>NNUE Evaluation</h3><ul>
-            <li>The embedded default is <code>SHAYVERI2_5_0.nnue</code>, a KB16x512 network using SCReLU.</li>
+            <li>The embedded default is <code>SHAYVERI2_10_4.nnue</code>, a KB16x512 network using SCReLU.</li>
             <li>Side-relative Chess768 features are split across 16 mirrored king buckets and a 512-unit hidden layer.</li>
             <li>Two perspective accumulators are refreshed or incrementally updated through make/unmake search.</li>
             <li>Scalar and AVX2 inference paths evaluate the same network format.</li>
@@ -508,7 +508,7 @@
         <div class="section-head">
           <div><p class="eyebrow">06 / Usage</p><h2>Build And Use</h2></div>
         </div>
-        <p class="section-copy">Builds require C++20 and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT. Keep <code>SHAYVERI2_5_0.nnue</code> at the repository root so it can be embedded during compilation. At runtime, the UCI option <code>EvalFile</code> can select a compatible external network instead.</p>
+        <p class="section-copy">Builds require C++20 and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT. Keep <code>SHAYVERI2_10_4.nnue</code> at the repository root so it can be embedded during compilation. At runtime, the UCI option <code>EvalFile</code> can select a compatible external network instead.</p>
         <div class="terminal-grid">
           <article>
           <div class="terminal">

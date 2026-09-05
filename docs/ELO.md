@@ -7,7 +7,7 @@ The release-pin workflow and configuration are documented in
 pool-relative rather than universal CCRL ratings.
 
 - SHAYVERI source release: `SHAYVERI v2.9.1`.
-- Embedded default network: `SHAYVERI2_5_0.nnue`.
+- Embedded default network: `SHAYVERI2_10_4.nnue`.
 
 The current version, v2.9.1, has identical engine behaviour to v2.9.0 and has
 thus not been rigorously Elo-pinned. The results for the previous version are

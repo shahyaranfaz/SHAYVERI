@@ -52,7 +52,7 @@ SANITIZE_CUTECHESS_CONCURRENCY ?= 20
 CUTECHESS ?= cutechess-cli
 SANITIZER_ENV := ASAN_OPTIONS=detect_leaks=$(LSAN):halt_on_error=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 SHAYVERI_ENGINE=../$(SANITIZE_BIN)
 
-DEFAULT_NNUE := ../SHAYVERI2_5_0.nnue
+DEFAULT_NNUE := ../SHAYVERI2_10_4.nnue
 DEBUG_EMBEDDED_NNUE_SRC := embedded_nnue_stub.cpp
 
 COMMON_SRC := \

@@ -24,7 +24,14 @@ release_metadata() {
     v2.2.0) NETWORK="External NNUE: net8_final.nnue" ;;
     v2.4.0) NETWORK="External NNUE: SHAYVERI2_2_0.nnue" ;;
     v2.5.0) NETWORK="External NNUE: SHAYVERI2_5_0.nnue" ;;
-    *) NETWORK="Embedded NNUE: SHAYVERI2_5_0.nnue" ;;
+    v2.6.0|v2.7.0|v2.8.0|v2.9.0|v2.9.1)
+      NETWORK="Embedded NNUE: SHAYVERI2_5_0.nnue"
+      ;;
+    v2.10.0) NETWORK="Embedded NNUE: SHAYVERI2_10_4.nnue" ;;
+    *)
+      echo "No network metadata configured for $release_tag" >&2
+      exit 1
+      ;;
   esac
 
   case "$release_tag" in
