@@ -19,7 +19,7 @@ def fail(path: Path, index: int, message: str) -> None:
     raise ValueError(f"{path}: record {index}: {message}")
 
 
-def audit(paths: list[Path]) -> dict[str, object]:
+def audit(paths: list[Path], max_records_per_file: int | None = None) -> dict[str, object]:
     results: Counter[int] = Counter()
     score_buckets: Counter[str] = Counter()
     piece_counts: Counter[int] = Counter()
@@ -34,7 +34,9 @@ def audit(paths: list[Path]) -> dict[str, object]:
         if size % RECORD.size:
             raise ValueError(f"{path}: size {size} is not divisible by {RECORD.size}")
         with path.open("rb") as source:
-            for index in range(size // RECORD.size):
+            available = size // RECORD.size
+            limit = available if max_records_per_file is None else min(available, max_records_per_file)
+            for index in range(limit):
                 raw = source.read(RECORD.size)
                 occupancy, packed, score, result, king_square, opp_king_square, padding = RECORD.unpack(raw)
                 count = occupancy.bit_count()
@@ -93,6 +95,7 @@ def audit(paths: list[Path]) -> dict[str, object]:
     return {
         "files": len(paths),
         "records": records,
+        "max_records_per_file": max_records_per_file,
         "exact_duplicates": exact_duplicates,
         "exact_duplicate_pct": 100 * exact_duplicates / max(records, 1),
         "position_duplicates": position_duplicates,
@@ -105,10 +108,16 @@ def audit(paths: list[Path]) -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--max-records-per-file", type=int,
+        help="audit at most this many leading records from each input file",
+    )
     parser.add_argument("files", nargs="+", type=Path)
     args = parser.parse_args()
     try:
-        print(json.dumps(audit(sorted(args.files)), indent=2))
+        if args.max_records_per_file is not None and args.max_records_per_file < 1:
+            raise ValueError("max-records-per-file must be positive")
+        print(json.dumps(audit(sorted(args.files), args.max_records_per_file), indent=2))
         return 0
     except (OSError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
