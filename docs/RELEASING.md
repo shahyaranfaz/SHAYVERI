@@ -68,6 +68,8 @@ PIN_ROOT="$PWD" ./watch.sh
 
 If the default NNUE changed:
 
+- [ ] Update [`NNUE_HISTORY.md`](NNUE_HISTORY.md) with the new network's
+  training cycle, weight lineage, data provenance, and selected checkpoint.
 - [ ] Update the [`Makefile`](../Makefile) and engine integration.
 - [ ] Update the network cases in
   [`build-release.yml`](../.github/workflows/build-release.yml).
