@@ -24,8 +24,8 @@ printf 'bench 16 1 3 default depth\nquit\n' | ./SHAYVERI
 
 - [ ] Confirm repeated benches produce the same node signature.
 - [ ] If an intentional search change altered the signature, update
-  [`debug/uci_check.py`](../debug/uci_check.py) and
-  [`scripts/profiling/bench.sh`](../scripts/profiling/bench.sh).
+  [`debug/uci_check.py`](../debug/uci_check.py), all four profiling scripts + README,
+  and the overall Makefile (PGO build uses it).
 
 ## 3. Validate strength
 

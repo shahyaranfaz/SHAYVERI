@@ -24,6 +24,27 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
+### v2.10.0 - Corrected Self-Data NNUE
+
+**Default network:** embedded `SHAYVERI2_10_4.nnue`.
+
+- Promoted a new KB16x512 network through two continuation stages: Net1 was
+  warm-started from `SHAYVERI2_5_0.nnue` on fully external data, then Net4 was
+  warm-started from Net1 using a deterministic batch mix of 45% corrected
+  SHAYVERI self-play data and 55% frozen Net1 external data.
+- Fixed black-to-move score encoding in direct Bullet output and enforced the
+  datagen contracts for duplicate exclusion, adjudication, per-game sample
+  caps, opening-position selection, and reproducible shard metadata.
+- Hardened distributed datagen against output and flush failures, stale
+  completion markers, partial shards, mismatched engine or evaluator artifacts,
+  and invalid shard metadata.
+- Added loading and inference support for material-output-bucket NNUE networks
+  while retaining the single-output-bucket v3 format for the embedded default.
+- Hardened NNUE header validation and kept scalar and AVX2 evaluation
+  consistent across supported network formats.
+- Recorded `3261.4 +/-16.0` at STC and `3320.6 +/-30.3` at LTC, improvements
+  of +67.0 STC and +50.3 LTC over v2.9.0 in the same pool.
+
 ### v2.9.1 - GUI Search Reporting Fixes
 
 **Default network:** embedded `SHAYVERI2_5_0.nnue`.

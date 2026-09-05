@@ -8,23 +8,22 @@ public strength numbers come from controlled multi-engine round-robin gauntlets
 analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
 
-The current release is `SHAYVERI v2.9.1`, which embeds `SHAYVERI2_10_4.nnue` as
+The current release is `SHAYVERI v2.10.0`, which embeds `SHAYVERI2_10_4.nnue` as
 its default network. The versioning scheme is explained in
 [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## Elo results
 
-|          Engine | Evaluation | Time control | Rating |   Error |
-|----------------:|-----------:|-------------:|-------:|--------:|
-| SHAYVERI v2.9.1 |       NNUE |   STC 10+0.1 | 3194.4 | +/-15.3 |
-| SHAYVERI v2.9.1 |       NNUE |   LTC 90+0.5 | 3270.3 | +/-30.0 |
-| SHAYVERI v2.9.1 |        HCE |   STC 10+0.1 | 2692.8 | +/-17.7 |
-| SHAYVERI v2.9.1 |        HCE |   LTC 90+0.5 | 2779.7 | +/-31.2 |
+|           Engine | Evaluation | Time control | Rating |   Error |
+|-----------------:|-----------:|-------------:|-------:|--------:|
+| SHAYVERI v2.10.0 |       NNUE |   STC 10+0.1 | 3261.4 | +/-16.0 |
+| SHAYVERI v2.10.0 |       NNUE |   LTC 90+0.5 | 3320.6 | +/-30.3 |
+| SHAYVERI v2.10.0 |        HCE |   STC 10+0.1 | 2674.8 | +/-18.1 |
+| SHAYVERI v2.10.0 |        HCE |   LTC 90+0.5 | 2794.1 | +/-30.9 |
 
-The v2.9.1 NNUE configuration is about +501.6 Elo over HCE at STC and
-+490.6 Elo at LTC in this anchored pool. These anchored ratings are carried
-forward from v2.9.0 because v2.9.1 changes protocol reporting rather than
-playing strength.
+The v2.10.0 NNUE configuration is about +586.6 Elo over HCE at STC and +526.5
+Elo at LTC in this anchored pool. Against the identically anchored v2.9.0
+results, it gained +67.0 Elo at STC and +50.3 Elo at LTC.
 
 ## How to build
 
@@ -137,8 +136,11 @@ networks with 256 or 512 hidden units. Select one through the UCI option
 `EvalFile`. Changing the network clears the transposition table and persistent
 search histories.
 
-The current public NNUE line was trained using larger and more diverse external
-RobotMoon/Stockfish corpora, which are not included in this repository.
+The current public NNUE line was produced through two continuation stages. Net1
+was warm-started from `SHAYVERI2_5_0.nnue` on external RobotMoon/Stockfish data.
+Net4 was then warm-started from Net1 using a deterministic batch mix of 45%
+corrected SHAYVERI self-play data and 55% frozen Net1 external data.
+The training data are not included in this repository.
 
 ## Opening book
 

@@ -118,6 +118,7 @@ jobs:
             v2.2.0) cp net8_final.nnue "$package/" ;;
             v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
+            v2.10.0) : ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
             "$package" "$RELEASE_TAG" "Linux x64-v3"
@@ -204,6 +205,7 @@ jobs:
             v2.2.0) cp net8_final.nnue "$package/" ;;
             v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
+            v2.10.0) : ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
             "$package" "$RELEASE_TAG" "Windows x64-v3"
@@ -285,6 +287,7 @@ jobs:
             v2.2.0) cp net8_final.nnue "$package/" ;;
             v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
+            v2.10.0) : ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
             "$package" "$RELEASE_TAG" "macOS Intel x64-v3"
