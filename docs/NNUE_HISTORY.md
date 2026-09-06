@@ -2,7 +2,7 @@
 
 This document records the training-data provenance of SHAYVERI's neural
 networks. It is organized around cycles of internal progress rather than
-external releases.
+external releases. Every SHAYVERI NNUE experiment is listed here.
 
 "Warm-started" means that a run inherited another network's weights. A network
 used for generation or labeling influenced the data but was not necessarily a
@@ -10,7 +10,7 @@ weight parent.
 
 ## Primitive Self-Data Era
 
-This era contained global Nets 1 through 13. These networks used data generated
+This era contained OG Nets 1 through 13. These networks used data generated
 by SHAYVERI HCE or by earlier SHAYVERI networks, though not with the more robust
 modern SHAYVERI datagen.
 
@@ -21,7 +21,7 @@ modern SHAYVERI datagen.
 - v2.2.0 released Net 8 as `net8_final.nnue`
 - v2.3.0 restored Net 5 as `net5_final.nnue`
 
-### First Generation: Nets 1–7
+### First NNUE Attempts (OG Nets 1–7)
 
 Trainer: Marlinflow
 
@@ -60,7 +60,7 @@ Net 7 was warm-started from Net 5. It consumed 50 chunks of 5M positions, or
 It retained 10,000-node labels and a 0.10 WDL/result blend but also failed to
 improve on Net 5.
 
-### Second Generation: Nets 8–11
+### First Architecture Scaling Attempt (OG Nets 8–11)
 
 Trainer: Bullet
 
@@ -86,7 +86,7 @@ Net 11 was a low-learning-rate continuation warm-started from Net 10 iteration
 generation schedule, 10,000-node labels, and a 0.10 WDL/result blend. It
 tested the remaining continuation headroom and failed.
 
-### Third Generation: Net 12
+### Second Architecture Scaling Attempt (OG Net 12)
 
 Trainer: Bullet
 
@@ -96,7 +96,7 @@ Net 12 was trained from scratch on a primitive 80% HCE and 20% Net 5
 generation recipe. It consumed 23 chunks of 1M positions using 10,000-node
 labels and a 0.10 WDL/result blend. It failed both the HCE and Net 5 anchors.
 
-### Deep-Label Reset: Net 13
+### Deep-Label Reset (OG Net 13)
 
 Trainer: Marlinflow
 
@@ -119,7 +119,7 @@ that reliably improved on Net 5.
 - v2.5.0 released the KB16x512 winner as `SHAYVERI2_5_0.nnue`
 - v2.6.0 through v2.9.1 retained `SHAYVERI2_5_0.nnue`
 
-### Datagen Repair: Nets 14–15
+### Datagen Repair (OG Nets 14–15)
 
 Trainer: Marlinflow
 
@@ -138,64 +138,76 @@ Both runs used legacy plain data converted through Marlinflow. They did not
 use the direct Bullet serializer whose black-to-move defect was discovered
 during the later v2.10 work.
 
-### External-Corpus Proof
+### External-Corpus Scale-Up Proof (v2.4 Nets 1–4)
 
-The first external-data cycle used the March 2024 T80 RobotMoon corpus, which
-contained Stockfish-generated positions and labels.
+Trainer: Marlinflow
 
-Chess768x256 networks were trained with Marlinflow at 100M, 500M, and 1B
-positions. The 100M run produced the first positive transfer signal, while the
-500M and 1B runs established the large advantage of external data over the
+Architecture: Chess768x256
+
+Net 1 was trained from scratch on 100M positions from the March 2024 T80
+RobotMoon corpus, which contained Stockfish-generated positions and labels.
+It produced the first positive transfer signal over HCE.
+
+Net 2 scaled the same recipe to 500M positions. It dominated HCE and reached
+the Stockfish 2850 test band.
+
+Net 3 scaled the same recipe to 1B positions. It improved incrementally over
+Net 2, with later checkpoints proving stronger. Its `rm1b_020.nnue` checkpoint
+became the strongest Chess768x256 candidate.
+
+Net 4 was trained from scratch on a standalone Leela96-derived corpus. It
+failed against the Stockfish-data candidates and was not continued.
+
+Together, Nets 1–3 established the large advantage of external data over the
 primitive self-data line.
 
-A standalone Leela96 Chess768x256 experiment failed against its Stockfish
-source and was not continued.
-
-### King-Bucket Transfer
+### King-Bucket Transfer (v2.4 Nets 5–6)
 
 Trainer: Bullet
 
-The same 1B-position March 2024 corpus was used to compare two king-bucket
-architectures. KB8x256 landed in the same general strength band as the 1B
-Chess768x256 candidate. KB16x256 improved on both lines.
+Net 5 was trained from scratch as a KB8x256 network on the same 1B-position
+March 2024 corpus. It landed in the same general strength band as Net 3.
 
-The KB16 checkpoint `kb16_039` won the checkpoint pools and was released as
-`SHAYVERI2_2_0.nnue`.
+Net 6 was trained from scratch as a KB16x256 network on the same corpus. It
+improved on the Chess768x256 and KB8x256 lines. Its `kb16_039` checkpoint won
+the checkpoint pools and was released as `SHAYVERI2_2_0.nnue`.
 
-### Width and Corpus Scale-Up
+### Width and Corpus Scale-Up (v2.5 Nets 1–2)
 
 Trainer: Bullet
 
 Architecture: KB16x512
 
-The first stage compared six 50M-position external-corpus mixtures. The
-selected March/June mixture was then scaled to 2B accepted positions: 1B from
-March 2024 T80 data and 1B from June 2024 T80 data.
+Net 1 trained six networks from scratch on different 50M-position
+external-corpus mixtures. The evenly split March/June mixture led both
+checkpoint pools and was selected for scale-up.
 
-Training used a 0.30 WDL/result blend. Iteration 84 was selected through
-checkpoint games and released as `SHAYVERI2_5_0.nnue`.
+Net 2 scaled the selected mixture to 2B accepted positions: 1B from March 2024
+T80 data and 1B from June 2024 T80 data. It used a 0.30 WDL/result blend.
+Iteration 84 was selected through checkpoint games and released as
+`SHAYVERI2_5_0.nnue`.
 
 ## Experimental Era
 
 This era combined trainer calibration, external-data continuation,
 architectural experiments, loss-schedule experiments, and one corrected
-self-data continuation. Net 4 established that corrected self-data could be
+self-data continuation. Net 5 established that corrected self-data could be
 used without the catastrophic regression seen in earlier direct-Bullet runs.
 Because no external-only control was trained, it did not establish that
 self-data caused the gain.
 
 ### Released Networks
 
-- v2.10.0 released the Net 4 winner as `SHAYVERI2_10_4.nnue`
+- v2.10.0 released the Net 5 winner as `SHAYVERI2_10_4.nnue`
 
-### Trainer Calibration: v2.10 Net 0
+### Trainer Calibration (v2.10 Net 1)
 
-Net 0 used 25M positions from the March 2024 T80 corpus to train with Bullet and
-nnue-pytorch for 20 iterations. This proved that nnue-pytorch was usable.
+Net 1 used 25M positions from the March 2024 T80 corpus to train with Bullet
+and nnue-pytorch for 20 iterations. This proved that nnue-pytorch was usable.
 
-### External Continuation: v2.10 Net 1
+### Diversified Data (v2.10 Net 2)
 
-Net 1 was warm-started from `SHAYVERI2_5_0.nnue` and trained for 40B accepted
+Net 2 was warm-started from `SHAYVERI2_5_0.nnue` and trained for 40B accepted
 presentations using 20 external binpacks totaling approximately 315 GiB:
 
 - six months of 2024 T80 data
@@ -208,54 +220,58 @@ Files were sampled in proportion to compressed size. This produced an
 approximate mixture of 16% T80, 25% Leela96, 28% Farseer, and 31% specialized
 hard-position data.
 
-### Material Output Buckets: v2.10 Net 2
+### Material Output Buckets (v2.10 Net 3)
 
-Net 2 was warm-started from v2.10 Net 1 and used the same 20-file external
+Net 3 was warm-started from Net 2 and used the same 20-file external
 corpus. It tested eight material-dependent output heads with an 80B schedule.
 The independent-head trial was stopped after 10B presentations, while the
 shared-factorized trial was stopped after 30B. Both regressed badly and
 produced no release candidate.
 
-The `net2_check` run continued the unchanged single-head Net 1 architecture
+The `net2_check` run continued the unchanged single-head Net 2 architecture
 under the same corpus and schedule. Its 10B diagnostic showed that the
-aggressive warm-start schedule caused some regression, but most of Net 2's
+aggressive warm-start schedule caused some regression, but most of Net 3's
 loss came from the eight-head expansion. This was a control, not a distinct
 network generation.
 
-### Corrected-Lambda Continuation: v2.10 Net 3
+### Corrected-Lambda Continuation (v2.10 Net 4)
 
-Net 3 was warm-started independently from `SHAYVERI2_5_0.nnue` and reused Net
-1's 20-file external corpus. It planned 80B accepted presentations: 40B with
-Net 1's one-cycle schedule at the intended 0.74 lambda, followed by a 40B
+Net 4 was warm-started independently from `SHAYVERI2_5_0.nnue` and reused Net
+2's 20-file external corpus. It planned 80B accepted presentations: 40B with
+Net 2's one-cycle schedule at the intended 0.74 lambda, followed by a 40B
 low-learning-rate refinement without resetting the loader or optimizer.
 
-The first startup took no optimizer steps. A later run produced 5B and 10B
-checkpoints before an operational failure, after which its incomplete game
-pool and checkpoints were discarded. A clean restart also failed to produce
-enough evidence for promotion. Net 3 was stopped without replacing Net 1.
+This run was ultimately abandoned after the discovery of the Bullet black-side
+encoding bug, which suggested trying to train with SHAYVERI-generated data.
 
-### Corrected Self-Data Continuation: v2.10 Net 4
+### Self-Data Experiment (v2.10 Net 5)
 
-Net 4 was warm-started from v2.10 Net 1. It trained for 500,039,680 accepted
-presentations using a deterministic batch mixture of 55% Net 1 external data
+Net 5 was warm-started from Net 2. It trained for 500,039,680 accepted
+presentations using a deterministic batch mixture of 55% Net 2 external data
 and 45% corrected SHAYVERI self-play data.
 
-The self-play corpus contained 100M positions generated with v2.10 Net 1 at
+The self-play corpus contained 100M positions generated with Net 2 at
 2,500 nodes per move. Games used 75% internal TWIC starts and 25%
 `noob_4moves.epd` starts. Generation used quiet qsearch labels, completed-game
 WDL, no adjudication, and a maximum of 16 accepted samples per game.
 
 Generator-local duplicate filtering was enabled, but the final corpus was not
-globally deduplicated. Net 4 was selected by playing strength. Because no
+globally deduplicated. Net 5 was selected by playing strength. Because no
 external-only control was trained, its gain cannot be attributed specifically
 to the self-play portion.
 
 ## Saturation Era
 
-- Current v2.11 unreleased work. Scale the current arch to its final extent.
+Current unreleased work explores the remaining limits of the existing
+architecture through larger external-data continuations and a parallel pure
+self-data experiment.
 
-## Pure NNUE Self-Data Era
+## Closed-Loop Self-Training Era
 
-Reserved for v3.0 and later, when corrected NNUE self-play becomes the primary
-iterative training loop rather than one experiment within a mixed program.
-The arch will scale with iterations.
+Beginning with v3.0, SHAYVERI development uses a controlled generational
+loop: a promoted network generates fresh training data for its successor,
+and that successor must pass fixed parent-relative strength gates before it
+can become the next generator. This differs from earlier HCE-generated,
+primitive NNUE-generated, and bug-affected self-data experiments, which
+produced isolated corpora without a validated promotion loop. v3.0 will not
+begin until the Saturation Era is complete.

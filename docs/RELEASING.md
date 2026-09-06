@@ -6,7 +6,10 @@ Use this checklist for every published SHAYVERI release. Commands use
 ## 1. Finalize the engine
 
 - [ ] Choose the version according to [`VERSIONING.md`](VERSIONING.md).
-- [ ] Add the new version's number to the GitHub actions workflow.
+- [ ] Add the new version to
+  [`build-release.yml`](../.github/workflows/build-release.yml) and its release
+  metadata to
+  [`write-release-readme.sh`](../.github/scripts/write-release-readme.sh).
 - [ ] Freeze the release scope, production defaults, and default NNUE.
 - [ ] Remove temporary gates and unfinished experimental behaviour.
 - [ ] Confirm tuning-only options are absent from the production UCI handshake.
@@ -65,6 +68,8 @@ PIN_ROOT="$PWD" ./watch.sh
 - [ ] Update [`README.md`](../README.md), [`ELO.md`](ELO.md), and
   [`index.html`](../index.html) with the release and applicable results.
 - [ ] Remove obsolete internal names, paths, versions, and milestone wording.
+- [ ] Update [`NNUE.md`](NNUE.md) with the new version's architecture and its
+  release history, plus any newly added architecture support.
 
 If the default NNUE changed:
 
@@ -73,8 +78,6 @@ If the default NNUE changed:
 - [ ] Update the [`Makefile`](../Makefile) and engine integration.
 - [ ] Update the network cases in
   [`build-release.yml`](../.github/workflows/build-release.yml).
-- [ ] Update the mapping in
-  [`write-release-readme.sh`](../.github/scripts/write-release-readme.sh).
 
 ## 5. Merge and tag
 

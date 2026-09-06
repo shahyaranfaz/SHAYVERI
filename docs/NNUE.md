@@ -17,7 +17,7 @@ unsupported, not a removed historical format.
 |     v3 |      `KB8x256-L` |  6,144 |    256 |       SCReLU |                          one linear |            v2.2 |      YES |
 |     v3 |      `KB8x512-L` |  6,144 |    512 |       SCReLU |                          one linear |           never |      YES |
 |     v3 |     `KB16x256-L` | 12,288 |    256 |       SCReLU |                          one linear |            v2.4 |      YES |
-|     v3 |     `KB16x512-L` | 12,288 |    512 |       SCReLU |                          one linear |       v2.5-v2.8 |      YES |
+|     v3 |     `KB16x512-L` | 12,288 |    512 |       SCReLU |                          one linear |      v2.5-v2.10 |      YES |
 |     v4 |    `KB16x512-L8` | 12,288 |    512 |       SCReLU | eight linear, chosen by piece count |           never |      YES |
 
 While a shared format number may imply that two networks belong to the same
