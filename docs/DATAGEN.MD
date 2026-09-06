@@ -71,8 +71,7 @@ the side-to-move-normalized perspective. `result` is encoded as `0` black win,
 
 ## Defaults
 
-The defaults are set to match the current external-data recipe as closely as is
-reasonable:
+The direct engine CLI defaults provide a general datagen baseline:
 
 - `--max-abs-cp 3000`
 - qsearch/static label path, not raw search score labels
@@ -81,6 +80,11 @@ reasonable:
 - adjudication enabled and explicit
 - summaries written for every run
 - DONE marker written only after successful C++ datagen completion
+
+The production worker in `scripts/datagen/worker_datagen.sh` supplies its own
+explicit recipe. In particular, it writes `bullet-v1`, limits each game to 16
+samples, retains duplicate positions, and disables adjudication by default.
+These worker settings override the corresponding direct engine defaults.
 
 If `--eval-file` is omitted, the embedded default net is used. Use
 `--eval-file "<embedded>"` for the same behavior, pass an explicit `.nnue` path
