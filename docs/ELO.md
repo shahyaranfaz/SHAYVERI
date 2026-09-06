@@ -46,9 +46,11 @@ only the names defined above.
 
 Time control: `10+0.1`
 
+Games per pairing: `800`
+
 Total games: `28800`
 
-Per pairing: `800`
+Opening book: `UHO_2024_8mvs.epd`
 
 | # |                Player | Rating | Error | Points | Played | Score | CFS |
 |--:|----------------------:|-------:|------:|-------:|-------:|------:|----:|
@@ -70,9 +72,11 @@ Draw rate: `39.67% +/- 0.54`
 
 Time control: `90+0.5`
 
+Games per pairing: `200`
+
 Total games: `7200`
 
-Per pairing: `200`
+Opening book: `UHO_2024_8mvs.epd`
 
 | # |                Player | Rating | Error | Points | Played | Score | CFS |
 |--:|----------------------:|-------:|------:|-------:|-------:|------:|----:|
