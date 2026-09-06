@@ -40,10 +40,15 @@ cd ~/elo_pin
 
 PIN_ROOT="$PWD" \
 RELEASE_ID=v0.0.0 \
-NET= \
+NET=release.nnue \
 REGISTER_SECONDS=300 \
 ./master.sh
 ```
+
+Place `release.nnue` in `engines/` on every worker before starting the pin.
+Relative `NET` values are resolved from that directory because it is the
+SHAYVERI process's working directory. Use `NET=` only when intentionally
+testing the network embedded in the engine binary.
 
 Start one worker on each machine during registration:
 
@@ -116,7 +121,8 @@ their work directory for diagnosis.
 - `BASE_SEED`: deterministic seed sequence
 - `CONCURRENCY`: local fastchess concurrency, default 23
 - `PYTHON_BIN`: Python 3 executable used by run validation, default `python3`
-- `NET=`: use the embedded default network
+- `NET`: network filename under `engines/`; `NET=` intentionally uses the
+  embedded default network
 - `RELEASE_ID`: full public engine version used by both SHAYVERI entries and
   its output directory
 - `EXPECTED_WORKERS`: close registration as soon as this many workers arrive,
