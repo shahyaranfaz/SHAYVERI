@@ -191,23 +191,23 @@ Iteration 84 was selected through checkpoint games and released as
 
 This era combined trainer calibration, external-data continuation,
 architectural experiments, loss-schedule experiments, and one corrected
-self-data continuation. Net 5 established that corrected self-data could be
+self-data continuation. Net 4 established that corrected self-data could be
 used without the catastrophic regression seen in earlier direct-Bullet runs.
 Because no external-only control was trained, it did not establish that
 self-data caused the gain.
 
 ### Released Networks
 
-- v2.10.0 released the Net 5 winner as `SHAYVERI2_10_4.nnue`
+- v2.10.0 released the Net 4 winner as `SHAYVERI2_10_4.nnue`
 
-### Trainer Calibration (v2.10 Net 1)
+### Trainer Calibration (v2.10 Net 0)
 
-Net 1 used 25M positions from the March 2024 T80 corpus to train with Bullet
+Net 0 used 25M positions from the March 2024 T80 corpus to train with Bullet
 and nnue-pytorch for 20 iterations. This proved that nnue-pytorch was usable.
 
-### Diversified Data (v2.10 Net 2)
+### Diversified Data (v2.10 Net 1)
 
-Net 2 was warm-started from `SHAYVERI2_5_0.nnue` and trained for 40B accepted
+Net 1 was warm-started from `SHAYVERI2_5_0.nnue` and trained for 40B accepted
 presentations using 20 external binpacks totaling approximately 315 GiB:
 
 - six months of 2024 T80 data
@@ -220,43 +220,43 @@ Files were sampled in proportion to compressed size. This produced an
 approximate mixture of 16% T80, 25% Leela96, 28% Farseer, and 31% specialized
 hard-position data.
 
-### Material Output Buckets (v2.10 Net 3)
+### Material Output Buckets (v2.10 Net 2)
 
-Net 3 was warm-started from Net 2 and used the same 20-file external
+Net 2 was warm-started from Net 1 and used the same 20-file external
 corpus. It tested eight material-dependent output heads with an 80B schedule.
 The independent-head trial was stopped after 10B presentations, while the
 shared-factorized trial was stopped after 30B. Both regressed badly and
 produced no release candidate.
 
-The `net2_check` run continued the unchanged single-head Net 2 architecture
+The `net2_check` run continued the unchanged single-head Net 1 architecture
 under the same corpus and schedule. Its 10B diagnostic showed that the
-aggressive warm-start schedule caused some regression, but most of Net 3's
+aggressive warm-start schedule caused some regression, but most of Net 2's
 loss came from the eight-head expansion. This was a control, not a distinct
 network generation.
 
-### Corrected-Lambda Continuation (v2.10 Net 4)
+### Corrected-Lambda Continuation (v2.10 Net 3)
 
-Net 4 was warm-started independently from `SHAYVERI2_5_0.nnue` and reused Net
-2's 20-file external corpus. It planned 80B accepted presentations: 40B with
-Net 2's one-cycle schedule at the intended 0.74 lambda, followed by a 40B
+Net 3 was warm-started independently from `SHAYVERI2_5_0.nnue` and reused Net
+1's 20-file external corpus. It planned 80B accepted presentations: 40B with
+Net 1's one-cycle schedule at the intended 0.74 lambda, followed by a 40B
 low-learning-rate refinement without resetting the loader or optimizer.
 
 This run was ultimately abandoned after the discovery of the Bullet black-side
 encoding bug, which suggested trying to train with SHAYVERI-generated data.
 
-### Self-Data Experiment (v2.10 Net 5)
+### Self-Data Experiment (v2.10 Net 4)
 
-Net 5 was warm-started from Net 2. It trained for 500,039,680 accepted
-presentations using a deterministic batch mixture of 55% Net 2 external data
+Net 4 was warm-started from Net 1. It trained for 500,039,680 accepted
+presentations using a deterministic batch mixture of 55% Net 1 external data
 and 45% corrected SHAYVERI self-play data.
 
-The self-play corpus contained 100M positions generated with Net 2 at
+The self-play corpus contained 100M positions generated with Net 1 at
 2,500 nodes per move. Games used 75% internal TWIC starts and 25%
 `noob_4moves.epd` starts. Generation used quiet qsearch labels, completed-game
 WDL, no adjudication, and a maximum of 16 accepted samples per game.
 
 Generator-local duplicate filtering was enabled, but the final corpus was not
-globally deduplicated. Net 5 was selected by playing strength. Because no
+globally deduplicated. Net 4 was selected by playing strength. Because no
 external-only control was trained, its gain cannot be attributed specifically
 to the self-play portion.
 

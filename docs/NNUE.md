@@ -21,7 +21,7 @@ unsupported, not a removed historical format.
 |     v4 |    `KB16x512-L8` | 12,288 |    512 |       SCReLU | eight linear, chosen by piece count |           never |      YES |
 
 While a shared format number may imply that two networks belong to the same
-architectural family, it more precisely means that they share the same 
+architectural family, it more precisely means that they share the same
 on-disk schema and runtime interpretation. That is to say, the format number
 of a network serves as a compatibility identifier for SHAYVERI, but is not
 intended to be a human-facing classification of SHAYVERI networks.
