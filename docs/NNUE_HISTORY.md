@@ -1,4 +1,4 @@
-# SHAYVERI Data Sources
+# SHAYVERI NNUE History
 
 This document records the training-data provenance of SHAYVERI's neural
 networks. It is organized around cycles of internal progress rather than
@@ -175,14 +175,14 @@ March 2024 T80 data and 1B from June 2024 T80 data.
 Training used a 0.30 WDL/result blend. Iteration 84 was selected through
 checkpoint games and released as `SHAYVERI2_5_0.nnue`.
 
-## Corrected Self-Data Era
+## Experimental Era
 
-This era established that SHAYVERI self-data was usable after correcting the
-direct Bullet serializer's black-to-move score encoding.
-
-Net 0 compared Bullet with the SHAYVERI nnue-pytorch fork. The later runs used
-the nnue-pytorch fork. Nets 1, 3, and 4 retained KB16x512, while Net 2 tested
-the eight-output-head KB16x512-L8 architecture.
+This era combined trainer calibration, external-data continuation,
+architectural experiments, loss-schedule experiments, and one corrected
+self-data continuation. Net 4 established that corrected self-data could be
+used without the catastrophic regression seen in earlier direct-Bullet runs.
+Because no external-only control was trained, it did not establish that
+self-data caused the gain.
 
 ### Released Networks
 
@@ -249,3 +249,13 @@ Generator-local duplicate filtering was enabled, but the final corpus was not
 globally deduplicated. Net 4 was selected by playing strength. Because no
 external-only control was trained, its gain cannot be attributed specifically
 to the self-play portion.
+
+## Saturation Era
+
+- Current v2.11 unreleased work. Scale the current arch to its final extent.
+
+## Pure NNUE Self-Data Era
+
+Reserved for v3.0 and later, when corrected NNUE self-play becomes the primary
+iterative training loop rather than one experiment within a mixed program.
+The arch will scale with iterations.
