@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT=${ROOT:-/mnt/d/nnue/robotmoon}
-JOBS=${JOBS:-4}
+JOBS=${JOBS:-3}
 
 mkdir -p \
     "$ROOT/hard_relabel" \
@@ -49,14 +49,12 @@ download_one() {
         return 1
     fi
 
-    mkdir -p "$staging/output" "$staging/hf-home"
+    mkdir -p "$staging/output"
     echo "Downloading: $filename"
 
     completed=0
     for attempt in 1 2 3; do
-        if HF_HOME="$staging/hf-home" \
-           HF_XET_HIGH_PERFORMANCE=1 \
-           hf download "$repo" "$filename" \
+        if hf download "$repo" "$filename" \
                --repo-type dataset \
                --revision "$revision" \
                --local-dir "$staging/output"
