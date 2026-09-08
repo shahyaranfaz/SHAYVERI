@@ -46,6 +46,11 @@ mkdir_shared_dirs() {
 
 emit_tests() {
     case "$ABLATION_BATCH" in
+      v2_11_s1a_non_pawn_corrhist)
+        cat <<'TESTS'
+non_pawn_corrhist_128|NonPawn_CorrHist_Weight=0|NonPawn_CorrHist_Weight=128
+TESTS
+        ;;
       spsa_batch1_validation)
         cat <<'TESTS'
 batch1_top10|-|ASP_Delta=41,FP_Base=217,FP_Max_Depth=4,FP_Mult=762,IIR_Min_Depth=4,LMP_Base=2,LMP_Mult=1,LMR_Base=1.25954,LMR_Scale=1.80102,QS_Delta_Margin=204,RFP_Margin=68,RFP_Max_Depth=5,SEE_Margin=-161

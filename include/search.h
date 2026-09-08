@@ -101,6 +101,10 @@ SingularSearchDecision classify_singular_search(
 
 I16 clamp_history_value(int value);
 I16 gravity_history_update(I16 entry, int bonus, int history_max);
+int non_pawn_correction_index(const Board &b);
+int combine_correction_histories(
+    int raw_eval, int pawn_entry, int non_pawn_entry,
+    int scale, int non_pawn_weight);
 
 } // namespace SearchDetail
 

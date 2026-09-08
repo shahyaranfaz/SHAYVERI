@@ -11,6 +11,7 @@
 #include "tt.h"
 #include "uci_output.h"
 #include "tune.h"
+#include "zobrist.h"
 
 #include <algorithm>
 #include <atomic>
@@ -93,6 +94,26 @@ I16 SearchDetail::gravity_history_update(
     return clamp_history_value(updated);
 }
 
+int SearchDetail::non_pawn_correction_index(const Board &b) {
+    U64 key = b.hash ^ b.pawn_hash;
+    if (b.side_to_move == BLACK)
+        key ^= Zobrist::sides;
+    key ^= Zobrist::castlings[b.castling & 15];
+    if (b.en_passant != SQ_NONE)
+        key ^= Zobrist::en_passants[get_file(b.en_passant)];
+    return static_cast<int>(key & (Tune::CORRHIST_TABLE_SIZE - 1));
+}
+
+int SearchDetail::combine_correction_histories(
+    int raw_eval, int pawn_entry, int non_pawn_entry,
+    int scale, int non_pawn_weight) {
+    const int bounded_scale = std::max(1, scale);
+    constexpr int FULL_WEIGHT = 256;
+    return raw_eval
+        + pawn_entry / bounded_scale
+        + non_pawn_entry * non_pawn_weight / (bounded_scale * FULL_WEIGHT);
+}
+
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
     static const auto depth_log = [] {
@@ -152,6 +173,9 @@ struct SearchHeuristics {
 
     // Static eval correction history, indexed by side and pawn-structure key.
     HistoryEntry correction_history[2][Tune::CORRHIST_TABLE_SIZE];
+    // Independent non-pawn piece-placement correction history. Its runtime
+    // weight is zero by default so the S1a binary can reproduce the parent.
+    HistoryEntry non_pawn_correction_history[2][Tune::CORRHIST_TABLE_SIZE];
 
     SearchHeuristics() { clear(); }
 
@@ -163,6 +187,8 @@ struct SearchHeuristics {
         std::memset(follow_up_history, 0, sizeof(follow_up_history));
         std::memset(capture_history, 0, sizeof(capture_history));
         std::memset(correction_history, 0, sizeof(correction_history));
+        std::memset(non_pawn_correction_history, 0,
+                    sizeof(non_pawn_correction_history));
     }
 
     inline void store_killer(int ply, Move m) {
@@ -256,8 +282,12 @@ static inline int correction_history_index(const Board& b) {
 
 static inline int corrected_static_eval(const Board& b, int raw_eval, const SearchHeuristics& H) {
     const int stm = static_cast<int>(b.side_to_move) & 1;
-    const int entry = H.correction_history[stm][correction_history_index(b)];
-    return raw_eval + entry / std::max(1, Tune::corrhist_scale);
+    const int pawn_entry = H.correction_history[stm][correction_history_index(b)];
+    const int non_pawn_entry = H.non_pawn_correction_history[stm]
+        [SearchDetail::non_pawn_correction_index(b)];
+    return SearchDetail::combine_correction_histories(
+        raw_eval, pawn_entry, non_pawn_entry,
+        Tune::corrhist_scale, Tune::non_pawn_corrhist_weight);
 }
 
 static inline void update_correction_history(const Board& b, SearchHeuristics& H,
@@ -273,6 +303,9 @@ static inline void update_correction_history(const Board& b, SearchHeuristics& H
     const int stm = static_cast<int>(b.side_to_move) & 1;
     SearchHeuristics::HistoryEntry& entry =
         H.correction_history[stm][correction_history_index(b)];
+    SearchHeuristics::HistoryEntry& non_pawn_entry =
+        H.non_pawn_correction_history[stm]
+            [SearchDetail::non_pawn_correction_index(b)];
     const int max_entry = std::max(1, Tune::corrhist_max);
     const int diff = std::clamp(score - raw_eval, -max_entry, max_entry);
     const int depth_cap = std::max(1, Tune::corrhist_depth_cap);
@@ -286,6 +319,12 @@ static inline void update_correction_history(const Board& b, SearchHeuristics& H
         - static_cast<int>(entry) * abs_bonus / max_entry;
     entry = SearchDetail::clamp_history_value(
         std::clamp(updated, -max_entry, max_entry));
+
+    const int non_pawn_updated =
+        static_cast<int>(non_pawn_entry) + bonus
+        - static_cast<int>(non_pawn_entry) * abs_bonus / max_entry;
+    non_pawn_entry = SearchDetail::clamp_history_value(
+        std::clamp(non_pawn_updated, -max_entry, max_entry));
 }
 
 static inline bool search_stopped(const SearchContext &context,

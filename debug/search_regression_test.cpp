@@ -379,6 +379,48 @@ void test_bounded_history_storage() {
            "negative correction history did not saturate");
 }
 
+void test_non_pawn_correction_key() {
+    using SearchDetail::non_pawn_correction_index;
+
+    Board base;
+    Board state_variant;
+    Board pawn_variant;
+    Board piece_variant;
+    expect(set_from_fen(base,
+        "r3k2r/ppp2ppp/2n5/3pp3/3PP3/2N5/PPP2PPP/R3K2R w KQkq - 0 1"),
+        "failed to initialize correction-key base position");
+    expect(set_from_fen(state_variant,
+        "r3k2r/ppp2ppp/2n5/3pp3/3PP3/2N5/PPP2PPP/R3K2R b - e3 0 1"),
+        "failed to initialize correction-key state variant");
+    expect(set_from_fen(pawn_variant,
+        "r3k2r/ppp2ppp/2n5/3p4/3Pp3/2N5/PPP2PPP/R3K2R w KQkq - 0 1"),
+        "failed to initialize correction-key pawn variant");
+    expect(set_from_fen(piece_variant,
+        "r3k2r/ppp2ppp/8/3pp3/3PP3/2N2n2/PPP2PPP/R3K2R w KQkq - 0 1"),
+        "failed to initialize correction-key piece variant");
+
+    const int base_index = non_pawn_correction_index(base);
+    expect(non_pawn_correction_index(state_variant) == base_index,
+           "side, castling, or en-passant state changed the non-pawn key");
+    expect(non_pawn_correction_index(pawn_variant) == base_index,
+           "pawn placement changed the non-pawn key");
+    expect(non_pawn_correction_index(piece_variant) != base_index,
+           "non-pawn placement did not change the non-pawn key");
+}
+
+void test_correction_history_combination() {
+    using SearchDetail::combine_correction_histories;
+
+    expect(combine_correction_histories(100, 513, -1024, 256, 0) == 102,
+           "zero non-pawn weight changed the existing pawn correction");
+    expect(combine_correction_histories(-100, -513, 1024, 256, 0) == -102,
+           "zero non-pawn weight changed negative pawn correction rounding");
+    expect(combine_correction_histories(100, 512, 1024, 256, 256) == 106,
+           "full non-pawn weight did not add its correction");
+    expect(combine_correction_histories(100, 512, -1024, 256, 128) == 100,
+           "half non-pawn weight was not applied independently");
+}
+
 } // namespace
 
 int main() {
@@ -406,6 +448,10 @@ int main() {
     std::cout << "[PASS] singular search decisions\n";
     test_bounded_history_storage();
     std::cout << "[PASS] bounded history storage\n";
+    test_non_pawn_correction_key();
+    std::cout << "[PASS] non-pawn correction key\n";
+    test_correction_history_combination();
+    std::cout << "[PASS] correction history combination\n";
 
     std::cout << "search regression tests passed\n";
     return 0;

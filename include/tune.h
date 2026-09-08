@@ -22,6 +22,8 @@ static constexpr int MAX_PLY             =   128;
 static constexpr int INF                 = 32001;
 static constexpr int MATE_SCORE          = 32000;
 static constexpr int CORRHIST_TABLE_SIZE = 16384;
+static_assert((CORRHIST_TABLE_SIZE & (CORRHIST_TABLE_SIZE - 1)) == 0,
+              "correction-history table size must be a power of two");
 
 // Internal tactical and move-ordering values. These are not tuned material terms.
 // Tactical exchange and threat analysis needs a prohibitive king value. Capture
@@ -129,6 +131,9 @@ inline int corrhist_bonus_mult  =   32;
 inline int corrhist_bonus_limit =  768;
 inline int corrhist_max         = 8192;
 inline int corrhist_depth_cap   =    4;
+// S1a is baseline-equivalent at zero. Game candidates enable the independent
+// non-pawn piece-placement correction through this weight (256 = full weight).
+inline int non_pawn_corrhist_weight = 0;
 
 // ProbCut.
 inline int probcut_margin       = 50;
@@ -466,6 +471,7 @@ struct TuningOption {
 };
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
+    {  "NonPawn_CorrHist_Weight", { &non_pawn_corrhist_weight, TuningOption::INT, 0, 512, "0"}},
     /* Batch 1: 5+0.05
     {                   "ASP_Delta", {                     &asp_delta,    TuningOption::INT,    16,    80,      "41"}},
     {                     "FP_Base", {                       &fp_base,    TuningOption::INT,    80,   350,     "217"}},
