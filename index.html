@@ -164,6 +164,10 @@
       line-height: 1.65;
     }
     .hero-intro strong { color: var(--ink); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .hero-actions a { padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px; font-size: .9rem; font-weight: 700; }
+    .hero-actions a:first-child { color: #07100b; border-color: var(--lime); background: var(--lime); }
+    .hero-actions a:hover, .hero-actions a:focus-visible { border-color: var(--lime); }
     .hero-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
     .metric {
       display: flex;
@@ -346,6 +350,7 @@
         <a href="#elo">Elo</a>
         <a href="#search">Search</a>
         <a href="#evaluation">Evaluation</a>
+        <a href="https://github.com/shahyaranfaz/SHAYVERI">GitHub</a>
         <a href="#build" class="nav-cta">Build &amp; use</a>
       </nav>
     </div>
@@ -363,6 +368,10 @@
             <p class="expanded-name">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence</p>
           </div>
           <p class="hero-intro">A C++ Chess Engine.</p>
+          <div class="hero-actions" aria-label="Project links">
+            <a href="https://github.com/shahyaranfaz/SHAYVERI">View source</a>
+            <a href="https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.0">Download v2.10.0</a>
+          </div>
         </div>
         <div class="hero-metrics" aria-label="Engine highlights">
           <article class="metric"><div><span class="metric-value">3261.4</span> <span class="metric-error">+/- 16.0</span></div><p>Anchored Ordo STC rating for SHAYVERI NNUE Evaluation</p></article>
