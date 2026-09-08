@@ -76,7 +76,7 @@ SRC := \
 	src/tt.cpp \
 	src/zobrist.cpp
 
-DEFAULT_NNUE := SHAYVERI2_10_4.nnue
+DEFAULT_NNUE := SHAYVERI2_11_7.nnue
 EMBED_NNUE := build/embed_nnue
 EMBEDDED_NNUE_SRC := build/embedded_nnue.cpp
 
