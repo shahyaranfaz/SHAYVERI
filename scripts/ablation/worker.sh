@@ -31,12 +31,15 @@ while true; do
     fi
 
     job_id="$(basename "$claimed_file" .job)"
-    IFS='|' read -r suite base_time increment rounds label base_option_spec candidate_option_spec < "$claimed_file"
+    IFS='|' read -r suite base_time increment rounds label base_option_spec \
+        candidate_option_spec opening_order opening_start < "$claimed_file"
+    opening_order="${opening_order:-random}"
+    opening_start="${opening_start:-1}"
     log="$RESULTS_DIR/${job_id}.txt"
     pgn="$RESULTS_DIR/${job_id}.pgn"
     status="$RESULTS_DIR/${job_id}.status"
 
-    echo "[$WORKER_NAME] $job_id: tc=${base_time}+${increment} games=$((rounds * 2))"
+    echo "[$WORKER_NAME] $job_id: tc=${base_time}+${increment} games=$((rounds * 2)) opening_start=$opening_start"
     base_options=()
     if [ "$base_option_spec" != "-" ]; then
         IFS=',' read -r -a assignments <<< "$base_option_spec"
@@ -58,7 +61,8 @@ while true; do
             "${candidate_options[@]}" \
         -each proto=uci tc="${base_time}+${increment}" timemargin=100 option.Threads="$THREADS" \
             option.OwnBook=false option.BookInfoDepth=0 \
-        -openings file="$OPENING_FILE" format=epd order=random plies=16 \
+        -openings file="$OPENING_FILE" format=epd order="$opening_order" \
+            start="$opening_start" plies=16 \
         -games 2 -rounds "$rounds" -repeat \
         -concurrency "$CONCURRENCY" -recover \
         -output format=cutechess \
