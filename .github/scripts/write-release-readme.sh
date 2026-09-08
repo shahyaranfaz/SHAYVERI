@@ -28,6 +28,7 @@ release_metadata() {
       NETWORK="Embedded NNUE: SHAYVERI2_5_0.nnue"
       ;;
     v2.10.0) NETWORK="Embedded NNUE: SHAYVERI2_10_4.nnue" ;;
+    v2.11.0) NETWORK="Embedded NNUE: SHAYVERI2_11_7.nnue" ;;
     *)
       echo "No network metadata configured for $release_tag" >&2
       exit 1
