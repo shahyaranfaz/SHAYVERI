@@ -2,6 +2,8 @@
 
 **Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence**
 
+[Website](https://shahyaranfaz.github.io/SHAYVERI/) | [Download v2.10.0](https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.0)
+
 SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a
 handcrafted evaluation path, and an embedded NNUE evaluation path. The current
 public strength numbers come from controlled multi-engine round-robin gauntlets
