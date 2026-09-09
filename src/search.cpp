@@ -114,6 +114,11 @@ int SearchDetail::combine_correction_histories(
         + non_pawn_entry * non_pawn_weight / (bounded_scale * FULL_WEIGHT);
 }
 
+int SearchDetail::capture_history_reduction(
+    int history, int threshold, int reduction) {
+    return reduction > 0 && history < threshold ? reduction : 0;
+}
+
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
     static const auto depth_log = [] {
@@ -422,6 +427,19 @@ static inline bool is_capture_or_promo(const Board& b, Move m) {
     return b.get_piece(move_to(m)) != NONE_PIECE;
 }
 
+static inline int capture_history_score(
+    const Board &b, Move m, const SearchHeuristics &H) {
+    if (move_promo(m) != NONE_PTYPE)
+        return 0;
+    const int to = static_cast<int>(move_to(m)) & 63;
+    const PieceType attacker = get_type(b.get_piece(move_from(m)));
+    const PieceType victim = is_ep_move(m) ? PAWN : get_type(b.get_piece(to));
+    if (attacker == NONE_PTYPE || victim == NONE_PTYPE)
+        return 0;
+    return H.capture_history[SearchHeuristics::piece_index(attacker)][to]
+                            [SearchHeuristics::piece_index(victim)];
+}
+
 static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H,
                               StackInfo* ss, int *see_value_out = nullptr) {
     int cap = capture_order_score(b, m);
@@ -429,18 +447,8 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
         int see_val = see(b, m);
         if (see_value_out != nullptr) *see_value_out = see_val;
         // Add capture history bonus for non-promotion captures to fine-tune ordering
-        int ch = 0;
-        if (move_promo(m) == NONE_PTYPE) {
-            int to = static_cast<int>(move_to(m)) & 63;
-            int attacker_pt = static_cast<int>(get_type(b.get_piece(move_from(m))));
-            PieceType victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(to));
-            if (victim_pt != NONE_PTYPE)
-                ch = H.capture_history[
-                         SearchHeuristics::piece_index(attacker_pt)][to]
-                     [SearchHeuristics::piece_index(
-                         static_cast<int>(victim_pt))]
+        const int ch = capture_history_score(b, m, H)
                      * Tune::capture_history_weight / 100;
-        }
         if (see_val >= 0) return 1000000 + (see_val * 100) + cap + ch;
         return 700000 + (see_val * 100) + cap + ch;
     }
@@ -1023,6 +1031,9 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         const Move m = picked.m;
         const bool is_quiet = !is_capture_or_promo(b, m);
         const int move_history = is_quiet ? quiet_history_score(b, m, ply, H, ss) : 0;
+        const int capture_history = !is_quiet
+            ? capture_history_score(b, m, H)
+            : 0;
         bool lmp_reject = false;
         bool futility_reject = false;
         bool see_reject = false;
@@ -1101,6 +1112,14 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                     reduction += Tune::lmr_good_history_reduction;
                 else if (move_history < Tune::lmr_bad_history)
                     reduction += Tune::lmr_bad_history_reduction;
+                reduction = std::clamp(reduction, 0, depth - 2);
+            }
+            if (depth >= Tune::lmr_min_depth && !is_quiet
+                && move_promo(m) == NONE_PTYPE && m != tt_move) {
+                reduction += SearchDetail::capture_history_reduction(
+                    capture_history,
+                    Tune::capture_history_reduction_threshold,
+                    Tune::capture_history_reduction);
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 

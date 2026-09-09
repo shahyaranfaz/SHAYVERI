@@ -421,6 +421,21 @@ void test_correction_history_combination() {
            "half non-pawn weight was not applied independently");
 }
 
+void test_capture_history_reduction() {
+    using SearchDetail::capture_history_reduction;
+
+    expect(capture_history_reduction(-1, 0, 1) == 1,
+           "negative capture history did not trigger reduction");
+    expect(capture_history_reduction(0, 0, 1) == 0,
+           "threshold capture history incorrectly triggered reduction");
+    expect(capture_history_reduction(1, 0, 1) == 0,
+           "positive capture history incorrectly triggered reduction");
+    expect(capture_history_reduction(-100, 0, 0) == 0,
+           "disabled capture-history reduction changed search");
+    expect(capture_history_reduction(-100, -200, 1) == 0,
+           "capture-history threshold was ignored");
+}
+
 } // namespace
 
 int main() {
@@ -452,6 +467,8 @@ int main() {
     std::cout << "[PASS] non-pawn correction key\n";
     test_correction_history_combination();
     std::cout << "[PASS] correction history combination\n";
+    test_capture_history_reduction();
+    std::cout << "[PASS] capture history reduction\n";
 
     std::cout << "search regression tests passed\n";
     return 0;

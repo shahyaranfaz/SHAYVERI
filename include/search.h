@@ -105,6 +105,7 @@ int non_pawn_correction_index(const Board &b);
 int combine_correction_histories(
     int raw_eval, int pawn_entry, int non_pawn_entry,
     int scale, int non_pawn_weight);
+int capture_history_reduction(int history, int threshold, int reduction);
 
 } // namespace SearchDetail
 

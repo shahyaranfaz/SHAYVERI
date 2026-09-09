@@ -119,6 +119,10 @@ inline int main_history_weight    =    85;
 inline int cmh_weight             =    75;
 inline int fmh_weight             =    30;
 inline int capture_history_weight =   100;
+// S2 is baseline-equivalent at zero. A positive value reduces late,
+// non-promotion captures whose capture history is below the threshold.
+inline int capture_history_reduction           = 0;
+inline int capture_history_reduction_threshold = 0;
 
 // History pruning.
 inline int history_pruning_threshold = 0;
@@ -471,6 +475,7 @@ struct TuningOption {
 };
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
+    { "Capture_History_Reduction", { &capture_history_reduction, TuningOption::INT, 0, 2, "0"}},
     {  "NonPawn_CorrHist_Weight", { &non_pawn_corrhist_weight, TuningOption::INT, 0, 512, "0"}},
     /* Batch 1: 5+0.05
     {                   "ASP_Delta", {                     &asp_delta,    TuningOption::INT,    16,    80,      "41"}},

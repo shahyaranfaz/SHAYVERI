@@ -48,6 +48,11 @@ mkdir_shared_dirs() {
 
 emit_tests() {
     case "$ABLATION_BATCH" in
+      v2_11_s2_capture_history_reduction)
+        cat <<'TESTS'
+capture_history_reduction_1|Capture_History_Reduction=0|Capture_History_Reduction=1
+TESTS
+        ;;
       v2_11_s1a_non_pawn_corrhist)
         cat <<'TESTS'
 non_pawn_corrhist_128|NonPawn_CorrHist_Weight=0|NonPawn_CorrHist_Weight=128
