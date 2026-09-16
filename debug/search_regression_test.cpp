@@ -436,6 +436,19 @@ void test_capture_history_reduction() {
            "capture-history threshold was ignored");
 }
 
+void test_null_move_verification_policy() {
+    using SearchDetail::should_verify_null_move;
+
+    expect(!should_verify_null_move(9, 10, true),
+           "null move verified below its minimum depth");
+    expect(should_verify_null_move(10, 10, true),
+           "null move did not verify at its minimum depth");
+    expect(should_verify_null_move(20, 10, true),
+           "null move did not verify above its minimum depth");
+    expect(!should_verify_null_move(20, 10, false),
+           "disabled null-move verification remained active");
+}
+
 } // namespace
 
 int main() {
@@ -469,6 +482,8 @@ int main() {
     std::cout << "[PASS] correction history combination\n";
     test_capture_history_reduction();
     std::cout << "[PASS] capture history reduction\n";
+    test_null_move_verification_policy();
+    std::cout << "[PASS] null-move verification policy\n";
 
     std::cout << "search regression tests passed\n";
     return 0;

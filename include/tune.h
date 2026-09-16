@@ -69,6 +69,9 @@ inline int nmp_min_depth        =   3;
 inline int nmp_reduction_min    =   0;
 inline int nmp_reduction_max    =   8;
 inline int nmp_verify_min_depth =  10;
+// S4a keeps the established verification threshold but permits an isolated
+// verification-policy ablation. Enabled is the production baseline.
+inline int nmp_verification     =   1;
 
 // Singular extensions.
 inline int se_extension                  =   1;
@@ -475,6 +478,7 @@ struct TuningOption {
 };
 
 inline std::unordered_map<std::string, TuningOption> tuning_registry = {
+    {          "NMP_Verification", {          &nmp_verification, TuningOption::INT, 0, 1, "1"}},
     { "Capture_History_Reduction", { &capture_history_reduction, TuningOption::INT, 0, 2, "0"}},
     {  "NonPawn_CorrHist_Weight", { &non_pawn_corrhist_weight, TuningOption::INT, 0, 512, "0"}},
     /* Batch 1: 5+0.05

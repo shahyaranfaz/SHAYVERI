@@ -119,6 +119,11 @@ int SearchDetail::capture_history_reduction(
     return reduction > 0 && history < threshold ? reduction : 0;
 }
 
+bool SearchDetail::should_verify_null_move(
+    int depth, int min_depth, bool enabled) {
+    return enabled && depth >= min_depth;
+}
+
 static inline int lmr_reduction_base(int depth, int moves) {
     if (depth < 2 || moves < 2) return 0;
     static const auto depth_log = [] {
@@ -921,7 +926,9 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
         if (search_stopped(context, thread)) return 0;
         if (score >= beta) {
-            if (depth >= Tune::nmp_verify_min_depth) {
+            if (SearchDetail::should_verify_null_move(
+                    depth, Tune::nmp_verify_min_depth,
+                    Tune::nmp_verification != 0)) {
                 int verify = negamax(context, thread, b,
                                      depth - R, beta - 1, beta, ply,
                                      H, rep_stack, rep_len, false, cut_node, ss, false);

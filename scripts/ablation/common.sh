@@ -48,6 +48,11 @@ mkdir_shared_dirs() {
 
 emit_tests() {
     case "$ABLATION_BATCH" in
+      v2_11_s4a_nmp_verification)
+        cat <<'TESTS'
+nmp_verification_off|NMP_Verification=1|NMP_Verification=0
+TESTS
+        ;;
       v2_11_s2_capture_history_reduction)
         cat <<'TESTS'
 capture_history_reduction_1|Capture_History_Reduction=0|Capture_History_Reduction=1
