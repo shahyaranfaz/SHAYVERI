@@ -118,7 +118,7 @@ windows: $(BIN_WIN)
 macos: $(BIN_MACOS)
 
 $(EMBED_NNUE): src/tools/embed_nnue.cpp
-	$(if $(wildcard build),,mkdir build)
+	mkdir -p build
 	$(CXX) -std=c++20 -O2 -Wall -Wextra -Wpedantic -o $@ src/tools/embed_nnue.cpp
 
 $(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) $(EMBED_NNUE)
@@ -128,7 +128,7 @@ $(BIN): $(SRC) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS)
 
 $(WIN_ICON_OBJ): $(WIN_ICON_RC) $(WIN_ICON_ICO)
-	$(if $(wildcard build),,mkdir build)
+	mkdir -p build
 	$(WINDRES) $(WIN_ICON_RC) -O coff -o $@
 
 $(BIN_WIN): $(SRC) $(HEADERS) $(WIN_ICON_OBJ)
