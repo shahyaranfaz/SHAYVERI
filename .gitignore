@@ -8,6 +8,8 @@ SHAYVERI_sanitize
 build/
 dev/
 
+assets/working 
+
 debug/perft
 debug/legality
 debug/fen_state

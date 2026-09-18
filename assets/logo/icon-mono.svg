@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 720" role="img" aria-labelledby="title desc">
+  <title id="title">Crowned S monochrome monogram</title>
+  <desc id="desc">A single-color geometric S beneath a three-point crown, with a wide aligned trapezoidal pedestal.</desc>
+
+  <path fill="currentColor" d="M270 52h105v60h55V52h100v60h55V52h105v147H270Z"/>
+
+  <path fill="currentColor" d="M272 211h416l-39 56v109L432 258v66l217 132v104l39 56H272l39-56V451l217 118v-66L311 371V266Z"/>
+
+  <path fill="currentColor" d="M264 628h432l57 82H207Z"/>
+</svg>
