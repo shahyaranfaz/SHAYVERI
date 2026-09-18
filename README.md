@@ -31,6 +31,18 @@ The unchanged v2.10.1 engine configuration is about +586.6 Elo over HCE at STC
 and +526.5 Elo at LTC in this anchored pool. Against the identically anchored v2.9.0
 results, it gained +67.0 Elo at STC and +50.3 Elo at LTC.
 
+## Architecture
+
+The diagram below maps the UCI interface, opening-book selection, search
+control, chess-position state, and HCE/NNUE evaluation paths. Select it to open
+the full-resolution version.
+
+<p align="center">
+  <a href="docs/architecture.png">
+    <img src="docs/architecture.png" alt="SHAYVERI engine architecture diagram" width="900">
+  </a>
+</p>
+
 ## How to build
 
 Requires a C++ compiler with C++20 support and a modern x86-64 CPU with
