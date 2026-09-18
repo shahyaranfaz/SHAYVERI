@@ -295,7 +295,8 @@
     .prompt { color: var(--lime); }
 
     footer { padding: 42px 0; border-top: 1px solid var(--line); color: var(--dim); }
-    .footer-inner { display: flex; justify-content: space-between; gap: 24px; font-size: .78rem; }
+    .footer-inner { display: flex; align-items: center; gap: 12px; font-size: .78rem; }
+    .footer-mark { display: block; width: 34px; height: auto; }
     .footer-inner strong { color: var(--muted); }
 
     @media (max-width: 900px) {
@@ -407,14 +408,14 @@
           <table>
             <thead><tr><th>Engine</th><th>Evaluation</th><th>Time Control</th><th>Rating</th><th>Error</th></tr></thead>
             <tbody>
-              <tr><td>SHAYVERI v2.10.0</td><td>HCE</td><td>STC 10+0.1</td><td>2674.8</td><td>±18.1</td></tr>
-              <tr><td>SHAYVERI v2.10.0</td><td>HCE</td><td>LTC 90+0.5</td><td>2794.1</td><td>±30.9</td></tr>
-              <tr><td>SHAYVERI v2.10.0</td><td>NNUE</td><td>STC 10+0.1</td><td class="good">3261.4</td><td>±16.0</td></tr>
-              <tr><td>SHAYVERI v2.10.0</td><td>NNUE</td><td>LTC 90+0.5</td><td class="good">3320.6</td><td>±30.3</td></tr>
+              <tr><td>SHAYVERI v2.10.1</td><td>HCE</td><td>STC 10+0.1</td><td>2674.8</td><td>±18.1</td></tr>
+              <tr><td>SHAYVERI v2.10.1</td><td>HCE</td><td>LTC 90+0.5</td><td>2794.1</td><td>±30.9</td></tr>
+              <tr><td>SHAYVERI v2.10.1</td><td>NNUE</td><td>STC 10+0.1</td><td class="good">3261.4</td><td>±16.0</td></tr>
+              <tr><td>SHAYVERI v2.10.1</td><td>NNUE</td><td>LTC 90+0.5</td><td class="good">3320.6</td><td>±30.3</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="note">SHAYVERI v2.10.0 / NNUE leads HCE by about <strong>+586.6 Elo at STC</strong> and <strong>+526.5 Elo at LTC</strong> in this anchored pool. Against v2.9.0 on the same anchored scale, it gained <strong>+67.0 Elo at STC</strong> and <strong>+50.3 Elo at LTC</strong>. It is above SF3000 at both time controls.</p>
+        <p class="note">SHAYVERI v2.10.1 / NNUE leads HCE by about <strong>+586.6 Elo at STC</strong> and <strong>+526.5 Elo at LTC</strong> in this anchored pool. Against v2.9.0 on the same anchored scale, it gained <strong>+67.0 Elo at STC</strong> and <strong>+50.3 Elo at LTC</strong>. It is above SF3000 at both time controls.</p>
       </div>
     </section>
 
@@ -561,7 +562,10 @@
   </main>
 
   <footer>
-    <div class="shell footer-inner">SHAYVERI v2.10.1, built by Shahyar Anfaz and Averi Wylie.</div>
+    <div class="shell footer-inner">
+      <img class="footer-mark" src="assets/logo/icon-dark.svg" alt="">
+      <span>SHAYVERI v2.10.1, built by Shahyar Anfaz and Averi Wylie.</span>
+    </div>
   </footer>
   <script>
     const header = document.querySelector(".topbar");

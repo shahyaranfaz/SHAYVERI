@@ -1,7 +1,7 @@
 CXX := g++
 CXX_WIN := x86_64-w64-mingw32-g++
 CXX_MACOS := clang++
-WINDRES ?= x86_64-w64-mingw32-windres
+WINDRES ?= $(subst g++,windres,$(CXX_WIN))
 
 LTO := -flto=auto
 LTO_MACOS := -flto

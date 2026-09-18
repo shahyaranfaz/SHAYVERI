@@ -22,12 +22,12 @@ as its default network. The versioning scheme is explained in
 
 |           Engine | Evaluation | Time control | Rating |   Error |
 |-----------------:|-----------:|-------------:|-------:|--------:|
-| SHAYVERI v2.10.0 |       NNUE |   STC 10+0.1 | 3261.4 | +/-16.0 |
-| SHAYVERI v2.10.0 |       NNUE |   LTC 90+0.5 | 3320.6 | +/-30.3 |
-| SHAYVERI v2.10.0 |        HCE |   STC 10+0.1 | 2674.8 | +/-18.1 |
-| SHAYVERI v2.10.0 |        HCE |   LTC 90+0.5 | 2794.1 | +/-30.9 |
+| SHAYVERI v2.10.1 |       NNUE |   STC 10+0.1 | 3261.4 | +/-16.0 |
+| SHAYVERI v2.10.1 |       NNUE |   LTC 90+0.5 | 3320.6 | +/-30.3 |
+| SHAYVERI v2.10.1 |        HCE |   STC 10+0.1 | 2674.8 | +/-18.1 |
+| SHAYVERI v2.10.1 |        HCE |   LTC 90+0.5 | 2794.1 | +/-30.9 |
 
-The unchanged v2.10.0 engine configuration is about +586.6 Elo over HCE at STC
+The unchanged v2.10.1 engine configuration is about +586.6 Elo over HCE at STC
 and +526.5 Elo at LTC in this anchored pool. Against the identically anchored v2.9.0
 results, it gained +67.0 Elo at STC and +50.3 Elo at LTC.
 
