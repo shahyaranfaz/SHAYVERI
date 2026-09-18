@@ -1,0 +1,2 @@
+#define IDI_SHAYVERI 101
+IDI_SHAYVERI ICON "assets/platform/windows/shayveri.ico"

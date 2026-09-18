@@ -1,8 +1,12 @@
-# SHAYVERI
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo/logo-light.svg">
+    <img alt="SHAYVERI — Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence" src="assets/logo/logo-light.svg" width="1100">
+  </picture>
+</h1>
 
-**Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence**
-
-[Website](https://shahyaranfaz.github.io/SHAYVERI/) | [Download v2.10.0](https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.0)
+[Website](https://shahyaranfaz.github.io/SHAYVERI/) | [Download v2.10.1](https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.1)
 
 SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a
 handcrafted evaluation path, and an embedded NNUE evaluation path. The current
@@ -10,8 +14,8 @@ public strength numbers come from controlled multi-engine round-robin gauntlets
 analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
 
-The current release is `SHAYVERI v2.10.0`, which embeds `SHAYVERI2_10_4.nnue` as
-its default network. The versioning scheme is explained in
+The current release is `SHAYVERI v2.10.1`, which embeds `SHAYVERI2_10_4.nnue`
+as its default network. The versioning scheme is explained in
 [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## Elo results
@@ -23,8 +27,8 @@ its default network. The versioning scheme is explained in
 | SHAYVERI v2.10.0 |        HCE |   STC 10+0.1 | 2674.8 | +/-18.1 |
 | SHAYVERI v2.10.0 |        HCE |   LTC 90+0.5 | 2794.1 | +/-30.9 |
 
-The v2.10.0 NNUE configuration is about +586.6 Elo over HCE at STC and +526.5
-Elo at LTC in this anchored pool. Against the identically anchored v2.9.0
+The unchanged v2.10.0 engine configuration is about +586.6 Elo over HCE at STC
+and +526.5 Elo at LTC in this anchored pool. Against the identically anchored v2.9.0
 results, it gained +67.0 Elo at STC and +50.3 Elo at LTC.
 
 ## How to build

@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           if [[ "$REQUESTED_TAG" == all ]]; then
-            echo 'tags=["v1.0.0","v1.1.0","v1.2.0","v1.3.0","v2.0.0","v2.1.0","v2.2.0","v2.3.0","v2.4.0","v2.5.0","v2.6.0","v2.7.0","v2.8.0","v2.9.0","v2.9.1","v2.10.0"]' >> "$GITHUB_OUTPUT"
+            echo 'tags=["v1.0.0","v1.1.0","v1.2.0","v1.3.0","v2.0.0","v2.1.0","v2.2.0","v2.3.0","v2.4.0","v2.5.0","v2.6.0","v2.7.0","v2.8.0","v2.9.0","v2.9.1","v2.10.0","v2.10.1"]' >> "$GITHUB_OUTPUT"
           elif [[ "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             printf 'tags=["%s"]\n' "$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
           else
@@ -112,13 +112,19 @@ jobs:
             exit 1
           fi
           cp "$engine" "$package/SHAYVERI"
+          if [[ -f assets/platform/shayveri-icon.svg ]]; then
+            cp assets/platform/shayveri-icon.svg "$package/SHAYVERI-icon.svg"
+          fi
+          if [[ -f assets/platform/shayveri-icon.png ]]; then
+            cp assets/platform/shayveri-icon.png "$package/SHAYVERI-icon.png"
+          fi
           case "$RELEASE_TAG" in
             v2.0.0) cp first_net.nnue "$package/" ;;
             v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
             v2.2.0) cp net8_final.nnue "$package/" ;;
             v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
-            v2.10.0) : ;;
+            v2.10.0|v2.10.1) : ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
             "$package" "$RELEASE_TAG" "Linux x64-v3"
@@ -199,13 +205,19 @@ jobs:
             exit 1
           fi
           cp "$engine" "$package/SHAYVERI.exe"
+          if [[ -f assets/platform/shayveri-icon.svg ]]; then
+            cp assets/platform/shayveri-icon.svg "$package/SHAYVERI-icon.svg"
+          fi
+          if [[ -f assets/platform/shayveri-icon.png ]]; then
+            cp assets/platform/shayveri-icon.png "$package/SHAYVERI-icon.png"
+          fi
           case "$RELEASE_TAG" in
             v2.0.0) cp first_net.nnue "$package/" ;;
             v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
             v2.2.0) cp net8_final.nnue "$package/" ;;
             v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
-            v2.10.0) : ;;
+            v2.10.0|v2.10.1) : ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
             "$package" "$RELEASE_TAG" "Windows x64-v3"
@@ -281,13 +293,19 @@ jobs:
             exit 1
           fi
           cp "$engine" "$package/SHAYVERI"
+          if [[ -f assets/platform/shayveri-icon.svg ]]; then
+            cp assets/platform/shayveri-icon.svg "$package/SHAYVERI-icon.svg"
+          fi
+          if [[ -f assets/platform/shayveri-icon.png ]]; then
+            cp assets/platform/shayveri-icon.png "$package/SHAYVERI-icon.png"
+          fi
           case "$RELEASE_TAG" in
             v2.0.0) cp first_net.nnue "$package/" ;;
             v2.1.0|v2.3.0) cp net5_final.nnue "$package/" ;;
             v2.2.0) cp net8_final.nnue "$package/" ;;
             v2.4.0) cp SHAYVERI2_2_0.nnue "$package/" ;;
             v2.5.0) cp SHAYVERI2_5_0.nnue "$package/" ;;
-            v2.10.0) : ;;
+            v2.10.0|v2.10.1) : ;;
           esac
           bash _release_meta/.github/scripts/write-release-readme.sh \
             "$package" "$RELEASE_TAG" "macOS Intel x64-v3"

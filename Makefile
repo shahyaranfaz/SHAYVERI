@@ -1,6 +1,7 @@
 CXX := g++
 CXX_WIN := x86_64-w64-mingw32-g++
 CXX_MACOS := clang++
+WINDRES ?= x86_64-w64-mingw32-windres
 
 LTO := -flto=auto
 LTO_MACOS := -flto
@@ -87,6 +88,9 @@ HEADERS := $(wildcard include/*.h)
 BIN := SHAYVERI
 BIN_WIN := SHAYVERI.exe
 BIN_MACOS := SHAYVERI_mac
+WIN_ICON_RC := assets/platform/windows/shayveri.rc
+WIN_ICON_ICO := assets/platform/windows/shayveri.ico
+WIN_ICON_OBJ := build/shayveri_icon.o
 PGO_BIN ?= SHAYVERI_pgo
 PGO_DATA_DIR ?= build/pgo-data
 PGO_TRAIN_DIR ?= build/pgo-training
@@ -123,8 +127,12 @@ $(EMBEDDED_NNUE_SRC): $(DEFAULT_NNUE) $(EMBED_NNUE)
 $(BIN): $(SRC) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS)
 
-$(BIN_WIN): $(SRC) $(HEADERS)
-	$(CXX_WIN) $(CXXFLAGS_WIN) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS_WIN)
+$(WIN_ICON_OBJ): $(WIN_ICON_RC) $(WIN_ICON_ICO)
+	$(if $(wildcard build),,mkdir build)
+	$(WINDRES) $(WIN_ICON_RC) -O coff -o $@
+
+$(BIN_WIN): $(SRC) $(HEADERS) $(WIN_ICON_OBJ)
+	$(CXX_WIN) $(CXXFLAGS_WIN) $(INCLUDES) -o $@ $(SRC) $(WIN_ICON_OBJ) $(LDFLAGS_WIN)
 
 $(BIN_MACOS): $(SRC) $(HEADERS)
 	$(CXX_MACOS) $(CXXFLAGS_MACOS) $(INCLUDES) -o $@ $(SRC) $(LDFLAGS_MACOS)

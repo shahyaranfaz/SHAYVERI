@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="120 0 720 720" role="img" aria-labelledby="title desc">
+  <title id="title">SHAYVERI application icon</title>
+  <desc id="desc">A white crowned S on a dark square.</desc>
+  <defs>
+    <linearGradient id="gold" x1="270" y1="52" x2="690" y2="199" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8dc76"/>
+      <stop offset="0.5" stop-color="#d9b445"/>
+      <stop offset="1" stop-color="#b88d28"/>
+    </linearGradient>
+  </defs>
+  <rect x="120" width="720" height="720" rx="112" fill="#080b0a"/>
+  <path fill="url(#gold)" d="M270 52h105v60h55V52h100v60h55V52h105v147H270Z"/>
+  <path fill="#fff" d="M272 211h416l-39 56v109L432 258v66l217 132v104l39 56H272l39-56V451l217 118v-66L311 371V266Z"/>
+  <path fill="#fff" d="M264 628h432l57 82H207Z"/>
+</svg>

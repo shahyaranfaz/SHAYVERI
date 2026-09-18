@@ -4,8 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080b0a">
-  <meta name="description" content="SHAYVERI v2.10.0 — a fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta name="color-scheme" content="dark">
+  <meta name="application-name" content="SHAYVERI">
+  <meta name="description" content="SHAYVERI v2.10.1 — a fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SHAYVERI">
+  <meta property="og:title" content="SHAYVERI Chess Engine">
+  <meta property="og:description" content="A fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta property="og:url" content="https://shahyaranfaz.github.io/SHAYVERI/">
+  <meta property="og:image" content="https://shahyaranfaz.github.io/SHAYVERI/assets/social/open-graph.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SHAYVERI crowned S logo and wordmark">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SHAYVERI Chess Engine">
+  <meta name="twitter:description" content="A fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta name="twitter:image" content="https://shahyaranfaz.github.io/SHAYVERI/assets/social/open-graph.png">
+  <meta name="twitter:image:alt" content="SHAYVERI crowned S logo and wordmark">
+  <link rel="canonical" href="https://shahyaranfaz.github.io/SHAYVERI/">
+  <link rel="icon" type="image/svg+xml" href="assets/logo/favicon.svg">
+  <link rel="icon" href="assets/platform/windows/shayveri.ico" sizes="any">
+  <link rel="apple-touch-icon" href="assets/platform/apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
   <title>SHAYVERI Chess Engine</title>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "SHAYVERI",
+      "alternateName": "Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence",
+      "softwareVersion": "2.10.1",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Linux, Windows, macOS",
+      "url": "https://shahyaranfaz.github.io/SHAYVERI/",
+      "downloadUrl": "https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.1",
+      "codeRepository": "https://github.com/shahyaranfaz/SHAYVERI",
+      "logo": "https://shahyaranfaz.github.io/SHAYVERI/assets/logo/icon-light.svg",
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html"
+    }
+  </script>
   <style>
     :root {
       color-scheme: dark;
@@ -81,7 +118,14 @@
       justify-content: space-between;
       gap: 24px;
     }
-    .brand { font-weight: 800; letter-spacing: -.035em; }
+    .brand {
+      display: grid;
+      width: 46px;
+      height: 50px;
+      place-items: center;
+      overflow: hidden;
+    }
+    .brand img { display: block; width: 67px; height: auto; }
     nav { display: flex; align-items: center; gap: clamp(16px, 2.5vw, 34px); }
     nav a {
       color: var(--muted);
@@ -105,66 +149,12 @@
       align-items: center;
       padding: 122px 0 64px;
     }
-    .hero::after {
-      content: "";
-      position: absolute;
-      z-index: -1;
-      right: -12vw;
-      top: 13%;
-      width: min(56vw, 760px);
-      aspect-ratio: 1;
-      border: 1px solid rgba(120, 230, 173, .07);
-      border-radius: 50%;
-      box-shadow: 0 0 0 80px rgba(120, 230, 173, .018), 0 0 0 160px rgba(120, 230, 173, .012);
-    }
-    .hero-layout { display: grid; gap: clamp(48px, 7vw, 82px); }
-    .hero-copy { max-width: 100%; }
-    .identity { width: max-content; max-width: 100%; }
-    .name-lockup {
-      display: inline-flex;
-      align-items: flex-end;
-      gap: clamp(14px, 1.6vw, 22px);
-      margin: 0 0 10px;
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(3.65rem, 9.7vw, 8.35rem);
-      font-weight: 800;
-      line-height: .8;
-      letter-spacing: -.075em;
-      text-transform: uppercase;
-    }
-    .version {
-      flex: 0 0 auto;
-      padding-bottom: 0;
-      color: var(--ink);
-      font: inherit;
-      font-size: clamp(1.825rem, 4.85vw, 4.175rem);
-      font-weight: 800;
-      line-height: .8;
-      letter-spacing: -.075em;
-      white-space: nowrap;
-    }
-    .expanded-name {
-      width: 100%;
-      margin: 24px 0 0;
-      color: var(--muted);
-      font-size: clamp(.9rem, 1.25vw, 1.08rem);
-      font-weight: 580;
-      font-style: italic;
-      line-height: 1.5;
-      letter-spacing: 0;
-      white-space: nowrap;
-    }
-    .hero-intro {
-      max-width: 660px;
-      margin: 28px 0 0;
-      color: #cad1cc;
-      font-size: clamp(1.08rem, 1.7vw, 1.3rem);
-      line-height: 1.65;
-    }
-    .hero-intro strong { color: var(--ink); }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .hero-layout { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: clamp(48px, 7vw, 82px); }
+    .hero-copy { display: flex; width: 100%; min-width: 0; max-width: 100%; flex-direction: column; align-items: center; }
+    .identity { width: min(100%, 1080px); min-width: 0; margin-inline: auto; }
+    .hero-logo { display: block; width: 100%; height: auto; }
+    .hero-logo-mobile { display: none; }
+    .hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 24px; }
     .hero-actions a { padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px; font-size: .9rem; font-weight: 700; }
     .hero-actions a:first-child { color: #07100b; border-color: var(--lime); background: var(--lime); }
     .hero-actions a:hover, .hero-actions a:focus-visible { border-color: var(--lime); }
@@ -317,12 +307,19 @@
       .shell { width: min(100% - 28px, var(--max)); }
       .topbar-inner { min-height: 60px; }
       .hero { min-height: auto; padding: 132px 0 74px; }
-      .hero::after { width: 90vw; top: 6%; right: -50%; }
-      .name-lockup { gap: 9px; align-items: flex-end; }
-      h1 { font-size: clamp(3rem, 16.2vw, 5.25rem); letter-spacing: -.08em; }
-      .version { font-size: clamp(1.5rem, 8.1vw, 2.625rem); }
-      .expanded-name { margin-top: 19px; font-size: clamp(.5rem, 1.85vw, .68rem); }
-      .hero-intro { margin-top: 30px; }
+      .hero-layout, .hero-copy, .identity { width: 100%; max-width: calc(100vw - 28px); }
+      .hero-logo { display: none; }
+      .hero-logo-mobile {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        overflow: hidden;
+      }
+      .hero-logo-mobile .mobile-icon { width: min(42vw, 160px); height: auto; }
+      .hero-logo-mobile .mobile-wordmark { display: block; width: 84%; min-width: 0; max-width: 84%; height: auto; object-fit: contain; }
       section { padding: 76px 0; }
       .bento { display: block; }
       .card { min-height: 0; margin-bottom: 12px; }
@@ -344,7 +341,9 @@
 <body>
   <header class="topbar">
     <div class="shell topbar-inner">
-      <a class="brand" href="#top" aria-label="SHAYVERI home">SHAYVERI</a>
+      <a class="brand" href="#top" aria-label="SHAYVERI home">
+        <img src="assets/logo/icon-dark.svg" alt="">
+      </a>
       <nav aria-label="Primary navigation">
         <a href="#overview">Overview</a>
         <a href="#elo">Elo</a>
@@ -361,16 +360,15 @@
       <div class="shell hero-layout">
         <div class="hero-copy">
           <div class="identity">
-            <div class="name-lockup">
-              <h1>Shayveri</h1>
-              <span class="version" aria-label="version 2.10.0">v2.10.0</span>
+            <img class="hero-logo" src="assets/logo/logo-dark.svg" alt="SHAYVERI — Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence">
+            <div class="hero-logo-mobile" role="img" aria-label="SHAYVERI — Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence">
+              <img class="mobile-icon" src="assets/logo/icon-dark.svg" alt="">
+              <img class="mobile-wordmark" src="assets/logo/wordmark-dark.svg" alt="">
             </div>
-            <p class="expanded-name">Super Heuristic Adaptive Yield Variation Engine for Rook Intelligence</p>
           </div>
-          <p class="hero-intro">A C++ Chess Engine.</p>
           <div class="hero-actions" aria-label="Project links">
             <a href="https://github.com/shahyaranfaz/SHAYVERI">View source</a>
-            <a href="https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.0">Download v2.10.0</a>
+            <a href="https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.1">Download v2.10.1</a>
           </div>
         </div>
         <div class="hero-metrics" aria-label="Engine highlights">
@@ -563,7 +561,7 @@
   </main>
 
   <footer>
-    <div class="shell footer-inner">SHAYVERI v2.10.0, built by Shahyar Anfaz and Averi Wylie.</div>
+    <div class="shell footer-inner">SHAYVERI v2.10.1, built by Shahyar Anfaz and Averi Wylie.</div>
   </footer>
   <script>
     const header = document.querySelector(".topbar");

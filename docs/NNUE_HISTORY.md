@@ -198,7 +198,8 @@ self-data caused the gain.
 
 ### Released Networks
 
-- v2.10.0 released the Net 4 winner as `SHAYVERI2_10_4.nnue`
+- v2.10.0 released the Net 4 winner as `SHAYVERI2_10_4.nnue`; the visual-only
+  v2.10.1 release retained the same network and engine configuration
 
 ### Trainer Calibration (v2.10 Net 0)
 

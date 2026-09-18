@@ -24,6 +24,16 @@ pairing at LTC. The framework is described in
 
 ## NNUE Era
 
+### v2.10.1 - Branding Overhaul
+
+**Default network:** embedded `SHAYVERI2_10_4.nnue`.
+
+- Created the official crowned-S icon, Syne/Michroma wordmark, full logo
+  lockups, adaptive favicon, and light, dark, and monochrome variants.
+- Retained the ratings of v2.10.0, which are `3261.4 +/-16.0` at STC and
+  `3320.6 +/-30.3` at LTC in the fixed pool. These ratings are retained
+  as the current patch does not affect engine behaviour.
+
 ### v2.10.0 - Corrected Self-Datagen NNUE
 
 **Default network:** embedded `SHAYVERI2_10_4.nnue`.

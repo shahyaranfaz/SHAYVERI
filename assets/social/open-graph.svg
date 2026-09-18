@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">SHAYVERI social preview</title>
+  <desc id="desc">The SHAYVERI crowned S and wordmark on a dark background.</desc>
+  <rect width="1200" height="630" fill="#080b0a"/>
+  <rect x="28" y="28" width="1144" height="574" rx="28" fill="none" stroke="#d9b445" stroke-opacity=".3" stroke-width="2"/>
+  <image href="../logo/logo-dark.svg" x="90" y="213" width="1020" height="173"/>
+</svg>
