@@ -62,9 +62,9 @@ static Board mirror_and_swap(const Board &src) {
 
     out.side_to_move = flip(src.side_to_move);
     out.castling = 0;
-    if (src.castling & SHAYVERI::WHITE_KINGSIDE)  out.castling |= SHAYVERI::BLACK_KINGSIDE;
+    if (src.castling & SHAYVERI::WHITE_KINGSIDE) out.castling |= SHAYVERI::BLACK_KINGSIDE;
     if (src.castling & SHAYVERI::WHITE_QUEENSIDE) out.castling |= SHAYVERI::BLACK_QUEENSIDE;
-    if (src.castling & SHAYVERI::BLACK_KINGSIDE)  out.castling |= SHAYVERI::WHITE_KINGSIDE;
+    if (src.castling & SHAYVERI::BLACK_KINGSIDE) out.castling |= SHAYVERI::WHITE_KINGSIDE;
     if (src.castling & SHAYVERI::BLACK_QUEENSIDE) out.castling |= SHAYVERI::WHITE_QUEENSIDE;
     out.en_passant = src.en_passant == SQ_NONE ? SQ_NONE : mirror_square_vertical(src.en_passant);
     out.half_move = src.half_move;

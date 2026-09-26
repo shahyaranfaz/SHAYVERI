@@ -49,7 +49,7 @@ static bool parse_uci_move(const std::string &uci, Square &from, Square &to, Pie
     if (uci[1] < '1' || uci[1] > '8' || uci[3] < '1' || uci[3] > '8') return false;
 
     from = make_square(File(uci[0] - 'a'), Rank(uci[1] - '1'));
-    to   = make_square(File(uci[2] - 'a'), Rank(uci[3] - '1'));
+    to = make_square(File(uci[2] - 'a'), Rank(uci[3] - '1'));
     promo = NONE_PTYPE;
     if (uci.size() == 5) {
         switch (uci[4]) {

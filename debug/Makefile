@@ -2,12 +2,10 @@ CXX := g++
 TIDY ?= clang-tidy
 GCC_VERSION := $(shell $(CXX) -dumpversion)
 GCC_TARGET := $(shell $(CXX) -dumpmachine)
-GCC_INTERNAL_INCLUDE := $(shell $(CXX) -print-file-name=include)
 TIDY_STDLIB_ARGS := \
 	--extra-arg-before=-isystem/usr/include/c++/$(GCC_VERSION) \
 	--extra-arg-before=-isystem/usr/include/$(GCC_TARGET)/c++/$(GCC_VERSION) \
-	--extra-arg-before=-isystem/usr/include/c++/$(GCC_VERSION)/backward \
-	--extra-arg-before=-isystem$(GCC_INTERNAL_INCLUDE)
+	--extra-arg-before=-isystem/usr/include/c++/$(GCC_VERSION)/backward
 # Optional platform-specific arguments for clang-tidy itself.  For example,
 # a self-contained LLVM install can use --extra-arg=--gcc-toolchain=/usr.
 TIDY_EXTRA_ARGS ?=

@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 using SHAYVERI::Board;

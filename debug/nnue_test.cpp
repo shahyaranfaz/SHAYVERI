@@ -172,8 +172,8 @@ static std::string test_move_to_uci(Move m) {
     switch (move_promo(m)) {
         case KNIGHT: out += 'n'; break;
         case BISHOP: out += 'b'; break;
-        case ROOK:   out += 'r'; break;
-        case QUEEN:  out += 'q'; break;
+        case ROOK: out += 'r'; break;
+        case QUEEN: out += 'q'; break;
         default: break;
     }
 

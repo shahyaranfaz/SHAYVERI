@@ -1,6 +1,7 @@
 #include "attacks.h"
 #include "board.h"
 #include "make.h"
+#include "move_io.h"
 #include "nnue.h"
 #include "search.h"
 #include "tt.h"
@@ -8,6 +9,7 @@
 #include "types.h"
 #include "zobrist.h"
 
+#include <atomic>
 #include <cstdlib>
 #include <iostream>
 #include <thread>
@@ -280,29 +282,29 @@ void test_concurrent_context_isolation() {
 void test_singular_search_decisions() {
     using SearchDetail::classify_singular_search;
 
-    const int singular_beta       = 100;
-    const int beta                = 150;
-    const int saved_multicut      = Tune::se_multicut;
-    const int saved_negative      = Tune::se_negative_extensions;
-    const int saved_negative_tt   = Tune::se_negative_tt_extension;
-    const int saved_negative_cut  = Tune::se_negative_cutnode_extension;
-    const int saved_double        = Tune::se_double_extensions;
+    const int singular_beta = 100;
+    const int beta = 150;
+    const int saved_multicut = Tune::se_multicut;
+    const int saved_negative = Tune::se_negative_extensions;
+    const int saved_negative_tt = Tune::se_negative_tt_extension;
+    const int saved_negative_cut = Tune::se_negative_cutnode_extension;
+    const int saved_double = Tune::se_double_extensions;
     const int saved_double_margin = Tune::se_double_margin;
     const int saved_double_amount = Tune::se_double_extension;
-    const int saved_triple        = Tune::se_triple_extensions;
+    const int saved_triple = Tune::se_triple_extensions;
     const int saved_triple_margin = Tune::se_triple_margin;
     const int saved_triple_amount = Tune::se_triple_extension;
 
-    Tune::se_multicut                   =  1;
-    Tune::se_negative_extensions        =  1;
-    Tune::se_negative_tt_extension      = -3;
+    Tune::se_multicut = 1;
+    Tune::se_negative_extensions = 1;
+    Tune::se_negative_tt_extension = -3;
     Tune::se_negative_cutnode_extension = -1;
-    Tune::se_double_extensions          =  1;
-    Tune::se_double_margin              = 100;
-    Tune::se_double_extension           =  2;
-    Tune::se_triple_extensions          =  1;
-    Tune::se_triple_margin              = 200;
-    Tune::se_triple_extension           =  3;
+    Tune::se_double_extensions = 1;
+    Tune::se_double_margin = 100;
+    Tune::se_double_extension = 2;
+    Tune::se_triple_extensions = 1;
+    Tune::se_triple_margin = 200;
+    Tune::se_triple_extension = 3;
 
     expect(classify_singular_search(-101, singular_beta, beta, 180, false).extension
                == Tune::se_triple_extension,
@@ -351,16 +353,16 @@ void test_singular_search_decisions() {
                == Tune::se_extension,
            "disabled large extensions did not fall back to the base extension");
 
-    Tune::se_multicut                   = saved_multicut;
-    Tune::se_negative_extensions        = saved_negative;
-    Tune::se_negative_tt_extension      = saved_negative_tt;
+    Tune::se_multicut = saved_multicut;
+    Tune::se_negative_extensions = saved_negative;
+    Tune::se_negative_tt_extension = saved_negative_tt;
     Tune::se_negative_cutnode_extension = saved_negative_cut;
-    Tune::se_double_extensions          = saved_double;
-    Tune::se_double_margin              = saved_double_margin;
-    Tune::se_double_extension           = saved_double_amount;
-    Tune::se_triple_extensions          = saved_triple;
-    Tune::se_triple_margin              = saved_triple_margin;
-    Tune::se_triple_extension           = saved_triple_amount;
+    Tune::se_double_extensions = saved_double;
+    Tune::se_double_margin = saved_double_margin;
+    Tune::se_double_extension = saved_double_amount;
+    Tune::se_triple_extensions = saved_triple;
+    Tune::se_triple_margin = saved_triple_margin;
+    Tune::se_triple_extension = saved_triple_amount;
 }
 
 void test_bounded_history_storage() {
