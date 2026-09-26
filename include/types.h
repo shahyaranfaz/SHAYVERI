@@ -5,12 +5,12 @@
 
 namespace SHAYVERI {
 
-using I8  = std::int8_t;
+using I8 = std::int8_t;
 using I16 = std::int16_t;
 using I32 = std::int32_t;
 using I64 = std::int64_t;
 
-using U8  = std::uint8_t;
+using U8 = std::uint8_t;
 using U16 = std::uint16_t;
 using U32 = std::uint32_t;
 using U64 = std::uint64_t;
@@ -56,10 +56,10 @@ inline Square pop_lsb(U64 &bb) {
 
 inline Piece piece_from_fen_char(char c) {
     switch (c) {
-        case 'P': return WP;  case 'N': return WN;  case 'B': return WB;
-        case 'R': return WR;  case 'Q': return WQ;  case 'K': return WK;
-        case 'p': return BP;  case 'n': return BN;  case 'b': return BB;
-        case 'r': return BR;  case 'q': return BQ;  case 'k': return BK;
+        case 'P': return WP; case 'N': return WN; case 'B': return WB;
+        case 'R': return WR; case 'Q': return WQ; case 'K': return WK;
+        case 'p': return BP; case 'n': return BN; case 'b': return BB;
+        case 'r': return BR; case 'q': return BQ; case 'k': return BK;
         default: return NONE_PIECE;
     }
 }

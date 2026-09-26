@@ -17,7 +17,7 @@ int piece_type_index(PieceType pt) {
     return static_cast<int>(pt) - 1;
 }
 
-inline void add_row(I16 *destination, const I16 *source, int count) {
+void add_row(I16 *destination, const I16 *source, int count) {
     int i = 0;
 #ifdef __AVX2__
     for (; i + 16 <= count; i += 16) {
@@ -32,7 +32,7 @@ inline void add_row(I16 *destination, const I16 *source, int count) {
     for (; i < count; ++i) destination[i] += source[i];
 }
 
-inline void sub_row(I16 *destination, const I16 *source, int count) {
+void sub_row(I16 *destination, const I16 *source, int count) {
     int i = 0;
 #ifdef __AVX2__
     for (; i + 16 <= count; i += 16) {
@@ -47,7 +47,7 @@ inline void sub_row(I16 *destination, const I16 *source, int count) {
     for (; i < count; ++i) destination[i] -= source[i];
 }
 
-inline void copy_add_sub(I16 *destination, const I16 *source,
+void copy_add_sub(I16 *destination, const I16 *source,
                          const I16 *add, const I16 *sub,
                          const I16 *second_sub, int count) {
     int i = 0;

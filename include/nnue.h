@@ -13,12 +13,12 @@ namespace SHAYVERI {
 namespace NNUE {
 
 inline constexpr int CHESS768_INPUT_SIZE = 768;
-inline constexpr int MAX_KING_BUCKETS    = 16;
-inline constexpr int MAX_INPUT_SIZE      = CHESS768_INPUT_SIZE * MAX_KING_BUCKETS;
-inline constexpr int MAX_HIDDEN_SIZE     = 512;
-inline constexpr int MAX_OUTPUT_BUCKETS  = 8;
-inline constexpr int L1_SCALE            = 255;
-inline constexpr int OUTPUT_SCALE        = 400;
+inline constexpr int MAX_KING_BUCKETS = 16;
+inline constexpr int MAX_INPUT_SIZE = CHESS768_INPUT_SIZE * MAX_KING_BUCKETS;
+inline constexpr int MAX_HIDDEN_SIZE = 512;
+inline constexpr int MAX_OUTPUT_BUCKETS = 8;
+inline constexpr int L1_SCALE = 255;
+inline constexpr int OUTPUT_SCALE = 400;
 
 extern I16 feature_weights[MAX_INPUT_SIZE][MAX_HIDDEN_SIZE];
 extern I16 feature_bias[MAX_HIDDEN_SIZE];
@@ -76,9 +76,9 @@ inline int feature_index(int piece_type, int piece_colour, int sq, int perspecti
         return chess768_index(piece_type, piece_colour, sq, perspective);
 
     const int king_file = perspective_king_sq & 7; // file unaffected by ^56
-    const int flip      = (king_file > 3) ? 7 : 0;
-    const int base      = chess768_index(piece_type, piece_colour, sq, perspective);
-    const int bucket    = king_bucket_index(perspective_king_sq, perspective, king_bucket_count());
+    const int flip = (king_file > 3) ? 7 : 0;
+    const int base = chess768_index(piece_type, piece_colour, sq, perspective);
+    const int bucket = king_bucket_index(perspective_king_sq, perspective, king_bucket_count());
     return bucket * CHESS768_INPUT_SIZE + (base ^ flip);
 }
 

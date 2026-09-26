@@ -12,8 +12,8 @@ U64 KING_ATTACKS[64];
 
 enum Dir { N, S, E, W, NE, NW, SE, SW };
 
-static constexpr int FILE_STEP[8] = {0, 0, 1, -1, 1, -1, 1, -1};
-static constexpr int RANK_STEP[8] = {1, -1, 0, 0, 1, 1, -1, -1};
+constexpr int FILE_STEP[8] = {0, 0, 1, -1, 1, -1, 1, -1};
+constexpr int RANK_STEP[8] = {1, -1, 0, 0, 1, 1, -1, -1};
 
 struct PextSlider {
     U64 mask;
@@ -32,7 +32,7 @@ static bool is_valid_square(int f, int r) {
 
 static U64 slider_mask(Square sq, bool bishop) {
     const int start = bishop ? NE : N;
-    const int end   = bishop ? SW + 1 : W + 1;
+    const int end = bishop ? SW + 1 : W + 1;
     const int f = get_file(sq);
     const int r = get_rank(sq);
     U64 mask = 0;
@@ -65,8 +65,8 @@ static U64 compute_pawn_attacks(Colour c, Square from) {
 }
 
 static U64 compute_knight_attacks(Square from) {
-    static const int df[8] = { 1,  2,  2,  1, -1, -2, -2, -1 };
-    static const int dr[8] = { 2,  1, -1, -2, -2, -1,  1,  2 };
+    static const int df[8] = {1, 2, 2, 1, -1, -2, -2, -1};
+    static const int dr[8] = {2, 1, -1, -2, -2, -1, 1, 2};
     int f = get_file(from), r = get_rank(from);
     U64 bb = 0;
     for (int i = 0; i < 8; ++i) {
@@ -93,7 +93,7 @@ static U64 compute_king_attacks(Square from) {
 
 static U64 sliding_attacks(Square sq, U64 occ, bool bishop) {
     int start = bishop ? 4 : 0;
-    int end   = bishop ? 8 : 4;
+    int end = bishop ? 8 : 4;
     int f = get_file(sq), r = get_rank(sq);
     U64 attacks = 0;
     for (int d = start; d < end; ++d) {
@@ -125,8 +125,8 @@ void init_attacks() {
     for (int sq = 0; sq < 64; ++sq) {
         PAWN_ATTACKS[WHITE][sq] = compute_pawn_attacks(WHITE, Square(sq));
         PAWN_ATTACKS[BLACK][sq] = compute_pawn_attacks(BLACK, Square(sq));
-        KNIGHT_ATTACKS[sq]      = compute_knight_attacks(Square(sq));
-        KING_ATTACKS[sq]        = compute_king_attacks(Square(sq));
+        KNIGHT_ATTACKS[sq] = compute_knight_attacks(Square(sq));
+        KING_ATTACKS[sq] = compute_king_attacks(Square(sq));
     }
 
     U64 *b_ptr = BishopTable;

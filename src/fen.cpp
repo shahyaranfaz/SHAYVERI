@@ -46,14 +46,14 @@ bool set_from_fen(Board &b, const std::string &fen) {
     }
     if (rank != 0 || file != 8) return false;
 
-    if (side_str == "w")       parsed.side_to_move = WHITE;
-    else if (side_str == "b")  parsed.side_to_move = BLACK;
+    if (side_str == "w") parsed.side_to_move = WHITE;
+    else if (side_str == "b") parsed.side_to_move = BLACK;
     else return false;
 
     if (castle != "-") {
         for (char c : castle) {
             int right = 0;
-            if      (c == 'K') right = WHITE_KINGSIDE;
+            if (c == 'K') right = WHITE_KINGSIDE;
             else if (c == 'Q') right = WHITE_QUEENSIDE;
             else if (c == 'k') right = BLACK_KINGSIDE;
             else if (c == 'q') right = BLACK_QUEENSIDE;

@@ -6,27 +6,30 @@
 
 #include <atomic>
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 
 namespace SHAYVERI {
 
 using SIZE_T = std::size_t;
 
-enum TTFlag : U8 { TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2 };
-
-struct TTEntry {
-    U64 key = 0;
-    int score = 0;
-    I8 depth = -1;
-    U8 flag = TT_EXACT;
-    U8 age = 0;
-    bool has_eval = false;
-    int eval = 0;
-    Move best = MOVE_NONE;
+enum TTFlag : U8 {
+    TT_EXACT = 0,
+    TT_LOWER = 1,
+    TT_UPPER = 2
 };
 
-static constexpr int TT_BUCKET_SIZE = 4;
+struct TTEntry {
+    U64 key       = 0;
+    int score     = 0;
+    I8 depth      = -1;
+    U8 flag       = TT_EXACT;
+    U8 age        = 0;
+    bool has_eval = false;
+    int eval      = 0;
+    Move best     = MOVE_NONE;
+};
+
+constexpr int TT_BUCKET_SIZE = 4;
 
 struct alignas(16) TTSlot {
     std::atomic<U64> key_age{0};
@@ -57,9 +60,9 @@ public:
 
 private:
     std::unique_ptr<TTBucket[]> table;
-    SIZE_T bucket_count = 0;
-    SIZE_T mask = 0;
-    unsigned index_bits = 0;
+    SIZE_T bucket_count  = 0;
+    SIZE_T mask          = 0;
+    unsigned index_bits  = 0;
     std::atomic<U8> generation{0};
 };
 

@@ -144,12 +144,12 @@ static bool attacked_with_occupancy(
 }
 
 struct LegalContext {
-    Square king = SQ_NONE;
+    Square king        = SQ_NONE;
     U64 enemy_occupied = 0;
-    U64 checkers = 0;
-    U64 evasion_mask = ~0ULL;
+    U64 checkers       = 0;
+    U64 evasion_mask   = ~0ULL;
     U64 pin_rays[64]{};
-    int check_count = 0;
+    int check_count    = 0;
 };
 
 static U64 squares_between(Square from, Square to) {
@@ -292,12 +292,12 @@ static bool is_directly_legal(
 MoveList generate_pseudo_legal_moves(Board &b) {
     MoveList moves;
 
-    Colour curr  = b.side_to_move;
+    Colour curr = b.side_to_move;
     if (curr != WHITE && curr != BLACK) return moves;
 
     const int curr_idx = (curr == WHITE) ? 0 : 1;
     const int other_idx = curr_idx ^ 1;
-    U64 curr_occupied  = b.occupancies[curr_idx];
+    U64 curr_occupied = b.occupancies[curr_idx];
     U64 other_occupied = b.occupancies[other_idx];
 
     if (curr == WHITE) generate_pawn_moves<WHITE, false>(b, moves, other_occupied);
@@ -315,7 +315,7 @@ MoveList generate_pseudo_legal_moves(Board &b) {
 // Generates pseudo-legal captures and promotions only (used by qsearch when not in check).
 MoveList generate_pseudo_legal_captures(Board &b) {
     MoveList moves;
-    Colour curr  = b.side_to_move;
+    Colour curr = b.side_to_move;
     if (curr != WHITE && curr != BLACK) return moves;
 
     const int other_idx = (curr == WHITE) ? 1 : 0;

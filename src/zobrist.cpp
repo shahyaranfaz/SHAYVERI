@@ -1,5 +1,6 @@
 #include "zobrist.h"
 
+#include <cstddef>
 #include <random>
 
 namespace SHAYVERI {

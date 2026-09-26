@@ -3,18 +3,19 @@
 #include "tune.h"
 
 #include <algorithm>
+#include <cstddef>
 
 namespace SHAYVERI {
 
 void TimeManager::init(const TimeControl &tc) {
-    start_        = std::chrono::steady_clock::now();
-    prev_best_    = MOVE_NONE;
+    start_ = std::chrono::steady_clock::now();
+    prev_best_ = MOVE_NONE;
     stable_iters_ = 0;
-    prev_score_   = 0;
+    prev_score_ = 0;
     score_inited_ = false;
     score_history_.fill(0);
     score_history_count_ = 0;
-    score_history_next_  = 0;
+    score_history_next_ = 0;
     last_scale_ = 1.0;
     min_think_ms_ = std::max(0, tc.min_think_ms);
     fixed_movetime_ = tc.movetime > 0;
@@ -31,7 +32,7 @@ void TimeManager::init(const TimeControl &tc) {
     }
 
     int my_time = (tc.side == WHITE) ? tc.wtime : tc.btime;
-    int my_inc  = std::max(0, (tc.side == WHITE) ? tc.winc : tc.binc);
+    int my_inc = std::max(0, (tc.side == WHITE) ? tc.winc : tc.binc);
 
     if (my_time <= 0) {
         soft_ms_ = hard_ms_ = Tune::time_no_clock_ms;
@@ -56,7 +57,7 @@ void TimeManager::init(const TimeControl &tc) {
     I64 base = my_time / moves_to_go
         + static_cast<I64>(my_inc * Tune::time_increment_fraction);
 
-    soft_ms_ = std::min(base,       ceiling);
+    soft_ms_ = std::min(base, ceiling);
     hard_ms_ = std::min(static_cast<I64>(static_cast<double>(base) * Tune::time_hard_bound_multiplier), ceiling);
 
     if (soft_ms_ < Tune::time_soft_min_ms) soft_ms_ = Tune::time_soft_min_ms;
@@ -106,13 +107,13 @@ bool TimeManager::on_iter(int depth, Move best_move, int score,
         ++stable_iters_;
     } else {
         stable_iters_ = 0;
-        prev_best_    = best_move;
+        prev_best_ = best_move;
     }
 
     int score_drop = 0;
     if (score_inited_)
         score_drop = prev_score_ - score;
-    prev_score_   = score;
+    prev_score_ = score;
     score_inited_ = true;
 
     score_history_[static_cast<std::size_t>(score_history_next_)] = score;

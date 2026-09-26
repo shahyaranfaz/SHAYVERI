@@ -6,6 +6,7 @@
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
+#include "move_io.h"
 #include "nnue.h"
 #include "opening_book.h"
 #include "parse_cli.h"
@@ -23,6 +24,7 @@
 #include <cerrno>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -30,6 +32,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -40,16 +43,16 @@ namespace SHAYVERI {
 // ======
 // UCI options (written by setoption, read by go / search)
 // ======
-static int  g_num_threads      = 1;
-static int  g_move_overhead    = 10;   // ms
-static bool g_ponder           = false;
-static bool g_own_book         = true;
-static int  g_book_info_depth  = 8;
-static int  g_min_think_ms     = 0;
+static int g_num_threads = 1;
+static int g_move_overhead = 10; // ms
+static bool g_ponder = false;
+static bool g_own_book = true;
+static int g_book_info_depth = 8;
+static int g_min_think_ms = 0;
 static std::string g_eval_file = "<embedded>";
 
 // Ponder state.
-static std::atomic<bool> g_pondering{false};  // currently in ponder search
+static std::atomic<bool> g_pondering{false}; // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
@@ -90,8 +93,8 @@ static void format_uci_move(Move move, char (&text)[6]) {
     switch (move_promo(move)) {
         case KNIGHT: text[4] = 'n'; break;
         case BISHOP: text[4] = 'b'; break;
-        case ROOK:   text[4] = 'r'; break;
-        case QUEEN:  text[4] = 'q'; break;
+        case ROOK: text[4] = 'r'; break;
+        case QUEEN: text[4] = 'q'; break;
         default: break;
     }
 }
@@ -419,11 +422,11 @@ int main(int argc, char **argv) {
 
             // Parse go parameters.
             TimeControl tc;
-            tc.side          = b.side_to_move;
+            tc.side = b.side_to_move;
             tc.move_overhead = g_move_overhead;
-            tc.min_think_ms  = g_min_think_ms;
-            int fixed_depth  = 0;
-            U64 fixed_nodes   = 0;
+            tc.min_think_ms = g_min_think_ms;
+            int fixed_depth = 0;
+            U64 fixed_nodes = 0;
 
             std::vector<Move> searchmoves;
             {
@@ -431,15 +434,15 @@ int main(int argc, char **argv) {
                 std::string tok;
                 go_iss >> tok; // consume "go"
                 while (go_iss >> tok) {
-                    if      (tok == "infinite")  tc.infinite  = true;
-                    else if (tok == "ponder")    { /* handled above */ }
-                    else if (tok == "wtime")     go_iss >> tc.wtime;
-                    else if (tok == "btime")     go_iss >> tc.btime;
-                    else if (tok == "winc")      go_iss >> tc.winc;
-                    else if (tok == "binc")      go_iss >> tc.binc;
-                    else if (tok == "movetime")  go_iss >> tc.movetime;
-                    else if (tok == "depth")     go_iss >> fixed_depth;
-                    else if (tok == "nodes")     go_iss >> fixed_nodes;
+                    if (tok == "infinite") tc.infinite = true;
+                    else if (tok == "ponder") { /* handled above */ }
+                    else if (tok == "wtime") go_iss >> tc.wtime;
+                    else if (tok == "btime") go_iss >> tc.btime;
+                    else if (tok == "winc") go_iss >> tc.winc;
+                    else if (tok == "binc") go_iss >> tc.binc;
+                    else if (tok == "movetime") go_iss >> tc.movetime;
+                    else if (tok == "depth") go_iss >> fixed_depth;
+                    else if (tok == "nodes") go_iss >> fixed_nodes;
                     else if (tok == "movestogo") go_iss >> tc.moves_to_go;
                     else if (tok == "searchmoves") {
                         std::string sm_str;
@@ -503,7 +506,7 @@ int main(int argc, char **argv) {
             if (start < 0) start = 0;
             std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
 
-            Board b_copy    = b;
+            Board b_copy = b;
             int num_thr = std::min(g_num_threads, active_thread_limit());
             if (num_thr != g_num_threads)
                 std::cout << "info string Threads clamped to " << num_thr

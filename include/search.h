@@ -3,14 +3,12 @@
 
 #include "board.h"
 #include "move.h"
-#include "move_io.h"
 #include "tt.h"
 
 #include <atomic>
 #include <functional>
 #include <memory>
 #include <span>
-#include <vector>
 
 namespace SHAYVERI {
 
@@ -75,25 +73,25 @@ struct SearchRequest {
     std::span<const U64> repetition{};
     std::span<const Move> root_moves{};
     IterCallback on_iteration{};
-    bool emit_info = false;
+    bool emit_info      = false;
     bool retain_history = false;
-    int root_bias = 0;
+    int root_bias       = 0;
 };
 
 struct SearchResult {
-    Move best_move = MOVE_NONE;
-    Move ponder_move = MOVE_NONE;
-    int score = 0;
-    int depth = 0;
+    Move best_move      = MOVE_NONE;
+    Move ponder_move    = MOVE_NONE;
+    int score           = 0;
+    int depth           = 0;
     int selective_depth = 0;
-    U64 nodes = 0;
+    U64 nodes           = 0;
 };
 
 namespace SearchDetail {
 
 struct SingularSearchDecision {
-    int extension = 0;
-    bool multicut = false;
+    int extension  = 0;
+    bool multicut  = false;
 };
 
 SingularSearchDecision classify_singular_search(

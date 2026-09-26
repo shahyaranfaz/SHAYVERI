@@ -26,20 +26,20 @@ I32 output_bias[MAX_OUTPUT_BUCKETS];
 
 namespace {
 
-static constexpr U32 NNUE_MAGIC   = 0x4E4E5545u;
-static constexpr U32 NNUE_VERSION_CLASSIC = 2u;
-static constexpr U32 NNUE_VERSION_KB      = 3u;
-static constexpr U32 NNUE_VERSION_BUCKETED = 4u;
-static constexpr U32 NNUE_FLAG_SCRELU = 1u;
+constexpr U32 NNUE_MAGIC = 0x4E4E5545u;
+constexpr U32 NNUE_VERSION_CLASSIC = 2u;
+constexpr U32 NNUE_VERSION_KB = 3u;
+constexpr U32 NNUE_VERSION_BUCKETED = 4u;
+constexpr U32 NNUE_FLAG_SCRELU = 1u;
 
 std::string g_net_path;
-U64         g_net_hash = 0;
-bool        g_loaded = false;
-bool        g_enabled = true;
-int         g_king_buckets = 1;
-int         g_hidden_size = 256;
-bool        g_use_screlu = false;
-int         g_output_buckets = 1;
+U64 g_net_hash = 0;
+bool g_loaded = false;
+bool g_enabled = true;
+int g_king_buckets = 1;
+int g_hidden_size = 256;
+bool g_use_screlu = false;
+int g_output_buckets = 1;
 
 U64 fnv1a_hash(const void *data, size_t bytes) {
     const U8 *p = static_cast<const U8 *>(data);
@@ -126,10 +126,10 @@ I32 squared_crelu_scaled(I16 x) {
 }
 
 struct PendingNetwork {
-    int king_buckets = 1;
-    int input_size = CHESS768_INPUT_SIZE;
-    int hidden_size = 256;
-    bool use_screlu = false;
+    int king_buckets   = 1;
+    int input_size     = CHESS768_INPUT_SIZE;
+    int hidden_size    = 256;
+    bool use_screlu    = false;
     int output_buckets = 1;
     std::vector<I16> feature_weights;
     std::vector<I16> feature_bias;

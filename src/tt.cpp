@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <bit>
 #include <limits>
+#include <memory>
 
 namespace SHAYVERI {
 

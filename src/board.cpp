@@ -12,14 +12,14 @@ void Board::clear() {
     bit_boards.fill(0);
     occupancies.fill(0);
     mailbox.fill(NONE_PIECE);
-    hash         = 0;
-    pawn_hash    = 0;
-    occupied     = 0;
+    hash = 0;
+    pawn_hash = 0;
+    occupied = 0;
     side_to_move = WHITE;
-    castling     = 0;
-    en_passant   = SQ_NONE;
-    half_move    = 0;
-    full_move    = 1;
+    castling = 0;
+    en_passant = SQ_NONE;
+    half_move = 0;
+    full_move = 1;
 }
 
 void Board::recompute_all() {
@@ -186,9 +186,9 @@ std::string get_board_fen(const Board &b) {
     if (b.castling == 0) {
         fen << "-";
     } else {
-        if (b.castling & WHITE_KINGSIDE)  fen << 'K';
+        if (b.castling & WHITE_KINGSIDE) fen << 'K';
         if (b.castling & WHITE_QUEENSIDE) fen << 'Q';
-        if (b.castling & BLACK_KINGSIDE)  fen << 'k';
+        if (b.castling & BLACK_KINGSIDE) fen << 'k';
         if (b.castling & BLACK_QUEENSIDE) fen << 'q';
     }
 

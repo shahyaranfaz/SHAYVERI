@@ -22,8 +22,8 @@ std::string move_to_uci(Move move) {
     switch (move_promo(move)) {
         case KNIGHT: text += 'n'; break;
         case BISHOP: text += 'b'; break;
-        case ROOK:   text += 'r'; break;
-        case QUEEN:  text += 'q'; break;
+        case ROOK: text += 'r'; break;
+        case QUEEN: text += 'q'; break;
         default: break;
     }
     return text;

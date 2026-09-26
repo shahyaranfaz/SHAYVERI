@@ -4,6 +4,7 @@
 #include "board.h"
 #include "make.h"
 #include "move_gen.h"
+#include "move_io.h"
 #include "opening_book.h"
 #include "position_rules.h"
 #include "search.h"
@@ -62,12 +63,12 @@ struct DataEntry {
 };
 
 struct BulletChessBoard {
-    U64 occ = 0;
-    U8 pcs[16]{};
-    I16 score = 0;
-    U8 result = 0;
-    U8 ksq = 0;
+    U64 occ    = 0;
+    I16 score  = 0;
+    U8 result  = 0;
+    U8 ksq     = 0;
     U8 opp_ksq = 0;
+    U8 pcs[16]{};
     U8 extra[3]{};
 };
 
@@ -75,7 +76,7 @@ static_assert(sizeof(BulletChessBoard) == 32, "Bullet chess records must be 32 b
 
 struct GameResult {
     GameEnd end = GameEnd::None;
-    int wdl = 1;
+    int wdl     = 1;
 };
 
 struct DatagenCounters {

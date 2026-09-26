@@ -2,6 +2,7 @@
 
 #ifdef __AVX2__
 #include <immintrin.h>
+
 namespace SHAYVERI {
 namespace NNUE {
 

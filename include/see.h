@@ -6,7 +6,7 @@
 
 namespace SHAYVERI {
 
-int  see(const Board &b, Move m);
+int see(const Board &b, Move m);
 bool see_ge(const Board &b, Move m, int threshold);
 
 } // namespace SHAYVERI

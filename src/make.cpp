@@ -5,10 +5,11 @@
 #include "zobrist.h"
 
 #include <cassert>
+#include <cstdlib>
 
 namespace SHAYVERI {
 
-static const int CASTLING_RIGHTS_MASK[64] = {
+const int CASTLING_RIGHTS_MASK[64] = {
     13, 15, 15, 15, 12, 15, 15, 14,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
@@ -16,49 +17,49 @@ static const int CASTLING_RIGHTS_MASK[64] = {
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
-     7, 15, 15, 15,  3, 15, 15, 11
+    7, 15, 15, 15, 3, 15, 15, 11
 };
 
 static void remove_piece_no_hash(Board &b, Piece p, Square sq) {
-    b.bit_boards[p]               &= ~bb_square(sq);
-    b.occupancies[get_colour(p)]  &= ~bb_square(sq);
-    b.occupied                    &= ~bb_square(sq);
-    b.mailbox[sq]                  = NONE_PIECE;
+    b.bit_boards[p] &= ~bb_square(sq);
+    b.occupancies[get_colour(p)] &= ~bb_square(sq);
+    b.occupied &= ~bb_square(sq);
+    b.mailbox[sq] = NONE_PIECE;
 }
 
 static void add_piece_no_hash(Board &b, Piece p, Square sq) {
-    b.bit_boards[p]              |= bb_square(sq);
+    b.bit_boards[p] |= bb_square(sq);
     b.occupancies[get_colour(p)] |= bb_square(sq);
-    b.occupied                   |= bb_square(sq);
-    b.mailbox[sq]                 = p;
+    b.occupied |= bb_square(sq);
+    b.mailbox[sq] = p;
 }
 
 static void remove_piece(Board &b, Piece p, Square sq) {
     remove_piece_no_hash(b, p, sq);
-    b.hash                        ^= Zobrist::pieces[p][sq];
+    b.hash ^= Zobrist::pieces[p][sq];
     if (get_type(p) == PAWN)
         b.pawn_hash ^= Zobrist::pieces[p][sq];
 }
 
 static void add_piece(Board &b, Piece p, Square sq) {
     add_piece_no_hash(b, p, sq);
-    b.hash                       ^= Zobrist::pieces[p][sq];
+    b.hash ^= Zobrist::pieces[p][sq];
     if (get_type(p) == PAWN)
         b.pawn_hash ^= Zobrist::pieces[p][sq];
 }
 
 static void update_castling(Board &b, Square from, Square to) {
-    b.hash     ^= Zobrist::castlings[b.castling];
+    b.hash ^= Zobrist::castlings[b.castling];
     b.castling &= CASTLING_RIGHTS_MASK[from];
     b.castling &= CASTLING_RIGHTS_MASK[to];
-    b.hash     ^= Zobrist::castlings[b.castling];
+    b.hash ^= Zobrist::castlings[b.castling];
 }
 
 static bool make_generated_move_impl(
     Board &b, Move m, Undo &u, bool verify_king_safety) {
     Square from = move_from(m);
     Square to = move_to(m);
-    PieceType promo    = move_promo(m);
+    PieceType promo = move_promo(m);
 
     assert(is_valid(from) && is_valid(to));
 
@@ -93,15 +94,15 @@ static bool make_generated_move_impl(
             && b.get_piece(castle.rook_from) == castle.rook);
     }
 
-    u.hash       = b.hash;
-    u.castling   = b.castling;
+    u.hash = b.hash;
+    u.castling = b.castling;
     u.en_passant = b.en_passant;
-    u.half_move  = b.half_move;
-    u.full_move  = b.full_move;
-    u.captured   = captured;
-    u.was_ep     = false;
+    u.half_move = b.half_move;
+    u.full_move = b.full_move;
+    u.captured = captured;
+    u.was_ep = false;
     u.was_castle = false;
-    u.pawn_hash  = b.pawn_hash;
+    u.pawn_hash = b.pawn_hash;
 
     if (b.en_passant != SQ_NONE)
         b.hash ^= Zobrist::en_passants[get_file(b.en_passant)];
@@ -180,8 +181,8 @@ bool make_move(Board &b, Move m, Undo &u) {
 void unmake_move(Board &b, Move m, const Undo &u) {
     b.side_to_move = flip(b.side_to_move);
 
-    Square from        = move_from(m);
-    Square to          = move_to(m);
+    Square from = move_from(m);
+    Square to = move_to(m);
     Piece moved_to_sq = b.get_piece(to);
 
     remove_piece_no_hash(b, moved_to_sq, to);
@@ -203,12 +204,12 @@ void unmake_move(Board &b, Move m, const Undo &u) {
         add_piece_no_hash(b, castle.rook, castle.rook_from);
     }
 
-    b.castling   = u.castling;
+    b.castling = u.castling;
     b.en_passant = u.en_passant;
-    b.half_move  = u.half_move;
-    b.full_move  = u.full_move;
-    b.hash       = u.hash;
-    b.pawn_hash  = u.pawn_hash;
+    b.half_move = u.half_move;
+    b.full_move = u.full_move;
+    b.hash = u.hash;
+    b.pawn_hash = u.pawn_hash;
     assert(b.is_consistent());
 }
 

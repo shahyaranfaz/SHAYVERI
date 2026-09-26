@@ -10,11 +10,11 @@ namespace SHAYVERI {
 
 using namespace Tune;
 
-static inline int ptype_value(Piece p) {
+static int ptype_value(Piece p) {
     return TACTICAL_PIECE_VALUES[get_type(p)];
 }
 
-static inline U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 atks, Piece &piece_out) {
+static U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 atks, Piece &piece_out) {
     auto pick = [&](U64 bb, Piece p) -> U64 {
         if (!bb) return 0;
         piece_out = p;
@@ -42,16 +42,16 @@ static inline U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 
 
 int see(const Board &b, Move m) {
     Square from = move_from(m);
-    Square to   = move_to(m);
+    Square to = move_to(m);
 
     Piece attacker_orig = b.get_piece(from);
     if (attacker_orig == NONE_PIECE) return 0;
 
     Piece captured_orig = b.get_piece(to);
-    Square ep_cap_sq     = SQ_NONE;
+    Square ep_cap_sq = SQ_NONE;
     if (captured_orig == NONE_PIECE) {
         if (is_ep_move(m)) {
-            ep_cap_sq    = (get_colour(attacker_orig) == WHITE) ? to - 8 : to + 8;
+            ep_cap_sq = (get_colour(attacker_orig) == WHITE) ? to - 8 : to + 8;
             captured_orig = b.get_piece(ep_cap_sq);
         }
         if (captured_orig == NONE_PIECE) return 0;
@@ -64,8 +64,8 @@ int see(const Board &b, Move m) {
     if (ep_cap_sq != SQ_NONE) occ &= ~bb_square(ep_cap_sq);
     gain[depth] = ptype_value(captured_orig);
 
-    Colour side         = flip(get_colour(attacker_orig));
-    occ                |= bb_square(to);
+    Colour side = flip(get_colour(attacker_orig));
+    occ |= bb_square(to);
     U64 atks = attackers_to(b, to, occ) & ~bb_square(to);
     Piece last_attacker = attacker_orig;
     depth++;
@@ -76,10 +76,10 @@ int see(const Board &b, Move m) {
         if (!pick) break;
         gain[depth] = ptype_value(last_attacker) - gain[depth - 1];
 
-        occ  &= ~pick;
-        atks  = attackers_to(b, to, occ) & ~bb_square(to);
+        occ &= ~pick;
+        atks = attackers_to(b, to, occ) & ~bb_square(to);
         last_attacker = picked_piece;
-        side  = flip(side);
+        side = flip(side);
         depth++;
         if (depth >= 31) break;
     }
