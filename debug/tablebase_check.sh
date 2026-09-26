@@ -150,16 +150,26 @@ int main(int argc, char **argv) {
     expect(root.move != MOVE_NONE, "root KQvK returned no move");
     expect(is_legal_move(winning, root.move),
            "Fathom root move did not convert to a legal SHAYVERI move");
+    expect(root.dtz > 0, "winning KQvK did not return a positive DTZ");
 
     Board losing = position("7k/8/8/8/8/8/6Q1/6K1 b - - 0 1");
     expect(Tablebase::probe_wdl(losing) == Tablebase::WDL::Loss,
            "losing KQvK did not probe as a loss");
+    const Tablebase::RootResult losing_root = Tablebase::probe_root(losing);
+    expect(losing_root.wdl == Tablebase::WDL::Loss,
+           "root losing KQvK was not a loss");
+    expect(losing_root.move != MOVE_NONE && is_legal_move(losing, losing_root.move),
+           "root losing KQvK did not return a legal move");
+    expect(losing_root.dtz < 0, "losing KQvK did not return a negative DTZ");
 
     Board rule50 = position("7k/8/8/8/8/8/6Q1/6K1 w - - 1 1");
     expect(Tablebase::probe_wdl(rule50) == Tablebase::WDL::Failed,
            "search WDL accepted a nonzero fifty-move counter");
-    expect(Tablebase::probe_root(rule50).move != MOVE_NONE,
-           "root WDL rejected a legal nonzero fifty-move counter");
+    const Tablebase::RootResult rule50_root = Tablebase::probe_root(rule50);
+    expect(rule50_root.move != MOVE_NONE && is_legal_move(rule50, rule50_root.move),
+           "root DTZ rejected a legal nonzero fifty-move counter");
+    expect(rule50_root.dtz > 0,
+           "root DTZ did not return a distance with a nonzero fifty-move counter");
 
     Board castling = position("4k2r/8/8/8/8/8/8/R3K3 w Qk - 0 1");
     expect(!Tablebase::can_probe(castling),
