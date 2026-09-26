@@ -54,7 +54,7 @@ CXXFLAGS_MACOS := \
 
 LDFLAGS_MACOS := $(LTO_MACOS)
 
-INCLUDES := -Iinclude
+INCLUDES := -Iinclude -Iexternal/fathom/src
 
 SRC := \
 	src/attacks.cpp \
@@ -73,9 +73,11 @@ SRC := \
 	src/search.cpp \
 	src/see.cpp \
 	src/uci.cpp \
+	src/tablebase.cpp \
 	src/time_manager.cpp \
 	src/tt.cpp \
-	src/zobrist.cpp
+	src/zobrist.cpp \
+	external/fathom/src/tbprobe.c
 
 DEFAULT_NNUE := SHAYVERI2_11_7.nnue
 EMBED_NNUE := build/embed_nnue

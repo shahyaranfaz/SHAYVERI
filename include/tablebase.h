@@ -4,7 +4,7 @@
 #include "board.h"
 #include "move.h"
 
-#include <string_view>
+#include <string>
 
 namespace SHAYVERI::Tablebase {
 
@@ -23,7 +23,7 @@ struct RootResult {
     int dtz;
 };
 
-bool initialize(std::string_view path);
+bool initialize(const std::string &path);
 void shutdown();
 
 unsigned max_pieces();

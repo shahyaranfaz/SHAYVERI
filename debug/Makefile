@@ -12,7 +12,7 @@ TIDY_EXTRA_ARGS ?=
 PYTHON ?= python3
 ENGINE ?= ../SHAYVERI
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
-INCLUDES := -I../include
+INCLUDES := -I../include -I../external/fathom/src
 
 STRICT_WARN_FLAGS := \
 	-Wshadow=compatible-local \
@@ -123,6 +123,7 @@ STRICT_SRC := \
 	../src/opening_book.cpp \
 	../src/search.cpp \
 	../src/see.cpp \
+	../src/tablebase.cpp \
 	../src/time_manager.cpp \
 	../src/tools/embed_nnue.cpp \
 	../src/tt.cpp \
