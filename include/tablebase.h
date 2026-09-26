@@ -6,7 +6,9 @@
 
 #include <string>
 
-namespace SHAYVERI::Tablebase {
+namespace SHAYVERI {
+
+namespace Tablebase {
 
 enum class WDL {
     Failed,
@@ -32,6 +34,8 @@ bool can_probe(const Board &board);
 WDL probe_wdl(const Board &board);
 RootResult probe_root(const Board &board);
 
-} // namespace SHAYVERI::Tablebase
+} // namespace Tablebase
+
+} // namespace SHAYVERI
 
 #endif // TABLEBASE_H
