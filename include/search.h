@@ -18,7 +18,7 @@ struct SearchResult;
 
 struct SearchContext {
     explicit SearchContext(TranspositionTable &transposition_table);
-    ~SearchContext();
+    ~SearchContext(); // NOLINT(performance-trivially-destructible): Impl is incomplete here.
 
     SearchContext(const SearchContext &) = delete;
     SearchContext &operator=(const SearchContext &) = delete;
@@ -45,7 +45,7 @@ private:
 class SearchWorker {
 public:
     SearchWorker();
-    ~SearchWorker();
+    ~SearchWorker(); // NOLINT(performance-trivially-destructible): Impl is incomplete here.
 
     SearchWorker(SearchWorker &&) noexcept;
     SearchWorker &operator=(SearchWorker &&) noexcept;
