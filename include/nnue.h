@@ -95,8 +95,6 @@ bool is_enabled();
 void set_enabled(bool enabled);
 void print_info();
 
-inline constexpr const char *UCI_OPTION_NAME = "EvalFile";
-
 int evaluate(int side_to_move, int piece_count, const Accumulator &acc);
 
 } // namespace NNUE

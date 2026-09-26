@@ -11,6 +11,7 @@
 #include "opening_book.h"
 #include "parse_cli.h"
 #include "search.h"
+#include "tablebase.h"
 #include "time_manager.h"
 #include "tt.h"
 #include "tune.h"
@@ -28,6 +29,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -50,6 +52,7 @@ static bool g_own_book = true;
 static int g_book_info_depth = 8;
 static int g_min_think_ms = 0;
 static std::string g_eval_file = "<embedded>";
+static std::string g_syzygy_path = "<empty>";
 
 // Ponder state.
 static std::atomic<bool> g_pondering{false}; // currently in ponder search
@@ -123,8 +126,89 @@ struct OptionHandler {
 
 static bool load_eval_file_or_default(const std::string &path, std::string &error);
 
+static bool is_empty_syzygy_path(const std::string &path) {
+    return path.empty() || path == "\"\"" || path == "<empty>";
+}
+
+static bool validate_syzygy_path(const std::string &path, std::string &error) {
+#ifdef _WIN32
+    constexpr char path_separator = ';';
+#else
+    constexpr char path_separator = ':';
+#endif
+
+    bool found_wdl = false;
+    std::size_t begin = 0;
+    while (begin <= path.size()) {
+        const std::size_t end = path.find(path_separator, begin);
+        const std::string directory = path.substr(
+            begin, end == std::string::npos ? std::string::npos : end - begin);
+        if (directory.empty()) {
+            error = "empty directory in path list";
+            return false;
+        }
+
+        std::error_code ec;
+        if (!std::filesystem::is_directory(directory, ec) || ec) {
+            error = "directory not found: " + directory;
+            return false;
+        }
+
+        std::filesystem::directory_iterator entries(directory, ec);
+        const std::filesystem::directory_iterator sentinel;
+        for (; !ec && entries != sentinel; entries.increment(ec)) {
+            if (entries->is_regular_file(ec)
+                && !ec
+                && entries->path().extension() == ".rtbw") {
+                found_wdl = true;
+                break;
+            }
+        }
+        if (ec) {
+            error = "cannot read directory: " + directory;
+            return false;
+        }
+
+        if (end == std::string::npos) break;
+        begin = end + 1;
+    }
+
+    if (!found_wdl) {
+        error = "no WDL tablebases found";
+        return false;
+    }
+    return true;
+}
+
+static void set_syzygy_path(const std::string &value) {
+    const std::string path = is_empty_syzygy_path(value) ? "<empty>" : value;
+    if (path == "<empty>") {
+        Tablebase::initialize(path);
+        g_syzygy_path = path;
+        std::cout << "info string Syzygy cardinality 0\n";
+        return;
+    }
+
+    std::string error;
+    if (!validate_syzygy_path(path, error)) {
+        std::cout << "info string Syzygy load failed: " << error << "\n";
+        return;
+    }
+
+    const std::string previous_path = g_syzygy_path;
+    if (!Tablebase::initialize(path) || Tablebase::max_pieces() == 0) {
+        Tablebase::initialize(previous_path);
+        std::cout << "info string Syzygy load failed: no tablebases loaded\n";
+        return;
+    }
+
+    g_syzygy_path = path;
+    std::cout << "info string Syzygy cardinality "
+              << Tablebase::max_pieces() << "\n";
+}
+
 static bool handle_uci_option(const std::string &name, const std::string &value) {
-    static const std::array<OptionHandler, 10> handlers = {{
+    static const std::array<OptionHandler, 11> handlers = {{
         {"Hash", resize_hash_option},
         {"ClearHash", [](const std::string &) {
             TT.clear();
@@ -138,7 +222,7 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
             TT.clear();
             uci_search_context.clear_histories();
         }},
-        {NNUE::UCI_OPTION_NAME, [](const std::string &v) {
+        {"EvalFile", [](const std::string &v) {
             std::string error;
             if (!load_eval_file_or_default(v, error)) {
                 std::cout << "info string NNUE load failed: " << error << "\n";
@@ -149,6 +233,7 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
             uci_search_context.clear_histories();
             if (NNUE::is_enabled()) NNUE::print_info();
         }},
+        {"SyzygyPath", set_syzygy_path},
         {"OwnBook", [](const std::string &v) { ParseCLI::boolean(v, g_own_book); }},
         {"BookInfoDepth", [](const std::string &v) {
             parse_spin(v, 0, 32, g_book_info_depth);
@@ -312,8 +397,8 @@ int main(int argc, char **argv) {
                 << "option name ClearHash           type button\n"
                 << "option name Threads             type spin   default 1          min 1 max 512\n"
                 << "option name UseNNUE             type check  default true\n"
-                << "option name " << NNUE::UCI_OPTION_NAME
-                << "            type string default " << g_eval_file << "\n"
+                << "option name EvalFile            type string default " << g_eval_file << "\n"
+                << "option name SyzygyPath          type string default <empty>\n"
                 << "option name OwnBook             type check  default true\n"
                 << "option name BookInfoDepth       type spin   default 8          min 0 max 32\n"
                 << "option name Ponder              type check  default false\n"
@@ -772,5 +857,6 @@ int main(int argc, char **argv) {
         std::cout.flush();
     }
     stop_search();
+    Tablebase::shutdown();
     return 0;
 }

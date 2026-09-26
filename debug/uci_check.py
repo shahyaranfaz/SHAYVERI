@@ -135,6 +135,7 @@ def main() -> int:
         require_normalized_line(handshake, "option name Threads type spin default 1 min 1 max 512")
         require_normalized_line(handshake, "option name UseNNUE type check default true")
         require_normalized_line(handshake, "option name EvalFile type string default <embedded>")
+        require_normalized_line(handshake, "option name SyzygyPath type string default <empty>")
         require_normalized_line(handshake, "option name OwnBook type check default true")
         require_normalized_line(handshake, "option name BookInfoDepth type spin default 8 min 0 max 32")
         require_normalized_line(handshake, "option name Ponder type check default false")
@@ -146,6 +147,16 @@ def main() -> int:
             handshake,
             "option name MoveOverhead type spin default 10 min 0 max 5000",
         )
+
+        with tempfile.TemporaryDirectory() as empty_tb_dir:
+            syzygy_recovery = run_engine([
+                f"setoption name SyzygyPath value {empty_tb_dir}",
+                'setoption name SyzygyPath value ""',
+                "isready",
+            ])
+            require(syzygy_recovery, "info string Syzygy load failed: no WDL tablebases found")
+            require(syzygy_recovery, "info string Syzygy cardinality 0")
+            require(syzygy_recovery, "readyok")
 
         startpos = run_engine([
             "setoption name OwnBook value false",
