@@ -174,11 +174,11 @@ int main() {
     }
 
     if (failures == 0) {
-        std::cout << "FEN state suite passed: " << cases.size()
+        std::cout << "[PASS] FEN state suite: " << cases.size()
                   << " valid + " << invalid.size() << " malformed cases\n";
         return 0;
     }
 
-    std::cerr << "FEN state suite failed: " << failures << "/" << cases.size() << " failed\n";
+    std::cerr << "[FAIL] FEN state suite: " << failures << "/" << cases.size() << " cases failed\n";
     return 2;
 }

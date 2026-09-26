@@ -87,10 +87,10 @@ static int run_suite() {
     }
 
     if (failures == 0) {
-        std::cout << "Suite passed: " << cases.size() << "/" << cases.size() << "\n";
+        std::cout << "[PASS] Perft suite: " << cases.size() << "/" << cases.size() << " cases\n";
         return 0;
     }
-    std::cerr << "Suite failed: " << failures << "/" << cases.size() << " failed\n";
+    std::cerr << "[FAIL] Perft suite: " << failures << "/" << cases.size() << " cases failed\n";
     return 2;
 }
 
@@ -110,11 +110,11 @@ int main(int argc, char **argv) {
         try {
             depth = std::stoi(argv[2]);
         } catch (...) {
-            std::cerr << "Invalid depth\n";
+            std::cerr << "[FAIL] Perft: invalid depth\n";
             return 1;
         }
         if (!set_startpos(b)) {
-            std::cerr << "Failed to set startpos\n";
+            std::cerr << "[FAIL] Perft: failed to set startpos\n";
             return 1;
         }
     } else if (mode == "fen") {
@@ -123,11 +123,11 @@ int main(int argc, char **argv) {
         try {
             depth = std::stoi(argv[3]);
         } catch (...) {
-            std::cerr << "Invalid depth\n";
+            std::cerr << "[FAIL] Perft: invalid depth\n";
             return 1;
         }
         if (!set_from_fen(b, fen)) {
-            std::cerr << "Bad FEN\n";
+            std::cerr << "[FAIL] Perft: bad FEN\n";
             return 1;
         }
     } else {

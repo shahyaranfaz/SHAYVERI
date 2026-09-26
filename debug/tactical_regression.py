@@ -91,7 +91,7 @@ def extract_bestmove(text: str) -> str:
 
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
-        print(f"engine binary not found: {ENGINE_PATH}", file=sys.stderr)
+        print(f"[FAIL] Tactical suite: engine binary not found: {ENGINE_PATH}", file=sys.stderr)
         return 1
 
     solved = 0
@@ -113,16 +113,16 @@ def main() -> int:
             solved += 1
             print(f"[PASS] {case_id}: {best}")
         else:
-            print(f"[MISS] {case_id}: expected {expected}, got {best}")
+            print(f"[INFO] {case_id}: expected {expected}, got {best}")
 
     total = len(TACTICAL_CASES)
-    print(f"Tactical solved: {solved}/{total} (depth={DEPTH})")
     if missing > 0:
-        print(f"Tactical suite failed: {missing} positions missing bestmove", file=sys.stderr)
+        print(f"[FAIL] Tactical suite: {missing} positions missing bestmove", file=sys.stderr)
         return 2
     if solved < MIN_SOLVED:
-        print(f"Tactical suite failed: solved {solved} < required {MIN_SOLVED}", file=sys.stderr)
+        print(f"[FAIL] Tactical suite: solved {solved} < required {MIN_SOLVED}", file=sys.stderr)
         return 3
+    print(f"[PASS] Tactical suite: {solved}/{total} solved at depth {DEPTH}")
     return 0
 
 

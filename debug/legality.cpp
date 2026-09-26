@@ -203,12 +203,12 @@ int main() {
     }
 
     if (failures == 0) {
-        std::cout << "Legality suite passed: " << cases.size() << "/"
+        std::cout << "[PASS] Legality suite: " << cases.size() << "/"
                   << cases.size() << ", direct/checked equality across "
                   << randomized_positions << " randomized positions\n";
         return 0;
     }
 
-    std::cerr << "Legality suite failed: " << failures << "/" << cases.size() << " failed\n";
+    std::cerr << "[FAIL] Legality suite: " << failures << "/" << cases.size() << " cases failed\n";
     return 2;
 }

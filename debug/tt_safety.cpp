@@ -137,9 +137,9 @@ int main() {
     if (!require(!bad_payload.load(), "concurrent writers produced mixed payload")) ++failures;
 
     if (failures == 0) {
-        std::cout << "TT safety suite passed\n";
+        std::cout << "[PASS] TT safety suite\n";
         return 0;
     }
-    std::cerr << "TT safety suite failed with " << failures << " issue(s)\n";
+    std::cerr << "[FAIL] TT safety suite: " << failures << " issue(s)\n";
     return 2;
 }

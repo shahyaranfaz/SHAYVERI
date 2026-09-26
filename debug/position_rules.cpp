@@ -14,7 +14,7 @@ namespace {
 void expect(bool condition, const char *message) {
     if (condition)
         return;
-    std::cerr << message << "\n";
+    std::cerr << "[FAIL] Position-rules suite: " << message << "\n";
     std::exit(1);
 }
 
@@ -86,6 +86,6 @@ int main() {
     test_insufficient_material();
     test_repetition_semantics();
 
-    std::cout << "Position-rules suite passed\n";
+    std::cout << "[PASS] Position-rules suite\n";
     return 0;
 }

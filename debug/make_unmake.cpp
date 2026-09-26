@@ -177,9 +177,9 @@ int main() {
     }
 
     if (failures == 0) {
-        std::cout << "Make/unmake suite passed with " << checked_total << " verified roundtrips\n";
+        std::cout << "[PASS] Make/unmake suite: " << checked_total << " verified roundtrips\n";
         return 0;
     }
-    std::cerr << "Make/unmake suite failed: " << failures << "/" << roots.size() << " roots failed\n";
+    std::cerr << "[FAIL] Make/unmake suite: " << failures << "/" << roots.size() << " roots failed\n";
     return 2;
 }

@@ -14,14 +14,15 @@ namespace {
 void expect_near(double actual, double expected, const char* label) {
     if (std::abs(actual - expected) <= 1e-9)
         return;
-    std::cerr << label << ": expected " << expected << ", got " << actual << "\n";
+    std::cerr << "[FAIL] Time manager suite: " << label
+              << ": expected " << expected << ", got " << actual << "\n";
     std::exit(1);
 }
 
 void expect_true(bool condition, const char* label) {
     if (condition)
         return;
-    std::cerr << label << "\n";
+    std::cerr << "[FAIL] Time manager suite: " << label << "\n";
     std::exit(1);
 }
 
@@ -226,6 +227,6 @@ int main() {
     test_safe_clock_ceiling_overrides_minimums();
     test_no_increment_emergency();
     test_no_increment_clock_survival();
-    std::cout << "time manager tests passed\n";
+    std::cout << "[PASS] Time manager suite\n";
     return 0;
 }

@@ -266,12 +266,12 @@ def main() -> int:
             )
 
         print(
-            "UCI checks passed "
+            "[PASS] UCI suite: "
             f"(flow + bench nodes={bench_nodes} + book probe + option recovery + determinism)."
         )
         return 0
     except Exception as exc:
-        print(f"UCI checks failed: {exc}", file=sys.stderr)
+        print(f"[FAIL] UCI suite: {exc}", file=sys.stderr)
         traceback.print_exc()
         return 2
 

@@ -85,7 +85,7 @@ def run_format(
     ]
     if start_file is not None:
         command.extend(["--start-file", str(start_file), "--start-file-prob", "1"])
-    print(f"[datagen] {name}: games={games} threads={threads} format={output_format}")
+    print(f"[INFO] Datagen {name}: games={games}, threads={threads}, format={output_format}")
     completed = subprocess.run(
         command,
         stdout=subprocess.PIPE,
@@ -234,12 +234,12 @@ def main() -> int:
                 run_format(root, "plain", "shayveri-plain-v1")
                 run_format(root, "bullet", "bullet-v1")
         if RUN_MATRIX:
-            print(f"Datagen sanitizer matrix passed ({GAMES} games per format, {THREADS} threads).")
+            print(f"[PASS] Datagen sanitizer matrix: {GAMES} games per format, {THREADS} threads")
         else:
-            print(f"Datagen checks passed (plain + Bullet, {GAMES} games, {THREADS} threads).")
+            print(f"[PASS] Datagen suite: plain + Bullet, {GAMES} games, {THREADS} threads")
         return 0
     except Exception as exc:
-        print(f"Datagen checks failed: {exc}", file=sys.stderr)
+        print(f"[FAIL] Datagen suite: {exc}", file=sys.stderr)
         traceback.print_exc()
         return 2
 

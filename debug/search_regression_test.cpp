@@ -26,7 +26,7 @@ SearchWorker test_worker;
 void expect(bool condition, const char* message) {
     if (condition)
         return;
-    std::cerr << message << "\n";
+    std::cerr << "[FAIL] Search regression suite: " << message << "\n";
     std::exit(1);
 }
 
@@ -409,6 +409,6 @@ int main() {
     test_bounded_history_storage();
     std::cout << "[PASS] bounded history storage\n";
 
-    std::cout << "search regression tests passed\n";
+    std::cout << "[PASS] Search regression suite\n";
     return 0;
 }

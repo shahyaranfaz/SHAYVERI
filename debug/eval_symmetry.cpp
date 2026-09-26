@@ -109,10 +109,10 @@ int main() {
     }
 
     if (failures == 0) {
-        std::cout << "Eval symmetry suite passed: " << fens.size() << "/" << fens.size() << "\n";
+        std::cout << "[PASS] Eval symmetry suite: " << fens.size() << "/" << fens.size() << " cases\n";
         return 0;
     }
-    std::cerr << "Eval symmetry suite mismatches: " << failures << "/" << fens.size()
+    std::cerr << "[FAIL] Eval symmetry suite: " << failures << "/" << fens.size() << " mismatches"
               << (strict ? " (strict mode: failing)\n" : " (non-strict mode: informational)\n");
     return strict ? 2 : 0;
 }

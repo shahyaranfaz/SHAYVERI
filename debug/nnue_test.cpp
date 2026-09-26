@@ -32,7 +32,7 @@ static int check_feature_index_mapping() {
                     int actual = NNUE::chess768_index(
                         piece_type, piece_colour, sq, perspective);
                     if (actual != expected) {
-                        std::cerr << "NNUE feature index mismatch: perspective="
+                        std::cerr << "[FAIL] NNUE accumulator suite: feature index mismatch: perspective="
                                   << perspective << " colour=" << piece_colour
                                   << " type=" << piece_type << " sq=" << sq
                                   << " expected=" << expected
@@ -56,7 +56,7 @@ static int check_king_bucket_mapping() {
             int expected = (rank >= 4 ? 4 : 0) + FILE_MAP[file];
             int actual = NNUE::king_bucket_index(sq, perspective, 8);
             if (actual != expected) {
-                std::cerr << "NNUE king bucket mismatch: perspective=" << perspective
+                std::cerr << "[FAIL] NNUE accumulator suite: king bucket mismatch: perspective=" << perspective
                           << " sq=" << sq
                           << " expected=" << expected
                           << " actual=" << actual << "\n";
@@ -132,7 +132,7 @@ static int check_vector_evaluation() {
             const int expected = scalar_nnue_evaluate(side, piece_count, acc);
             const int actual = NNUE::evaluate(side, piece_count, acc);
             if (actual != expected) {
-                std::cerr << "NNUE vector evaluation mismatch: side=" << side
+                std::cerr << "[FAIL] NNUE accumulator suite: vector evaluation mismatch: side=" << side
                           << " piece_count=" << piece_count
                           << " expected=" << expected
                           << " actual=" << actual << "\n";
@@ -151,7 +151,7 @@ static int check_material_bucket_mapping() {
         const int expected = std::min((piece_count - 1) / 4, 7);
         const int actual = NNUE::material_bucket(piece_count);
         if (actual != expected) {
-            std::cerr << "NNUE material bucket mismatch: piece_count="
+            std::cerr << "[FAIL] NNUE accumulator suite: material bucket mismatch: piece_count="
                       << piece_count << " expected=" << expected
                       << " actual=" << actual << "\n";
             return 1;
@@ -201,7 +201,7 @@ static int check_position(Board &b, int &quiet_moves_checked,
         NNUE::Accumulator refreshed;
         refreshed.refresh(copy);
         if (!same_acc(child, refreshed)) {
-            std::cerr << "NNUE accumulator mismatch after "
+            std::cerr << "[FAIL] NNUE accumulator suite: mismatch after "
                       << test_move_to_uci(m) << "\n";
             return 1;
         }
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
     init_attacks();
     std::string error;
     if (!NNUE::load(argv[1], error)) {
-        std::cerr << "failed to load NNUE: " << error << "\n";
+        std::cerr << "[FAIL] NNUE accumulator suite: failed to load NNUE: " << error << "\n";
         return 1;
     }
     if (check_vector_evaluation() != 0)
@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
 
     for (const char *fen : fens) {
         if (!set_from_fen(b, fen)) {
-            std::cerr << "failed to parse FEN: " << fen << "\n";
+            std::cerr << "[FAIL] NNUE accumulator suite: failed to parse FEN: " << fen << "\n";
             return 1;
         }
         if (check_position(b, quiet_moves_checked, quiet_king_moves_checked,
@@ -269,21 +269,21 @@ int main(int argc, char **argv) {
     }
 
     if (quiet_moves_checked == 0) {
-        std::cerr << "NNUE quiet-move accumulator path was not tested\n";
+        std::cerr << "[FAIL] NNUE accumulator suite: quiet-move path was not tested\n";
         return 1;
     }
     if (NNUE::has_king_buckets() && quiet_king_moves_checked == 0) {
-        std::cerr << "NNUE selective king-perspective refresh was not tested\n";
+        std::cerr << "[FAIL] NNUE accumulator suite: selective king-perspective refresh was not tested\n";
         return 1;
     }
     if (ordinary_captures_checked == 0) {
-        std::cerr << "NNUE ordinary-capture accumulator path was not tested\n";
+        std::cerr << "[FAIL] NNUE accumulator suite: ordinary-capture path was not tested\n";
         return 1;
     }
 
-    std::cout << "NNUE accumulator tests passed (including "
+    std::cout << "[PASS] NNUE accumulator suite: "
               << quiet_moves_checked << " quiet moves and "
               << quiet_king_moves_checked << " quiet king moves and "
-              << ordinary_captures_checked << " ordinary captures)\n";
+              << ordinary_captures_checked << " ordinary captures\n";
     return 0;
 }

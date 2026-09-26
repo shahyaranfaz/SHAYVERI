@@ -192,9 +192,9 @@ int main() {
     }
 
     if (failures == 0) {
-        std::cout << "SEE suite passed: " << cases.size() << "/" << cases.size() << "\n";
+        std::cout << "[PASS] SEE suite: " << cases.size() << "/" << cases.size() << " cases\n";
         return 0;
     }
-    std::cerr << "SEE suite failed: " << failures << "/" << cases.size() << " failed\n";
+    std::cerr << "[FAIL] SEE suite: " << failures << "/" << cases.size() << " cases failed\n";
     return 2;
 }
