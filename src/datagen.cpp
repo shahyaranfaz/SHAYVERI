@@ -15,6 +15,7 @@
 #include <array>
 #include <atomic>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -63,16 +64,23 @@ struct DataEntry {
 };
 
 struct BulletChessBoard {
-    U64 occ    = 0;
-    I16 score  = 0;
-    U8 result  = 0;
-    U8 ksq     = 0;
-    U8 opp_ksq = 0;
+    U64 occ = 0;
     U8 pcs[16]{};
+    I16 score = 0;
+    U8 result = 0;
+    U8 ksq = 0;
+    U8 opp_ksq = 0;
     U8 extra[3]{};
 };
 
 static_assert(sizeof(BulletChessBoard) == 32, "Bullet chess records must be 32 bytes");
+static_assert(offsetof(BulletChessBoard, occ) == 0);
+static_assert(offsetof(BulletChessBoard, pcs) == 8);
+static_assert(offsetof(BulletChessBoard, score) == 24);
+static_assert(offsetof(BulletChessBoard, result) == 26);
+static_assert(offsetof(BulletChessBoard, ksq) == 27);
+static_assert(offsetof(BulletChessBoard, opp_ksq) == 28);
+static_assert(offsetof(BulletChessBoard, extra) == 29);
 
 struct GameResult {
     GameEnd end = GameEnd::None;
