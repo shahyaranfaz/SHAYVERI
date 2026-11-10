@@ -12,24 +12,24 @@
 #include <string>
 #include <vector>
 
+using SHAYVERI::BISHOP;
 using SHAYVERI::Board;
 using SHAYVERI::File;
-using SHAYVERI::Move;
-using SHAYVERI::MoveList;
-using SHAYVERI::PieceType;
-using SHAYVERI::Rank;
-using SHAYVERI::Square;
-using SHAYVERI::NONE_PTYPE;
-using SHAYVERI::QUEEN;
-using SHAYVERI::ROOK;
-using SHAYVERI::BISHOP;
-using SHAYVERI::KNIGHT;
 using SHAYVERI::generate_legal_moves;
 using SHAYVERI::init_attacks;
+using SHAYVERI::KNIGHT;
 using SHAYVERI::make_square;
+using SHAYVERI::Move;
+using SHAYVERI::MoveList;
+using SHAYVERI::NONE_PTYPE;
+using SHAYVERI::PieceType;
+using SHAYVERI::QUEEN;
+using SHAYVERI::Rank;
+using SHAYVERI::ROOK;
 using SHAYVERI::see;
 using SHAYVERI::see_ge;
 using SHAYVERI::set_from_fen;
+using SHAYVERI::Square;
 
 struct SeeCase {
     const char *name;
@@ -41,15 +41,24 @@ struct SeeCase {
 static bool parse_uci_move(const std::string &uci, Square &from, Square &to, PieceType &promo) {
     if (uci.size() < 4 || uci.size() > 5) return false;
     from = make_square(File(uci[0] - 'a'), Rank(uci[1] - '1'));
-    to   = make_square(File(uci[2] - 'a'), Rank(uci[3] - '1'));
+    to = make_square(File(uci[2] - 'a'), Rank(uci[3] - '1'));
     promo = NONE_PTYPE;
     if (uci.size() == 5) {
         switch (uci[4]) {
-            case 'q': promo = QUEEN; break;
-            case 'r': promo = ROOK; break;
-            case 'b': promo = BISHOP; break;
-            case 'n': promo = KNIGHT; break;
-            default: return false;
+            case 'q':
+                promo = QUEEN;
+                break;
+            case 'r':
+                promo = ROOK;
+                break;
+            case 'b':
+                promo = BISHOP;
+                break;
+            case 'n':
+                promo = KNIGHT;
+                break;
+            default:
+                return false;
         }
     }
     return true;
@@ -63,8 +72,7 @@ static Move find_legal_move(Board &b, const std::string &uci) {
     MoveList legal = generate_legal_moves(b);
     for (int i = 0; i < legal.count; ++i) {
         Move m = legal.moves[i];
-        if (SHAYVERI::move_from(m) == from && SHAYVERI::move_to(m) == to && SHAYVERI::move_promo(m) == promo)
-            return m;
+        if (SHAYVERI::move_from(m) == from && SHAYVERI::move_to(m) == to && SHAYVERI::move_promo(m) == promo) return m;
     }
     return SHAYVERI::MOVE_NONE;
 }
@@ -82,8 +90,7 @@ int main() {
         {"En-passant capture", "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1", "e5d6", 100},
         {"Promotion capture", "r3k3/1P6/8/8/8/8/8/4K3 w - - 0 1", "b7a8q", 500},
         {"Continue exchange past negative intermediate",
-         "r1b1kbnr/ppp3p1/3p4/4pp1p/1nP2P1q/PPNP2P1/4P3/R1BQKBNR b KQkq - 0 10",
-         "h4f4", -800},
+         "r1b1kbnr/ppp3p1/3p4/4pp1p/1nP2P1q/PPNP2P1/4P3/R1BQKBNR b KQkq - 0 10", "h4f4", -800},
     };
     const std::vector<int> thresholds = {
         -1000, -500, -161, -1, 0, 1, 100, 330, 500, 900,
@@ -112,8 +119,7 @@ int main() {
         bool threshold_ok = true;
         for (int threshold : thresholds) {
             if (see_ge(b, m, threshold) != (actual >= threshold)) {
-                std::cerr << "[FAIL] " << tc.name
-                          << ": threshold mismatch at " << threshold << "\n";
+                std::cerr << "[FAIL] " << tc.name << ": threshold mismatch at " << threshold << "\n";
                 threshold_ok = false;
                 ++failures;
                 break;
@@ -123,9 +129,7 @@ int main() {
     }
 
     Board random_board;
-    if (!set_from_fen(
-            random_board,
-            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")) {
+    if (!set_from_fen(random_board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")) {
         std::cerr << "[FAIL] randomized SEE setup\n";
         ++failures;
     } else {
@@ -134,18 +138,14 @@ int main() {
         for (int position = 0; position < 500; ++position) {
             MoveList legal = generate_legal_moves(random_board);
             if (legal.count == 0) {
-                set_from_fen(
-                    random_board,
-                    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+                set_from_fen(random_board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
                 continue;
             }
 
             for (int i = 0; i < legal.count; ++i) {
                 const Move m = legal.moves[i];
-                if (random_board.get_piece(SHAYVERI::move_to(m))
-                        == SHAYVERI::NONE_PIECE
-                    && !SHAYVERI::is_ep_move(m)
-                    && SHAYVERI::move_promo(m) == NONE_PTYPE)
+                if (random_board.get_piece(SHAYVERI::move_to(m)) == SHAYVERI::NONE_PIECE && !SHAYVERI::is_ep_move(m) &&
+                    SHAYVERI::move_promo(m) == NONE_PTYPE)
                     continue;
 
                 const int actual = see(random_board, m);
@@ -154,14 +154,10 @@ int main() {
                 };
                 for (const int threshold : probes) {
                     ++comparisons;
-                    if (see_ge(random_board, m, threshold)
-                        != (actual >= threshold)) {
-                        std::cerr << "[FAIL] randomized SEE threshold mismatch"
-                                  << " at position " << position
-                                  << ", threshold " << threshold
-                                  << ", SEE " << actual
-                                  << ", move " << SHAYVERI::move_to_uci(m)
-                                  << ", FEN " << SHAYVERI::get_board_fen(random_board)
+                    if (see_ge(random_board, m, threshold) != (actual >= threshold)) {
+                        std::cerr << "[FAIL] randomized SEE threshold mismatch" << " at position " << position
+                                  << ", threshold " << threshold << ", SEE " << actual << ", move "
+                                  << SHAYVERI::move_to_uci(m) << ", FEN " << SHAYVERI::get_board_fen(random_board)
                                   << "\n";
                         ++failures;
                         position = 500;
@@ -172,23 +168,17 @@ int main() {
             }
             if (position >= 500) break;
 
-            const Move selected =
-                legal.moves[static_cast<int>(rng() % legal.count)];
+            const Move selected = legal.moves[static_cast<int>(rng() % legal.count)];
             SHAYVERI::Undo undo;
-            if (!SHAYVERI::make_generated_move(
-                    random_board, selected, undo)) {
+            if (!SHAYVERI::make_generated_move(random_board, selected, undo)) {
                 std::cerr << "[FAIL] randomized SEE playout move\n";
                 ++failures;
                 break;
             }
             if (random_board.half_move >= 100)
-                set_from_fen(
-                    random_board,
-                    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+                set_from_fen(random_board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         }
-        if (failures == 0)
-            std::cout << "[PASS] randomized SEE thresholds ("
-                      << comparisons << " comparisons)\n";
+        if (failures == 0) std::cout << "[PASS] randomized SEE thresholds (" << comparisons << " comparisons)\n";
     }
 
     if (failures == 0) {

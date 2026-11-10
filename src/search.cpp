@@ -9,8 +9,8 @@
 #include "position_rules.h"
 #include "see.h"
 #include "tt.h"
-#include "uci_output.h"
 #include "tune.h"
+#include "uci_output.h"
 
 #include <algorithm>
 #include <atomic>
@@ -40,56 +40,45 @@ struct SearchThreadState {
     int selective_depth = 0;
 };
 
-SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(
-    int singular_score, int singular_beta, int beta, int tt_score, bool cut_node) {
+SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(int singular_score, int singular_beta,
+                                                                            int beta, int tt_score, bool cut_node) {
     if (singular_score < singular_beta) {
         int extension = Tune::se_extension;
-        const int double_margin    = std::max(0, Tune::se_double_margin);
+        const int double_margin = std::max(0, Tune::se_double_margin);
         const int double_extension = std::max(extension, Tune::se_double_extension);
-        const int triple_margin = Tune::se_double_extensions
-            ? std::max(double_margin, Tune::se_triple_margin)
-            : std::max(0, Tune::se_triple_margin);
-        const int triple_extension = Tune::se_double_extensions
-            ? std::max(double_extension, Tune::se_triple_extension)
-            : std::max(extension, Tune::se_triple_extension);
-        if (Tune::se_triple_extensions
-            && singular_score < singular_beta - triple_margin) {
+        const int triple_margin = Tune::se_double_extensions ? std::max(double_margin, Tune::se_triple_margin)
+                                                             : std::max(0, Tune::se_triple_margin);
+        const int triple_extension = Tune::se_double_extensions ? std::max(double_extension, Tune::se_triple_extension)
+                                                                : std::max(extension, Tune::se_triple_extension);
+        if (Tune::se_triple_extensions && singular_score < singular_beta - triple_margin) {
             extension = triple_extension;
-        } else if (Tune::se_double_extensions
-                   && singular_score < singular_beta - double_margin) {
+        } else if (Tune::se_double_extensions && singular_score < singular_beta - double_margin) {
             extension = double_extension;
         }
         return {extension, false};
     }
 
     const bool non_mate_score = std::abs(singular_score) < MATE_SCORE - MAX_PLY;
-    if (Tune::se_multicut && singular_score >= beta && non_mate_score)
-        return {0, true};
+    if (Tune::se_multicut && singular_score >= beta && non_mate_score) return {0, true};
 
     if (Tune::se_negative_extensions) {
-        if (tt_score >= beta)
-            return {Tune::se_negative_tt_extension, false};
-        if (cut_node)
-            return {Tune::se_negative_cutnode_extension, false};
+        if (tt_score >= beta) return {Tune::se_negative_tt_extension, false};
+        if (cut_node) return {Tune::se_negative_cutnode_extension, false};
     }
 
     return {};
 }
 
 I16 SearchDetail::clamp_history_value(int value) {
-    return static_cast<I16>(std::clamp(
-        value,
-        static_cast<int>(std::numeric_limits<I16>::min()),
-        static_cast<int>(std::numeric_limits<I16>::max())));
+    return static_cast<I16>(std::clamp(value, static_cast<int>(std::numeric_limits<I16>::min()),
+                                       static_cast<int>(std::numeric_limits<I16>::max())));
 }
 
-I16 SearchDetail::gravity_history_update(
-    I16 entry, int bonus, int history_max) {
+I16 SearchDetail::gravity_history_update(I16 entry, int bonus, int history_max) {
     const int bounded_max = std::max(1, history_max);
     const int abs_bonus = bonus < 0 ? -bonus : bonus;
     const int current = static_cast<int>(entry);
-    const int updated =
-        current + bonus - current * abs_bonus / bounded_max;
+    const int updated = current + bonus - current * abs_bonus / bounded_max;
     return clamp_history_value(updated);
 }
 
@@ -111,8 +100,7 @@ static inline int lmr_reduction_base(int depth, int moves) {
     const int bounded_depth = std::min(depth, MAX_PLY);
     const int bounded_moves = std::min(moves, 255);
     const double scale = std::max(0.01, Tune::lmr_scale);
-    return static_cast<int>(Tune::lmr_base +
-                            depth_log[bounded_depth] * move_log[bounded_moves] / scale);
+    return static_cast<int>(Tune::lmr_base + depth_log[bounded_depth] * move_log[bounded_moves] / scale);
 }
 
 struct ScoredMove {
@@ -141,19 +129,18 @@ struct SearchHeuristics {
     HistoryEntry history[2][64][64]; // [side_to_move][from][to]
 
     // PieceType 1=PAWN..6=KING is stored compactly at indices 0..5.
-    HistoryEntry counter_move_history[HISTORY_PIECE_TYPES][64]
-                                     [HISTORY_PIECE_TYPES][64];
-    HistoryEntry follow_up_history[HISTORY_PIECE_TYPES][64]
-                                  [HISTORY_PIECE_TYPES][64];
+    HistoryEntry counter_move_history[HISTORY_PIECE_TYPES][64][HISTORY_PIECE_TYPES][64];
+    HistoryEntry follow_up_history[HISTORY_PIECE_TYPES][64][HISTORY_PIECE_TYPES][64];
 
     // Capture history, indexed by [attacker_pt][to_sq][captured_pt].
-    HistoryEntry capture_history[HISTORY_PIECE_TYPES][64]
-                                [HISTORY_PIECE_TYPES];
+    HistoryEntry capture_history[HISTORY_PIECE_TYPES][64][HISTORY_PIECE_TYPES];
 
     // Static eval correction history, indexed by side and pawn-structure key.
     HistoryEntry correction_history[2][Tune::CORRHIST_TABLE_SIZE];
 
-    SearchHeuristics() { clear(); }
+    SearchHeuristics() {
+        clear();
+    }
 
     void clear() {
         std::memset(killers, 0, sizeof(killers));
@@ -173,14 +160,12 @@ struct SearchHeuristics {
     }
 
     // Gravity-based, SPSA-friendly history update (branchless abs)
-    inline void update_history(HistoryEntry& entry, int bonus) {
-        entry = SearchDetail::gravity_history_update(
-            entry, bonus, Tune::history_max);
+    inline void update_history(HistoryEntry &entry, int bonus) {
+        entry = SearchDetail::gravity_history_update(entry, bonus, Tune::history_max);
     }
 
     static inline int piece_index(int piece_type) {
-        assert(piece_type >= static_cast<int>(PAWN)
-               && piece_type <= static_cast<int>(KING));
+        assert(piece_type >= static_cast<int>(PAWN) && piece_type <= static_cast<int>(KING));
         return piece_type - static_cast<int>(PAWN);
     }
 };
@@ -189,8 +174,7 @@ struct SearchContext::Impl {
     std::unique_ptr<SearchHeuristics> persistent_history;
 
     SearchHeuristics &histories() {
-        if (!persistent_history)
-            persistent_history = std::make_unique<SearchHeuristics>();
+        if (!persistent_history) persistent_history = std::make_unique<SearchHeuristics>();
         return *persistent_history;
     }
 };
@@ -208,8 +192,7 @@ struct SearchWorker::Impl {
         return *heuristics;
     }
 
-    SearchThreadState &prepare_thread(
-        bool node_limited = false, U64 node_limit = 0) {
+    SearchThreadState &prepare_thread(bool node_limited = false, U64 node_limit = 0) {
         thread = {};
         thread.local_node_limited_search = node_limited;
         thread.local_node_limit = node_limit;
@@ -217,8 +200,7 @@ struct SearchWorker::Impl {
     }
 
     StackInfo *prepare_stack() {
-        if (!stack)
-            stack = std::make_unique<StackInfo[]>(MAX_PLY + 5);
+        if (!stack) stack = std::make_unique<StackInfo[]>(MAX_PLY + 5);
         for (int i = 0; i < MAX_PLY + 5; ++i) {
             stack[i].move = MOVE_NONE;
             stack[i].piece = NONE_PIECE;
@@ -236,8 +218,7 @@ SearchContext::SearchContext(TranspositionTable &transposition_table)
 SearchContext::~SearchContext() = default;
 
 void SearchContext::clear_histories() {
-    if (impl->persistent_history)
-        impl->persistent_history->clear();
+    if (impl->persistent_history) impl->persistent_history->clear();
 }
 
 SearchWorker::SearchWorker() : impl(std::make_unique<Impl>()) {}
@@ -245,7 +226,7 @@ SearchWorker::~SearchWorker() = default;
 SearchWorker::SearchWorker(SearchWorker &&) noexcept = default;
 SearchWorker &SearchWorker::operator=(SearchWorker &&) noexcept = default;
 
-static inline int correction_history_index(const Board& b) {
+static inline int correction_history_index(const Board &b) {
     const U64 wp = b.bit_boards[WP];
     const U64 bp = b.bit_boards[BP];
     const U64 bp_rot = (bp << 32) | (bp >> 32);
@@ -254,80 +235,62 @@ static inline int correction_history_index(const Board& b) {
     return static_cast<int>(key & (Tune::CORRHIST_TABLE_SIZE - 1));
 }
 
-static inline int corrected_static_eval(const Board& b, int raw_eval, const SearchHeuristics& H) {
+static inline int corrected_static_eval(const Board &b, int raw_eval, const SearchHeuristics &H) {
     const int stm = static_cast<int>(b.side_to_move) & 1;
     const int entry = H.correction_history[stm][correction_history_index(b)];
     return raw_eval + entry / std::max(1, Tune::corrhist_scale);
 }
 
-static inline void update_correction_history(const Board& b, SearchHeuristics& H,
-                                             int raw_eval, int score, int depth, int bound) {
+static inline void update_correction_history(const Board &b, SearchHeuristics &H, int raw_eval, int score, int depth,
+                                             int bound) {
     if (std::abs(score) >= MATE_SCORE - MAX_PLY) return;
 
-    const bool useful =
-        bound == TT_EXACT ||
-        (bound == TT_LOWER && score > raw_eval) ||
-        (bound == TT_UPPER && score < raw_eval);
+    const bool useful = bound == TT_EXACT || (bound == TT_LOWER && score > raw_eval) ||
+                        (bound == TT_UPPER && score < raw_eval);
     if (!useful) return;
 
     const int stm = static_cast<int>(b.side_to_move) & 1;
-    SearchHeuristics::HistoryEntry& entry =
-        H.correction_history[stm][correction_history_index(b)];
+    SearchHeuristics::HistoryEntry &entry = H.correction_history[stm][correction_history_index(b)];
     const int max_entry = std::max(1, Tune::corrhist_max);
     const int diff = std::clamp(score - raw_eval, -max_entry, max_entry);
     const int depth_cap = std::max(1, Tune::corrhist_depth_cap);
     const int depth_weight = std::min(depth, depth_cap);
     const int bonus_limit = std::max(1, Tune::corrhist_bonus_limit);
-    const int bonus = std::clamp(diff * Tune::corrhist_bonus_mult * depth_weight / depth_cap,
-                                 -bonus_limit, bonus_limit);
+    const int bonus = std::clamp(diff * Tune::corrhist_bonus_mult * depth_weight / depth_cap, -bonus_limit,
+                                 bonus_limit);
     int abs_bonus = bonus < 0 ? -bonus : bonus;
-    const int updated =
-        static_cast<int>(entry) + bonus
-        - static_cast<int>(entry) * abs_bonus / max_entry;
-    entry = SearchDetail::clamp_history_value(
-        std::clamp(updated, -max_entry, max_entry));
+    const int updated = static_cast<int>(entry) + bonus - static_cast<int>(entry) * abs_bonus / max_entry;
+    entry = SearchDetail::clamp_history_value(std::clamp(updated, -max_entry, max_entry));
 }
 
-static inline bool search_stopped(const SearchContext &context,
-                                  const SearchThreadState &thread) {
-    return thread.local_node_limited_search
-        ? thread.local_stop
-        : context.stop.load(std::memory_order_relaxed);
+static inline bool search_stopped(const SearchContext &context, const SearchThreadState &thread) {
+    return thread.local_node_limited_search ? thread.local_stop : context.stop.load(std::memory_order_relaxed);
 }
 
-static inline void request_search_stop(SearchContext &context,
-                                       SearchThreadState &thread) {
+static inline void request_search_stop(SearchContext &context, SearchThreadState &thread) {
     if (thread.local_node_limited_search)
         thread.local_stop = true;
     else
         context.stop.store(true, std::memory_order_relaxed);
 }
 
-static inline U64 searched_nodes(const SearchContext &context,
-                                 const SearchThreadState &thread) {
+static inline U64 searched_nodes(const SearchContext &context, const SearchThreadState &thread) {
     return thread.local_node_limited_search
-        ? thread.local_node_count
-        : context.nodes.load(std::memory_order_relaxed)
-            + thread.pending_shared_nodes;
+               ? thread.local_node_count
+               : context.nodes.load(std::memory_order_relaxed) + thread.pending_shared_nodes;
 }
 
-static inline void publish_pending_nodes(SearchContext &context,
-                                         SearchThreadState &thread) {
-    if (thread.local_node_limited_search
-        || thread.pending_shared_nodes == 0)
-        return;
-    context.nodes.fetch_add(
-        thread.pending_shared_nodes, std::memory_order_relaxed);
+static inline void publish_pending_nodes(SearchContext &context, SearchThreadState &thread) {
+    if (thread.local_node_limited_search || thread.pending_shared_nodes == 0) return;
+    context.nodes.fetch_add(thread.pending_shared_nodes, std::memory_order_relaxed);
     thread.pending_shared_nodes = 0;
 }
 
-static inline void count_node(SearchContext &context,
-                              SearchThreadState &thread) {
+static inline void count_node(SearchContext &context, SearchThreadState &thread) {
     ++thread.node_count;
     if (thread.local_node_limited_search) {
         ++thread.local_node_count;
-        if (thread.local_node_limit != 0
-            && thread.local_node_count >= thread.local_node_limit)
+        if (thread.local_node_limit != 0 && thread.local_node_count >= thread.local_node_limit)
             thread.local_stop = true;
         return;
     }
@@ -335,32 +298,25 @@ static inline void count_node(SearchContext &context,
     if (++thread.pending_shared_nodes >= NODE_PUBLISH_BATCH) {
         const U64 batch = thread.pending_shared_nodes;
         thread.pending_shared_nodes = 0;
-        const U64 nodes =
-            context.nodes.fetch_add(batch, std::memory_order_relaxed) + batch;
+        const U64 nodes = context.nodes.fetch_add(batch, std::memory_order_relaxed) + batch;
         const U64 limit = context.node_limit.load(std::memory_order_relaxed);
-        if (limit != 0 && nodes >= limit)
-            request_search_stop(context, thread);
+        if (limit != 0 && nodes >= limit) request_search_stop(context, thread);
     }
 }
 
 static inline bool has_non_pawn_material(const Board &b, Colour c) {
     const int off = (c == WHITE) ? 0 : 6;
-    return (b.bit_boards[Piece(off + WN)] |
-            b.bit_boards[Piece(off + WB)] |
-            b.bit_boards[Piece(off + WR)] |
+    return (b.bit_boards[Piece(off + WN)] | b.bit_boards[Piece(off + WB)] | b.bit_boards[Piece(off + WR)] |
             b.bit_boards[Piece(off + WQ)]) != 0;
 }
 
 static int rule_draw_score(Board &b, int ply) {
-    if (PositionRules::is_in_check(b)
-        && generate_legal_moves(b).count == 0)
-        return -MATE_SCORE + ply;
+    if (PositionRules::is_in_check(b) && generate_legal_moves(b).count == 0) return -MATE_SCORE + ply;
     return 0;
 }
 
-static inline int capture_order_score(const Board& b, Move m) {
-    if (move_promo(m) != NONE_PTYPE)
-        return 1000000;
+static inline int capture_order_score(const Board &b, Move m) {
+    if (move_promo(m) != NONE_PTYPE) return 1000000;
 
     PieceType victim = NONE_PTYPE;
     if (is_ep_move(m)) {
@@ -372,19 +328,17 @@ static inline int capture_order_score(const Board& b, Move m) {
     }
 
     PieceType attacker = get_type(b.get_piece(move_from(m)));
-    return 100000
-        + (10 * CAPTURE_ORDER_PIECE_VALUES[victim])
-        - CAPTURE_ORDER_PIECE_VALUES[attacker];
+    return 100000 + (10 * CAPTURE_ORDER_PIECE_VALUES[victim]) - CAPTURE_ORDER_PIECE_VALUES[attacker];
 }
 
-static inline bool is_capture_or_promo(const Board& b, Move m) {
+static inline bool is_capture_or_promo(const Board &b, Move m) {
     if (move_promo(m) != NONE_PTYPE) return true;
     if (is_ep_move(m)) return true;
     return b.get_piece(move_to(m)) != NONE_PIECE;
 }
 
-static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H,
-                              StackInfo* ss, int *see_value_out = nullptr) {
+static inline int order_score(const Board &b, Move m, int ply, const SearchHeuristics &H, StackInfo *ss,
+                              int *see_value_out = nullptr) {
     int cap = capture_order_score(b, m);
     if (cap != 0) {
         int see_val = see(b, m);
@@ -396,11 +350,9 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
             int attacker_pt = static_cast<int>(get_type(b.get_piece(move_from(m))));
             PieceType victim_pt = is_ep_move(m) ? PAWN : get_type(b.get_piece(to));
             if (victim_pt != NONE_PTYPE)
-                ch = H.capture_history[
-                         SearchHeuristics::piece_index(attacker_pt)][to]
-                     [SearchHeuristics::piece_index(
-                         static_cast<int>(victim_pt))]
-                     * Tune::capture_history_weight / 100;
+                ch = H.capture_history[SearchHeuristics::piece_index(attacker_pt)][to]
+                                      [SearchHeuristics::piece_index(static_cast<int>(victim_pt))] *
+                     Tune::capture_history_weight / 100;
         }
         if (see_val >= 0) return 1000000 + (see_val * 100) + cap + ch;
         return 700000 + (see_val * 100) + cap + ch;
@@ -417,8 +369,8 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
         if (m == H.counter_moves[prev_pt][prev_to]) return 880000;
     }
 
-    int pt  = static_cast<int>(get_type(b.get_piece(move_from(m))));
-    int to  = static_cast<int>(move_to(m)) & 63;
+    int pt = static_cast<int>(get_type(b.get_piece(move_from(m))));
+    int to = static_cast<int>(move_to(m)) & 63;
     int stm = static_cast<int>(b.side_to_move) & 1;
 
     int history_score = H.history[stm][static_cast<int>(move_from(m))][to] * Tune::main_history_weight;
@@ -427,26 +379,24 @@ static inline int order_score(const Board &b, Move m, int ply, const SearchHeuri
     if (ply >= 1 && ss[-1].move != MOVE_NONE) {
         int prev_pt = static_cast<int>(get_type(ss[-1].piece));
         int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
-        history_score += H.counter_move_history[
-                             SearchHeuristics::piece_index(prev_pt)][prev_to]
-                         [SearchHeuristics::piece_index(pt)][to]
-                         * Tune::cmh_weight;
+        history_score += H.counter_move_history[SearchHeuristics::piece_index(prev_pt)][prev_to]
+                                               [SearchHeuristics::piece_index(pt)][to] *
+                         Tune::cmh_weight;
     }
     if (ply >= 2 && ss[-2].move != MOVE_NONE) {
         int prev2_pt = static_cast<int>(get_type(ss[-2].piece));
         int prev2_to = static_cast<int>(move_to(ss[-2].move)) & 63;
-        history_score += H.follow_up_history[
-                             SearchHeuristics::piece_index(prev2_pt)][prev2_to]
-                         [SearchHeuristics::piece_index(pt)][to]
-                         * Tune::fmh_weight;
+        history_score += H.follow_up_history[SearchHeuristics::piece_index(prev2_pt)][prev2_to]
+                                            [SearchHeuristics::piece_index(pt)][to] *
+                         Tune::fmh_weight;
     }
 
     return history_score / 100;
 }
 
-static inline int quiet_history_score(const Board &b, Move m, int ply, const SearchHeuristics &H, StackInfo* ss) {
-    int pt  = static_cast<int>(get_type(b.get_piece(move_from(m))));
-    int to  = static_cast<int>(move_to(m)) & 63;
+static inline int quiet_history_score(const Board &b, Move m, int ply, const SearchHeuristics &H, StackInfo *ss) {
+    int pt = static_cast<int>(get_type(b.get_piece(move_from(m))));
+    int to = static_cast<int>(move_to(m)) & 63;
     int stm = static_cast<int>(b.side_to_move) & 1;
 
     int score = H.history[stm][static_cast<int>(move_from(m))][to] * Tune::main_history_weight;
@@ -454,18 +404,16 @@ static inline int quiet_history_score(const Board &b, Move m, int ply, const Sea
     if (ply >= 1 && ss[-1].move != MOVE_NONE) {
         int prev_pt = static_cast<int>(get_type(ss[-1].piece));
         int prev_to = static_cast<int>(move_to(ss[-1].move)) & 63;
-        score += H.counter_move_history[
-                     SearchHeuristics::piece_index(prev_pt)][prev_to]
-                 [SearchHeuristics::piece_index(pt)][to]
-                 * Tune::cmh_weight;
+        score += H.counter_move_history[SearchHeuristics::piece_index(prev_pt)][prev_to]
+                                       [SearchHeuristics::piece_index(pt)][to] *
+                 Tune::cmh_weight;
     }
     if (ply >= 2 && ss[-2].move != MOVE_NONE) {
         int prev2_pt = static_cast<int>(get_type(ss[-2].piece));
         int prev2_to = static_cast<int>(move_to(ss[-2].move)) & 63;
-        score += H.follow_up_history[
-                     SearchHeuristics::piece_index(prev2_pt)][prev2_to]
-                 [SearchHeuristics::piece_index(pt)][to]
-                 * Tune::fmh_weight;
+        score += H.follow_up_history[SearchHeuristics::piece_index(prev2_pt)][prev2_to]
+                                    [SearchHeuristics::piece_index(pt)][to] *
+                 Tune::fmh_weight;
     }
 
     return score / 100;
@@ -478,12 +426,9 @@ struct PickedMove {
 };
 
 class NoisyMovePicker {
-public:
-    NoisyMovePicker(Board &b, bool evasions, Move priority = MOVE_NONE)
-        : priority_(priority) {
-        const MoveList generated = evasions
-            ? generate_legal_moves(b)
-            : generate_legal_captures(b);
+  public:
+    NoisyMovePicker(Board &b, bool evasions, Move priority = MOVE_NONE) : priority_(priority) {
+        const MoveList generated = evasions ? generate_legal_moves(b) : generate_legal_captures(b);
         for (int i = 0; i < generated.count; ++i) {
             const Move move = generated.moves[i];
             if (move == priority_) {
@@ -503,13 +448,12 @@ public:
         }
         if (index_ >= count_) return false;
         for (int i = index_ + 1; i < count_; ++i)
-            if (moves_[i].score > moves_[index_].score)
-                std::swap(moves_[i], moves_[index_]);
+            if (moves_[i].score > moves_[index_].score) std::swap(moves_[i], moves_[index_]);
         picked = moves_[index_++];
         return true;
     }
 
-private:
+  private:
     Move priority_ = MOVE_NONE;
     bool priority_available_ = false;
     PickedMove moves_[256];
@@ -518,9 +462,8 @@ private:
 };
 
 class MovePicker {
-public:
-    MovePicker(Board &b, Move tt_move, Move excluded_move, int ply,
-               const SearchHeuristics &history, StackInfo *ss)
+  public:
+    MovePicker(Board &b, Move tt_move, Move excluded_move, int ply, const SearchHeuristics &history, StackInfo *ss)
         : tt_move_(tt_move) {
         const MoveList generated = generate_legal_moves(b);
         for (int i = 0; i < generated.count; ++i) {
@@ -533,8 +476,7 @@ public:
 
             if (is_capture_or_promo(b, move)) {
                 int see_value = 0;
-                const int score =
-                    order_score(b, move, ply, history, ss, &see_value);
+                const int score = order_score(b, move, ply, history, ss, &see_value);
                 PickedMove scored{move, score, see_value};
                 const U8 index = add(scored);
                 if (move_promo(move) != NONE_PTYPE || see_value >= 0)
@@ -562,28 +504,19 @@ public:
             picked = {tt_move_, 0, 0};
             return true;
         }
-        if (next_best(good_captures_, good_count_, good_index_, picked))
-            return true;
-        if (next_best(special_quiets_, special_count_, special_index_, picked))
-            return true;
-        if (next_best(quiets_, quiet_count_, quiet_index_, picked))
-            return true;
+        if (next_best(good_captures_, good_count_, good_index_, picked)) return true;
+        if (next_best(special_quiets_, special_count_, special_index_, picked)) return true;
+        if (next_best(quiets_, quiet_count_, quiet_index_, picked)) return true;
         return next_best(bad_captures_, bad_count_, bad_index_, picked);
     }
 
-private:
-    static bool is_special_quiet(
-        Move move, int ply, const SearchHeuristics &history, StackInfo *ss) {
-        if (ply >= 0 && ply < MAX_PLY
-            && (move == history.killers[ply][0]
-                || move == history.killers[ply][1]))
+  private:
+    static bool is_special_quiet(Move move, int ply, const SearchHeuristics &history, StackInfo *ss) {
+        if (ply >= 0 && ply < MAX_PLY && (move == history.killers[ply][0] || move == history.killers[ply][1]))
             return true;
-        if (ply >= 1 && ss[-1].move != MOVE_NONE
-            && ss[-1].piece != NONE_PIECE) {
-            const int previous_type =
-                static_cast<int>(get_type(ss[-1].piece));
-            const int previous_to =
-                static_cast<int>(move_to(ss[-1].move)) & 63;
+        if (ply >= 1 && ss[-1].move != MOVE_NONE && ss[-1].piece != NONE_PIECE) {
+            const int previous_type = static_cast<int>(get_type(ss[-1].piece));
+            const int previous_to = static_cast<int>(move_to(ss[-1].move)) & 63;
             return move == history.counter_moves[previous_type][previous_to];
         }
         return false;
@@ -596,12 +529,10 @@ private:
         return static_cast<U8>(index);
     }
 
-    bool next_best(
-        U8 *stage, int count, int &index, PickedMove &picked) {
+    bool next_best(U8 *stage, int count, int &index, PickedMove &picked) {
         if (index >= count) return false;
         for (int i = index + 1; i < count; ++i)
-            if (moves_[stage[i]].score > moves_[stage[index]].score)
-                std::swap(stage[i], stage[index]);
+            if (moves_[stage[i]].score > moves_[stage[index]].score) std::swap(stage[i], stage[index]);
         picked = moves_[stage[index++]];
         return true;
     }
@@ -628,36 +559,28 @@ static_assert(sizeof(MovePicker) <= 5 * 1024);
 
 static inline int evaluate_position(const Board &b, const StackInfo *ss) {
     const int score = NNUE::is_enabled()
-        ? NNUE::evaluate(
-            static_cast<int>(b.side_to_move),
-            __builtin_popcountll(b.occupied),
-            ss->acc)
-        : evaluate(b);
+                          ? NNUE::evaluate(static_cast<int>(b.side_to_move), __builtin_popcountll(b.occupied), ss->acc)
+                          : evaluate(b);
     constexpr int MAX_EVAL = MATE_SCORE - MAX_PLY - 1;
     return std::clamp(score, -MAX_EVAL, MAX_EVAL);
 }
 
 static int max_ply_score(Board &b, int alpha, int ply, const StackInfo *ss) {
-    if (!PositionRules::is_in_check(b))
-        return evaluate_position(b, ss);
+    if (!PositionRules::is_in_check(b)) return evaluate_position(b, ss);
 
     const MoveList legal = generate_legal_moves(b);
     return legal.count == 0 ? -MATE_SCORE + ply : alpha;
 }
 
-static int qsearch(SearchContext &context, SearchThreadState &thread,
-                   Board &b, int alpha, int beta, int depth, int ply, StackInfo *ss,
-                   U64 *rep_stack, int rep_len) {
+static int qsearch(SearchContext &context, SearchThreadState &thread, Board &b, int alpha, int beta, int depth, int ply,
+                   StackInfo *ss, U64 *rep_stack, int rep_len) {
     if (search_stopped(context, thread)) return 0;
     count_node(context, thread);
 
     thread.selective_depth = std::max(thread.selective_depth, ply);
     if (PositionRules::has_insufficient_material(b)) return 0;
     if (b.half_move >= 100) return rule_draw_score(b, ply);
-    if (rep_len > 1
-        && PositionRules::has_search_repetition(
-            b.hash, rep_stack, rep_len - 1, b.half_move))
-        return 0;
+    if (rep_len > 1 && PositionRules::has_search_repetition(b.hash, rep_stack, rep_len - 1, b.half_move)) return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
@@ -670,10 +593,12 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
     if (tte && tte->depth >= 0) {
         const TTEntry *e = tte;
         int s = e->score;
-        if (s > MATE_SCORE - MAX_PLY) s -= ply;
-        else if (s < -MATE_SCORE + MAX_PLY) s += ply;
-        if (e->flag == TT_EXACT)               return s;
-        if (e->flag == TT_LOWER && s >= beta)  return s;
+        if (s > MATE_SCORE - MAX_PLY)
+            s -= ply;
+        else if (s < -MATE_SCORE + MAX_PLY)
+            s += ply;
+        if (e->flag == TT_EXACT) return s;
+        if (e->flag == TT_LOWER && s >= beta) return s;
         if (e->flag == TT_UPPER && s <= alpha) return s;
     }
 
@@ -695,8 +620,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
         // The absolute ply guard above bounds pathological checking sequences.
     }
 
-    NoisyMovePicker move_picker(
-        b, in_check, tte ? tte->best : MOVE_NONE);
+    NoisyMovePicker move_picker(b, in_check, tte ? tte->best : MOVE_NONE);
     int legal_count = 0;
 
     PickedMove picked;
@@ -708,26 +632,20 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
 
         if (!in_check) {
             Piece vp = b.get_piece(move_to(m));
-            victim_val = (vp != NONE_PIECE)
-                ? CAPTURE_ORDER_PIECE_VALUES[get_type(vp)]
-                : (is_ep_move(m) ? CAPTURE_ORDER_PIECE_VALUES[PAWN] : 0);
-            if (move_promo(m) != NONE_PTYPE)
-                victim_val += CAPTURE_ORDER_PIECE_VALUES[move_promo(m)];
+            victim_val = (vp != NONE_PIECE) ? CAPTURE_ORDER_PIECE_VALUES[get_type(vp)]
+                                            : (is_ep_move(m) ? CAPTURE_ORDER_PIECE_VALUES[PAWN] : 0);
+            if (move_promo(m) != NONE_PTYPE) victim_val += CAPTURE_ORDER_PIECE_VALUES[move_promo(m)];
 
-            const bool non_promotion_capture = move_promo(m) == NONE_PTYPE
-                && b.get_piece(move_to(m)) != NONE_PIECE;
-            qs_see_reject = non_promotion_capture
-                && !see_ge(b, m, std::max(0, Tune::qs_see_margin));
+            const bool non_promotion_capture = move_promo(m) == NONE_PTYPE && b.get_piece(move_to(m)) != NONE_PIECE;
+            qs_see_reject = non_promotion_capture && !see_ge(b, m, std::max(0, Tune::qs_see_margin));
 
             qs_delta_reject = stand_pat + victim_val + Tune::qs_delta_margin < alpha;
         }
 
         Undo u;
         make_legal_move(b, m, u);
-        const bool qs_futility_reject = !in_check
-            && Tune::qs_futility_margin > 0
-            && move_promo(m) == NONE_PTYPE
-            && stand_pat + victim_val + Tune::qs_futility_margin < alpha;
+        const bool qs_futility_reject = !in_check && Tune::qs_futility_margin > 0 && move_promo(m) == NONE_PTYPE &&
+                                        stand_pat + victim_val + Tune::qs_futility_margin < alpha;
         if (qs_see_reject || qs_delta_reject || qs_futility_reject) {
             const bool gives_check = PositionRules::is_in_check(b);
             if (!gives_check) {
@@ -740,9 +658,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
         legal_count++;
         rep_stack[rep_len] = b.hash;
 
-        int score = -qsearch(context, thread, b, -beta, -alpha,
-                             depth - 1, ply + 1, ss + 1,
-                             rep_stack, rep_len + 1);
+        int score = -qsearch(context, thread, b, -beta, -alpha, depth - 1, ply + 1, ss + 1, rep_stack, rep_len + 1);
         unmake_move(b, m, u);
 
         if (search_stopped(context, thread)) return 0;
@@ -756,9 +672,8 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
     return alpha;
 }
 
-static int negamax(SearchContext &context, SearchThreadState &thread,
-                   Board &b, int depth, int alpha, int beta, int ply,
-                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, bool cut_node, StackInfo* ss,
+static int negamax(SearchContext &context, SearchThreadState &thread, Board &b, int depth, int alpha, int beta, int ply,
+                   SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, bool cut_node, StackInfo *ss,
                    bool allow_null = true) {
     if (search_stopped(context, thread)) return 0;
     count_node(context, thread);
@@ -770,10 +685,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     thread.selective_depth = std::max(thread.selective_depth, ply);
     if (PositionRules::has_insufficient_material(b)) return 0;
     if (b.half_move >= 100) return rule_draw_score(b, ply);
-    if (rep_len > 1
-        && PositionRules::has_search_repetition(
-            key, rep_stack, rep_len - 1, b.half_move))
-        return 0;
+    if (rep_len > 1 && PositionRules::has_search_repetition(key, rep_stack, rep_len - 1, b.half_move)) return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
     beta = std::min(beta, MATE_SCORE - ply - 1);
@@ -789,7 +701,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     int tt_eval = 0;
 
     if (const TTEntry *e = context.table.probe(key)) {
-        tt_move  = e->best;
+        tt_move = e->best;
         tt_score = e->score;
         tt_depth = e->depth;
         tt_bound = e->flag;
@@ -798,26 +710,27 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
         if (tt_depth >= depth) {
             int s = tt_score;
-            if (s > MATE_SCORE - MAX_PLY) s -= ply;
-            else if (s < -MATE_SCORE + MAX_PLY) s += ply;
+            if (s > MATE_SCORE - MAX_PLY)
+                s -= ply;
+            else if (s < -MATE_SCORE + MAX_PLY)
+                s += ply;
 
             // Only prune if we are not in a singular extension check
             if (!pv_node && ss->excluded_move == MOVE_NONE) {
                 if (tt_bound == TT_EXACT) return s;
-                if (tt_bound == TT_LOWER) alpha = std::max(alpha, s);
-                else if (tt_bound == TT_UPPER) beta = std::min(beta, s);
+                if (tt_bound == TT_LOWER)
+                    alpha = std::max(alpha, s);
+                else if (tt_bound == TT_UPPER)
+                    beta = std::min(beta, s);
                 if (alpha >= beta) return s;
             }
         }
     }
 
-    if (depth <= 0)
-        return qsearch(context, thread, b, alpha, beta,
-                       Tune::qs_start_depth, ply, ss, rep_stack, rep_len);
+    if (depth <= 0) return qsearch(context, thread, b, alpha, beta, Tune::qs_start_depth, ply, ss, rep_stack, rep_len);
 
     const bool in_check = PositionRules::is_in_check(b);
-    if (in_check && ply < MAX_PLY - Tune::check_extension)
-        depth += Tune::check_extension;
+    if (in_check && ply < MAX_PLY - Tune::check_extension) depth += Tune::check_extension;
 
     int raw_static_eval = 0;
     int static_eval = 0;
@@ -837,8 +750,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     }
     // Compare against the previous same-side node. In-check ancestors do not
     // carry a meaningful static evaluation and therefore do not trigger it.
-    const bool improving = have_static_eval && ss[-2].has_static_eval &&
-                           static_eval >= ss[-2].static_eval;
+    const bool improving = have_static_eval && ss[-2].has_static_eval && static_eval >= ss[-2].static_eval;
 
     // Reverse Futility Pruning
     if (!pv_node && !in_check && depth <= Tune::rfp_max_depth && ss->excluded_move == MOVE_NONE) {
@@ -848,15 +760,14 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     }
 
     // Null Move Pruning
-    if (allow_null && !pv_node && !in_check && depth >= Tune::nmp_min_depth
-        && static_eval >= beta + Tune::nmp_margin_mult * depth
-        && has_non_pawn_material(b, b.side_to_move) && ss->excluded_move == MOVE_NONE) {
+    if (allow_null && !pv_node && !in_check && depth >= Tune::nmp_min_depth &&
+        static_eval >= beta + Tune::nmp_margin_mult * depth && has_non_pawn_material(b, b.side_to_move) &&
+        ss->excluded_move == MOVE_NONE) {
         const int eval_divisor = std::max(1, Tune::nmp_eval_divisor);
         const int depth_divisor = std::max(1, Tune::nmp_depth_divisor);
         const int reduction_min = std::min(Tune::nmp_reduction_min, Tune::nmp_reduction_max);
         const int reduction_max = std::max(Tune::nmp_reduction_min, Tune::nmp_reduction_max);
-        const int R = std::clamp(Tune::nmp_base_reduction + depth / depth_divisor +
-                                 (static_eval - beta) / eval_divisor,
+        const int R = std::clamp(Tune::nmp_base_reduction + depth / depth_divisor + (static_eval - beta) / eval_divisor,
                                  reduction_min, reduction_max);
         Undo u;
         (ss + 1)->acc = ss->acc;
@@ -865,9 +776,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         const Piece saved_piece = ss->piece;
         ss->move = MOVE_NONE;
         ss->piece = NONE_PIECE;
-        int score = -negamax(context, thread, b,
-                             depth - 1 - R, -beta, -beta + 1, ply + 1,
-                             H, rep_stack, rep_len, false, !cut_node, ss + 1, false);
+        int score = -negamax(context, thread, b, depth - 1 - R, -beta, -beta + 1, ply + 1, H, rep_stack, rep_len, false,
+                             !cut_node, ss + 1, false);
         ss->move = saved_move;
         ss->piece = saved_piece;
         unmake_null_move(b, u);
@@ -875,9 +785,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         if (search_stopped(context, thread)) return 0;
         if (score >= beta) {
             if (depth >= Tune::nmp_verify_min_depth) {
-                int verify = negamax(context, thread, b,
-                                     depth - R, beta - 1, beta, ply,
-                                     H, rep_stack, rep_len, false, cut_node, ss, false);
+                int verify = negamax(context, thread, b, depth - R, beta - 1, beta, ply, H, rep_stack, rep_len, false,
+                                     cut_node, ss, false);
                 if (search_stopped(context, thread)) return 0;
                 if (verify < beta) {
                     // Zugzwang-ish high-depth fail highs must survive verification.
@@ -893,8 +802,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     // ProbCut: use a reduced capture-only search to prove a high fail-high.
     // Reduced searches do not write a full-depth TT bound because the proof
     // depth is shallower.
-    if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE
-        && depth >= Tune::probcut_min_depth) {
+    if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::probcut_min_depth) {
         const int margin = Tune::probcut_margin;
         const int max_reduction = std::max(1, depth - 2);
         const int reduction = std::clamp(Tune::probcut_reduction, 1, max_reduction);
@@ -920,10 +828,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                 ss->piece = moved_piece;
                 ++pc_tried;
 
-                const int score = -negamax(context, thread, b,
-                                            reduced_depth, -pc_beta, -pc_beta + 1,
-                                            ply + 1, H, rep_stack, rep_len + 1,
-                                            false, true, ss + 1);
+                const int score = -negamax(context, thread, b, reduced_depth, -pc_beta, -pc_beta + 1, ply + 1, H,
+                                           rep_stack, rep_len + 1, false, true, ss + 1);
                 unmake_move(b, m, u);
 
                 if (search_stopped(context, thread)) return 0;
@@ -938,26 +844,23 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     // singular, whether several moves prove a cutoff, or whether the TT move
     // should be searched at a reduced depth.
     int extension = 0;
-    if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::se_min_depth
-        && tt_move != MOVE_NONE && tt_bound != TT_UPPER && tt_depth >= depth - Tune::se_depth_margin
-        && std::abs(tt_score) < MATE_SCORE - MAX_PLY) {
+    if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::se_min_depth &&
+        tt_move != MOVE_NONE && tt_bound != TT_UPPER && tt_depth >= depth - Tune::se_depth_margin &&
+        std::abs(tt_score) < MATE_SCORE - MAX_PLY) {
 
         int r_beta = tt_score - Tune::se_margin;
         int se_depth = (depth - 1) / std::max(1, Tune::se_reduction_denom);
 
         ss->excluded_move = tt_move;
-        int score = negamax(context, thread, b,
-                            se_depth, r_beta - 1, r_beta, ply,
-                            H, rep_stack, rep_len, false, cut_node, ss);
+        int score = negamax(context, thread, b, se_depth, r_beta - 1, r_beta, ply, H, rep_stack, rep_len, false,
+                            cut_node, ss);
         ss->excluded_move = MOVE_NONE;
 
         if (search_stopped(context, thread)) return 0;
 
-        const SearchDetail::SingularSearchDecision decision =
-            SearchDetail::classify_singular_search(
-                score, r_beta, beta, tt_score, cut_node);
-        if (decision.multicut)
-            return score;
+        const SearchDetail::SingularSearchDecision decision = SearchDetail::classify_singular_search(
+            score, r_beta, beta, tt_score, cut_node);
+        if (decision.multicut) return score;
         extension = decision.extension;
     }
 
@@ -975,7 +878,11 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     Move quiets_played[256];
 
     // Track non-promotion captures tried, for capture history updates
-    struct CaptureEntry { Move m; PieceType captured_pt; PieceType attacker_pt; };
+    struct CaptureEntry {
+        Move m;
+        PieceType captured_pt;
+        PieceType attacker_pt;
+    };
     CaptureEntry captures_tried[256];
     int capture_tried_count = 0;
 
@@ -990,16 +897,11 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
         // Late-move, futility, and capture SEE pruning.
         if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE) {
-            lmp_reject = is_quiet
-                && legal_count > Tune::lmp_base + Tune::lmp_mult * depth * depth;
-            futility_reject = is_quiet
-                && depth <= Tune::fp_max_depth
-                && static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha;
-            see_reject = !is_quiet
-                && move_promo(m) == NONE_PTYPE
-                && depth <= Tune::see_max_depth
-                && picked.see_value < Tune::see_margin * depth;
-
+            lmp_reject = is_quiet && legal_count > Tune::lmp_base + Tune::lmp_mult * depth * depth;
+            futility_reject = is_quiet && depth <= Tune::fp_max_depth &&
+                              static_eval + Tune::fp_base + Tune::fp_mult * depth <= alpha;
+            see_reject = !is_quiet && move_promo(m) == NONE_PTYPE && depth <= Tune::see_max_depth &&
+                         picked.see_value < Tune::see_margin * depth;
         }
 
         Piece moved_piece = b.get_piece(move_from(m));
@@ -1011,18 +913,15 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
 
         Undo u;
         make_legal_move(b, m, u);
-        const bool history_reject = Tune::history_pruning_threshold < 0
-            && is_quiet
-            && depth >= Tune::history_pruning_min_depth
-            && legal_count + 1 >= Tune::history_pruning_min_moves
-            && m != tt_move
-            && (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1]))
-            && move_history < Tune::history_pruning_threshold;
+        const bool history_reject = Tune::history_pruning_threshold < 0 && is_quiet &&
+                                    depth >= Tune::history_pruning_min_depth &&
+                                    legal_count + 1 >= Tune::history_pruning_min_moves && m != tt_move &&
+                                    (ply < 0 || (m != H.killers[ply][0] && m != H.killers[ply][1])) &&
+                                    move_history < Tune::history_pruning_threshold;
         if (lmp_reject || futility_reject || see_reject || history_reject) {
             const bool gives_check = PositionRules::is_in_check(b);
             if (!gives_check) {
-                if (lmp_reject || futility_reject || see_reject
-                    || history_reject) {
+                if (lmp_reject || futility_reject || see_reject || history_reject) {
                     unmake_move(b, m, u);
                     continue;
                 }
@@ -1033,7 +932,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
 
         legal_count++;
-        if (is_quiet) quiets_played[quiet_count++] = m;
+        if (is_quiet)
+            quiets_played[quiet_count++] = m;
         else if (cap_victim_pt != NONE_PTYPE)
             captures_tried[capture_tried_count++] = {m, cap_victim_pt, get_type(moved_piece)};
         rep_stack[rep_len] = b.hash;
@@ -1046,9 +946,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         // PVS Logic with LMR
         if (legal_count == 1) {
             const bool child_cut_node = pv_node ? false : !cut_node;
-            score = -negamax(context, thread, b,
-                             depth - 1 + d_ext, -beta, -alpha, ply + 1,
-                             H, rep_stack, rep_len + 1, pv_node, child_cut_node, ss + 1);
+            score = -negamax(context, thread, b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack, rep_len + 1,
+                             pv_node, child_cut_node, ss + 1);
         } else {
             int reduction = 0;
             if (depth >= Tune::lmr_min_depth && is_quiet && m != tt_move && m != H.killers[ply][0]) {
@@ -1065,17 +964,14 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                 reduction = std::clamp(reduction, 0, depth - 2);
             }
 
-            score = -negamax(context, thread, b,
-                             depth - 1 - reduction + d_ext, -alpha - 1, -alpha, ply + 1,
-                             H, rep_stack, rep_len + 1, false, !cut_node, ss + 1);
+            score = -negamax(context, thread, b, depth - 1 - reduction + d_ext, -alpha - 1, -alpha, ply + 1, H,
+                             rep_stack, rep_len + 1, false, !cut_node, ss + 1);
             if (score > alpha && reduction > 0)
-                score = -negamax(context, thread, b,
-                                 depth - 1 + d_ext, -alpha - 1, -alpha, ply + 1,
-                                 H, rep_stack, rep_len + 1, false, !cut_node, ss + 1);
+                score = -negamax(context, thread, b, depth - 1 + d_ext, -alpha - 1, -alpha, ply + 1, H, rep_stack,
+                                 rep_len + 1, false, !cut_node, ss + 1);
             if (pv_node && score > alpha && score < beta)
-                score = -negamax(context, thread, b,
-                                 depth - 1 + d_ext, -beta, -alpha, ply + 1,
-                                 H, rep_stack, rep_len + 1, true, false, ss + 1);
+                score = -negamax(context, thread, b, depth - 1 + d_ext, -beta, -alpha, ply + 1, H, rep_stack,
+                                 rep_len + 1, true, false, ss + 1);
         }
 
         unmake_move(b, m, u);
@@ -1085,16 +981,14 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             if (have_static_eval && !in_check && ss->excluded_move == MOVE_NONE)
                 update_correction_history(b, H, raw_static_eval, score, depth, TT_LOWER);
             if (ss->excluded_move == MOVE_NONE) {
-                int tt_s = score > MATE_SCORE - MAX_PLY
-                    ? score + ply
-                    : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
+                int tt_s = score > MATE_SCORE - MAX_PLY ? score + ply
+                                                        : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
                 context.table.store(key, depth, tt_s, TT_LOWER, m);
             }
             if (is_quiet) {
                 H.store_killer(ply, m);
-                int bonus = std::min(
-                    Tune::history_bonus_limit,
-                    Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
+                int bonus = std::min(Tune::history_bonus_limit,
+                                     Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
 
                 auto update_all = [&](Move move, int pt_idx, int bns) {
                     int f = move_from(move);
@@ -1104,20 +998,16 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                     if (ss[-1].move != MOVE_NONE) {
                         int p1 = static_cast<int>(get_type(ss[-1].piece));
                         int t1 = static_cast<int>(move_to(ss[-1].move)) & 63;
-                        H.update_history(
-                            H.counter_move_history[
-                                SearchHeuristics::piece_index(p1)][t1]
-                            [SearchHeuristics::piece_index(pt_idx)][t],
-                            bns);
+                        H.update_history(H.counter_move_history[SearchHeuristics::piece_index(p1)][t1]
+                                                               [SearchHeuristics::piece_index(pt_idx)][t],
+                                         bns);
                     }
                     if (ss[-2].move != MOVE_NONE) {
                         int p2 = static_cast<int>(get_type(ss[-2].piece));
                         int t2 = static_cast<int>(move_to(ss[-2].move)) & 63;
-                        H.update_history(
-                            H.follow_up_history[
-                                SearchHeuristics::piece_index(p2)][t2]
-                            [SearchHeuristics::piece_index(pt_idx)][t],
-                            bns);
+                        H.update_history(H.follow_up_history[SearchHeuristics::piece_index(p2)][t2]
+                                                            [SearchHeuristics::piece_index(pt_idx)][t],
+                                         bns);
                     }
                 };
 
@@ -1129,31 +1019,23 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                 }
                 update_all(m, moved_pc_idx, bonus);
                 for (int j = 0; j < quiet_count - 1; ++j) {
-                    int q_pc_idx = static_cast<int>(
-                        get_type(b.get_piece(move_from(quiets_played[j]))));
+                    int q_pc_idx = static_cast<int>(get_type(b.get_piece(move_from(quiets_played[j]))));
                     update_all(quiets_played[j], q_pc_idx, -bonus);
                 }
             } else if (cap_victim_pt != NONE_PTYPE) {
                 // Update capture history: reward the cutting capture, penalise prior ones
-                int bonus = std::min(
-                    Tune::history_bonus_limit,
-                    Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
+                int bonus = std::min(Tune::history_bonus_limit,
+                                     Tune::history_bonus_mult * depth - Tune::history_bonus_sub);
                 int attacker_pt = static_cast<int>(get_type(moved_piece));
                 int to = static_cast<int>(move_to(m)) & 63;
-                H.update_history(
-                    H.capture_history[
-                        SearchHeuristics::piece_index(attacker_pt)][to]
-                    [SearchHeuristics::piece_index(cap_victim_pt)],
-                    bonus);
+                H.update_history(H.capture_history[SearchHeuristics::piece_index(attacker_pt)][to]
+                                                  [SearchHeuristics::piece_index(cap_victim_pt)],
+                                 bonus);
                 for (int j = 0; j < capture_tried_count - 1; ++j) {
                     int t2 = static_cast<int>(move_to(captures_tried[j].m)) & 63;
-                    H.update_history(
-                        H.capture_history[
-                            SearchHeuristics::piece_index(
-                                captures_tried[j].attacker_pt)][t2]
-                        [SearchHeuristics::piece_index(
-                            captures_tried[j].captured_pt)],
-                        -bonus);
+                    H.update_history(H.capture_history[SearchHeuristics::piece_index(captures_tried[j].attacker_pt)][t2]
+                                                      [SearchHeuristics::piece_index(captures_tried[j].captured_pt)],
+                                     -bonus);
                 }
             }
             return score;
@@ -1176,18 +1058,14 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             update_correction_history(b, H, raw_static_eval, alpha, depth, bound);
         }
         int tt_s = (alpha > MATE_SCORE - MAX_PLY) ? alpha + ply : (alpha < -MATE_SCORE + MAX_PLY ? alpha - ply : alpha);
-        context.table.store(key, depth, tt_s,
-                            (alpha <= original_alpha) ? TT_UPPER : TT_EXACT,
-                            best_move);
+        context.table.store(key, depth, tt_s, (alpha <= original_alpha) ? TT_UPPER : TT_EXACT, best_move);
     }
 
     return alpha;
 }
 
-static SearchResult search_impl(
-    SearchContext &context, SearchThreadState &thread,
-    Board &b, int max_depth, const SearchRequest &request,
-    SearchHeuristics &H, StackInfo *ss) {
+static SearchResult search_impl(SearchContext &context, SearchThreadState &thread, Board &b, int max_depth,
+                                const SearchRequest &request, SearchHeuristics &H, StackInfo *ss) {
 
     thread.node_count = 0;
     thread.pending_shared_nodes = 0;
@@ -1195,12 +1073,14 @@ static SearchResult search_impl(
     struct PendingNodePublisher {
         SearchContext &context;
         SearchThreadState &thread;
-        ~PendingNodePublisher() { publish_pending_nodes(context, thread); }
+        ~PendingNodePublisher() {
+            publish_pending_nodes(context, thread);
+        }
     } pending_node_publisher{context, thread};
 
     ss->acc.refresh(b);
 
-    Move final_best_move  = MOVE_NONE;
+    Move final_best_move = MOVE_NONE;
     int final_best_score = -INF;
     int completed_depth = 0;
 
@@ -1208,50 +1088,48 @@ static SearchResult search_impl(
     int rep_len = 0;
 
     if (!request.repetition.empty()) {
-        const std::size_t rep_count = std::min(
-            request.repetition.size(), static_cast<std::size_t>(MAX_PLY));
-        const std::size_t rep_offset =
-            request.repetition.size() - rep_count;
+        const std::size_t rep_count = std::min(request.repetition.size(), static_cast<std::size_t>(MAX_PLY));
+        const std::size_t rep_offset = request.repetition.size() - rep_count;
         rep_len = static_cast<int>(rep_count);
         for (int i = 0; i < rep_len; ++i)
-            rep_stack[i] = request.repetition[
-                rep_offset + static_cast<std::size_t>(i)];
+            rep_stack[i] = request.repetition[rep_offset + static_cast<std::size_t>(i)];
     }
     if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
-        if (rep_len < MAX_PLY) rep_stack[rep_len++] = b.hash;
-        else rep_stack[MAX_PLY - 1] = b.hash;
+        if (rep_len < MAX_PLY)
+            rep_stack[rep_len++] = b.hash;
+        else
+            rep_stack[MAX_PLY - 1] = b.hash;
     }
 
     auto start_time = std::chrono::steady_clock::now();
 
     for (int depth = 1; depth <= max_depth; ++depth) {
         int window_alpha = -INF;
-        int window_beta  = INF;
+        int window_beta = INF;
         int delta = Tune::asp_delta;
 
         if (depth >= Tune::asp_min_depth && std::abs(final_best_score) < MATE_SCORE - MAX_PLY) {
             window_alpha = std::max(-INF, final_best_score - delta);
-            window_beta  = std::min(INF, final_best_score + delta);
+            window_beta = std::min(INF, final_best_score + delta);
         }
 
         // Generate and order root moves once per depth (outside aspiration retry loop).
         MoveList pseudo = generate_legal_moves(b);
         Move tt_root = MOVE_NONE;
-        if (const TTEntry* e = context.table.probe(b.hash)) tt_root = e->best;
+        if (const TTEntry *e = context.table.probe(b.hash)) tt_root = e->best;
         ScoredMove ordered[256];
         for (int i = 0; i < pseudo.count; ++i) {
             Move m = pseudo.moves[i];
             int s = order_score(b, m, 0, H, ss);
             if (tt_root != MOVE_NONE && m == tt_root) s += 2000000;
-            if (request.root_bias != 0)
-                s += ((i + request.root_bias) & 7) * 2;
+            if (request.root_bias != 0) s += ((i + request.root_bias) & 7) * 2;
             ordered[i] = {m, s};
         }
         int root_count = pseudo.count;
 
         while (true) {
             int current_alpha = window_alpha;
-            int current_beta  = window_beta;
+            int current_beta = window_beta;
 
             int best_score_this_depth = -INF;
             Move best_move_this_depth = MOVE_NONE;
@@ -1267,7 +1145,10 @@ static SearchResult search_impl(
                 if (!request.root_moves.empty()) {
                     bool found = false;
                     for (Move sm : request.root_moves)
-                        if (sm == m) { found = true; break; }
+                        if (sm == m) {
+                            found = true;
+                            break;
+                        }
                     if (!found) continue;
                 }
 
@@ -1285,17 +1166,14 @@ static SearchResult search_impl(
 
                 int score;
                 if (legal_root_count == 1) {
-                    score = -negamax(context, thread, b,
-                                     depth - 1, -current_beta, -current_alpha, 1,
-                                     H, rep_stack, rep_len + 1, true, false, ss + 1);
+                    score = -negamax(context, thread, b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack,
+                                     rep_len + 1, true, false, ss + 1);
                 } else {
-                    score = -negamax(context, thread, b,
-                                     depth - 1, -current_alpha - 1, -current_alpha, 1,
-                                     H, rep_stack, rep_len + 1, false, true, ss + 1);
+                    score = -negamax(context, thread, b, depth - 1, -current_alpha - 1, -current_alpha, 1, H, rep_stack,
+                                     rep_len + 1, false, true, ss + 1);
                     if (score > current_alpha && score < current_beta) {
-                        score = -negamax(context, thread, b,
-                                         depth - 1, -current_beta, -current_alpha, 1,
-                                         H, rep_stack, rep_len + 1, true, false, ss + 1);
+                        score = -negamax(context, thread, b, depth - 1, -current_beta, -current_alpha, 1, H, rep_stack,
+                                         rep_len + 1, true, false, ss + 1);
                     }
                 }
 
@@ -1306,7 +1184,7 @@ static SearchResult search_impl(
 
                 if (score > best_score_this_depth) {
                     best_score_this_depth = score;
-                    best_move_this_depth  = m;
+                    best_move_this_depth = m;
                 }
 
                 if (score > current_alpha) current_alpha = score;
@@ -1316,8 +1194,7 @@ static SearchResult search_impl(
 
             if (legal_root_count == 0) {
                 const bool in_check = PositionRules::is_in_check(b);
-                return {MOVE_NONE, MOVE_NONE, in_check ? -MATE_SCORE : 0,
-                        0, thread.selective_depth, 0};
+                return {MOVE_NONE, MOVE_NONE, in_check ? -MATE_SCORE : 0, 0, thread.selective_depth, 0};
             }
 
             if (best_score_this_depth <= window_alpha && window_alpha > -INF) {
@@ -1331,8 +1208,8 @@ static SearchResult search_impl(
             }
 
             final_best_score = best_score_this_depth;
-            final_best_move  = best_move_this_depth;
-            completed_depth  = depth;
+            final_best_move = best_move_this_depth;
+            completed_depth = depth;
             break;
         }
 
@@ -1342,12 +1219,11 @@ static SearchResult search_impl(
         U64 best_move_effort = 0;
         for (int i = 0; i < root_count; ++i) {
             root_effort += ordered[i].effort;
-            if (ordered[i].m == final_best_move)
-                best_move_effort = ordered[i].effort;
+            if (ordered[i].m == final_best_move) best_move_effort = ordered[i].effort;
         }
-        const double best_move_node_fraction = root_effort > 0
-            ? static_cast<double>(best_move_effort) / static_cast<double>(root_effort)
-            : 0.0;
+        const double best_move_node_fraction = root_effort > 0 ? static_cast<double>(best_move_effort) /
+                                                                     static_cast<double>(root_effort)
+                                                               : 0.0;
 
         auto now = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
@@ -1360,14 +1236,13 @@ static SearchResult search_impl(
         Move pv_move = final_best_move;
         U64 pv_rep_stack[MAX_PLY * 2];
         int pv_rep_len = std::min(rep_len, MAX_PLY * 2);
-        for (int i = 0; i < pv_rep_len; ++i) pv_rep_stack[i] = rep_stack[i];
+        for (int i = 0; i < pv_rep_len; ++i)
+            pv_rep_stack[i] = rep_stack[i];
 
         for (int i = 0; i < depth && pv_move != MOVE_NONE; ++i) {
             if (b_pv.half_move >= 100) break;
-            if (pv_rep_len > 1
-                && PositionRules::has_search_repetition(
-                    b_pv.hash, pv_rep_stack, pv_rep_len - 1,
-                    b_pv.half_move))
+            if (pv_rep_len > 1 &&
+                PositionRules::has_search_repetition(b_pv.hash, pv_rep_stack, pv_rep_len - 1, b_pv.half_move))
                 break;
 
             Undo u_pv;
@@ -1376,14 +1251,17 @@ static SearchResult search_impl(
             if (!pv_line.empty()) pv_line += " ";
             pv_line += move_to_uci(pv_move);
 
-            if (pv_rep_len < MAX_PLY * 2) pv_rep_stack[pv_rep_len++] = b_pv.hash;
+            if (pv_rep_len < MAX_PLY * 2)
+                pv_rep_stack[pv_rep_len++] = b_pv.hash;
             else {
                 std::memmove(pv_rep_stack, pv_rep_stack + 1, sizeof(U64) * (MAX_PLY * 2 - 1));
                 pv_rep_stack[MAX_PLY * 2 - 1] = b_pv.hash;
             }
 
-            if (const TTEntry* e = context.table.probe(b_pv.hash)) pv_move = e->best;
-            else break;
+            if (const TTEntry *e = context.table.probe(b_pv.hash))
+                pv_move = e->best;
+            else
+                break;
         }
 
         std::string score_str;
@@ -1398,55 +1276,38 @@ static SearchResult search_impl(
 
         if (request.emit_info) {
             std::lock_guard<std::mutex> output_lock(uci_output_mutex);
-            std::cout << "info depth " << depth
-                      << " seldepth " << thread.selective_depth
-                      << " score " << score_str
-                      << " time " << ms
-                      << " nodes " << nodes
-                      << " nps " << nps
-                      << " hashfull " << context.table.hashfull()
-                      << " tbhits 0"
-                      << " pv " << pv_line << "\n";
+            std::cout << "info depth " << depth << " seldepth " << thread.selective_depth << " score " << score_str
+                      << " time " << ms << " nodes " << nodes << " nps " << nps << " hashfull "
+                      << context.table.hashfull() << " tbhits 0" << " pv " << pv_line << "\n";
             std::cout.flush();
         }
         if (request.on_iteration && !search_stopped(context, thread))
-            request.on_iteration(
-                depth, final_best_move, final_best_score, nodes, ms,
-                best_move_node_fraction);
+            request.on_iteration(depth, final_best_move, final_best_score, nodes, ms, best_move_node_fraction);
 
         if (search_stopped(context, thread)) break;
     }
 
-    return {final_best_move, MOVE_NONE, final_best_score, completed_depth,
-            thread.selective_depth,
-            searched_nodes(context, thread)};
+    return {final_best_move,        MOVE_NONE,
+            final_best_score,       completed_depth,
+            thread.selective_depth, searched_nodes(context, thread)};
 }
 
-SearchResult search(SearchContext &context,
-                    SearchWorker &worker,
-                    Board &b, int max_depth,
+SearchResult search(SearchContext &context, SearchWorker &worker, Board &b, int max_depth,
                     const SearchRequest &request) {
     SearchThreadState &thread = worker.impl->prepare_thread();
-    SearchHeuristics &heuristics = request.retain_history
-        ? context.impl->histories()
-        : worker.impl->prepare_histories();
+    SearchHeuristics &heuristics = request.retain_history ? context.impl->histories()
+                                                          : worker.impl->prepare_histories();
     StackInfo *stack = worker.impl->prepare_stack();
-    return search_impl(
-        context, thread, b, max_depth, request, heuristics, stack);
+    return search_impl(context, thread, b, max_depth, request, heuristics, stack);
 }
 
-SearchResult search_nodes(SearchContext &context,
-                          SearchWorker &worker,
-                          Board &b, U64 max_nodes,
+SearchResult search_nodes(SearchContext &context, SearchWorker &worker, Board &b, U64 max_nodes,
                           const SearchRequest &request) {
-    SearchThreadState &thread =
-        worker.impl->prepare_thread(true, max_nodes);
-    SearchHeuristics &heuristics = request.retain_history
-        ? context.impl->histories()
-        : worker.impl->prepare_histories();
+    SearchThreadState &thread = worker.impl->prepare_thread(true, max_nodes);
+    SearchHeuristics &heuristics = request.retain_history ? context.impl->histories()
+                                                          : worker.impl->prepare_histories();
     StackInfo *stack = worker.impl->prepare_stack();
-    return search_impl(
-        context, thread, b, MAX_PLY - 1, request, heuristics, stack);
+    return search_impl(context, thread, b, MAX_PLY - 1, request, heuristics, stack);
 }
 
 int qsearch_score(SearchContext &context, SearchWorker &worker, Board &b) {
@@ -1455,9 +1316,7 @@ int qsearch_score(SearchContext &context, SearchWorker &worker, Board &b) {
     ss->acc.refresh(b);
     U64 rep_stack[MAX_PLY * 2]{};
     rep_stack[0] = b.hash;
-    const int score =
-        qsearch(context, thread, b, -INF, INF,
-                Tune::qs_start_depth, 0, ss, rep_stack, 1);
+    const int score = qsearch(context, thread, b, -INF, INF, Tune::qs_start_depth, 0, ss, rep_stack, 1);
     return score;
 }
 

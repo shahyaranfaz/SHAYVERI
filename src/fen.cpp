@@ -1,5 +1,4 @@
 #include "board.h"
-
 #include "zobrist.h"
 
 #include <cassert>
@@ -13,8 +12,7 @@ bool set_from_fen(Board &b, const std::string &fen) {
     std::string board_str, side_str, castle, ep_str;
     int half_move = 0;
     int full_move = 0;
-    if (!(iss >> board_str >> side_str >> castle >> ep_str >> half_move >> full_move) ||
-        half_move < 0 || full_move < 1)
+    if (!(iss >> board_str >> side_str >> castle >> ep_str >> half_move >> full_move) || half_move < 0 || full_move < 1)
         return false;
     std::string trailing;
     if (iss >> trailing) return false;
@@ -46,18 +44,26 @@ bool set_from_fen(Board &b, const std::string &fen) {
     }
     if (rank != 0 || file != 8) return false;
 
-    if (side_str == "w")       parsed.side_to_move = WHITE;
-    else if (side_str == "b")  parsed.side_to_move = BLACK;
-    else return false;
+    if (side_str == "w")
+        parsed.side_to_move = WHITE;
+    else if (side_str == "b")
+        parsed.side_to_move = BLACK;
+    else
+        return false;
 
     if (castle != "-") {
         for (char c : castle) {
             int right = 0;
-            if      (c == 'K') right = WHITE_KINGSIDE;
-            else if (c == 'Q') right = WHITE_QUEENSIDE;
-            else if (c == 'k') right = BLACK_KINGSIDE;
-            else if (c == 'q') right = BLACK_QUEENSIDE;
-            else return false;
+            if (c == 'K')
+                right = WHITE_KINGSIDE;
+            else if (c == 'Q')
+                right = WHITE_QUEENSIDE;
+            else if (c == 'k')
+                right = BLACK_KINGSIDE;
+            else if (c == 'q')
+                right = BLACK_QUEENSIDE;
+            else
+                return false;
             if (parsed.castling & right) return false;
             parsed.castling |= right;
         }
@@ -80,8 +86,7 @@ bool set_from_fen(Board &b, const std::string &fen) {
     // Preserve the invariants required by move generation and NNUE evaluation.
     // Promotions replace pawns, so no legally reachable position can contain
     // more than the initial 32 pieces.
-    if (!parsed.is_plausible_position())
-        return false;
+    if (!parsed.is_plausible_position()) return false;
 
     parsed.hash = Zobrist::compute(parsed);
     parsed.pawn_hash = Zobrist::compute_pawns(parsed);

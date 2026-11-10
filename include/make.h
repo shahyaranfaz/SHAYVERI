@@ -31,9 +31,7 @@ constexpr CastleInfo castle_info(Colour side, bool kingside) {
         side == WHITE ? WR : BR,
         make_square(kingside ? FILE_H : FILE_A, rank),
         make_square(kingside ? FILE_F : FILE_D, rank),
-        side == WHITE
-            ? (kingside ? WHITE_KINGSIDE : WHITE_QUEENSIDE)
-            : (kingside ? BLACK_KINGSIDE : BLACK_QUEENSIDE),
+        side == WHITE ? (kingside ? WHITE_KINGSIDE : WHITE_QUEENSIDE) : (kingside ? BLACK_KINGSIDE : BLACK_QUEENSIDE),
     };
 }
 

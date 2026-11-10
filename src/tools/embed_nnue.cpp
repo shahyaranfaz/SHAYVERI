@@ -33,31 +33,31 @@ std::string escaped_cpp_string(const std::string &value) {
     out.reserve(value.size());
     for (unsigned char c : value) {
         switch (c) {
-        case '\\':
-            out += "\\\\";
-            break;
-        case '"':
-            out += "\\\"";
-            break;
-        case '\n':
-            out += "\\n";
-            break;
-        case '\r':
-            out += "\\r";
-            break;
-        case '\t':
-            out += "\\t";
-            break;
-        default:
-            if (c < 32 || c > 126) {
-                static constexpr char HEX[] = "0123456789abcdef";
-                out += "\\x";
-                out += HEX[(c >> 4) & 0xF];
-                out += HEX[c & 0xF];
-            } else {
-                out += static_cast<char>(c);
-            }
-            break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            case '\r':
+                out += "\\r";
+                break;
+            case '\t':
+                out += "\\t";
+                break;
+            default:
+                if (c < 32 || c > 126) {
+                    static constexpr char HEX[] = "0123456789abcdef";
+                    out += "\\x";
+                    out += HEX[(c >> 4) & 0xF];
+                    out += HEX[c & 0xF];
+                } else {
+                    out += static_cast<char>(c);
+                }
+                break;
         }
     }
     return out;
@@ -94,10 +94,8 @@ int main(int argc, char **argv) {
         out << "#include <cstddef>\n";
         out << "#include <cstdint>\n\n";
         out << "namespace SHAYVERI::NNUE {\n\n";
-        out << "extern const char EMBEDDED_DEFAULT_NET_NAME[] = \""
-            << escaped_cpp_string(net_name) << "\";\n";
-        out << "extern const std::size_t EMBEDDED_DEFAULT_NET_SIZE = "
-            << data.size() << ";\n";
+        out << "extern const char EMBEDDED_DEFAULT_NET_NAME[] = \"" << escaped_cpp_string(net_name) << "\";\n";
+        out << "extern const std::size_t EMBEDDED_DEFAULT_NET_SIZE = " << data.size() << ";\n";
         out << "extern const std::uint8_t EMBEDDED_DEFAULT_NET[] = {\n";
 
         out << std::hex << std::setfill('0');

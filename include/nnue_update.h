@@ -9,8 +9,7 @@
 namespace SHAYVERI {
 namespace NNUE {
 
-void update_accumulator(Accumulator &child, const Accumulator &parent,
-                        const Board &post, Move m, const Undo &u);
+void update_accumulator(Accumulator &child, const Accumulator &parent, const Board &post, Move m, const Undo &u);
 
 } // namespace NNUE
 

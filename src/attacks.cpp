@@ -1,7 +1,6 @@
 #include "attacks.h"
 
 #include <cassert>
-
 #include <immintrin.h>
 
 namespace SHAYVERI {
@@ -32,7 +31,7 @@ static bool is_valid_square(int f, int r) {
 
 static U64 slider_mask(Square sq, bool bishop) {
     const int start = bishop ? NE : N;
-    const int end   = bishop ? SW + 1 : W + 1;
+    const int end = bishop ? SW + 1 : W + 1;
     const int f = get_file(sq);
     const int r = get_rank(sq);
     U64 mask = 0;
@@ -58,21 +57,19 @@ static U64 compute_pawn_attacks(Colour c, Square from) {
     U64 attacks = 0;
     for (int file_delta = -1; file_delta <= 1; file_delta += 2) {
         const int target_file = file + file_delta;
-        if (is_valid_square(target_file, rank))
-            attacks |= bb_square(make_square(File(target_file), Rank(rank)));
+        if (is_valid_square(target_file, rank)) attacks |= bb_square(make_square(File(target_file), Rank(rank)));
     }
     return attacks;
 }
 
 static U64 compute_knight_attacks(Square from) {
-    static const int df[8] = { 1,  2,  2,  1, -1, -2, -2, -1 };
-    static const int dr[8] = { 2,  1, -1, -2, -2, -1,  1,  2 };
+    static const int df[8] = {1, 2, 2, 1, -1, -2, -2, -1};
+    static const int dr[8] = {2, 1, -1, -2, -2, -1, 1, 2};
     int f = get_file(from), r = get_rank(from);
     U64 bb = 0;
     for (int i = 0; i < 8; ++i) {
         int nf = f + df[i], nr = r + dr[i];
-        if (is_valid_square(nf, nr))
-            bb |= bb_square(make_square(File(nf), Rank(nr)));
+        if (is_valid_square(nf, nr)) bb |= bb_square(make_square(File(nf), Rank(nr)));
     }
     return bb;
 }
@@ -84,8 +81,7 @@ static U64 compute_king_attacks(Square from) {
         for (int dr = -1; dr <= 1; ++dr) {
             if (df == 0 && dr == 0) continue;
             int nf = f + df, nr = r + dr;
-            if (is_valid_square(nf, nr))
-                bb |= bb_square(make_square(File(nf), Rank(nr)));
+            if (is_valid_square(nf, nr)) bb |= bb_square(make_square(File(nf), Rank(nr)));
         }
     }
     return bb;
@@ -93,7 +89,7 @@ static U64 compute_king_attacks(Square from) {
 
 static U64 sliding_attacks(Square sq, U64 occ, bool bishop) {
     int start = bishop ? 4 : 0;
-    int end   = bishop ? 8 : 4;
+    int end = bishop ? 8 : 4;
     int f = get_file(sq), r = get_rank(sq);
     U64 attacks = 0;
     for (int d = start; d < end; ++d) {
@@ -109,13 +105,11 @@ static U64 sliding_attacks(Square sq, U64 occ, bool bishop) {
     return attacks;
 }
 
-static void init_slider(PextSlider &slider, U64 *&table, Square square,
-                        U64 mask, bool bishop) {
+static void init_slider(PextSlider &slider, U64 *&table, Square square, U64 mask, bool bishop) {
     slider.mask = mask;
     slider.attacks = table;
     for (U64 occupied = 0;; occupied = (occupied - mask) & mask) {
-        slider.attacks[_pext_u64(occupied, mask)] =
-            sliding_attacks(square, occupied, bishop);
+        slider.attacks[_pext_u64(occupied, mask)] = sliding_attacks(square, occupied, bishop);
         if (occupied == mask) break;
     }
     table += 1ULL << __builtin_popcountll(mask);
@@ -125,8 +119,8 @@ void init_attacks() {
     for (int sq = 0; sq < 64; ++sq) {
         PAWN_ATTACKS[WHITE][sq] = compute_pawn_attacks(WHITE, Square(sq));
         PAWN_ATTACKS[BLACK][sq] = compute_pawn_attacks(BLACK, Square(sq));
-        KNIGHT_ATTACKS[sq]      = compute_knight_attacks(Square(sq));
-        KING_ATTACKS[sq]        = compute_king_attacks(Square(sq));
+        KNIGHT_ATTACKS[sq] = compute_knight_attacks(Square(sq));
+        KING_ATTACKS[sq] = compute_king_attacks(Square(sq));
     }
 
     U64 *b_ptr = BishopTable;
@@ -159,12 +153,9 @@ U64 attackers_to(const Board &b, Square sq, U64 occupied) {
     attacks |= pawn_attacks(WHITE, sq) & b.bit_boards[BP];
     attacks |= knight_attacks(sq) & (b.bit_boards[WN] | b.bit_boards[BN]);
     attacks |= king_attacks(sq) & (b.bit_boards[WK] | b.bit_boards[BK]);
-    attacks |= bishop_attacks(sq, occupied)
-        & (b.bit_boards[WB] | b.bit_boards[BB]
-           | b.bit_boards[WQ] | b.bit_boards[BQ]);
-    attacks |= rook_attacks(sq, occupied)
-        & (b.bit_boards[WR] | b.bit_boards[BR]
-           | b.bit_boards[WQ] | b.bit_boards[BQ]);
+    attacks |= bishop_attacks(sq, occupied) &
+               (b.bit_boards[WB] | b.bit_boards[BB] | b.bit_boards[WQ] | b.bit_boards[BQ]);
+    attacks |= rook_attacks(sq, occupied) & (b.bit_boards[WR] | b.bit_boards[BR] | b.bit_boards[WQ] | b.bit_boards[BQ]);
     return attacks & occupied;
 }
 
@@ -190,12 +181,12 @@ bool is_square_attacked(const Board &b, Square sq, Colour attacker) {
     if (KING_ATTACKS[sq] & king) return true;
 
     U64 ba = bishop_attacks(sq, b.occupied);
-    if (attacker == WHITE ? (ba & (b.bit_boards[WB] | b.bit_boards[WQ]))
-                          : (ba & (b.bit_boards[BB] | b.bit_boards[BQ]))) return true;
+    if (attacker == WHITE ? (ba & (b.bit_boards[WB] | b.bit_boards[WQ])) : (ba & (b.bit_boards[BB] | b.bit_boards[BQ])))
+        return true;
 
     U64 ra = rook_attacks(sq, b.occupied);
-    if (attacker == WHITE ? (ra & (b.bit_boards[WR] | b.bit_boards[WQ]))
-                          : (ra & (b.bit_boards[BR] | b.bit_boards[BQ]))) return true;
+    if (attacker == WHITE ? (ra & (b.bit_boards[WR] | b.bit_boards[WQ])) : (ra & (b.bit_boards[BR] | b.bit_boards[BQ])))
+        return true;
 
     return false;
 }

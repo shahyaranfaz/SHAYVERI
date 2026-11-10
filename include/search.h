@@ -32,20 +32,16 @@ struct SearchContext {
     std::atomic<U64> nodes{0};
     std::atomic<U64> node_limit{0};
 
-private:
+  private:
     struct Impl;
     std::unique_ptr<Impl> impl;
 
-    friend SearchResult search(
-        SearchContext &, SearchWorker &, Board &, int,
-        const SearchRequest &);
-    friend SearchResult search_nodes(
-        SearchContext &, SearchWorker &, Board &, U64,
-        const SearchRequest &);
+    friend SearchResult search(SearchContext &, SearchWorker &, Board &, int, const SearchRequest &);
+    friend SearchResult search_nodes(SearchContext &, SearchWorker &, Board &, U64, const SearchRequest &);
 };
 
 class SearchWorker {
-public:
+  public:
     SearchWorker();
     ~SearchWorker();
 
@@ -55,16 +51,12 @@ public:
     SearchWorker(const SearchWorker &) = delete;
     SearchWorker &operator=(const SearchWorker &) = delete;
 
-private:
+  private:
     struct Impl;
     std::unique_ptr<Impl> impl;
 
-    friend SearchResult search(
-        SearchContext &, SearchWorker &, Board &, int,
-        const SearchRequest &);
-    friend SearchResult search_nodes(
-        SearchContext &, SearchWorker &, Board &, U64,
-        const SearchRequest &);
+    friend SearchResult search(SearchContext &, SearchWorker &, Board &, int, const SearchRequest &);
+    friend SearchResult search_nodes(SearchContext &, SearchWorker &, Board &, U64, const SearchRequest &);
     friend int qsearch_score(SearchContext &, SearchWorker &, Board &);
 };
 
@@ -96,22 +88,18 @@ struct SingularSearchDecision {
     bool multicut = false;
 };
 
-SingularSearchDecision classify_singular_search(
-    int singular_score, int singular_beta, int beta, int tt_score, bool cut_node);
+SingularSearchDecision classify_singular_search(int singular_score, int singular_beta, int beta, int tt_score,
+                                                bool cut_node);
 
 I16 clamp_history_value(int value);
 I16 gravity_history_update(I16 entry, int bonus, int history_max);
 
 } // namespace SearchDetail
 
-SearchResult search(SearchContext &context,
-                    SearchWorker &worker,
-                    Board &b, int max_depth,
+SearchResult search(SearchContext &context, SearchWorker &worker, Board &b, int max_depth,
                     const SearchRequest &request);
 
-SearchResult search_nodes(SearchContext &context,
-                          SearchWorker &worker,
-                          Board &b, U64 max_nodes,
+SearchResult search_nodes(SearchContext &context, SearchWorker &worker, Board &b, U64 max_nodes,
                           const SearchRequest &request);
 
 int qsearch_score(SearchContext &context, SearchWorker &worker, Board &b);

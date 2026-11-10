@@ -38,13 +38,11 @@ U64 compute(const Board &b) {
         }
     }
 
-    if (b.side_to_move == BLACK)
-        h ^= sides;
+    if (b.side_to_move == BLACK) h ^= sides;
 
     h ^= castlings[b.castling & 15];
 
-    if (b.en_passant != SQ_NONE)
-        h ^= en_passants[get_file(b.en_passant)];
+    if (b.en_passant != SQ_NONE) h ^= en_passants[get_file(b.en_passant)];
 
     return h;
 }

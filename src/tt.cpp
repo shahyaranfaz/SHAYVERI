@@ -17,23 +17,16 @@ constexpr U64 AGE_MASK = 0xFFULL;
 constexpr U64 KEY_MASK = ~(PRESENT_BIT | LOCKED_VALUE | AGE_MASK);
 constexpr U64 MOVE_MASK = (1ULL << 17) - 1;
 
-U64 pack_payload(int score, int eval, int depth, TTFlag flag,
-                 Move best, bool has_eval) {
-    const I16 packed_score = static_cast<I16>(
-        std::clamp(score, static_cast<int>(std::numeric_limits<I16>::min()),
-                  static_cast<int>(std::numeric_limits<I16>::max())));
-    const I16 packed_eval = static_cast<I16>(
-        std::clamp(eval, static_cast<int>(std::numeric_limits<I16>::min()),
-                  static_cast<int>(std::numeric_limits<I16>::max())));
-    const U8 packed_depth =
-        static_cast<U8>(std::clamp(depth, -1, 127) + 1);
+U64 pack_payload(int score, int eval, int depth, TTFlag flag, Move best, bool has_eval) {
+    const I16 packed_score = static_cast<I16>(std::clamp(score, static_cast<int>(std::numeric_limits<I16>::min()),
+                                                         static_cast<int>(std::numeric_limits<I16>::max())));
+    const I16 packed_eval = static_cast<I16>(std::clamp(eval, static_cast<int>(std::numeric_limits<I16>::min()),
+                                                        static_cast<int>(std::numeric_limits<I16>::max())));
+    const U8 packed_depth = static_cast<U8>(std::clamp(depth, -1, 127) + 1);
 
-    return static_cast<U16>(packed_score)
-         | (static_cast<U64>(static_cast<U16>(packed_eval)) << 16)
-         | ((static_cast<U64>(best) & MOVE_MASK) << 32)
-         | (static_cast<U64>(packed_depth) << 49)
-         | (static_cast<U64>(flag) << 57)
-         | (static_cast<U64>(has_eval ? 1 : 0) << 59);
+    return static_cast<U16>(packed_score) | (static_cast<U64>(static_cast<U16>(packed_eval)) << 16) |
+           ((static_cast<U64>(best) & MOVE_MASK) << 32) | (static_cast<U64>(packed_depth) << 49) |
+           (static_cast<U64>(flag) << 57) | (static_cast<U64>(has_eval ? 1 : 0) << 59);
 }
 
 TTEntry unpack_entry(U64 key, U64 key_age, U64 payload) {
@@ -54,21 +47,15 @@ U64 publication_value(U64 key, U8 age, unsigned index_bits) {
 }
 
 bool publication_matches(U64 key_age, U64 key, unsigned index_bits) {
-    return (key_age & KEY_MASK)
-        == (publication_value(key, 0, index_bits) & KEY_MASK);
+    return (key_age & KEY_MASK) == (publication_value(key, 0, index_bits) & KEY_MASK);
 }
 
-bool read_slot(const TTSlot &slot, U64 key, unsigned index_bits,
-               TTEntry &entry, U64 *observed = nullptr) {
-    const U64 key_age_before =
-        slot.key_age.load(std::memory_order_acquire);
-    if ((key_age_before & PRESENT_BIT) == 0
-        || !publication_matches(key_age_before, key, index_bits))
-        return false;
+bool read_slot(const TTSlot &slot, U64 key, unsigned index_bits, TTEntry &entry, U64 *observed = nullptr) {
+    const U64 key_age_before = slot.key_age.load(std::memory_order_acquire);
+    if ((key_age_before & PRESENT_BIT) == 0 || !publication_matches(key_age_before, key, index_bits)) return false;
 
     const U64 payload = slot.payload.load(std::memory_order_relaxed);
-    const U64 key_age_after =
-        slot.key_age.load(std::memory_order_acquire);
+    const U64 key_age_after = slot.key_age.load(std::memory_order_acquire);
     if (key_age_before != key_age_after) return false;
 
     entry = unpack_entry(key, key_age_after, payload);
@@ -76,18 +63,15 @@ bool read_slot(const TTSlot &slot, U64 key, unsigned index_bits,
     return true;
 }
 
-bool read_slot_any(const TTSlot &slot, unsigned index_bits, SIZE_T bucket_index,
-                   TTEntry &entry, U64 &observed) {
-    const U64 key_age_before =
-        slot.key_age.load(std::memory_order_acquire);
+bool read_slot_any(const TTSlot &slot, unsigned index_bits, SIZE_T bucket_index, TTEntry &entry, U64 &observed) {
+    const U64 key_age_before = slot.key_age.load(std::memory_order_acquire);
     if ((key_age_before & PRESENT_BIT) == 0) {
         observed = key_age_before;
         return false;
     }
 
     const U64 payload = slot.payload.load(std::memory_order_relaxed);
-    const U64 key_age_after =
-        slot.key_age.load(std::memory_order_acquire);
+    const U64 key_age_after = slot.key_age.load(std::memory_order_acquire);
     if (key_age_before != key_age_after) return false;
 
     const U64 high_key = (key_age_after & KEY_MASK) >> 8;
@@ -99,27 +83,21 @@ bool read_slot_any(const TTSlot &slot, unsigned index_bits, SIZE_T bucket_index,
 
 bool lock_slot(TTSlot &slot, U64 expected) {
     if (expected == LOCKED_VALUE) return false;
-    return slot.key_age.compare_exchange_strong(
-        expected, LOCKED_VALUE,
-        std::memory_order_acquire,
-        std::memory_order_relaxed);
+    return slot.key_age.compare_exchange_strong(expected, LOCKED_VALUE, std::memory_order_acquire,
+                                                std::memory_order_relaxed);
 }
 
-void publish_slot(TTSlot &slot, const TTEntry &entry,
-                  unsigned index_bits) {
+void publish_slot(TTSlot &slot, const TTEntry &entry, unsigned index_bits) {
     slot.payload.store(
-        pack_payload(entry.score, entry.eval, entry.depth,
-                     static_cast<TTFlag>(entry.flag),
-                     entry.best, entry.has_eval),
+        pack_payload(entry.score, entry.eval, entry.depth, static_cast<TTFlag>(entry.flag), entry.best, entry.has_eval),
         std::memory_order_relaxed);
-    slot.key_age.store(
-        publication_value(entry.key, entry.age, index_bits),
-        std::memory_order_release);
+    slot.key_age.store(publication_value(entry.key, entry.age, index_bits), std::memory_order_release);
 }
 
 SIZE_T round_down_power2(SIZE_T n) {
     SIZE_T p = 1;
-    while ((p << 1) <= n) p <<= 1;
+    while ((p << 1) <= n)
+        p <<= 1;
     return p;
 }
 
@@ -164,17 +142,14 @@ int TranspositionTable::hashfull() const {
     if (!table || bucket_count == 0) return 0;
 
     constexpr SIZE_T SAMPLE_SLOTS = 1000;
-    const SIZE_T slots = std::min(
-        SAMPLE_SLOTS, bucket_count * static_cast<SIZE_T>(TT_BUCKET_SIZE));
+    const SIZE_T slots = std::min(SAMPLE_SLOTS, bucket_count * static_cast<SIZE_T>(TT_BUCKET_SIZE));
     const U8 age = generation.load(std::memory_order_relaxed);
     SIZE_T occupied = 0;
 
     for (SIZE_T i = 0; i < slots; ++i) {
         const TTSlot &slot = table[i / TT_BUCKET_SIZE].entries[i % TT_BUCKET_SIZE];
         const U64 key_age = slot.key_age.load(std::memory_order_relaxed);
-        if ((key_age & PRESENT_BIT) != 0
-            && static_cast<U8>(key_age & AGE_MASK) == age)
-            ++occupied;
+        if ((key_age & PRESENT_BIT) != 0 && static_cast<U8>(key_age & AGE_MASK) == age) ++occupied;
     }
 
     return static_cast<int>(occupied * 1000 / slots);
@@ -194,8 +169,7 @@ const TTEntry *TranspositionTable::probe(U64 key) const {
     return nullptr;
 }
 
-void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag,
-                               Move best, int eval, bool has_eval) {
+void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag, Move best, int eval, bool has_eval) {
     if (!table || bucket_count == 0 || key == 0) return;
 
     const SIZE_T bucket_index = static_cast<SIZE_T>(key) & mask;
@@ -247,8 +221,7 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag,
         for (TTSlot &slot : bucket.entries) {
             TTEntry candidate;
             U64 observed = 0;
-            if (!read_slot_any(
-                    slot, index_bits, bucket_index, candidate, observed)) {
+            if (!read_slot_any(slot, index_bits, bucket_index, candidate, observed)) {
                 if (observed == 0) {
                     victim = &slot;
                     victim_publication = 0;
@@ -266,9 +239,8 @@ void TranspositionTable::store(U64 key, int depth, int score, TTFlag flag,
 
             const bool candidate_old = candidate.age != age;
             const bool victim_old = victim_entry.age != age;
-            if ((candidate_old && !victim_old)
-                || (candidate_old == victim_old
-                    && candidate.depth < victim_entry.depth)) {
+            if ((candidate_old && !victim_old) ||
+                (candidate_old == victim_old && candidate.depth < victim_entry.depth)) {
                 victim = &slot;
                 victim_entry = candidate;
                 victim_publication = observed;

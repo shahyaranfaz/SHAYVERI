@@ -42,12 +42,9 @@ bool verify_slider(bool bishop) {
         const U64 mask = full_mask(square, bishop);
         for (U64 occupied = 0;; occupied = (occupied - mask) & mask) {
             const U64 expected = ray_attacks(square, occupied, bishop);
-            const U64 actual = bishop
-                ? bishop_attacks(square, occupied)
-                : rook_attacks(square, occupied);
+            const U64 actual = bishop ? bishop_attacks(square, occupied) : rook_attacks(square, occupied);
             if (actual != expected) {
-                std::cerr << "attack mismatch: " << (bishop ? "bishop" : "rook")
-                          << " square=" << index
+                std::cerr << "attack mismatch: " << (bishop ? "bishop" : "rook") << " square=" << index
                           << " occupied=" << occupied << "\n";
                 return false;
             }

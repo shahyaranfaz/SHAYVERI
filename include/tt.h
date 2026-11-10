@@ -42,7 +42,7 @@ static_assert(sizeof(TTBucket) == 64);
 static_assert(std::atomic<U64>::is_always_lock_free);
 
 class TranspositionTable {
-public:
+  public:
     void resize(SIZE_T mb);
     void clear();
     void new_search();
@@ -51,11 +51,10 @@ public:
 
     const TTEntry *probe(U64 key) const;
 
-    void store(U64 key, int depth, int score, TTFlag flag, Move best,
-               int eval = 0, bool has_eval = false);
+    void store(U64 key, int depth, int score, TTFlag flag, Move best, int eval = 0, bool has_eval = false);
     void store_eval(U64 key, int eval);
 
-private:
+  private:
     std::unique_ptr<TTBucket[]> table;
     SIZE_T bucket_count = 0;
     SIZE_T mask = 0;

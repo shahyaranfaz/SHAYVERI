@@ -1,6 +1,7 @@
+#include "make.h"
+
 #include "attacks.h"
 #include "board.h"
-#include "make.h"
 #include "move_gen.h"
 #include "zobrist.h"
 
@@ -9,36 +10,29 @@
 #include <vector>
 
 using SHAYVERI::Board;
-using SHAYVERI::Move;
-using SHAYVERI::MoveList;
-using SHAYVERI::Undo;
-using SHAYVERI::MOVE_NONE;
-using SHAYVERI::File;
-using SHAYVERI::Rank;
 using SHAYVERI::create_ep_move;
 using SHAYVERI::create_move;
+using SHAYVERI::File;
 using SHAYVERI::find_first_legal_move;
 using SHAYVERI::generate_legal_moves;
 using SHAYVERI::generate_pseudo_legal_moves;
 using SHAYVERI::init_attacks;
 using SHAYVERI::is_legal_move;
-using SHAYVERI::make_move;
 using SHAYVERI::make_generated_move;
+using SHAYVERI::make_move;
+using SHAYVERI::Move;
+using SHAYVERI::MOVE_NONE;
+using SHAYVERI::MoveList;
+using SHAYVERI::Rank;
 using SHAYVERI::set_from_fen;
+using SHAYVERI::Undo;
 using SHAYVERI::unmake_move;
 
 static bool boards_equal(const Board &a, const Board &b) {
-    return a.bit_boards == b.bit_boards
-        && a.occupancies == b.occupancies
-        && a.mailbox == b.mailbox
-        && a.hash == b.hash
-        && a.pawn_hash == b.pawn_hash
-        && a.occupied == b.occupied
-        && a.side_to_move == b.side_to_move
-        && a.en_passant == b.en_passant
-        && a.castling == b.castling
-        && a.half_move == b.half_move
-        && a.full_move == b.full_move;
+    return a.bit_boards == b.bit_boards && a.occupancies == b.occupancies && a.mailbox == b.mailbox &&
+           a.hash == b.hash && a.pawn_hash == b.pawn_hash && a.occupied == b.occupied &&
+           a.side_to_move == b.side_to_move && a.en_passant == b.en_passant && a.castling == b.castling &&
+           a.half_move == b.half_move && a.full_move == b.full_move;
 }
 
 static bool verify_roundtrip(Board &b, int depth, int &checked) {
@@ -51,9 +45,8 @@ static bool verify_roundtrip(Board &b, int depth, int &checked) {
 
         Undo u;
         if (!make_generated_move(b, m, u)) continue;
-        if (!b.is_consistent()
-            || b.hash != SHAYVERI::Zobrist::compute(b)
-            || b.pawn_hash != SHAYVERI::Zobrist::compute_pawns(b))
+        if (!b.is_consistent() || b.hash != SHAYVERI::Zobrist::compute(b) ||
+            b.pawn_hash != SHAYVERI::Zobrist::compute_pawns(b))
             return false;
         ++checked;
 
@@ -84,15 +77,12 @@ static bool verify_legality_helpers(Board &b) {
         Undo checked_undo;
         Undo trusted_undo;
         const bool checked_legal = make_move(checked, pseudo.moves[i], checked_undo);
-        const bool trusted_legal =
-            make_generated_move(trusted, pseudo.moves[i], trusted_undo);
-        if (checked_legal != trusted_legal || !boards_equal(checked, trusted))
-            return false;
+        const bool trusted_legal = make_generated_move(trusted, pseudo.moves[i], trusted_undo);
+        if (checked_legal != trusted_legal || !boards_equal(checked, trusted)) return false;
         if (checked_legal) {
             unmake_move(checked, pseudo.moves[i], checked_undo);
             unmake_move(trusted, pseudo.moves[i], trusted_undo);
-            if (!boards_equal(checked, b) || !boards_equal(trusted, b))
-                return false;
+            if (!boards_equal(checked, b) || !boards_equal(trusted, b)) return false;
         }
 
         bool legal_match = false;
@@ -123,15 +113,13 @@ static bool verify_malformed_moves() {
         create_move(SHAYVERI::make_square(File::FILE_B, Rank::RANK_1),
                     SHAYVERI::make_square(File::FILE_D, Rank::RANK_2)),
         create_move(SHAYVERI::make_square(File::FILE_E, Rank::RANK_2),
-                    SHAYVERI::make_square(File::FILE_E, Rank::RANK_3),
-                    SHAYVERI::QUEEN),
+                    SHAYVERI::make_square(File::FILE_E, Rank::RANK_3), SHAYVERI::QUEEN),
         create_ep_move(SHAYVERI::make_square(File::FILE_E, Rank::RANK_2),
                        SHAYVERI::make_square(File::FILE_D, Rank::RANK_3)),
     };
     for (Move move : malformed) {
         Undo undo;
-        if (make_move(b, move, undo) || !boards_equal(b, before))
-            return false;
+        if (make_move(b, move, undo) || !boards_equal(b, before)) return false;
     }
     return true;
 }

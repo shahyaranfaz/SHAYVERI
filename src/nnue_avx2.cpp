@@ -55,8 +55,7 @@ int evaluate_avx2(int side_to_move, int piece_count, const Accumulator &acc) {
     __m256i sum_nstm = _mm256_setzero_si256();
     const bool use_screlu = uses_screlu();
     const int hidden_size = active_hidden_size();
-    const int bucket = output_bucket_count() == 1
-        ? 0 : material_bucket(piece_count);
+    const int bucket = output_bucket_count() == 1 ? 0 : material_bucket(piece_count);
     const I16 *weights = output_weights[bucket];
 
     constexpr int BLOCK_SIZE = 64;
@@ -65,25 +64,17 @@ int evaluate_avx2(int side_to_move, int piece_count, const Accumulator &acc) {
         __m256i block_nstm = _mm256_setzero_si256();
 
         for (int i = base; i < base + BLOCK_SIZE; i += 8) {
-            const __m128i stm = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(stm_acc + i));
-            const __m128i stm_w = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(weights + i));
-            const __m256i stm32 = use_screlu
-                ? screlu16_to_i32(stm) : crelu16_to_i32(stm);
+            const __m128i stm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(stm_acc + i));
+            const __m128i stm_w = _mm_loadu_si128(reinterpret_cast<const __m128i *>(weights + i));
+            const __m256i stm32 = use_screlu ? screlu16_to_i32(stm) : crelu16_to_i32(stm);
             const __m256i stm_w32 = _mm256_cvtepi16_epi32(stm_w);
-            block_stm = _mm256_add_epi32(
-                block_stm, _mm256_mullo_epi32(stm32, stm_w32));
+            block_stm = _mm256_add_epi32(block_stm, _mm256_mullo_epi32(stm32, stm_w32));
 
-            const __m128i nstm = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(nstm_acc + i));
-            const __m128i nstm_w = _mm_loadu_si128(
-                reinterpret_cast<const __m128i *>(weights + hidden_size + i));
-            const __m256i nstm32 = use_screlu
-                ? screlu16_to_i32(nstm) : crelu16_to_i32(nstm);
+            const __m128i nstm = _mm_loadu_si128(reinterpret_cast<const __m128i *>(nstm_acc + i));
+            const __m128i nstm_w = _mm_loadu_si128(reinterpret_cast<const __m128i *>(weights + hidden_size + i));
+            const __m256i nstm32 = use_screlu ? screlu16_to_i32(nstm) : crelu16_to_i32(nstm);
             const __m256i nstm_w32 = _mm256_cvtepi16_epi32(nstm_w);
-            block_nstm = _mm256_add_epi32(
-                block_nstm, _mm256_mullo_epi32(nstm32, nstm_w32));
+            block_nstm = _mm256_add_epi32(block_nstm, _mm256_mullo_epi32(nstm32, nstm_w32));
         }
 
         widen_accumulate(block_stm, sum_stm);
@@ -92,8 +83,7 @@ int evaluate_avx2(int side_to_move, int piece_count, const Accumulator &acc) {
 
     I64 total = hsum256_epi64(sum_stm) + hsum256_epi64(sum_nstm);
     total += output_bias[bucket];
-    int score = static_cast<int>(
-        total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));
+    int score = static_cast<int>(total * OUTPUT_SCALE / (static_cast<I64>(L1_SCALE) * L1_SCALE));
     return score;
 }
 

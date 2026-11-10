@@ -5,14 +5,14 @@
 #include <thread>
 #include <vector>
 
+using SHAYVERI::create_ep_move;
 using SHAYVERI::MOVE_NONE;
+using SHAYVERI::TranspositionTable;
 using SHAYVERI::TT_EXACT;
 using SHAYVERI::TT_LOWER;
 using SHAYVERI::TT_UPPER;
 using SHAYVERI::TTEntry;
-using SHAYVERI::TranspositionTable;
 using SHAYVERI::U64;
-using SHAYVERI::create_ep_move;
 
 static bool require(bool cond, const char *msg) {
     if (!cond) std::cerr << "[FAIL] " << msg << "\n";
@@ -34,10 +34,8 @@ int main() {
     // Shall not replace with shallower non-exact.
     tt.store(key, 2, 222, TT_UPPER, MOVE_NONE);
     e = tt.probe(key);
-    if (e
-        && !require(
-            e->depth == 4 && e->score == 111 && e->flag == TT_LOWER,
-            "shallow non-exact replaced deeper entry"))
+    if (e &&
+        !require(e->depth == 4 && e->score == 111 && e->flag == TT_LOWER, "shallow non-exact replaced deeper entry"))
         ++failures;
 
     // Exact replaces even if shallower.
@@ -68,19 +66,12 @@ int main() {
     // round-trip exactly.
     const U64 boundary_key = 0x8000000000000222ULL;
     const auto boundary_move = create_ep_move(63, 63);
-    tt.store(boundary_key, 127, -32000, TT_UPPER, boundary_move,
-             31871, true);
+    tt.store(boundary_key, 127, -32000, TT_UPPER, boundary_move, 31871, true);
     const TTEntry *boundary = tt.probe(boundary_key);
-    if (!require(boundary != nullptr, "probe compact boundary key"))
-        ++failures;
-    if (boundary
-        && !require(boundary->depth == 127
-                        && boundary->score == -32000
-                        && boundary->eval == 31871
-                        && boundary->best == boundary_move
-                        && boundary->flag == TT_UPPER
-                        && boundary->has_eval,
-                    "compact payload boundary mismatch"))
+    if (!require(boundary != nullptr, "probe compact boundary key")) ++failures;
+    if (boundary && !require(boundary->depth == 127 && boundary->score == -32000 && boundary->eval == 31871 &&
+                                 boundary->best == boundary_move && boundary->flag == TT_UPPER && boundary->has_eval,
+                             "compact payload boundary mismatch"))
         ++failures;
 
     // A normal 1 MiB table has 16,384 buckets. These keys therefore collide
@@ -88,19 +79,14 @@ int main() {
     constexpr U64 bucket_stride = 16384;
     const U64 collision_base = 0x1234;
     for (int i = 0; i < 4; ++i)
-        tt.store(collision_base + static_cast<U64>(i) * bucket_stride,
-                 8 - i, 500 + i, TT_LOWER, MOVE_NONE);
+        tt.store(collision_base + static_cast<U64>(i) * bucket_stride, 8 - i, 500 + i, TT_LOWER, MOVE_NONE);
     for (int i = 0; i < 4; ++i) {
-        const TTEntry *collision =
-            tt.probe(collision_base + static_cast<U64>(i) * bucket_stride);
-        if (!require(collision != nullptr, "four-way collision entry missing"))
-            ++failures;
+        const TTEntry *collision = tt.probe(collision_base + static_cast<U64>(i) * bucket_stride);
+        if (!require(collision != nullptr, "four-way collision entry missing")) ++failures;
     }
     const U64 replacement_key = collision_base + 4 * bucket_stride;
     tt.store(replacement_key, 9, 600, TT_EXACT, MOVE_NONE);
-    if (!require(tt.probe(replacement_key) != nullptr,
-                 "collision replacement entry missing"))
-        ++failures;
+    if (!require(tt.probe(replacement_key) != nullptr, "collision replacement entry missing")) ++failures;
     if (!require(tt.probe(collision_base + 3 * bucket_stride) == nullptr,
                  "shallowest collision entry was not replaced"))
         ++failures;
@@ -133,7 +119,8 @@ int main() {
             break;
         }
     }
-    for (auto &writer : writers) writer.join();
+    for (auto &writer : writers)
+        writer.join();
     if (!require(!bad_payload.load(), "concurrent writers produced mixed payload")) ++failures;
 
     if (failures == 0) {

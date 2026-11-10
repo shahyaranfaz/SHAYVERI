@@ -9,8 +9,7 @@ namespace SHAYVERI::DatagenCLI {
 
 namespace {
 
-bool require_value(
-    int argc, char **argv, int &index, std::string &value) {
+bool require_value(int argc, char **argv, int &index, std::string &value) {
     if (index + 1 >= argc) return false;
     value = argv[++index];
     return true;
@@ -23,21 +22,15 @@ bool parse_args(int argc, char **argv, DatagenOptions &options) {
         const std::string key = argv[i];
         std::string value;
 
-        auto need_int = [&](int &out) {
-            return require_value(argc, argv, i, value)
-                && ParseCLI::integer(value, out);
-        };
+        auto need_int = [&](int &out) { return require_value(argc, argv, i, value) && ParseCLI::integer(value, out); };
         auto need_u64 = [&](U64 &out) {
-            return require_value(argc, argv, i, value)
-                && ParseCLI::unsigned_integer(value, out);
+            return require_value(argc, argv, i, value) && ParseCLI::unsigned_integer(value, out);
         };
         auto need_double = [&](double &out) {
-            return require_value(argc, argv, i, value)
-                && ParseCLI::real(value, out);
+            return require_value(argc, argv, i, value) && ParseCLI::real(value, out);
         };
         auto need_bool = [&](bool &out) {
-            return require_value(argc, argv, i, value)
-                && ParseCLI::boolean(value, out);
+            return require_value(argc, argv, i, value) && ParseCLI::boolean(value, out);
         };
 
         if (key == "--threads") {
@@ -47,14 +40,11 @@ bool parse_args(int argc, char **argv, DatagenOptions &options) {
         } else if (key == "--games") {
             if (!need_u64(options.target_games)) return false;
         } else if (key == "--output-prefix") {
-            if (!require_value(argc, argv, i, options.output_prefix))
-                return false;
+            if (!require_value(argc, argv, i, options.output_prefix)) return false;
         } else if (key == "--output-format") {
-            if (!require_value(argc, argv, i, options.output_format))
-                return false;
+            if (!require_value(argc, argv, i, options.output_format)) return false;
         } else if (key == "--eval-file") {
-            if (!require_value(argc, argv, i, options.eval_file))
-                return false;
+            if (!require_value(argc, argv, i, options.eval_file)) return false;
         } else if (key == "--nodes") {
             if (!need_u64(options.search_nodes)) return false;
         } else if (key == "--opening-min-plies") {
@@ -64,8 +54,7 @@ bool parse_args(int argc, char **argv, DatagenOptions &options) {
         } else if (key == "--book-prob") {
             if (!need_double(options.book_move_probability)) return false;
         } else if (key == "--start-file") {
-            if (!require_value(argc, argv, i, options.start_file))
-                return false;
+            if (!require_value(argc, argv, i, options.start_file)) return false;
         } else if (key == "--start-file-prob") {
             if (!need_double(options.start_file_probability)) return false;
         } else if (key == "--seed") {
@@ -104,34 +93,15 @@ bool parse_args(int argc, char **argv, DatagenOptions &options) {
 }
 
 void print_usage(const char *argv0) {
-    std::cerr
-        << "usage: " << argv0 << " datagen"
-        << " --threads <n>"
-        << " [--positions <n>]"
-        << " [--games <n>]"
-        << " --output-prefix <path>"
-        << " [--output-format shayveri-plain-v1|bullet-v1]"
-        << " [--eval-file <path|<embedded>|<hce>>]"
-        << " [--nodes <n>]"
-        << " [--opening-min-plies <n>]"
-        << " [--opening-max-plies <n>]"
-        << " [--book-prob <0..1>]"
-        << " [--start-file <fen-or-epd-file>]"
-        << " [--start-file-prob <0..1>]"
-        << " [--seed <n>]"
-        << " [--max-abs-cp <n>]"
-        << " [--include-checks <bool>]"
-        << " [--include-captures <bool>]"
-        << " [--include-mate-scores <bool>]"
-        << " [--include-duplicates <bool>]"
-        << " [--min-ply <n>]"
-        << " [--max-ply <n>]"
-        << " [--sample-stride <n>]"
-        << " [--max-samples-per-game <n>]"
-        << " [--enable-adjudication <bool>]"
-        << " [--adjudication-cp <n>]"
-        << " [--adjudication-plies <n>]"
-        << " [--print-interval <games>]\n";
+    std::cerr << "usage: " << argv0 << " datagen" << " --threads <n>" << " [--positions <n>]" << " [--games <n>]"
+              << " --output-prefix <path>" << " [--output-format shayveri-plain-v1|bullet-v1]"
+              << " [--eval-file <path|<embedded>|<hce>>]" << " [--nodes <n>]" << " [--opening-min-plies <n>]"
+              << " [--opening-max-plies <n>]" << " [--book-prob <0..1>]" << " [--start-file <fen-or-epd-file>]"
+              << " [--start-file-prob <0..1>]" << " [--seed <n>]" << " [--max-abs-cp <n>]"
+              << " [--include-checks <bool>]" << " [--include-captures <bool>]" << " [--include-mate-scores <bool>]"
+              << " [--include-duplicates <bool>]" << " [--min-ply <n>]" << " [--max-ply <n>]"
+              << " [--sample-stride <n>]" << " [--max-samples-per-game <n>]" << " [--enable-adjudication <bool>]"
+              << " [--adjudication-cp <n>]" << " [--adjudication-plies <n>]" << " [--print-interval <games>]\n";
 }
 
 } // namespace SHAYVERI::DatagenCLI

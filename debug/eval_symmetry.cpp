@@ -8,38 +8,51 @@
 #include <iostream>
 #include <vector>
 
+using SHAYVERI::bb_square;
 using SHAYVERI::BLACK;
 using SHAYVERI::Board;
 using SHAYVERI::Colour;
-using SHAYVERI::File;
-using SHAYVERI::Piece;
-using SHAYVERI::Rank;
-using SHAYVERI::SQ_NONE;
-using SHAYVERI::Square;
-using SHAYVERI::WHITE;
-using SHAYVERI::bb_square;
 using SHAYVERI::evaluate;
+using SHAYVERI::File;
 using SHAYVERI::flip;
 using SHAYVERI::get_file;
 using SHAYVERI::get_rank;
 using SHAYVERI::make_square;
+using SHAYVERI::Piece;
+using SHAYVERI::Rank;
 using SHAYVERI::set_from_fen;
+using SHAYVERI::SQ_NONE;
+using SHAYVERI::Square;
+using SHAYVERI::WHITE;
 
 static Piece swap_colour(Piece p) {
     switch (p) {
-        case SHAYVERI::WP: return SHAYVERI::BP;
-        case SHAYVERI::WN: return SHAYVERI::BN;
-        case SHAYVERI::WB: return SHAYVERI::BB;
-        case SHAYVERI::WR: return SHAYVERI::BR;
-        case SHAYVERI::WQ: return SHAYVERI::BQ;
-        case SHAYVERI::WK: return SHAYVERI::BK;
-        case SHAYVERI::BP: return SHAYVERI::WP;
-        case SHAYVERI::BN: return SHAYVERI::WN;
-        case SHAYVERI::BB: return SHAYVERI::WB;
-        case SHAYVERI::BR: return SHAYVERI::WR;
-        case SHAYVERI::BQ: return SHAYVERI::WQ;
-        case SHAYVERI::BK: return SHAYVERI::WK;
-        default: return SHAYVERI::NONE_PIECE;
+        case SHAYVERI::WP:
+            return SHAYVERI::BP;
+        case SHAYVERI::WN:
+            return SHAYVERI::BN;
+        case SHAYVERI::WB:
+            return SHAYVERI::BB;
+        case SHAYVERI::WR:
+            return SHAYVERI::BR;
+        case SHAYVERI::WQ:
+            return SHAYVERI::BQ;
+        case SHAYVERI::WK:
+            return SHAYVERI::BK;
+        case SHAYVERI::BP:
+            return SHAYVERI::WP;
+        case SHAYVERI::BN:
+            return SHAYVERI::WN;
+        case SHAYVERI::BB:
+            return SHAYVERI::WB;
+        case SHAYVERI::BR:
+            return SHAYVERI::WR;
+        case SHAYVERI::BQ:
+            return SHAYVERI::WQ;
+        case SHAYVERI::BK:
+            return SHAYVERI::WK;
+        default:
+            return SHAYVERI::NONE_PIECE;
     }
 }
 
@@ -62,9 +75,9 @@ static Board mirror_and_swap(const Board &src) {
 
     out.side_to_move = flip(src.side_to_move);
     out.castling = 0;
-    if (src.castling & SHAYVERI::WHITE_KINGSIDE)  out.castling |= SHAYVERI::BLACK_KINGSIDE;
+    if (src.castling & SHAYVERI::WHITE_KINGSIDE) out.castling |= SHAYVERI::BLACK_KINGSIDE;
     if (src.castling & SHAYVERI::WHITE_QUEENSIDE) out.castling |= SHAYVERI::BLACK_QUEENSIDE;
-    if (src.castling & SHAYVERI::BLACK_KINGSIDE)  out.castling |= SHAYVERI::WHITE_KINGSIDE;
+    if (src.castling & SHAYVERI::BLACK_KINGSIDE) out.castling |= SHAYVERI::WHITE_KINGSIDE;
     if (src.castling & SHAYVERI::BLACK_QUEENSIDE) out.castling |= SHAYVERI::WHITE_QUEENSIDE;
     out.en_passant = src.en_passant == SQ_NONE ? SQ_NONE : mirror_square_vertical(src.en_passant);
     out.half_move = src.half_move;
@@ -100,8 +113,7 @@ int main() {
         int s1 = evaluate(b);
         int s2 = evaluate(mirrored);
         if (s1 != s2) {
-            std::cerr << "[FAIL] symmetry mismatch for FEN: " << fen
-                      << " | eval=" << s1 << " mirrored=" << s2 << "\n";
+            std::cerr << "[FAIL] symmetry mismatch for FEN: " << fen << " | eval=" << s1 << " mirrored=" << s2 << "\n";
             ++failures;
         } else {
             std::cout << "[PASS] symmetry check\n";

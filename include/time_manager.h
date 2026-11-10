@@ -31,7 +31,7 @@ struct TimeControl {
 //
 //  Hard limit: absolute ceiling enforced by a timer thread in uci.cpp.
 class TimeManager {
-public:
+  public:
     void init(const TimeControl &tc);
 
     // Returns true when the soft limit has been reached.
@@ -39,11 +39,17 @@ public:
 
     I64 elapsed_ms() const;
 
-    I64 soft_ms() const { return soft_ms_; }
-    I64 hard_ms() const { return hard_ms_; }
-    double last_scale() const { return last_scale_; }
+    I64 soft_ms() const {
+        return soft_ms_;
+    }
+    I64 hard_ms() const {
+        return hard_ms_;
+    }
+    double last_scale() const {
+        return last_scale_;
+    }
 
-private:
+  private:
     std::chrono::steady_clock::time_point start_;
 
     I64 soft_ms_ = 0;

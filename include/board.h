@@ -9,9 +9,9 @@
 namespace SHAYVERI {
 
 enum Castling : int {
-    WHITE_KINGSIDE  = 1 << 0,
+    WHITE_KINGSIDE = 1 << 0,
     WHITE_QUEENSIDE = 1 << 1,
-    BLACK_KINGSIDE  = 1 << 2,
+    BLACK_KINGSIDE = 1 << 2,
     BLACK_QUEENSIDE = 1 << 3
 };
 

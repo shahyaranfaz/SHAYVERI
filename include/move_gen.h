@@ -9,7 +9,9 @@ namespace SHAYVERI {
 struct MoveList {
     Move moves[256];
     int count = 0;
-    void add(Move m) { moves[count++] = m; }
+    void add(Move m) {
+        moves[count++] = m;
+    }
 };
 
 MoveList generate_pseudo_legal_moves(Board &b);

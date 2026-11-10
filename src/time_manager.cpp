@@ -7,14 +7,14 @@
 namespace SHAYVERI {
 
 void TimeManager::init(const TimeControl &tc) {
-    start_        = std::chrono::steady_clock::now();
-    prev_best_    = MOVE_NONE;
+    start_ = std::chrono::steady_clock::now();
+    prev_best_ = MOVE_NONE;
     stable_iters_ = 0;
-    prev_score_   = 0;
+    prev_score_ = 0;
     score_inited_ = false;
     score_history_.fill(0);
     score_history_count_ = 0;
-    score_history_next_  = 0;
+    score_history_next_ = 0;
     last_scale_ = 1.0;
     min_think_ms_ = std::max(0, tc.min_think_ms);
     fixed_movetime_ = tc.movetime > 0;
@@ -25,13 +25,13 @@ void TimeManager::init(const TimeControl &tc) {
     }
 
     if (tc.movetime > 0) {
-        I64 safe = static_cast<I64>(std::max(1, tc.movetime - tc.move_overhead));
+        I64 safe = std::max(1, tc.movetime - tc.move_overhead);
         soft_ms_ = hard_ms_ = safe;
         return;
     }
 
     int my_time = (tc.side == WHITE) ? tc.wtime : tc.btime;
-    int my_inc  = std::max(0, (tc.side == WHITE) ? tc.winc : tc.binc);
+    int my_inc = std::max(0, (tc.side == WHITE) ? tc.winc : tc.binc);
 
     if (my_time <= 0) {
         soft_ms_ = hard_ms_ = Tune::time_no_clock_ms;
@@ -41,22 +41,20 @@ void TimeManager::init(const TimeControl &tc) {
     const int moves_to_go_min = std::min(Tune::time_moves_to_go_min, Tune::time_moves_to_go_max);
     const int moves_to_go_max = std::max(Tune::time_moves_to_go_min, Tune::time_moves_to_go_max);
     int moves_to_go = (tc.moves_to_go > 0)
-        ? std::clamp(tc.moves_to_go, moves_to_go_min, moves_to_go_max)
-        : (my_inc > 0 ? Tune::time_default_moves_with_inc : Tune::time_default_moves_no_inc);
+                          ? std::clamp(tc.moves_to_go, moves_to_go_min, moves_to_go_max)
+                          : (my_inc > 0 ? Tune::time_default_moves_with_inc : Tune::time_default_moves_no_inc);
 
     // Base: spend one time-control slice plus useful increment, while keeping
     // enough bank for sudden-death controls.
     const I64 overhead = std::max(0, tc.move_overhead);
     const I64 raw_clock_ceiling = std::max<I64>(1, static_cast<I64>(my_time) - overhead);
     const I64 bank_ceiling = std::max<I64>(
-        1, static_cast<I64>(my_time * std::max(0.0, Tune::time_bank_ceiling_fraction))
-            - overhead);
+        1, static_cast<I64>(my_time * std::max(0.0, Tune::time_bank_ceiling_fraction)) - overhead);
     const I64 ceiling = std::min(raw_clock_ceiling, bank_ceiling);
 
-    I64 base = my_time / moves_to_go
-        + static_cast<I64>(my_inc * Tune::time_increment_fraction);
+    I64 base = my_time / moves_to_go + static_cast<I64>(my_inc * Tune::time_increment_fraction);
 
-    soft_ms_ = std::min(base,       ceiling);
+    soft_ms_ = std::min(base, ceiling);
     hard_ms_ = std::min(static_cast<I64>(static_cast<double>(base) * Tune::time_hard_bound_multiplier), ceiling);
 
     if (soft_ms_ < Tune::time_soft_min_ms) soft_ms_ = Tune::time_soft_min_ms;
@@ -70,10 +68,8 @@ void TimeManager::init(const TimeControl &tc) {
     // In sudden-death controls, switch to a bounded survival allocation once
     // the remaining bank is critically low. Minimum-time preferences must not
     // defeat this cap.
-    if (my_inc == 0
-        && my_time <= std::max(0, Tune::time_no_inc_emergency_ms)) {
-        const I64 emergency_cap = std::max<I64>(
-            1, std::min<I64>(ceiling, Tune::time_no_inc_emergency_max_ms));
+    if (my_inc == 0 && my_time <= std::max(0, Tune::time_no_inc_emergency_ms)) {
+        const I64 emergency_cap = std::max<I64>(1, std::min<I64>(ceiling, Tune::time_no_inc_emergency_max_ms));
         soft_ms_ = std::min(soft_ms_, emergency_cap);
         hard_ms_ = std::min(hard_ms_, emergency_cap);
     }
@@ -90,8 +86,7 @@ I64 TimeManager::elapsed_ms() const {
     return duration_cast<milliseconds>(steady_clock::now() - start_).count();
 }
 
-bool TimeManager::on_iter(int depth, Move best_move, int score,
-                          double best_move_node_fraction) {
+bool TimeManager::on_iter(int depth, Move best_move, int score, double best_move_node_fraction) {
     const I64 elapsed = elapsed_ms();
 
     // UCI go movetime is a fixed allocation, not a soft clock target. Keep
@@ -106,13 +101,12 @@ bool TimeManager::on_iter(int depth, Move best_move, int score,
         ++stable_iters_;
     } else {
         stable_iters_ = 0;
-        prev_best_    = best_move;
+        prev_best_ = best_move;
     }
 
     int score_drop = 0;
-    if (score_inited_)
-        score_drop = prev_score_ - score;
-    prev_score_   = score;
+    if (score_inited_) score_drop = prev_score_ - score;
+    prev_score_ = score;
     score_inited_ = true;
 
     score_history_[static_cast<std::size_t>(score_history_next_)] = score;
@@ -128,26 +122,21 @@ bool TimeManager::on_iter(int depth, Move best_move, int score,
         if (score_drop >= Tune::time_eval_drop_second_cp) scale *= Tune::time_eval_drop_second_scale;
     }
 
-    if (depth >= Tune::time_node_min_depth
-        && best_move_node_fraction > 0.0) {
+    if (depth >= Tune::time_node_min_depth && best_move_node_fraction > 0.0) {
         const double share = std::clamp(best_move_node_fraction, 0.0, 1.0);
         const double min_scale = std::min(Tune::time_node_min_scale, Tune::time_node_max_scale);
         const double max_scale = std::max(Tune::time_node_min_scale, Tune::time_node_max_scale);
-        const double node_scale = std::clamp(
-            Tune::time_node_base_scale - Tune::time_node_share_slope * share,
-            min_scale, max_scale);
+        const double node_scale = std::clamp(Tune::time_node_base_scale - Tune::time_node_share_slope * share,
+                                             min_scale, max_scale);
         scale *= node_scale;
     }
 
-    const int eval_window = std::clamp(
-        Tune::time_eval_stability_window, 2, SCORE_HISTORY_CAPACITY);
-    if (depth >= Tune::time_eval_stability_min_depth
-        && score_history_count_ >= eval_window) {
+    const int eval_window = std::clamp(Tune::time_eval_stability_window, 2, SCORE_HISTORY_CAPACITY);
+    if (depth >= Tune::time_eval_stability_min_depth && score_history_count_ >= eval_window) {
         int min_score = score;
         int max_score = score;
         for (int i = 1; i < eval_window; ++i) {
-            const int index = (score_history_next_ - 1 - i + SCORE_HISTORY_CAPACITY)
-                % SCORE_HISTORY_CAPACITY;
+            const int index = (score_history_next_ - 1 - i + SCORE_HISTORY_CAPACITY) % SCORE_HISTORY_CAPACITY;
             min_score = std::min(min_score, score_history_[static_cast<std::size_t>(index)]);
             max_score = std::max(max_score, score_history_[static_cast<std::size_t>(index)]);
         }
@@ -158,8 +147,7 @@ bool TimeManager::on_iter(int depth, Move best_move, int score,
 
     I64 adjusted = static_cast<I64>(static_cast<double>(soft_ms_) * scale);
     adjusted = std::max(adjusted, static_cast<I64>(Tune::time_soft_min_ms));
-    if (min_think_ms_ > 0)
-        adjusted = std::max(adjusted, static_cast<I64>(min_think_ms_));
+    if (min_think_ms_ > 0) adjusted = std::max(adjusted, static_cast<I64>(min_think_ms_));
     adjusted = std::clamp<I64>(adjusted, 1, hard_ms_);
 
     return elapsed >= adjusted;

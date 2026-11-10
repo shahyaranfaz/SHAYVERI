@@ -40,16 +40,16 @@ namespace SHAYVERI {
 // ======
 // UCI options (written by setoption, read by go / search)
 // ======
-static int  g_num_threads      = 1;
-static int  g_move_overhead    = 10;   // ms
-static bool g_ponder           = false;
-static bool g_own_book         = true;
-static int  g_book_info_depth  = 8;
-static int  g_min_think_ms     = 0;
+static int g_num_threads = 1;
+static int g_move_overhead = 10; // ms
+static bool g_ponder = false;
+static bool g_own_book = true;
+static int g_book_info_depth = 8;
+static int g_min_think_ms = 0;
 static std::string g_eval_file = "<embedded>";
 
 // Ponder state.
-static std::atomic<bool> g_pondering{false};  // currently in ponder search
+static std::atomic<bool> g_pondering{false}; // currently in ponder search
 
 // Active search threads, with index 0 as the main thread.
 static std::vector<std::thread> smp_threads;
@@ -88,11 +88,20 @@ static void format_uci_move(Move move, char (&text)[6]) {
     text[2] = static_cast<char>('a' + get_file(to));
     text[3] = static_cast<char>('1' + get_rank(to));
     switch (move_promo(move)) {
-        case KNIGHT: text[4] = 'n'; break;
-        case BISHOP: text[4] = 'b'; break;
-        case ROOK:   text[4] = 'r'; break;
-        case QUEEN:  text[4] = 'q'; break;
-        default: break;
+        case KNIGHT:
+            text[4] = 'n';
+            break;
+        case BISHOP:
+            text[4] = 'b';
+            break;
+        case ROOK:
+            text[4] = 'r';
+            break;
+        case QUEEN:
+            text[4] = 'q';
+            break;
+        default:
+            break;
     }
 }
 
@@ -123,44 +132,41 @@ static bool load_eval_file_or_default(const std::string &path, std::string &erro
 static bool handle_uci_option(const std::string &name, const std::string &value) {
     static const std::array<OptionHandler, 10> handlers = {{
         {"Hash", resize_hash_option},
-        {"ClearHash", [](const std::string &) {
-            TT.clear();
-            uci_search_context.clear_histories();
-        }},
+        {"ClearHash",
+         [](const std::string &) {
+             TT.clear();
+             uci_search_context.clear_histories();
+         }},
         {"Threads", [](const std::string &v) { parse_spin(v, 1, 512, g_num_threads); }},
-        {"UseNNUE", [](const std::string &v) {
-            bool enabled;
-            if (!ParseCLI::boolean(v, enabled)) return;
-            NNUE::set_enabled(enabled);
-            TT.clear();
-            uci_search_context.clear_histories();
-        }},
-        {NNUE::UCI_OPTION_NAME, [](const std::string &v) {
-            std::string error;
-            if (!load_eval_file_or_default(v, error)) {
-                std::cout << "info string NNUE load failed: " << error << "\n";
-                return;
-            }
-            g_eval_file = v;
-            TT.clear();
-            uci_search_context.clear_histories();
-            if (NNUE::is_enabled()) NNUE::print_info();
-        }},
+        {"UseNNUE",
+         [](const std::string &v) {
+             bool enabled;
+             if (!ParseCLI::boolean(v, enabled)) return;
+             NNUE::set_enabled(enabled);
+             TT.clear();
+             uci_search_context.clear_histories();
+         }},
+        {NNUE::UCI_OPTION_NAME,
+         [](const std::string &v) {
+             std::string error;
+             if (!load_eval_file_or_default(v, error)) {
+                 std::cout << "info string NNUE load failed: " << error << "\n";
+                 return;
+             }
+             g_eval_file = v;
+             TT.clear();
+             uci_search_context.clear_histories();
+             if (NNUE::is_enabled()) NNUE::print_info();
+         }},
         {"OwnBook", [](const std::string &v) { ParseCLI::boolean(v, g_own_book); }},
-        {"BookInfoDepth", [](const std::string &v) {
-            parse_spin(v, 0, 32, g_book_info_depth);
-        }},
+        {"BookInfoDepth", [](const std::string &v) { parse_spin(v, 0, 32, g_book_info_depth); }},
         {"Ponder", [](const std::string &v) { ParseCLI::boolean(v, g_ponder); }},
-        {"MinimumThinkingTime", [](const std::string &v) {
-            parse_spin(v, 0, 5000, g_min_think_ms);
-        }},
-        {"MoveOverhead", [](const std::string &v) {
-            parse_spin(v, 0, 5000, g_move_overhead);
-        }},
+        {"MinimumThinkingTime", [](const std::string &v) { parse_spin(v, 0, 5000, g_min_think_ms); }},
+        {"MoveOverhead", [](const std::string &v) { parse_spin(v, 0, 5000, g_move_overhead); }},
     }};
 
     const auto handler = std::find_if(handlers.begin(), handlers.end(),
-        [&](const OptionHandler &entry) { return name == entry.name; });
+                                      [&](const OptionHandler &entry) { return name == entry.name; });
     if (handler == handlers.end()) return false;
     handler->apply(value);
     return true;
@@ -230,8 +236,7 @@ static void write_search_output(const char *output, int size, std::size_t capaci
     std::lock_guard<std::mutex> output_lock(uci_output_mutex);
     std::cout.flush();
     if (size <= 0) return;
-    const std::size_t bytes = std::min<std::size_t>(
-        static_cast<std::size_t>(size), capacity - 1);
+    const std::size_t bytes = std::min<std::size_t>(static_cast<std::size_t>(size), capacity - 1);
     std::fwrite(output, 1, bytes, stdout);
     std::fflush(stdout);
 }
@@ -267,10 +272,8 @@ int main(int argc, char **argv) {
     if (argc > 1) {
         if (std::string(argv[1]) == "datagen") {
             DatagenOptions options;
-            if (!DatagenCLI::parse_args(argc, argv, options) ||
-                options.threads <= 0 ||
-                (options.target_positions == 0 && options.target_games == 0) ||
-                options.output_prefix.empty()) {
+            if (!DatagenCLI::parse_args(argc, argv, options) || options.threads <= 0 ||
+                (options.target_positions == 0 && options.target_games == 0) || options.output_prefix.empty()) {
                 DatagenCLI::print_usage(argv[0]);
                 return 1;
             }
@@ -278,8 +281,7 @@ int main(int argc, char **argv) {
                 options.eval_file = g_eval_file;
             else
                 g_eval_file = options.eval_file;
-            if (!is_hce_eval_file(g_eval_file) && !is_embedded_eval_file(g_eval_file) &&
-                !file_exists(g_eval_file)) {
+            if (!is_hce_eval_file(g_eval_file) && !is_embedded_eval_file(g_eval_file) && !file_exists(g_eval_file)) {
                 std::cerr << "missing eval file: " << g_eval_file << '\n';
                 return 1;
             }
@@ -302,30 +304,26 @@ int main(int argc, char **argv) {
         // ===== UCI =====
         if (token == "uci") {
             std::lock_guard<std::mutex> output_lock(uci_output_mutex);
-            std::cout
-                << "id name SHAYVERI\n"
-                << "id author Shahyar Anfaz and Averi Wylie\n"
-                << "option name Hash                type spin   default 64         min 1 max 32768\n"
-                << "option name ClearHash           type button\n"
-                << "option name Threads             type spin   default 1          min 1 max 512\n"
-                << "option name UseNNUE             type check  default true\n"
-                << "option name " << NNUE::UCI_OPTION_NAME
-                << "            type string default " << g_eval_file << "\n"
-                << "option name OwnBook             type check  default true\n"
-                << "option name BookInfoDepth       type spin   default 8          min 0 max 32\n"
-                << "option name Ponder              type check  default false\n"
-                << "option name MinimumThinkingTime type spin   default 0          min 0 max 5000\n"
-                << "option name MoveOverhead        type spin   default 10         min 0 max 5000\n";
+            std::cout << "id name SHAYVERI\n"
+                      << "id author Shahyar Anfaz and Averi Wylie\n"
+                      << "option name Hash                type spin   default 64         min 1 max 32768\n"
+                      << "option name ClearHash           type button\n"
+                      << "option name Threads             type spin   default 1          min 1 max 512\n"
+                      << "option name UseNNUE             type check  default true\n"
+                      << "option name " << NNUE::UCI_OPTION_NAME << "            type string default " << g_eval_file
+                      << "\n"
+                      << "option name OwnBook             type check  default true\n"
+                      << "option name BookInfoDepth       type spin   default 8          min 0 max 32\n"
+                      << "option name Ponder              type check  default false\n"
+                      << "option name MinimumThinkingTime type spin   default 0          min 0 max 5000\n"
+                      << "option name MoveOverhead        type spin   default 10         min 0 max 5000\n";
 
-            for (auto const& [name, opt] : Tune::tuning_registry) {
+            for (auto const &[name, opt] : Tune::tuning_registry) {
                 if (opt.type == Tune::TuningOption::INT)
-                    std::cout << "option name " << name
-                              << " type spin default " << opt.default_str
-                              << " min " << opt.min_val
-                              << " max " << opt.max_val << "\n";
+                    std::cout << "option name " << name << " type spin default " << opt.default_str << " min "
+                              << opt.min_val << " max " << opt.max_val << "\n";
                 else
-                    std::cout << "option name " << name
-                              << " type string default " << opt.default_str << "\n";
+                    std::cout << "option name " << name << " type string default " << opt.default_str << "\n";
             }
             std::cout << "uciok\n";
         }
@@ -345,11 +343,9 @@ int main(int argc, char **argv) {
             }
             std::string value;
             std::getline(iss, value);
-            if (!value.empty() && value.front() == ' ')
-                value.erase(value.begin());
+            if (!value.empty() && value.front() == ' ') value.erase(value.begin());
 
-            if (!handle_uci_option(opt_name, value) &&
-                Tune::handle_setoption(opt_name, value)) {
+            if (!handle_uci_option(opt_name, value) && Tune::handle_setoption(opt_name, value)) {
                 TT.clear();
                 uci_search_context.clear_histories();
             }
@@ -400,8 +396,7 @@ int main(int argc, char **argv) {
                         hash_history.push_back(b.hash);
                         continue;
                     }
-                    std::cout << "info string rejected position move " << mv
-                              << " at " << get_board_fen(b) << "\n";
+                    std::cout << "info string rejected position move " << mv << " at " << get_board_fen(b) << "\n";
                     break;
                 }
             }
@@ -414,16 +409,19 @@ int main(int argc, char **argv) {
                 std::istringstream check(line);
                 std::string t;
                 while (check >> t)
-                    if (t == "ponder") { is_ponder_search = true; break; }
+                    if (t == "ponder") {
+                        is_ponder_search = true;
+                        break;
+                    }
             }
 
             // Parse go parameters.
             TimeControl tc;
-            tc.side          = b.side_to_move;
+            tc.side = b.side_to_move;
             tc.move_overhead = g_move_overhead;
-            tc.min_think_ms  = g_min_think_ms;
-            int fixed_depth  = 0;
-            U64 fixed_nodes   = 0;
+            tc.min_think_ms = g_min_think_ms;
+            int fixed_depth = 0;
+            U64 fixed_nodes = 0;
 
             std::vector<Move> searchmoves;
             {
@@ -431,16 +429,25 @@ int main(int argc, char **argv) {
                 std::string tok;
                 go_iss >> tok; // consume "go"
                 while (go_iss >> tok) {
-                    if      (tok == "infinite")  tc.infinite  = true;
-                    else if (tok == "ponder")    { /* handled above */ }
-                    else if (tok == "wtime")     go_iss >> tc.wtime;
-                    else if (tok == "btime")     go_iss >> tc.btime;
-                    else if (tok == "winc")      go_iss >> tc.winc;
-                    else if (tok == "binc")      go_iss >> tc.binc;
-                    else if (tok == "movetime")  go_iss >> tc.movetime;
-                    else if (tok == "depth")     go_iss >> fixed_depth;
-                    else if (tok == "nodes")     go_iss >> fixed_nodes;
-                    else if (tok == "movestogo") go_iss >> tc.moves_to_go;
+                    if (tok == "infinite")
+                        tc.infinite = true;
+                    else if (tok == "ponder") { /* handled above */
+                    } else if (tok == "wtime")
+                        go_iss >> tc.wtime;
+                    else if (tok == "btime")
+                        go_iss >> tc.btime;
+                    else if (tok == "winc")
+                        go_iss >> tc.winc;
+                    else if (tok == "binc")
+                        go_iss >> tc.binc;
+                    else if (tok == "movetime")
+                        go_iss >> tc.movetime;
+                    else if (tok == "depth")
+                        go_iss >> fixed_depth;
+                    else if (tok == "nodes")
+                        go_iss >> fixed_nodes;
+                    else if (tok == "movestogo")
+                        go_iss >> tc.moves_to_go;
                     else if (tok == "searchmoves") {
                         std::string sm_str;
                         while (go_iss >> sm_str) {
@@ -456,9 +463,8 @@ int main(int argc, char **argv) {
             if (!is_ponder_search && g_own_book) {
                 if (const BookEntry *entry = probe_book(b.hash)) {
                     Move candidate = uci_to_move(b, entry->move);
-                    const bool allowed = searchmoves.empty() ||
-                        std::find(searchmoves.begin(), searchmoves.end(), candidate)
-                            != searchmoves.end();
+                    const bool allowed = searchmoves.empty() || std::find(searchmoves.begin(), searchmoves.end(),
+                                                                          candidate) != searchmoves.end();
 
                     // uci_to_move() returns only a legal move, so do not validate
                     // the same book candidate a second time here.
@@ -475,8 +481,7 @@ int main(int argc, char **argv) {
 
             if (book_hit && g_book_info_depth == 0) {
                 std::cout << "info string book\n"
-                          << "bestmove " << move_to_uci(book_move)
-                          << ponder_suffix(b, book_move) << "\n";
+                          << "bestmove " << move_to_uci(book_move) << ponder_suffix(b, book_move) << "\n";
                 std::cout.flush();
                 continue;
             }
@@ -494,8 +499,7 @@ int main(int argc, char **argv) {
             g_pondering.store(is_ponder_search);
 
             TimeControl real_tc = tc;
-            if (fixed_depth > 0 || fixed_nodes > 0 || is_ponder_search)
-                tc.infinite = true;
+            if (fixed_depth > 0 || fixed_nodes > 0 || is_ponder_search) tc.infinite = true;
             auto time_manager = std::make_shared<TimeManager>();
             time_manager->init(tc);
 
@@ -503,82 +507,71 @@ int main(int argc, char **argv) {
             if (start < 0) start = 0;
             std::vector<U64> rep(hash_history.begin() + start, hash_history.end());
 
-            Board b_copy    = b;
+            Board b_copy = b;
             int num_thr = std::min(g_num_threads, active_thread_limit());
             if (num_thr != g_num_threads)
-                std::cout << "info string Threads clamped to " << num_thr
-                          << " by hardware capacity\n";
+                std::cout << "info string Threads clamped to " << num_thr << " by hardware capacity\n";
             uci_search_workers.resize(static_cast<std::size_t>(num_thr));
             I64 hard_ms = time_manager->hard_ms();
             bool pondering = is_ponder_search;
             int root_depth = fixed_depth > 0 ? fixed_depth : 64;
             if (book_info_search)
-                root_depth = fixed_depth > 0
-                    ? std::min(fixed_depth, g_book_info_depth)
-                    : g_book_info_depth;
+                root_depth = fixed_depth > 0 ? std::min(fixed_depth, g_book_info_depth) : g_book_info_depth;
             if (fixed_nodes > 0 || fixed_depth > 0) {
-                smp_threads.push_back(std::thread(
-                    [b_copy, rep, searchmoves, root_depth, fixed_nodes,
-                     book_info_search, book_move]() mutable {
-                        SearchWorker &worker = uci_search_workers[0];
-                        uci_search_context.nodes = 0;
-                        uci_search_context.node_limit = fixed_nodes;
-                        uci_search_context.stop = false;
-                        const Board root_board = b_copy;
-                        const auto search_start = std::chrono::steady_clock::now();
-                        const SearchRequest request{
-                            .repetition = rep,
-                            .root_moves = searchmoves,
-                            .emit_info = true,
-                            .retain_history = true,
-                        };
-                        SearchResult result = fixed_nodes > 0
-                            ? search_nodes(
-                                uci_search_context, worker, b_copy, fixed_nodes,
-                                request)
-                            : search(
-                                uci_search_context, worker, b_copy, root_depth,
-                                request);
-                        uci_search_context.stop = true;
-                        uci_search_context.node_limit = 0;
-                        const auto elapsed_ms =
-                            std::chrono::duration_cast<std::chrono::milliseconds>(
-                                std::chrono::steady_clock::now() - search_start).count();
-                        if (book_info_search)
-                            result.best_move = book_move;
-                        else if (result.best_move == MOVE_NONE)
-                            result.best_move = first_legal_move(root_board);
-                        const U64 elapsed_for_nps = static_cast<U64>(
-                            std::max<I64>(1, elapsed_ms));
-                        const U64 nps = result.nodes * 1000 / elapsed_for_nps;
+                smp_threads.push_back(std::thread([b_copy, rep, searchmoves, root_depth, fixed_nodes, book_info_search,
+                                                   book_move]() mutable {
+                    SearchWorker &worker = uci_search_workers[0];
+                    uci_search_context.nodes = 0;
+                    uci_search_context.node_limit = fixed_nodes;
+                    uci_search_context.stop = false;
+                    const Board root_board = b_copy;
+                    const auto search_start = std::chrono::steady_clock::now();
+                    const SearchRequest request{
+                        .repetition = rep,
+                        .root_moves = searchmoves,
+                        .emit_info = true,
+                        .retain_history = true,
+                    };
+                    SearchResult result = fixed_nodes > 0
+                                              ? search_nodes(uci_search_context, worker, b_copy, fixed_nodes, request)
+                                              : search(uci_search_context, worker, b_copy, root_depth, request);
+                    uci_search_context.stop = true;
+                    uci_search_context.node_limit = 0;
+                    const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                std::chrono::steady_clock::now() - search_start)
+                                                .count();
+                    if (book_info_search)
+                        result.best_move = book_move;
+                    else if (result.best_move == MOVE_NONE)
+                        result.best_move = first_legal_move(root_board);
+                    const U64 elapsed_for_nps = static_cast<U64>(std::max<I64>(1, elapsed_ms));
+                    const U64 nps = result.nodes * 1000 / elapsed_for_nps;
 
-                        char score[32];
-                        if (std::abs(result.score) > Tune::MATE_SCORE - Tune::MAX_PLY) {
-                            const int mate_dist = Tune::MATE_SCORE - std::abs(result.score);
-                            int mate_moves = (mate_dist + 1) / 2;
-                            if (result.score < 0) mate_moves = -mate_moves;
-                            std::snprintf(score, sizeof(score), "mate %d", mate_moves);
-                        } else {
-                            std::snprintf(score, sizeof(score), "cp %d", result.score);
-                        }
+                    char score[32];
+                    if (std::abs(result.score) > Tune::MATE_SCORE - Tune::MAX_PLY) {
+                        const int mate_dist = Tune::MATE_SCORE - std::abs(result.score);
+                        int mate_moves = (mate_dist + 1) / 2;
+                        if (result.score < 0) mate_moves = -mate_moves;
+                        std::snprintf(score, sizeof(score), "mate %d", mate_moves);
+                    } else {
+                        std::snprintf(score, sizeof(score), "cp %d", result.score);
+                    }
 
-                        char bestmove[6];
-                        format_uci_move(result.best_move, bestmove);
-                        char ponder[32] = "";
-                        format_ponder(b_copy, result.best_move, ponder);
+                    char bestmove[6];
+                    format_uci_move(result.best_move, bestmove);
+                    char ponder[32] = "";
+                    format_ponder(b_copy, result.best_move, ponder);
 
-                        char output[512];
-                        const int output_size = std::snprintf(
-                            output, sizeof(output),
-                            "info depth %d seldepth %d score %s time %lld nodes %llu nps %llu hashfull %d tbhits 0\n"
-                            "bestmove %s%s\n",
-                            result.depth, result.selective_depth, score,
-                            static_cast<long long>(elapsed_ms),
-                            static_cast<unsigned long long>(result.nodes),
-                            static_cast<unsigned long long>(nps),
-                            uci_search_context.table.hashfull(), bestmove, ponder);
-                        write_search_output(output, output_size, sizeof(output));
-                    }));
+                    char output[512];
+                    const int output_size = std::snprintf(
+                        output, sizeof(output),
+                        "info depth %d seldepth %d score %s time %lld nodes %llu nps %llu hashfull %d tbhits 0\n"
+                        "bestmove %s%s\n",
+                        result.depth, result.selective_depth, score, static_cast<long long>(elapsed_ms),
+                        static_cast<unsigned long long>(result.nodes), static_cast<unsigned long long>(nps),
+                        uci_search_context.table.hashfull(), bestmove, ponder);
+                    write_search_output(output, output_size, sizeof(output));
+                }));
                 continue;
             }
 
@@ -586,98 +579,78 @@ int main(int argc, char **argv) {
             // root result is discarded because they contribute by populating
             // the hash for the main thread.
             for (int t = 1; t < num_thr; ++t) {
-                smp_threads.push_back(
-                    std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
-                        SearchWorker &worker =
-                            uci_search_workers[static_cast<std::size_t>(t)];
-                        std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
-                        search(
-                            uci_search_context, worker, b_copy, root_depth,
-                            SearchRequest{
-                                .repetition = rep,
-                                .root_moves = searchmoves,
-                                .root_bias = t,
-                            });
-                    })
-                );
+                smp_threads.push_back(std::thread([b_copy, rep, t, searchmoves, root_depth]() mutable {
+                    SearchWorker &worker = uci_search_workers[static_cast<std::size_t>(t)];
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2 * t));
+                    search(uci_search_context, worker, b_copy, root_depth,
+                           SearchRequest{
+                               .repetition = rep,
+                               .root_moves = searchmoves,
+                               .root_bias = t,
+                           });
+                }));
             }
 
             // Main search thread.
             smp_threads.insert(
-                smp_threads.begin(),
-                std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
-                             book_info_search, book_move, time_manager]() mutable {
+                smp_threads.begin(), std::thread([b_copy, rep, searchmoves, real_tc, hard_ms, pondering, root_depth,
+                                                  book_info_search, book_move, time_manager]() mutable {
                     const Board root_board = b_copy;
                     SearchWorker &worker = uci_search_workers[0];
 
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
                     auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);
 
-                    std::thread timer([hard_ms, real_tc, pondering, timer_active, clock_ready,
-                                       time_manager]() {
+                    std::thread timer([hard_ms, real_tc, pondering, timer_active, clock_ready, time_manager]() {
                         const auto wait_for_limit = [timer_active](I64 limit_ms) {
                             using namespace std::chrono;
-                            const auto deadline = steady_clock::now()
-                                + milliseconds(std::max<I64>(0, limit_ms));
+                            const auto deadline = steady_clock::now() + milliseconds(std::max<I64>(0, limit_ms));
                             while (timer_active->load()) {
-                                const I64 remaining = duration_cast<milliseconds>(
-                                    deadline - steady_clock::now()).count();
-                                if (remaining <= 0)
-                                    break;
-                                std::this_thread::sleep_for(
-                                    milliseconds(std::min<I64>(5, remaining)));
+                                const I64 remaining = duration_cast<milliseconds>(deadline - steady_clock::now())
+                                                          .count();
+                                if (remaining <= 0) break;
+                                std::this_thread::sleep_for(milliseconds(std::min<I64>(5, remaining)));
                             }
                             return timer_active->load();
                         };
 
                         if (pondering) {
-                            while (*timer_active && g_pondering.load()
-                                   && !uci_search_context.stop.load())
+                            while (*timer_active && g_pondering.load() && !uci_search_context.stop.load())
                                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                            if (!*timer_active || uci_search_context.stop.load())
-                                return;
+                            if (!*timer_active || uci_search_context.stop.load()) return;
 
                             time_manager->init(real_tc);
                             clock_ready->store(true);
                             const I64 ponderhit_hard_ms = time_manager->hard_ms();
-                            const I64 ponderhit_remaining_ms = std::max<I64>(
-                                0, ponderhit_hard_ms - time_manager->elapsed_ms());
-                            if (wait_for_limit(ponderhit_remaining_ms))
-                                uci_search_context.stop = true;
+                            const I64 ponderhit_remaining_ms = std::max<I64>(0, ponderhit_hard_ms -
+                                                                                    time_manager->elapsed_ms());
+                            if (wait_for_limit(ponderhit_remaining_ms)) uci_search_context.stop = true;
                             return;
                         }
 
-                        const I64 remaining_ms = std::max<I64>(
-                            0, hard_ms - time_manager->elapsed_ms());
-                        if (wait_for_limit(remaining_ms))
-                            uci_search_context.stop = true;
+                        const I64 remaining_ms = std::max<I64>(0, hard_ms - time_manager->elapsed_ms());
+                        if (wait_for_limit(remaining_ms)) uci_search_context.stop = true;
                     });
 
-                    IterCallback on_iter = [clock_ready, time_manager](
-                                               int depth, Move best, int score,
-                                               U64, I64,
-                                               double best_move_node_fraction) {
-                        if (clock_ready->load()
-                            && time_manager->on_iter(
-                                depth, best, score, best_move_node_fraction))
+                    IterCallback on_iter = [clock_ready, time_manager](int depth, Move best, int score, U64, I64,
+                                                                       double best_move_node_fraction) {
+                        if (clock_ready->load() && time_manager->on_iter(depth, best, score, best_move_node_fraction))
                             uci_search_context.stop = true;
                     };
 
-                    SearchResult result = search(
-                        uci_search_context, worker, b_copy, root_depth,
-                        SearchRequest{
-                            .repetition = rep,
-                            .root_moves = searchmoves,
-                            .on_iteration = on_iter,
-                            .emit_info = true,
-                            .retain_history = true,
-                        });
+                    SearchResult result = search(uci_search_context, worker, b_copy, root_depth,
+                                                 SearchRequest{
+                                                     .repetition = rep,
+                                                     .root_moves = searchmoves,
+                                                     .on_iteration = on_iter,
+                                                     .emit_info = true,
+                                                     .retain_history = true,
+                                                 });
 
                     // A ponder search that finishes naturally, for example on
                     // a terminal position, must still wait for ponderhit or
                     // stop before returning a move.
-                    while (pondering && g_pondering.load()
-                           && !uci_search_context.stop.load())
+                    while (pondering && g_pondering.load() && !uci_search_context.stop.load())
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
                     *timer_active = false;
@@ -695,12 +668,10 @@ int main(int argc, char **argv) {
                     format_ponder(b_copy, result.best_move, ponder_text);
 
                     char output[64];
-                    const int output_size = std::snprintf(
-                        output, sizeof(output), "bestmove %s%s\n",
-                        bestmove, ponder_text);
+                    const int output_size = std::snprintf(output, sizeof(output), "bestmove %s%s\n", bestmove,
+                                                          ponder_text);
                     write_search_output(output, output_size, sizeof(output));
-                })
-            );
+                }));
         }
 
         // ===== PONDERHIT =====
@@ -739,18 +710,18 @@ int main(int argc, char **argv) {
                 set_from_fen(bench_b, fen);
                 std::vector<Move> sm;
                 uci_search_context.nodes = 0;
-                SearchResult res = search(
-                    uci_search_context, bench_worker, bench_b, 10,
-                    SearchRequest{
-                        .root_moves = sm,
-                        .emit_info = true,
-                        .retain_history = true,
-                    });
+                SearchResult res = search(uci_search_context, bench_worker, bench_b, 10,
+                                          SearchRequest{
+                                              .root_moves = sm,
+                                              .emit_info = true,
+                                              .retain_history = true,
+                                          });
                 total_nodes += res.nodes;
             }
 
-            auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                                  std::chrono::steady_clock::now() - bench_start).count();
+            auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() -
+                                                                                    bench_start)
+                                  .count();
             if (elapsed_us == 0) elapsed_us = 1;
 
             std::cout << "\n===========================\n"
