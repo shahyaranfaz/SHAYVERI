@@ -91,8 +91,7 @@ inline void feature_indices(int piece_type, int piece_colour, int sq,
 
 bool load(const std::string &path, std::string &error);
 bool load_embedded_default(std::string &error);
-bool is_enabled();
-void set_enabled(bool enabled);
+bool is_loaded();
 void print_info();
 
 int evaluate(int side_to_move, int piece_count, const Accumulator &acc);

@@ -131,8 +131,8 @@ for phase in stc ltc; do
     }
   done
   games="$(grep -c '^\[Event ' "$CHECK_ROOT/outputs/v0.0.0/$phase/rating_pool.pgn")"
-  [[ "$games" == 144 ]] || {
-    echo "$phase has $games games, expected 144" >&2
+  [[ "$games" == 112 ]] || {
+    echo "$phase has $games games, expected 112" >&2
     exit 1
   }
 done

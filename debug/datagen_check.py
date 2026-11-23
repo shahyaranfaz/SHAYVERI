@@ -53,7 +53,7 @@ def run_format(
     *,
     games: int = GAMES,
     threads: int = THREADS,
-    eval_file: str = "<hce>",
+    eval_file: str = "<embedded>",
     nodes: int = 1,
     include_duplicates: bool = True,
     adjudication: bool = True,
@@ -194,7 +194,7 @@ def require_no_done_when_summary_fails(root: Path) -> None:
         [
             ENGINE_PATH, "datagen", "--threads", "1", "--games", "1",
             "--output-prefix", str(prefix), "--output-format", "bullet-v1",
-            "--eval-file", "<hce>", "--nodes", "1",
+            "--eval-file", "<embedded>", "--nodes", "1",
             "--opening-min-plies", "0", "--opening-max-plies", "0",
             "--book-prob", "0", "--print-interval", "0",
         ],
@@ -227,6 +227,7 @@ def main() -> int:
                 root, "nan_probability",
                 "--threads", "1", "--games", "1", "--book-prob", "nan",
             )
+            require_invalid_arguments(root, "hce_removed", "--threads", "1", "--games", "1", "--eval-file", "<hce>")
             require_no_done_when_summary_fails(root)
             if RUN_MATRIX:
                 run_matrix(root)

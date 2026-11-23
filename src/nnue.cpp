@@ -3,6 +3,7 @@
 #include "attacks.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <exception>
@@ -35,7 +36,6 @@ constexpr U32 NNUE_FLAG_SCRELU = 1u;
 std::string g_net_path;
 U64 g_net_hash = 0;
 bool g_loaded = false;
-bool g_enabled = true;
 int g_king_buckets = 1;
 int g_hidden_size = 256;
 bool g_use_screlu = false;
@@ -353,12 +353,8 @@ bool load_embedded_default(std::string &error) {
     }
 }
 
-bool is_enabled() {
-    return g_enabled && g_loaded;
-}
-
-void set_enabled(bool enabled) {
-    g_enabled = enabled;
+bool is_loaded() {
+    return g_loaded;
 }
 
 int king_bucket_count() {
@@ -402,6 +398,7 @@ void Accumulator::reset() {
 }
 
 void Accumulator::refresh(const Board &board) {
+    assert(g_loaded);
     const Square white_king_sq = king_square(board, WHITE);
     const Square black_king_sq = king_square(board, BLACK);
 
@@ -517,6 +514,7 @@ int evaluate_avx2(int side_to_move, int piece_count, const Accumulator &acc);
 #endif
 
 int evaluate(int side_to_move, int piece_count, const Accumulator &acc) {
+    assert(g_loaded);
 #ifdef __AVX2__
     return evaluate_avx2(side_to_move, piece_count, acc);
 #else

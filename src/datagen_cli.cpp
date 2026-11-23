@@ -111,7 +111,7 @@ void print_usage(const char *argv0) {
         << " [--games <n>]"
         << " --output-prefix <path>"
         << " [--output-format shayveri-plain-v1|bullet-v1]"
-        << " [--eval-file <path|<embedded>|<hce>>]"
+        << " [--eval-file <path|<embedded>>]"
         << " [--nodes <n>]"
         << " [--opening-min-plies <n>]"
         << " [--opening-max-plies <n>]"

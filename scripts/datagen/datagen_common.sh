@@ -73,7 +73,7 @@ require_engine() {
   else
     [[ -x "$ENGINE_DIR/$ENGINE" ]] || die "missing engine: $ENGINE_DIR/$ENGINE"
   fi
-  if [[ "$EVAL_FILE" != "<hce>" && "$EVAL_FILE" != "<embedded>" && "$EVAL_FILE" != "<default>" ]]; then
+  if [[ "$EVAL_FILE" != "<embedded>" && "$EVAL_FILE" != "<default>" ]]; then
     if [[ "$EVAL_FILE" == /* ]]; then
       [[ -f "$EVAL_FILE" ]] || die "missing EVAL_FILE: $EVAL_FILE"
     else

@@ -6,10 +6,16 @@
 
 using namespace SHAYVERI;
 
-int main() {
+int main(int argc, char **argv) {
     Zobrist::init();
     init_attacks();
-    NNUE::set_enabled(false);
+    std::string net_error;
+    const char *net_path = argc > 1 ? argv[1] : "SHAYVERI2_11_7.nnue";
+    if (!SHAYVERI::NNUE::load(net_path, net_error)) {
+        std::cerr << "[FAIL] Test network: " << net_error << "\n";
+        return 1;
+    }
+
     TranspositionTable table;
     table.resize(1);
     SearchContext context(table);

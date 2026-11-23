@@ -31,14 +31,13 @@ STC_SHARD_PAIR_GAMES="${STC_SHARD_PAIR_GAMES:-20}"
 LTC_SHARD_PAIR_GAMES="${LTC_SHARD_PAIR_GAMES:-10}"
 
 NAME_ID="${NAME_ID:-SHAYVERI $RELEASE_ID / NNUE}"
-HCE_NAME="${HCE_NAME:-SHAYVERI $RELEASE_ID / HCE}"
 NNUE_NAME="${NNUE_NAME:-$NAME_ID}"
 NET="${NET:-}"
 SHAYVERI_OPTIONS="${SHAYVERI_OPTIONS:-option.OwnBook=false option.BookInfoDepth=0}"
 
 FIXED_OPPONENTS="Alexandria9,Berserk13,Ethereal14,PlentyChess7,Weiss2,SF2850,SF3000"
-ENGINE_COUNT=9
-PAIR_COUNT=36
+ENGINE_COUNT=8
+PAIR_COUNT=28
 ORDO_FLAGS="${ORDO_FLAGS:--m anchors -W -D -s 5000 -n 23 -J -j h2h.txt -C cfs.csv -e err.csv -F 99}"
 
 die() {
@@ -104,12 +103,6 @@ shayveri_common_options() {
   printf '%s\n' "${parts[@]}"
 }
 
-shayveri_hce_engine_args() {
-  printf '%s\n' -engine "name=$HCE_NAME" "cmd=./SHAYVERI" \
-    "dir=$(engine_dir_arg "$ENGINES_DIR")" "option.UseNNUE=false"
-  shayveri_common_options
-}
-
 shayveri_nnue_engine_args() {
   printf '%s\n' -engine "name=$NNUE_NAME" "cmd=./SHAYVERI" \
     "dir=$(engine_dir_arg "$ENGINES_DIR")"
@@ -139,7 +132,6 @@ opponent_engine_args() {
 }
 
 tournament_engine_args() {
-  shayveri_hce_engine_args
   shayveri_nnue_engine_args
 
   IFS=',' read -ra opponent_list <<< "$FIXED_OPPONENTS"

@@ -75,7 +75,7 @@ else
   for key in PIN_ROOT SCRIPT_DIR RUN_ID WORK_ROOT ENGINES_DIR BOOK ANCHORS ORDO \
     FASTCHESS PYTHON_BIN OUTPUT_ROOT RELEASE_ID REGISTER_SECONDS EXPECTED_WORKERS TIMEMARGIN CONCURRENCY \
     RATING_INTERVAL POLL_SECONDS WORKER_ACK_SECONDS BASE_SEED STC_GAMES_PER_PAIR LTC_GAMES_PER_PAIR \
-    STC_SHARD_PAIR_GAMES LTC_SHARD_PAIR_GAMES NAME_ID HCE_NAME NNUE_NAME NET \
+    STC_SHARD_PAIR_GAMES LTC_SHARD_PAIR_GAMES NAME_ID NNUE_NAME NET \
     SHAYVERI_OPTIONS FIXED_OPPONENTS ORDO_FLAGS; do
     write_env "$key" "${!key}"
   done
@@ -229,7 +229,6 @@ run_ordo() {
   local validation_args=(
     --pgn "$publish/rating_pool.pgn"
     --games-per-pair "$(phase_games_per_pair "$phase")"
-    --player "$HCE_NAME"
     --player "$NNUE_NAME"
   )
   IFS=',' read -ra opponent_list <<< "$FIXED_OPPONENTS"

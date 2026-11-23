@@ -1,6 +1,5 @@
 #include "search.h"
 
-#include "evaluate.h"
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
@@ -631,12 +630,10 @@ private:
 static_assert(sizeof(MovePicker) <= 5 * 1024);
 
 static int evaluate_position(const Board &b, const StackInfo *ss) {
-    const int score = NNUE::is_enabled()
-        ? NNUE::evaluate(
+    const int score = NNUE::evaluate(
             static_cast<int>(b.side_to_move),
             __builtin_popcountll(b.occupied),
-            ss->acc)
-        : evaluate(b);
+            ss->acc);
     constexpr int MAX_EVAL = MATE_SCORE - MAX_PLY - 1;
     return std::clamp(score, -MAX_EVAL, MAX_EVAL);
 }

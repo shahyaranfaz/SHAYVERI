@@ -2,7 +2,6 @@
 #include "board.h"
 #include "datagen.h"
 #include "datagen_cli.h"
-#include "evaluate.h"
 #include "make.h"
 #include "move.h"
 #include "move_gen.h"
@@ -209,20 +208,13 @@ static void set_syzygy_path(const std::string &value) {
 }
 
 static bool handle_uci_option(const std::string &name, const std::string &value) {
-    static const std::array<OptionHandler, 11> handlers = {{
+    static const std::array<OptionHandler, 10> handlers = {{
         {"Hash", resize_hash_option},
         {"ClearHash", [](const std::string &) {
             TT.clear();
             uci_search_context.clear_histories();
         }},
         {"Threads", [](const std::string &v) { parse_spin(v, 1, 512, g_num_threads); }},
-        {"UseNNUE", [](const std::string &v) {
-            bool enabled;
-            if (!ParseCLI::boolean(v, enabled)) return;
-            NNUE::set_enabled(enabled);
-            TT.clear();
-            uci_search_context.clear_histories();
-        }},
         {"EvalFile", [](const std::string &v) {
             std::string error;
             if (!load_eval_file_or_default(v, error)) {
@@ -232,7 +224,7 @@ static bool handle_uci_option(const std::string &name, const std::string &value)
             g_eval_file = v;
             TT.clear();
             uci_search_context.clear_histories();
-            if (NNUE::is_enabled()) NNUE::print_info();
+            NNUE::print_info();
         }},
         {"SyzygyPath", set_syzygy_path},
         {"OwnBook", [](const std::string &v) { ParseCLI::boolean(v, g_own_book); }},
@@ -260,19 +252,14 @@ static bool file_exists(const std::string &path) {
     return f.good();
 }
 
-static bool is_hce_eval_file(const std::string &path) {
-    return path == "<hce>";
-}
-
 static bool is_embedded_eval_file(const std::string &path) {
     return path.empty() || path == "<embedded>" || path == "<default>";
 }
 
 static bool load_eval_file_or_default(const std::string &path, std::string &error) {
-    if (is_hce_eval_file(path)) {
-        NNUE::set_enabled(false);
-        error.clear();
-        return true;
+    if (path == "<hce>") {
+        error = "HCE evaluation is no longer supported; use a compatible NNUE network";
+        return false;
     }
 
     bool loaded = false;
@@ -282,7 +269,6 @@ static bool load_eval_file_or_default(const std::string &path, std::string &erro
         loaded = NNUE::load(path, error);
     }
 
-    if (loaded) NNUE::set_enabled(true);
     return loaded;
 }
 
@@ -367,7 +353,7 @@ int main(int argc, char **argv) {
                 options.eval_file = g_eval_file;
             else
                 g_eval_file = options.eval_file;
-            if (!is_hce_eval_file(g_eval_file) && !is_embedded_eval_file(g_eval_file) &&
+            if (g_eval_file != "<hce>" && !is_embedded_eval_file(g_eval_file) &&
                 !file_exists(g_eval_file)) {
                 std::cerr << "missing eval file: " << g_eval_file << '\n';
                 return 1;
@@ -397,7 +383,6 @@ int main(int argc, char **argv) {
                 << "option name Hash                type spin   default 64         min 1 max 32768\n"
                 << "option name ClearHash           type button\n"
                 << "option name Threads             type spin   default 1          min 1 max 512\n"
-                << "option name UseNNUE             type check  default true\n"
                 << "option name EvalFile            type string default " << g_eval_file << "\n"
                 << "option name SyzygyPath          type string default <empty>\n"
                 << "option name OwnBook             type check  default true\n"

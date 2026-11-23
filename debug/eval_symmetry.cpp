@@ -1,6 +1,6 @@
 #include "attacks.h"
 #include "board.h"
-#include "evaluate.h"
+#include "nnue.h"
 #include "types.h"
 #include "zobrist.h"
 
@@ -18,7 +18,7 @@ using SHAYVERI::SQ_NONE;
 using SHAYVERI::Square;
 using SHAYVERI::WHITE;
 using SHAYVERI::bb_square;
-using SHAYVERI::evaluate;
+
 using SHAYVERI::flip;
 using SHAYVERI::get_file;
 using SHAYVERI::get_rank;
@@ -75,11 +75,15 @@ static Board mirror_and_swap(const Board &src) {
     return out;
 }
 
-int main() {
+int main(int argc, char **argv) {
     SHAYVERI::Zobrist::init();
     SHAYVERI::init_attacks();
-    // When set, symmetry mismatches fail the suite. Otherwise they are reported informationally.
-    const bool strict = std::getenv("SHAYVERI_STRICT_EVAL_SYMMETRY") != nullptr;
+    std::string net_error;
+    const char *net_path = argc > 1 ? argv[1] : "SHAYVERI2_11_7.nnue";
+    if (!SHAYVERI::NNUE::load(net_path, net_error)) {
+        std::cerr << "[FAIL] Test network: " << net_error << "\n";
+        return 1;
+    }
 
     const std::vector<const char *> fens = {
         "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/3P4/PPP2PPP/RNBQKBNR w KQkq - 0 4",
@@ -97,8 +101,12 @@ int main() {
             continue;
         }
         Board mirrored = mirror_and_swap(b);
-        int s1 = evaluate(b);
-        int s2 = evaluate(mirrored);
+        SHAYVERI::NNUE::Accumulator original_acc, mirrored_acc;
+        original_acc.refresh(b);
+        mirrored_acc.refresh(mirrored);
+        const int pieces = __builtin_popcountll(b.occupied);
+        int s1 = SHAYVERI::NNUE::evaluate(b.side_to_move, pieces, original_acc);
+        int s2 = SHAYVERI::NNUE::evaluate(mirrored.side_to_move, pieces, mirrored_acc);
         if (s1 != s2) {
             std::cerr << "[FAIL] symmetry mismatch for FEN: " << fen
                       << " | eval=" << s1 << " mirrored=" << s2 << "\n";
@@ -113,6 +121,6 @@ int main() {
         return 0;
     }
     std::cerr << "[FAIL] Eval symmetry suite: " << failures << "/" << fens.size() << " mismatches"
-              << (strict ? " (strict mode: failing)\n" : " (non-strict mode: informational)\n");
-    return strict ? 2 : 0;
+              << "\n";
+    return 2;
 }

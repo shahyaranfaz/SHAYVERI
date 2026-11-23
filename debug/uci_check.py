@@ -133,7 +133,8 @@ def main() -> int:
         require_normalized_line(handshake, "option name Hash type spin default 64 min 1 max 32768")
         require_normalized_line(handshake, "option name ClearHash type button")
         require_normalized_line(handshake, "option name Threads type spin default 1 min 1 max 512")
-        require_normalized_line(handshake, "option name UseNNUE type check default true")
+        if "option name UseNNUE" in handshake:
+            raise AssertionError("NNUE-only engine advertised UseNNUE")
         require_normalized_line(handshake, "option name EvalFile type string default <embedded>")
         require_normalized_line(handshake, "option name SyzygyPath type string default <empty>")
         require_normalized_line(handshake, "option name OwnBook type check default true")
@@ -254,6 +255,19 @@ def main() -> int:
                     "invalid EvalFile did not preserve deterministic NNUE search: "
                     f"{recovered_moves}"
                 )
+
+        hce_rejection = run_engine([
+            "setoption name OwnBook value false",
+            "position startpos",
+            "go depth 4",
+            "setoption name EvalFile value <hce>",
+            "position startpos",
+            "go depth 4",
+        ], wait_for_bestmove=True)
+        require(hce_rejection, "HCE evaluation is no longer supported")
+        rejected_moves = extract_bestmoves(hce_rejection)
+        if len(rejected_moves) != 2 or rejected_moves[0] != rejected_moves[1]:
+            raise AssertionError("rejected HCE request changed the active NNUE evaluator")
 
         determinism_1 = run_engine([
             "setoption name Threads value 1",

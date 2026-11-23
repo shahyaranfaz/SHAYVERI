@@ -68,7 +68,6 @@ COMMON_SRC := \
 	../src/make.cpp \
 	../src/move_gen.cpp \
 	../src/move_io.cpp \
-	../src/evaluate.cpp \
 	../src/search.cpp \
 	../src/nnue.cpp \
 	$(DEBUG_EMBEDDED_NNUE_SRC) \
@@ -113,7 +112,6 @@ STRICT_SRC := \
 	../src/board.cpp \
 	../src/datagen.cpp \
 	../src/datagen_cli.cpp \
-	../src/evaluate.cpp \
 	../src/fen.cpp \
 	../src/make.cpp \
 	../src/move_gen.cpp \
@@ -286,8 +284,8 @@ legality_suite: $(LEGALITY_BIN)
 see_suite: $(SEE_TESTS_BIN)
 	./$(SEE_TESTS_BIN)
 
-eval_symmetry_suite: $(EVAL_SYM_BIN)
-	./$(EVAL_SYM_BIN)
+eval_symmetry_suite: $(EVAL_SYM_BIN) $(DEFAULT_NNUE)
+	./$(EVAL_SYM_BIN) $(DEFAULT_NNUE)
 
 tt_safety_suite: $(TT_SAFETY_BIN)
 	./$(TT_SAFETY_BIN)
@@ -301,12 +299,12 @@ time_manager_suite: $(TIME_MANAGER_BIN)
 position_rules_suite: $(POSITION_RULES_BIN)
 	./$(POSITION_RULES_BIN)
 
-search_regression_suite: $(SEARCH_REGRESSION_BIN)
-	./$(SEARCH_REGRESSION_BIN)
+search_regression_suite: $(SEARCH_REGRESSION_BIN) $(DEFAULT_NNUE)
+	./$(SEARCH_REGRESSION_BIN) $(DEFAULT_NNUE)
 
 .PHONY: search_pruning_suite
-search_pruning_suite: $(SEARCH_PRUNING_BIN)
-	./$(SEARCH_PRUNING_BIN)
+search_pruning_suite: $(SEARCH_PRUNING_BIN) $(DEFAULT_NNUE)
+	./$(SEARCH_PRUNING_BIN) $(DEFAULT_NNUE)
 
 nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue $(DEFAULT_NNUE)
 	./$(NNUE_TEST_BIN) nnue_classic_test.nnue

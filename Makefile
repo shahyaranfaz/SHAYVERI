@@ -61,7 +61,6 @@ SRC := \
 	src/board.cpp \
 	src/datagen.cpp \
 	src/datagen_cli.cpp \
-	src/evaluate.cpp \
 	src/fen.cpp \
 	src/make.cpp \
 	src/move_gen.cpp \

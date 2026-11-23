@@ -403,12 +403,18 @@ void test_bounded_history_storage() {
 
 } // namespace
 
-int main() {
+int main(int argc, char **argv) {
     std::cout << std::unitbuf;
     Zobrist::init();
     init_attacks();
+    std::string net_error;
+    const char *net_path = argc > 1 ? argv[1] : "SHAYVERI2_11_7.nnue";
+    if (!SHAYVERI::NNUE::load(net_path, net_error)) {
+        std::cerr << "[FAIL] Test network: " << net_error << "\n";
+        return 1;
+    }
     test_tt.resize(16);
-    NNUE::set_enabled(false);
+
 
     test_terminal_positions();
     std::cout << "[PASS] terminal positions\n";
