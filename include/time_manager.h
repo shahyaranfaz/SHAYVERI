@@ -18,6 +18,7 @@ struct TimeControl {
     int moves_to_go   = 0;
     int min_think_ms  = 0;
     bool infinite     = false;
+    bool clock_provided = false; // Active-side clock was supplied, even if exhausted.
     Colour side       = WHITE;
     int move_overhead = 10;
 };

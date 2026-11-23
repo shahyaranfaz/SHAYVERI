@@ -42,6 +42,52 @@ TimeControl infinite_time_control() {
     return tc;
 }
 
+void test_exhausted_clock() {
+    TimeManager fallback;
+    fallback.init(TimeControl{});
+    expect_true(fallback.hard_ms() == Tune::time_no_clock_ms,
+                "bare go lost its no-clock fallback");
+    for (Colour side : {WHITE, BLACK}) {
+        for (int remaining : {0, -3}) {
+            TimeControl tc;
+            tc.side = side;
+            tc.clock_provided = true;
+            tc.wtime = side == WHITE ? remaining : 30'000;
+            tc.btime = side == BLACK ? remaining : 30'000;
+            TimeManager manager;
+            manager.init(tc);
+            expect_true(manager.soft_ms() == 1 && manager.hard_ms() == 1,
+                        "exhausted clock received the no-clock fallback");
+        }
+    }
+}
+
+void test_repeating_control_boundary() {
+    for (Colour side : {WHITE, BLACK}) {
+        TimeControl tc;
+        tc.side = side;
+        tc.move_overhead = 10;
+        TimeManager manager;
+        auto clock = [&](int remaining, int moves) {
+            tc.wtime = side == WHITE ? remaining : 1;
+            tc.btime = side == BLACK ? remaining : 1;
+            tc.moves_to_go = moves;
+            manager.init(tc);
+        };
+        clock(4'000, 2); // Before move 39: two moves remain in the period.
+        expect_true(manager.soft_ms() == 2'000 && manager.hard_ms() == 3'270,
+                    "move-39 allocation ignored moves-to-go or active color");
+        clock(3'000, 1); // Before move 40: last move before the clock reset.
+        expect_true(manager.soft_ms() == 2'450 && manager.hard_ms() == 2'450,
+                    "move-40 allocation escaped its safe clock ceiling");
+        manager.on_iter(8, 1, -500, 0.75);
+        clock(18'000, 40); // Move 41: GUI supplies the renewed bank and period.
+        expect_true(manager.soft_ms() == 450 && manager.hard_ms() == 1'800,
+                    "new period retained the previous movestogo=1 allocation");
+        expect_near(manager.last_scale(), 1.0, "new period retained adaptive state");
+    }
+}
+
 void test_node_share_scaling() {
     neutralize_existing_scalers();
 
@@ -217,6 +263,8 @@ void test_no_increment_clock_survival() {
 } // namespace
 
 int main() {
+    test_exhausted_clock();
+    test_repeating_control_boundary();
     test_node_share_scaling();
     test_deep_eval_stability_scaling();
     test_adaptive_scalers_compose();

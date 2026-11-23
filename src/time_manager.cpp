@@ -35,7 +35,7 @@ void TimeManager::init(const TimeControl &tc) {
     int my_inc = std::max(0, (tc.side == WHITE) ? tc.winc : tc.binc);
 
     if (my_time <= 0) {
-        soft_ms_ = hard_ms_ = Tune::time_no_clock_ms;
+        soft_ms_ = hard_ms_ = tc.clock_provided ? 1 : Tune::time_no_clock_ms;
         return;
     }
 

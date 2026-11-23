@@ -512,8 +512,14 @@ int main(int argc, char **argv) {
                 while (go_iss >> tok) {
                     if (tok == "infinite") tc.infinite = true;
                     else if (tok == "ponder") { /* handled above */ }
-                    else if (tok == "wtime") go_iss >> tc.wtime;
-                    else if (tok == "btime") go_iss >> tc.btime;
+                    else if (tok == "wtime") {
+                        go_iss >> tc.wtime;
+                        if (tc.side == WHITE) tc.clock_provided = true;
+                    }
+                    else if (tok == "btime") {
+                        go_iss >> tc.btime;
+                        if (tc.side == BLACK) tc.clock_provided = true;
+                    }
                     else if (tok == "winc") go_iss >> tc.winc;
                     else if (tok == "binc") go_iss >> tc.binc;
                     else if (tok == "movetime") go_iss >> tc.movetime;
