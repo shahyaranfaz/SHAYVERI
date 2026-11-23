@@ -31,15 +31,19 @@ def check_fallback(session):
 
 
 def check_immediate_stop(session):
-    for command in ("go depth 64 searchmoves h2h4", "go infinite searchmoves h2h4"):
-        for _ in range(20):
-            session.send("position startpos")
-            # One pipe write avoids giving the worker a deliberate startup delay.
-            session.send(command + "\nstop")
-            move = session.wait_for_prefix("bestmove ")
-            assert move.split()[1] == "h2h4", move
-            session.send("isready")
-            session.wait_for_prefix("readyok")
+    for threads in (1, 4):
+        session.send(f"setoption name Threads value {threads}")
+        for command in ("go depth 64 searchmoves h2h4",
+                        "go infinite searchmoves h2h4",
+                        "go wtime 60000 btime 60000 searchmoves h2h4"):
+            for _ in range(20):
+                session.send("position startpos")
+                # One pipe write avoids giving the worker a deliberate startup delay.
+                session.send(command + "\nstop")
+                move = session.wait_for_prefix("bestmove ")
+                assert move.split()[1] == "h2h4", move
+                session.send("isready")
+                session.wait_for_prefix("readyok")
 
 
 def main():
