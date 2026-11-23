@@ -1,6 +1,7 @@
 #include "time_manager.h"
 #include "tune.h"
 
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -10,15 +11,18 @@ using namespace SHAYVERI;
 
 namespace {
 
-void expect_near(double actual, double expected, const char *label) {
-    if (std::abs(actual - expected) <= 1e-9) return;
-    std::cerr << label << ": expected " << expected << ", got " << actual << "\n";
+void expect_near(double actual, double expected, const char* label) {
+    if (std::abs(actual - expected) <= 1e-9)
+        return;
+    std::cerr << "[FAIL] Time manager suite: " << label
+              << ": expected " << expected << ", got " << actual << "\n";
     std::exit(1);
 }
 
-void expect_true(bool condition, const char *label) {
-    if (condition) return;
-    std::cerr << label << "\n";
+void expect_true(bool condition, const char* label) {
+    if (condition)
+        return;
+    std::cerr << "[FAIL] Time manager suite: " << label << "\n";
     std::exit(1);
 }
 
@@ -111,8 +115,10 @@ void test_fixed_movetime_disables_adaptive_scaling() {
 
     TimeManager manager;
     manager.init(tc);
-    expect_true(!manager.on_iter(8, 1, 0, 1.0), "adaptive scaling ended fixed movetime early");
-    expect_near(manager.last_scale(), 1.0, "fixed movetime applied an adaptive scale");
+    expect_true(!manager.on_iter(8, 1, 0, 1.0),
+                "adaptive scaling ended fixed movetime early");
+    expect_near(manager.last_scale(), 1.0,
+                "fixed movetime applied an adaptive scale");
 }
 
 void test_explicit_moves_to_go() {
@@ -160,7 +166,8 @@ void test_safe_clock_ceiling_overrides_minimums() {
     expect_true(manager.hard_ms() == 6, "hard limit escaped safe clock ceiling");
 
     std::this_thread::sleep_for(std::chrono::milliseconds(8));
-    expect_true(manager.on_iter(1, 1, 0, 0.0), "minimum thinking time escaped the hard limit in on_iter");
+    expect_true(manager.on_iter(1, 1, 0, 0.0),
+                "minimum thinking time escaped the hard limit in on_iter");
     expect_true(manager.soft_ms() <= manager.hard_ms(), "soft limit exceeds hard limit");
 }
 
@@ -220,6 +227,6 @@ int main() {
     test_safe_clock_ceiling_overrides_minimums();
     test_no_increment_emergency();
     test_no_increment_clock_survival();
-    std::cout << "time manager tests passed\n";
+    std::cout << "[PASS] Time manager suite\n";
     return 0;
 }

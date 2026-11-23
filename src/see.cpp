@@ -10,11 +10,11 @@ namespace SHAYVERI {
 
 using namespace Tune;
 
-static inline int ptype_value(Piece p) {
+static int ptype_value(Piece p) {
     return TACTICAL_PIECE_VALUES[get_type(p)];
 }
 
-static inline U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 atks, Piece &piece_out) {
+static U64 pick_least_valuable_attacker(const Board &b, Colour side, U64 atks, Piece &piece_out) {
     auto pick = [&](U64 bb, Piece p) -> U64 {
         if (!bb) return 0;
         piece_out = p;

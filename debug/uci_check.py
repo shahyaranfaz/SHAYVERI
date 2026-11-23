@@ -16,7 +16,7 @@ DEFAULT_ENGINE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 ENGINE_PATH = os.environ.get("SHAYVERI_ENGINE", DEFAULT_ENGINE_PATH)
 TIMEOUT_SEC = int(os.environ.get("SHAYVERI_UCI_TIMEOUT_SEC", "60"))
 TAIL_CHARS = 500
-BENCH_SIGNATURE_NODES = 110889
+BENCH_SIGNATURE_NODES = 115898
 
 
 def run_engine(commands: list[str], wait_for_bestmove: bool = False) -> str:
@@ -135,6 +135,7 @@ def main() -> int:
         require_normalized_line(handshake, "option name Threads type spin default 1 min 1 max 512")
         require_normalized_line(handshake, "option name UseNNUE type check default true")
         require_normalized_line(handshake, "option name EvalFile type string default <embedded>")
+        require_normalized_line(handshake, "option name SyzygyPath type string default <empty>")
         require_normalized_line(handshake, "option name OwnBook type check default true")
         require_normalized_line(handshake, "option name BookInfoDepth type spin default 8 min 0 max 32")
         require_normalized_line(handshake, "option name Ponder type check default false")
@@ -146,6 +147,16 @@ def main() -> int:
             handshake,
             "option name MoveOverhead type spin default 10 min 0 max 5000",
         )
+
+        with tempfile.TemporaryDirectory() as empty_tb_dir:
+            syzygy_recovery = run_engine([
+                f"setoption name SyzygyPath value {empty_tb_dir}",
+                'setoption name SyzygyPath value ""',
+                "isready",
+            ])
+            require(syzygy_recovery, "info string Syzygy load failed: no WDL tablebases found")
+            require(syzygy_recovery, "info string Syzygy cardinality 0")
+            require(syzygy_recovery, "readyok")
 
         startpos = run_engine([
             "setoption name OwnBook value false",
@@ -266,12 +277,12 @@ def main() -> int:
             )
 
         print(
-            "UCI checks passed "
+            "[PASS] UCI suite: "
             f"(flow + bench nodes={bench_nodes} + book probe + option recovery + determinism)."
         )
         return 0
     except Exception as exc:
-        print(f"UCI checks failed: {exc}", file=sys.stderr)
+        print(f"[FAIL] UCI suite: {exc}", file=sys.stderr)
         traceback.print_exc()
         return 2
 

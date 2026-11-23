@@ -33,6 +33,7 @@ if [ -e "$QUEUE_MARKER" ]; then
 fi
 
 job_count=0
+next_opening_start="$OPENING_START"
 while IFS='|' read -r label base_option_spec candidate_option_spec; do
     for suite in $SUITES; do
         case "$suite" in
@@ -40,14 +41,33 @@ while IFS='|' read -r label base_option_spec candidate_option_spec; do
             tc10_01) base_time=10; increment=0.1; rounds="${ROUNDS_10_01:-50}" ;;
         esac
 
-        job_id="${suite}_${label}"
-        job_file="$JOB_DIR/$job_id.job"
-        tmp_file="$job_file.tmp.$$"
-        printf '%s|%s|%s|%s|%s|%s|%s\n' \
-            "$suite" "$base_time" "$increment" "$rounds" "$label" \
-            "$base_option_spec" "$candidate_option_spec" > "$tmp_file"
-        mv "$tmp_file" "$job_file"
-        job_count=$((job_count + 1))
+        if [ "$SHARDS" -lt 1 ] || [ "$SHARDS" -gt "$rounds" ]; then
+            echo "SHARDS must be between 1 and $rounds" >&2
+            exit 2
+        fi
+
+        rounds_per_shard=$((rounds / SHARDS))
+        extra_rounds=$((rounds % SHARDS))
+        shard=0
+        while [ "$shard" -lt "$SHARDS" ]; do
+            shard_rounds="$rounds_per_shard"
+            if [ "$shard" -lt "$extra_rounds" ]; then
+                shard_rounds=$((shard_rounds + 1))
+            fi
+
+            shard_number=$((shard + 1))
+            job_id="$(printf '%s_%s_shard_%03d' "$suite" "$label" "$shard_number")"
+            job_file="$JOB_DIR/$job_id.job"
+            tmp_file="$job_file.tmp.$$"
+            printf '%s|%s|%s|%s|%s|%s|%s|%s|%s\n' \
+                "$suite" "$base_time" "$increment" "$shard_rounds" "$label" \
+                "$base_option_spec" "$candidate_option_spec" \
+                "sequential" "$next_opening_start" > "$tmp_file"
+            mv "$tmp_file" "$job_file"
+            job_count=$((job_count + 1))
+            next_opening_start=$((next_opening_start + shard_rounds))
+            shard=$((shard + 1))
+        done
     done
 done < <(emit_tests)
 

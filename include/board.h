@@ -9,9 +9,9 @@
 namespace SHAYVERI {
 
 enum Castling : int {
-    WHITE_KINGSIDE = 1 << 0,
+    WHITE_KINGSIDE  = 1 << 0,
     WHITE_QUEENSIDE = 1 << 1,
-    BLACK_KINGSIDE = 1 << 2,
+    BLACK_KINGSIDE  = 1 << 2,
     BLACK_QUEENSIDE = 1 << 3
 };
 
@@ -20,14 +20,14 @@ struct Board {
     std::array<U64, COLOUR_COUNT> occupancies{};
     std::array<Piece, 64> mailbox{};
 
-    U64 hash = 0;
-    U64 pawn_hash = 0;
-    U64 occupied = 0;
+    U64 hash            = 0;
+    U64 pawn_hash       = 0;
+    U64 occupied        = 0;
     Colour side_to_move = WHITE;
-    Square en_passant = SQ_NONE;
-    int castling = 0;
-    int half_move = 0;
-    int full_move = 1;
+    Square en_passant   = SQ_NONE;
+    int castling        = 0;
+    int half_move       = 0;
+    int full_move       = 1;
 
     void clear();
     void recompute_all();

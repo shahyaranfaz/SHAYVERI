@@ -32,9 +32,7 @@ extern const std::size_t EMBEDDED_DEFAULT_NET_SIZE;
 struct Accumulator {
     I16 vals[2][MAX_HIDDEN_SIZE]{};
 
-    Accumulator() {
-        reset();
-    }
+    Accumulator() { reset(); }
 
     void reset();
     void refresh(const Board &board);
@@ -65,14 +63,17 @@ inline int king_bucket_index(int king_sq, int perspective, int bucket_count) {
     const int rank = effective_sq >> 3;
     static constexpr int FILE_MAP[8] = {0, 1, 2, 3, 3, 2, 1, 0};
     const int file_bucket = FILE_MAP[file];
-    if (bucket_count == 8) return (rank >= 4 ? 1 : 0) * 4 + file_bucket;
-    if (bucket_count == 16) return (rank / 2) * 4 + file_bucket;
+    if (bucket_count == 8)
+        return (rank >= 4 ? 1 : 0) * 4 + file_bucket;
+    if (bucket_count == 16)
+        return (rank / 2) * 4 + file_bucket;
 
     return 0;
 }
 
 inline int feature_index(int piece_type, int piece_colour, int sq, int perspective, int perspective_king_sq) {
-    if (king_bucket_count() <= 1) return chess768_index(piece_type, piece_colour, sq, perspective);
+    if (king_bucket_count() <= 1)
+        return chess768_index(piece_type, piece_colour, sq, perspective);
 
     const int king_file = perspective_king_sq & 7; // file unaffected by ^56
     const int flip = (king_file > 3) ? 7 : 0;
@@ -81,7 +82,8 @@ inline int feature_index(int piece_type, int piece_colour, int sq, int perspecti
     return bucket * CHESS768_INPUT_SIZE + (base ^ flip);
 }
 
-inline void feature_indices(int piece_type, int piece_colour, int sq, int white_king_sq, int black_king_sq,
+inline void feature_indices(int piece_type, int piece_colour, int sq,
+                            int white_king_sq, int black_king_sq,
                             int &white_idx, int &black_idx) {
     white_idx = feature_index(piece_type, piece_colour, sq, 0, white_king_sq);
     black_idx = feature_index(piece_type, piece_colour, sq, 1, black_king_sq);
@@ -92,8 +94,6 @@ bool load_embedded_default(std::string &error);
 bool is_enabled();
 void set_enabled(bool enabled);
 void print_info();
-
-inline constexpr const char *UCI_OPTION_NAME = "EvalFile";
 
 int evaluate(int side_to_move, int piece_count, const Accumulator &acc);
 

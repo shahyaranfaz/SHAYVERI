@@ -4,6 +4,7 @@
 #include "board.h"
 #include "make.h"
 #include "move_gen.h"
+#include "move_io.h"
 #include "opening_book.h"
 #include "position_rules.h"
 #include "search.h"
@@ -14,6 +15,7 @@
 #include <array>
 #include <atomic>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -72,10 +74,17 @@ struct BulletChessBoard {
 };
 
 static_assert(sizeof(BulletChessBoard) == 32, "Bullet chess records must be 32 bytes");
+static_assert(offsetof(BulletChessBoard, occ) == 0);
+static_assert(offsetof(BulletChessBoard, pcs) == 8);
+static_assert(offsetof(BulletChessBoard, score) == 24);
+static_assert(offsetof(BulletChessBoard, result) == 26);
+static_assert(offsetof(BulletChessBoard, ksq) == 27);
+static_assert(offsetof(BulletChessBoard, opp_ksq) == 28);
+static_assert(offsetof(BulletChessBoard, extra) == 29);
 
 struct GameResult {
     GameEnd end = GameEnd::None;
-    int wdl = 1;
+    int wdl     = 1;
 };
 
 struct DatagenCounters {
@@ -131,18 +140,24 @@ int popcount64(U64 bb) {
 }
 
 bool structurally_valid_position(const Board &b) {
-    if (popcount64(b.bit_boards[WK]) != 1 || popcount64(b.bit_boards[BK]) != 1) return false;
+    if (popcount64(b.bit_boards[WK]) != 1 || popcount64(b.bit_boards[BK]) != 1)
+        return false;
 
     Square white_king = king_square(b, WHITE);
     Square black_king = king_square(b, BLACK);
-    if (!is_valid(white_king) || !is_valid(black_king)) return false;
+    if (!is_valid(white_king) || !is_valid(black_king))
+        return false;
 
-    int file_delta = std::abs(static_cast<int>(get_file(white_king)) - static_cast<int>(get_file(black_king)));
-    int rank_delta = std::abs(static_cast<int>(get_rank(white_king)) - static_cast<int>(get_rank(black_king)));
-    if (file_delta <= 1 && rank_delta <= 1) return false;
+    int file_delta = std::abs(static_cast<int>(get_file(white_king)) -
+                              static_cast<int>(get_file(black_king)));
+    int rank_delta = std::abs(static_cast<int>(get_rank(white_king)) -
+                              static_cast<int>(get_rank(black_king)));
+    if (file_delta <= 1 && rank_delta <= 1)
+        return false;
 
     Square opponent_king = king_square(b, flip(b.side_to_move));
-    if (is_square_attacked(b, opponent_king, b.side_to_move)) return false;
+    if (is_square_attacked(b, opponent_king, b.side_to_move))
+        return false;
 
     return true;
 }
@@ -172,14 +187,10 @@ int material_phase(const Board &b) {
         }
     };
 
-    add(WN, 1);
-    add(BN, 1);
-    add(WB, 1);
-    add(BB, 1);
-    add(WR, 2);
-    add(BR, 2);
-    add(WQ, 4);
-    add(BQ, 4);
+    add(WN, 1); add(BN, 1);
+    add(WB, 1); add(BB, 1);
+    add(WR, 2); add(BR, 2);
+    add(WQ, 4); add(BQ, 4);
     return phase;
 }
 
@@ -210,20 +221,24 @@ GameResult terminal_result(Board &b, const std::vector<U64> &history) {
         return {GameEnd::Checkmate, b.side_to_move == WHITE ? 0 : 2};
     }
     if (b.half_move >= 100) return {GameEnd::Draw, 1};
-    if (PositionRules::is_threefold_repetition(history, b.hash)) return {GameEnd::Draw, 1};
-    if (PositionRules::has_insufficient_material(b)) return {GameEnd::Draw, 1};
+    if (PositionRules::is_threefold_repetition(history, b.hash))
+        return {GameEnd::Draw, 1};
+    if (PositionRules::has_insufficient_material(b))
+        return {GameEnd::Draw, 1};
     return {};
 }
 
-SearchResult fixed_node_search(SearchContext &context, SearchWorker &worker, Board &b, const std::vector<U64> &history,
-                               U64 node_budget) {
+SearchResult fixed_node_search(SearchContext &context, SearchWorker &worker,
+                               Board &b,
+                               const std::vector<U64> &history, U64 node_budget) {
     std::vector<Move> search_moves;
     context.table.new_search();
-    return search_nodes(context, worker, b, node_budget,
-                        SearchRequest{
-                            .repetition = history,
-                            .root_moves = search_moves,
-                        });
+    return search_nodes(
+        context, worker, b, node_budget,
+        SearchRequest{
+            .repetition = history,
+            .root_moves = search_moves,
+        });
 }
 
 int score_to_white_pov(const Board &b, int score_side_to_move_pov) {
@@ -254,7 +269,8 @@ U8 bullet_piece_code(Piece p, Colour stm) {
     int colour = get_colour(p) == BLACK ? 8 : 0;
     int type = static_cast<int>(get_type(p)) - 1;
     U8 code = static_cast<U8>(colour | type);
-    if (stm == BLACK) code ^= 8;
+    if (stm == BLACK)
+        code ^= 8;
     return code;
 }
 
@@ -283,7 +299,8 @@ BulletChessBoard make_bullet_record(const Board &b, int score_white_pov, int wdl
         Square packed_sq = pop_lsb(packed_occ);
         Square sq = bullet_square(packed_sq, stm);
         Piece p = b.get_piece(sq);
-        if (p == NONE_PIECE || idx >= 32) continue;
+        if (p == NONE_PIECE || idx >= 32)
+            continue;
 
         U8 piece = bullet_piece_code(p, stm);
         rec.pcs[idx / 2] |= static_cast<U8>(piece << (4 * (idx & 1)));
@@ -301,7 +318,8 @@ BulletChessBoard make_bullet_record(const Board &b, int score_white_pov, int wdl
     return rec;
 }
 
-Move choose_opening_move(Board &b, std::mt19937_64 &rng, const MoveList &legal, const DatagenOptions &options) {
+Move choose_opening_move(Board &b, std::mt19937_64 &rng, const MoveList &legal,
+                         const DatagenOptions &options) {
     const BookEntry *entry = probe_book(b.hash);
     if (entry != nullptr) {
         std::uniform_real_distribution<double> coin(0.0, 1.0);
@@ -315,8 +333,11 @@ Move choose_opening_move(Board &b, std::mt19937_64 &rng, const MoveList &legal, 
     return legal.moves[dist(rng)];
 }
 
-bool play_external_start(Board &b, std::mt19937_64 &rng, std::vector<U64> &history,
-                         const std::vector<std::string> &start_fens, DatagenCounters &counters) {
+bool play_external_start(Board &b,
+                         std::mt19937_64 &rng,
+                         std::vector<U64> &history,
+                         const std::vector<std::string> &start_fens,
+                         DatagenCounters &counters) {
     if (start_fens.empty()) return false;
 
     std::uniform_int_distribution<size_t> dist(0, start_fens.size() - 1);
@@ -337,7 +358,10 @@ bool play_external_start(Board &b, std::mt19937_64 &rng, std::vector<U64> &histo
     return true;
 }
 
-bool play_twic_book_opening(Board &b, std::mt19937_64 &rng, std::vector<U64> &history, const DatagenOptions &options) {
+bool play_twic_book_opening(Board &b,
+                            std::mt19937_64 &rng,
+                            std::vector<U64> &history,
+                            const DatagenOptions &options) {
     set_startpos(b);
     history.clear();
     history.push_back(b.hash);
@@ -361,16 +385,22 @@ bool play_twic_book_opening(Board &b, std::mt19937_64 &rng, std::vector<U64> &hi
     return true;
 }
 
-bool start_game(Board &b, std::mt19937_64 &rng, std::vector<U64> &history, const DatagenOptions &options,
-                const std::vector<std::string> &start_fens, DatagenCounters &counters) {
+bool start_game(Board &b,
+                std::mt19937_64 &rng,
+                std::vector<U64> &history,
+                const DatagenOptions &options,
+                const std::vector<std::string> &start_fens,
+                DatagenCounters &counters) {
     if (!start_fens.empty() && options.start_file_probability > 0.0) {
         std::uniform_real_distribution<double> coin(0.0, 1.0);
-        if (coin(rng) < options.start_file_probability && play_external_start(b, rng, history, start_fens, counters)) {
+        if (coin(rng) < options.start_file_probability &&
+            play_external_start(b, rng, history, start_fens, counters)) {
             return true;
         }
     }
 
-    if (!play_twic_book_opening(b, rng, history, options)) return false;
+    if (!play_twic_book_opening(b, rng, history, options))
+        return false;
 
     counters.twic_book_starts++;
     return true;
@@ -378,50 +408,47 @@ bool start_game(Board &b, std::mt19937_64 &rng, std::vector<U64> &history, const
 
 void bump_filter(DatagenCounters &counters, FilterReason reason) {
     switch (reason) {
-        case FilterReason::InCheck:
-            counters.filtered_in_check++;
-            break;
-        case FilterReason::CaptureOrPromotion:
-            counters.filtered_capture_or_promo++;
-            break;
-        case FilterReason::MateScore:
-            counters.filtered_mate_score++;
-            break;
-        case FilterReason::Score:
-            counters.filtered_score++;
-            break;
-        case FilterReason::Ply:
-            counters.filtered_ply++;
-            break;
-        case FilterReason::Stride:
-            counters.filtered_stride++;
-            break;
-        case FilterReason::Duplicate:
-            counters.filtered_duplicate++;
-            break;
-        default:
-            break;
+        case FilterReason::InCheck: counters.filtered_in_check++; break;
+        case FilterReason::CaptureOrPromotion: counters.filtered_capture_or_promo++; break;
+        case FilterReason::MateScore: counters.filtered_mate_score++; break;
+        case FilterReason::Score: counters.filtered_score++; break;
+        case FilterReason::Ply: counters.filtered_ply++; break;
+        case FilterReason::Stride: counters.filtered_stride++; break;
+        case FilterReason::Duplicate: counters.filtered_duplicate++; break;
+        default: break;
     }
 }
 
-FilterReason filter_position(const Board &b, Move chosen, int score_white, int sample_index,
-                             const DatagenOptions &options, std::unordered_set<U64> *seen) {
-    if (!options.include_checks && PositionRules::is_in_check(b)) return FilterReason::InCheck;
+FilterReason filter_position(const Board &b,
+                             Move chosen,
+                             int score_white,
+                             int sample_index,
+                             const DatagenOptions &options,
+                             std::unordered_set<U64> *seen) {
+    if (!options.include_checks && PositionRules::is_in_check(b))
+        return FilterReason::InCheck;
 
-    if (!options.include_captures && is_capture_or_promo(b, chosen)) return FilterReason::CaptureOrPromotion;
+    if (!options.include_captures && is_capture_or_promo(b, chosen))
+        return FilterReason::CaptureOrPromotion;
 
-    if (!options.include_mate_scores && is_mate_score(score_white)) return FilterReason::MateScore;
+    if (!options.include_mate_scores && is_mate_score(score_white))
+        return FilterReason::MateScore;
 
-    if (std::abs(score_white) > options.max_abs_cp) return FilterReason::Score;
+    if (std::abs(score_white) > options.max_abs_cp)
+        return FilterReason::Score;
 
     int ply = ply_number(b);
-    if (options.min_ply > 0 && ply < options.min_ply) return FilterReason::Ply;
-    if (options.max_ply > 0 && ply > options.max_ply) return FilterReason::Ply;
+    if (options.min_ply > 0 && ply < options.min_ply)
+        return FilterReason::Ply;
+    if (options.max_ply > 0 && ply > options.max_ply)
+        return FilterReason::Ply;
 
-    if (options.sample_stride > 1 && (sample_index % options.sample_stride) != 0) return FilterReason::Stride;
+    if (options.sample_stride > 1 && (sample_index % options.sample_stride) != 0)
+        return FilterReason::Stride;
 
     if (seen != nullptr) {
-        if (!seen->insert(b.hash).second) return FilterReason::Duplicate;
+        if (!seen->insert(b.hash).second)
+            return FilterReason::Duplicate;
     }
 
     return FilterReason::Accepted;
@@ -435,8 +462,10 @@ bool claim_position(DatagenCounters &counters, U64 target_positions) {
 
     U64 current = counters.total_positions.load(std::memory_order_relaxed);
     while (current < target_positions) {
-        if (counters.total_positions.compare_exchange_weak(current, current + 1, std::memory_order_relaxed,
-                                                           std::memory_order_relaxed)) {
+        if (counters.total_positions.compare_exchange_weak(
+                current, current + 1,
+                std::memory_order_relaxed,
+                std::memory_order_relaxed)) {
             return true;
         }
     }
@@ -448,8 +477,10 @@ bool claim_game(DatagenCounters &counters, U64 target_games) {
 
     U64 current = counters.claimed_games.load(std::memory_order_relaxed);
     while (current < target_games) {
-        if (counters.claimed_games.compare_exchange_weak(current, current + 1, std::memory_order_relaxed,
-                                                         std::memory_order_relaxed)) {
+        if (counters.claimed_games.compare_exchange_weak(
+                current, current + 1,
+                std::memory_order_relaxed,
+                std::memory_order_relaxed)) {
             return true;
         }
     }
@@ -458,16 +489,18 @@ bool claim_game(DatagenCounters &counters, U64 target_games) {
 
 bool should_continue(const DatagenCounters &counters, const DatagenOptions &options) {
     bool positions_left = options.target_positions == 0 ||
-                          counters.total_positions.load(std::memory_order_relaxed) < options.target_positions;
+        counters.total_positions.load(std::memory_order_relaxed) < options.target_positions;
     bool games_left = options.target_games == 0 ||
-                      counters.claimed_games.load(std::memory_order_relaxed) < options.target_games;
+        counters.claimed_games.load(std::memory_order_relaxed) < options.target_games;
     return positions_left && games_left;
 }
 
 void update_max(std::atomic<U64> &target, U64 value) {
     U64 current = target.load(std::memory_order_relaxed);
     while (value > current &&
-           !target.compare_exchange_weak(current, value, std::memory_order_relaxed, std::memory_order_relaxed)) {
+           !target.compare_exchange_weak(current, value,
+                                         std::memory_order_relaxed,
+                                         std::memory_order_relaxed)) {
     }
 }
 
@@ -481,7 +514,8 @@ void record_game_end(DatagenCounters &counters, const GameResult &result, int pl
             break;
         case GameEnd::Adjudication:
             counters.ended_adjudication++;
-            counters.adjudication_ply_sum.fetch_add(static_cast<U64>(std::max(0, ply)), std::memory_order_relaxed);
+            counters.adjudication_ply_sum.fetch_add(static_cast<U64>(std::max(0, ply)),
+                                                    std::memory_order_relaxed);
             update_max(counters.max_adjudication_ply, static_cast<U64>(std::max(0, ply)));
             if (result.wdl == 2)
                 counters.adjudicated_white_wins++;
@@ -500,9 +534,15 @@ void record_stats(DatagenCounters &counters, const DataEntry &entry, int wdl, Co
     counters.phase_buckets[std::clamp(phase, 0, 3)]++;
 }
 
-U64 write_game_entries(std::ofstream &out, const std::vector<DataEntry> &entries, const std::vector<Colour> &stms,
-                       const std::vector<int> &phases, int wdl, DatagenCounters &counters,
-                       const DatagenOptions &options, U64 target_positions, std::atomic<bool> &failed) {
+U64 write_game_entries(std::ofstream &out,
+                       const std::vector<DataEntry> &entries,
+                       const std::vector<Colour> &stms,
+                       const std::vector<int> &phases,
+                       int wdl,
+                       DatagenCounters &counters,
+                       const DatagenOptions &options,
+                        U64 target_positions,
+                        std::atomic<bool> &failed) {
     U64 written = 0;
     for (size_t i = 0; i < entries.size(); ++i) {
         if (!claim_position(counters, target_positions)) return written;
@@ -523,8 +563,11 @@ U64 write_game_entries(std::ofstream &out, const std::vector<DataEntry> &entries
     return written;
 }
 
-void datagen_worker(int id, const DatagenOptions &options, const std::vector<std::string> &start_fens,
-                    DatagenCounters &counters, std::atomic<bool> &failed) {
+void datagen_worker(int id,
+                    const DatagenOptions &options,
+                    const std::vector<std::string> &start_fens,
+                    DatagenCounters &counters,
+                    std::atomic<bool> &failed) {
     pin_worker_to_core(id);
 
     TranspositionTable local_tt;
@@ -535,7 +578,8 @@ void datagen_worker(int id, const DatagenOptions &options, const std::vector<std
     std::mt19937_64 rng(options.seed + static_cast<U64>(id) * DATAGEN_THREAD_PRIME);
     const std::string extension = output_is_bullet(options) ? ".bullet.bin" : ".plain";
     std::ios::openmode mode = std::ios::out;
-    if (output_is_bullet(options)) mode |= std::ios::binary;
+    if (output_is_bullet(options))
+        mode |= std::ios::binary;
     std::ofstream out(options.output_prefix + "_" + std::to_string(id) + extension, mode);
     if (!out) {
         std::cerr << "datagen worker " << id << " failed to open output file\n";
@@ -567,9 +611,11 @@ void datagen_worker(int id, const DatagenOptions &options, const std::vector<std
             result = terminal_result(b, history);
             if (result.end != GameEnd::None) break;
 
-            int qscore_white = score_to_white_pov(b, qsearch_score(search_context, search_worker, b));
-            SearchResult search_result = fixed_node_search(search_context, search_worker, b, history,
-                                                           options.search_nodes);
+            int qscore_white = score_to_white_pov(
+                b, qsearch_score(search_context, search_worker, b));
+            SearchResult search_result = fixed_node_search(
+                search_context, search_worker, b, history,
+                options.search_nodes);
 
             Move chosen = search_result.best_move;
             if (chosen == MOVE_NONE) {
@@ -582,7 +628,8 @@ void datagen_worker(int id, const DatagenOptions &options, const std::vector<std
             }
 
             int search_score_white = score_to_white_pov(b, search_result.score);
-            if (options.enable_adjudication && std::abs(search_score_white) >= options.adjudication_cp) {
+            if (options.enable_adjudication &&
+                std::abs(search_score_white) >= options.adjudication_cp) {
                 if (++decisive_plies >= options.adjudication_plies) {
                     result = {GameEnd::Adjudication, adjudicated_wdl(search_score_white)};
                     break;
@@ -592,10 +639,12 @@ void datagen_worker(int id, const DatagenOptions &options, const std::vector<std
             }
 
             ++sample_index;
-            FilterReason reason = filter_position(b, chosen, qscore_white, sample_index, options, seen_ptr);
+            FilterReason reason = filter_position(
+                b, chosen, qscore_white, sample_index, options, seen_ptr);
             if (reason == FilterReason::Accepted &&
                 (options.max_samples_per_game <= 0 || samples_this_game < options.max_samples_per_game)) {
-                if (seen_ptr != nullptr) counters.duplicate_checks++;
+                if (seen_ptr != nullptr)
+                    counters.duplicate_checks++;
                 int phase = phase_bucket(b);
                 game_entries.push_back({b, output_is_bullet(options) ? std::string{} : get_board_fen(b), qscore_white});
                 stms.push_back(b.side_to_move);
@@ -603,7 +652,8 @@ void datagen_worker(int id, const DatagenOptions &options, const std::vector<std
                 ++samples_this_game;
             } else if (reason != FilterReason::Accepted) {
                 bump_filter(counters, reason);
-                if (reason == FilterReason::Duplicate) counters.duplicate_checks++;
+                if (reason == FilterReason::Duplicate)
+                    counters.duplicate_checks++;
             }
 
             Undo u;
@@ -614,8 +664,9 @@ void datagen_worker(int id, const DatagenOptions &options, const std::vector<std
             history.push_back(b.hash);
         }
 
-        U64 written = write_game_entries(out, game_entries, stms, phases, result.wdl, counters, options,
-                                         options.target_positions, failed);
+        U64 written = write_game_entries(
+            out, game_entries, stms, phases, result.wdl, counters, options,
+            options.target_positions, failed);
         counters.game_position_sum.fetch_add(written, std::memory_order_relaxed);
         update_max(counters.max_positions_in_game, written);
         record_game_end(counters, result, ply_number(b));
@@ -652,17 +703,19 @@ bool write_summary(const DatagenOptions &options, const DatagenCounters &counter
     out << "target_games " << options.target_games << '\n';
     out << "avg_positions_per_game "
         << static_cast<double>(counters.game_position_sum.load()) /
-               static_cast<double>(std::max<U64>(1, counters.total_games.load()))
-        << '\n';
+               static_cast<double>(std::max<U64>(1, counters.total_games.load())) << '\n';
     out << "max_positions_from_one_game " << counters.max_positions_in_game.load() << '\n';
     out << "twic_book_starts " << counters.twic_book_starts.load() << '\n';
     out << "external_starts " << counters.external_starts.load() << '\n';
     U64 starts = counters.twic_book_starts.load() + counters.external_starts.load();
     const auto percentage = [](U64 numerator, U64 denominator) {
-        return denominator == 0 ? 0.0 : 100.0 * static_cast<double>(numerator) / static_cast<double>(denominator);
+        return denominator == 0 ? 0.0
+            : 100.0 * static_cast<double>(numerator) / static_cast<double>(denominator);
     };
-    out << "twic_book_start_pct " << percentage(counters.twic_book_starts.load(), starts) << '\n';
-    out << "external_start_pct " << percentage(counters.external_starts.load(), starts) << '\n';
+    out << "twic_book_start_pct "
+        << percentage(counters.twic_book_starts.load(), starts) << '\n';
+    out << "external_start_pct "
+        << percentage(counters.external_starts.load(), starts) << '\n';
     out << "format " << options.output_format << '\n';
     out << "threads " << options.threads << '\n';
     out << "nodes " << options.search_nodes << '\n';
@@ -695,8 +748,7 @@ bool write_summary(const DatagenOptions &options, const DatagenCounters &counter
     out << "adjudicated_black_wins " << counters.adjudicated_black_wins.load() << '\n';
     out << "avg_adjudication_ply "
         << static_cast<double>(counters.adjudication_ply_sum.load()) /
-               static_cast<double>(std::max<U64>(1, counters.ended_adjudication.load()))
-        << '\n';
+               static_cast<double>(std::max<U64>(1, counters.ended_adjudication.load())) << '\n';
     out << "max_adjudication_ply " << counters.max_adjudication_ply.load() << '\n';
 
     out << "\nfilters\n";
@@ -710,12 +762,13 @@ bool write_summary(const DatagenOptions &options, const DatagenCounters &counter
     out << "stride " << counters.filtered_stride.load() << '\n';
     out << "duplicate " << counters.filtered_duplicate.load() << '\n';
     out << "duplicate_checks " << counters.duplicate_checks.load() << '\n';
-    out << "duplicate_rate_pct " << percentage(counters.filtered_duplicate.load(), counters.duplicate_checks.load())
-        << '\n';
+    out << "duplicate_rate_pct "
+        << percentage(counters.filtered_duplicate.load(), counters.duplicate_checks.load()) << '\n';
 
     out << "\ncp_abs_buckets\n";
     static constexpr const char *CP_NAMES[8] = {
-        "000-050", "051-100", "101-200", "201-400", "401-800", "801-1200", "1201-2000", "2000+",
+        "000-050", "051-100", "101-200", "201-400",
+        "401-800", "801-1200", "1201-2000", "2000+",
     };
     for (int i = 0; i < 8; ++i)
         out << CP_NAMES[i] << ' ' << counters.cp_buckets[i].load() << '\n';
@@ -741,15 +794,24 @@ bool write_summary(const DatagenOptions &options, const DatagenCounters &counter
 }
 
 bool valid_options(const DatagenOptions &options) {
-    return options.threads > 0 && (options.target_positions > 0 || options.target_games > 0) &&
+    return options.threads > 0 &&
+           (options.target_positions > 0 || options.target_games > 0) &&
            !options.output_prefix.empty() &&
-           (options.output_format == "shayveri-plain-v1" || options.output_format == "plain" ||
-            options.output_format == "bullet-v1" || options.output_format == "bullet") &&
-           options.search_nodes > 0 && options.opening_min_plies >= 0 &&
-           options.opening_max_plies >= options.opening_min_plies && options.book_move_probability >= 0.0 &&
-           options.book_move_probability <= 1.0 && options.start_file_probability >= 0.0 &&
-           options.start_file_probability <= 1.0 && options.max_abs_cp > 0 && options.sample_stride > 0 &&
-           (!options.enable_adjudication || (options.adjudication_cp > 0 && options.adjudication_plies > 0));
+           (options.output_format == "shayveri-plain-v1" ||
+            options.output_format == "plain" ||
+            options.output_format == "bullet-v1" ||
+            options.output_format == "bullet") &&
+           options.search_nodes > 0 &&
+           options.opening_min_plies >= 0 &&
+           options.opening_max_plies >= options.opening_min_plies &&
+           options.book_move_probability >= 0.0 &&
+           options.book_move_probability <= 1.0 &&
+           options.start_file_probability >= 0.0 &&
+           options.start_file_probability <= 1.0 &&
+           options.max_abs_cp > 0 &&
+           options.sample_stride > 0 &&
+           (!options.enable_adjudication ||
+            (options.adjudication_cp > 0 && options.adjudication_plies > 0));
 }
 
 std::vector<std::string> load_start_fens(const DatagenOptions &options, DatagenCounters &counters) {
@@ -808,16 +870,25 @@ int generate_data(const DatagenOptions &options) {
     std::vector<std::thread> workers;
     workers.reserve(static_cast<size_t>(options.threads));
 
-    std::cerr << "datagen threads=" << options.threads << " target_positions=" << options.target_positions
-              << " target_games=" << options.target_games << " output_prefix=" << options.output_prefix
-              << " format=" << options.output_format << " eval_file=" << options.eval_file
-              << " nodes=" << options.search_nodes << " label=qsearch" << " score_pov=white"
-              << " max_abs_cp=" << options.max_abs_cp << " opening_plies=" << options.opening_min_plies << "-"
-              << options.opening_max_plies << " start_file_positions=" << start_fens.size() << '\n';
+    std::cerr << "datagen threads=" << options.threads
+              << " target_positions=" << options.target_positions
+              << " target_games=" << options.target_games
+              << " output_prefix=" << options.output_prefix
+              << " format=" << options.output_format
+              << " eval_file=" << options.eval_file
+              << " nodes=" << options.search_nodes
+              << " label=qsearch"
+              << " score_pov=white"
+              << " max_abs_cp=" << options.max_abs_cp
+              << " opening_plies=" << options.opening_min_plies
+              << "-" << options.opening_max_plies
+              << " start_file_positions=" << start_fens.size()
+              << '\n';
 
     for (int id = 0; id < options.threads; ++id) {
-        workers.emplace_back(datagen_worker, id, std::cref(options), std::cref(start_fens), std::ref(counters),
-                             std::ref(failed));
+        workers.emplace_back(datagen_worker, id, std::cref(options),
+                             std::cref(start_fens),
+                             std::ref(counters), std::ref(failed));
     }
     for (std::thread &worker : workers) {
         if (worker.joinable()) worker.join();
@@ -831,7 +902,8 @@ int generate_data(const DatagenOptions &options) {
 
     std::cerr << "datagen complete games=" << counters.total_games.load(std::memory_order_relaxed)
               << " positions=" << counters.total_positions.load(std::memory_order_relaxed)
-              << " summary=" << options.output_prefix << ".summary.txt" << '\n';
+              << " summary=" << options.output_prefix << ".summary.txt"
+              << '\n';
     std::ofstream done(done_path);
     if (!done) return 1;
     done << "positions " << counters.total_positions.load(std::memory_order_relaxed) << '\n';

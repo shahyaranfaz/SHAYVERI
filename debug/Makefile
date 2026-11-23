@@ -1,12 +1,18 @@
 CXX := g++
 TIDY ?= clang-tidy
+GCC_VERSION := $(shell $(CXX) -dumpversion)
+GCC_TARGET := $(shell $(CXX) -dumpmachine)
+TIDY_STDLIB_ARGS := \
+	--extra-arg-before=-isystem/usr/include/c++/$(GCC_VERSION) \
+	--extra-arg-before=-isystem/usr/include/$(GCC_TARGET)/c++/$(GCC_VERSION) \
+	--extra-arg-before=-isystem/usr/include/c++/$(GCC_VERSION)/backward
 # Optional platform-specific arguments for clang-tidy itself.  For example,
 # a self-contained LLVM install can use --extra-arg=--gcc-toolchain=/usr.
 TIDY_EXTRA_ARGS ?=
 PYTHON ?= python3
 ENGINE ?= ../SHAYVERI
 CXXFLAGS ?= -std=c++20 -O3 -g -Wall -Wextra -Wpedantic -mbmi2 -march=native
-INCLUDES := -I../include
+INCLUDES := -I../include -I../external/fathom/src
 
 STRICT_WARN_FLAGS := \
 	-Wshadow=compatible-local \
@@ -52,7 +58,7 @@ SANITIZE_CUTECHESS_CONCURRENCY ?= 20
 CUTECHESS ?= cutechess-cli
 SANITIZER_ENV := ASAN_OPTIONS=detect_leaks=$(LSAN):halt_on_error=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 SHAYVERI_ENGINE=../$(SANITIZE_BIN)
 
-DEFAULT_NNUE := ../SHAYVERI2_10_4.nnue
+DEFAULT_NNUE := ../SHAYVERI2_11_7.nnue
 DEBUG_EMBEDDED_NNUE_SRC := embedded_nnue_stub.cpp
 
 COMMON_SRC := \
@@ -117,6 +123,7 @@ STRICT_SRC := \
 	../src/opening_book.cpp \
 	../src/search.cpp \
 	../src/see.cpp \
+	../src/tablebase.cpp \
 	../src/time_manager.cpp \
 	../src/tools/embed_nnue.cpp \
 	../src/tt.cpp \
@@ -210,7 +217,7 @@ strict:
 	$(CXX) $(STRICT_CXXFLAGS) $(INCLUDES) -fsyntax-only $(STRICT_SRC)
 
 tidy:
-	$(TIDY) $(TIDY_EXTRA_ARGS) $(TIDY_SRC) -- -std=c++20 $(INCLUDES) -march=native -mbmi2
+	$(TIDY) $(TIDY_STDLIB_ARGS) $(TIDY_EXTRA_ARGS) $(TIDY_SRC) -- -std=c++20 $(INCLUDES) -march=native -mbmi2
 
 $(BIN): $(PERFT_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(PERFT_SRC)

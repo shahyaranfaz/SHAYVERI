@@ -54,7 +54,7 @@ CXXFLAGS_MACOS := \
 
 LDFLAGS_MACOS := $(LTO_MACOS)
 
-INCLUDES := -Iinclude
+INCLUDES := -Iinclude -Iexternal/fathom/src
 
 SRC := \
 	src/attacks.cpp \
@@ -73,11 +73,13 @@ SRC := \
 	src/search.cpp \
 	src/see.cpp \
 	src/uci.cpp \
+	src/tablebase.cpp \
 	src/time_manager.cpp \
 	src/tt.cpp \
-	src/zobrist.cpp
+	src/zobrist.cpp \
+	external/fathom/src/tbprobe.c
 
-DEFAULT_NNUE := SHAYVERI2_10_4.nnue
+DEFAULT_NNUE := SHAYVERI2_11_7.nnue
 EMBED_NNUE := build/embed_nnue
 EMBEDDED_NNUE_SRC := build/embedded_nnue.cpp
 
@@ -179,7 +181,7 @@ pgo-use: $(SRC) $(HEADERS)
 	printf 'uci\nisready\nbench 16 1 3 default depth\nquit\n' | ./$(PGO_BIN) > $(PGO_TRAIN_DIR)/optimized-check.txt
 	grep -q '^uciok$$' $(PGO_TRAIN_DIR)/optimized-check.txt
 	grep -q '^readyok$$' $(PGO_TRAIN_DIR)/optimized-check.txt
-	grep -q '^Nodes: 110889$$' $(PGO_TRAIN_DIR)/optimized-check.txt
+	grep -q '^Nodes: 115898$$' $(PGO_TRAIN_DIR)/optimized-check.txt
 
 pgo-report:
 	test -s $(PGO_TRAIN_DIR)/build-manifest.txt

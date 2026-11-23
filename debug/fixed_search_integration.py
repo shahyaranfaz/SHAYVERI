@@ -45,7 +45,7 @@ def test_stop(session: EngineSession) -> None:
 
 def main() -> int:
     if not os.path.exists(ENGINE_PATH):
-        print(f"engine binary not found: {ENGINE_PATH}", file=sys.stderr)
+        print(f"[FAIL] Fixed-search integration suite: engine binary not found: {ENGINE_PATH}", file=sys.stderr)
         return 1
 
     session = EngineSession()
@@ -55,12 +55,12 @@ def main() -> int:
         run_completed_searches(session, "go nodes 1000")
         test_stop(session)
         print(
-            "Fixed-search integration checks passed "
+            "[PASS] Fixed-search integration suite: "
             f"({ITERATIONS} depth + {ITERATIONS} node searches + stop)."
         )
         return 0
     except Exception as exc:
-        print(f"Fixed-search integration checks failed: {exc}", file=sys.stderr)
+        print(f"[FAIL] Fixed-search integration suite: {exc}", file=sys.stderr)
         traceback.print_exc()
         return 2
     finally:

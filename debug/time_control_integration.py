@@ -211,12 +211,12 @@ def main() -> int:
         test_terminal_ponder_waits_for_stop(session)
         test_terminal_ponderhit(session)
         print(
-            "Time-control integration checks passed "
+            "[PASS] Time-control integration suite: "
             "(Lazy SMP + serialized output + ponderhit + ponder stop + terminal ponder)."
         )
         return 0
     except Exception as exc:
-        print(f"Time-control integration checks failed: {exc}", file=sys.stderr)
+        print(f"[FAIL] Time-control integration suite: {exc}", file=sys.stderr)
         traceback.print_exc()
         return 2
     finally:

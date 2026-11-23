@@ -39,6 +39,8 @@ THREADS="${THREADS:-1}"
 WORKER_NAME="${WORKER_NAME:-$(hostname)-$$}"
 POLL_SECONDS="${POLL_SECONDS:-2}"
 SUITES="${SUITES:-tc5_005 tc10_01}"
+SHARDS="${SHARDS:-1}"
+OPENING_START="${OPENING_START:-1}"
 
 mkdir_shared_dirs() {
     mkdir -p "$JOB_DIR" "$WORKING_DIR" "$RESULTS_DIR"

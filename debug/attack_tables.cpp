@@ -42,9 +42,12 @@ bool verify_slider(bool bishop) {
         const U64 mask = full_mask(square, bishop);
         for (U64 occupied = 0;; occupied = (occupied - mask) & mask) {
             const U64 expected = ray_attacks(square, occupied, bishop);
-            const U64 actual = bishop ? bishop_attacks(square, occupied) : rook_attacks(square, occupied);
+            const U64 actual = bishop
+                ? bishop_attacks(square, occupied)
+                : rook_attacks(square, occupied);
             if (actual != expected) {
-                std::cerr << "attack mismatch: " << (bishop ? "bishop" : "rook") << " square=" << index
+                std::cerr << "[FAIL] Attack table suite: " << (bishop ? "bishop" : "rook")
+                          << " square=" << index
                           << " occupied=" << occupied << "\n";
                 return false;
             }
@@ -59,6 +62,6 @@ bool verify_slider(bool bishop) {
 int main() {
     init_attacks();
     if (!verify_slider(true) || !verify_slider(false)) return 2;
-    std::cout << "Sliding attack tables match exhaustive ray generation\n";
+    std::cout << "[PASS] Attack table suite: exhaustive ray generation matched\n";
     return 0;
 }
