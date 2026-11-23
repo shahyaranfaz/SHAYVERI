@@ -186,6 +186,7 @@ TEST_TARGETS := \
 	uci_check \
 	time_control_integration \
 	fixed_search_integration \
+	uci_limits_test \
 	tactical_regression
 
 test:
@@ -332,6 +333,10 @@ time_control_integration: ensure_engine
 
 fixed_search_integration: ensure_engine
 	$(PYTHON) fixed_search_integration.py
+
+.PHONY: uci_limits_test
+uci_limits_test: ensure_engine
+	$(PYTHON) uci_limits_test.py
 
 tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py

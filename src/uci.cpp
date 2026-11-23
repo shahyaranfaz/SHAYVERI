@@ -517,6 +517,7 @@ int main(int argc, char **argv) {
             {
                 std::istringstream go_iss(line);
                 std::string tok;
+                bool reading_searchmoves = false;
                 go_iss >> tok; // consume "go"
                 while (go_iss >> tok) {
                     if (tok == "infinite") tc.infinite = true;
@@ -529,12 +530,10 @@ int main(int argc, char **argv) {
                     else if (tok == "depth") go_iss >> fixed_depth;
                     else if (tok == "nodes") go_iss >> fixed_nodes;
                     else if (tok == "movestogo") go_iss >> tc.moves_to_go;
-                    else if (tok == "searchmoves") {
-                        std::string sm_str;
-                        while (go_iss >> sm_str) {
-                            Move sm = uci_to_move(b, sm_str);
-                            if (sm != MOVE_NONE) searchmoves.push_back(sm);
-                        }
+                    else if (tok == "searchmoves") reading_searchmoves = true;
+                    else if (reading_searchmoves) {
+                        const Move sm = uci_to_move(b, tok);
+                        if (sm != MOVE_NONE) searchmoves.push_back(sm);
                     }
                 }
             }
@@ -605,13 +604,11 @@ int main(int argc, char **argv) {
                     ? std::min(fixed_depth, g_book_info_depth)
                     : g_book_info_depth;
             if (fixed_nodes > 0 || fixed_depth > 0) {
+                uci_search_context.node_limit = fixed_nodes;
                 smp_threads.push_back(std::thread(
                     [b_copy, rep, searchmoves, root_depth, fixed_nodes,
                      book_info_search, book_move]() mutable {
                         SearchWorker &worker = uci_search_workers[0];
-                        uci_search_context.nodes = 0;
-                        uci_search_context.node_limit = fixed_nodes;
-                        uci_search_context.stop = false;
                         const Board root_board = b_copy;
                         const auto search_start = std::chrono::steady_clock::now();
                         const SearchRequest request{
@@ -635,7 +632,8 @@ int main(int argc, char **argv) {
                         if (book_info_search)
                             result.best_move = book_move;
                         else if (result.best_move == MOVE_NONE)
-                            result.best_move = first_legal_move(root_board);
+                            result.best_move = searchmoves.empty()
+                                ? first_legal_move(root_board) : searchmoves.front();
                         const U64 elapsed_for_nps = static_cast<U64>(
                             std::max<I64>(1, elapsed_ms));
                         const U64 nps = result.nodes * 1000 / elapsed_for_nps;
@@ -775,7 +773,8 @@ int main(int argc, char **argv) {
                     if (book_info_search)
                         result.best_move = book_move;
                     else if (result.best_move == MOVE_NONE)
-                        result.best_move = first_legal_move(root_board);
+                        result.best_move = searchmoves.empty()
+                            ? first_legal_move(root_board) : searchmoves.front();
                     uci_search_context.node_limit = 0;
                     char bestmove[6];
                     format_uci_move(result.best_move, bestmove);
