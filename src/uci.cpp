@@ -25,6 +25,7 @@
 #include <cerrno>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -695,24 +696,18 @@ int main(int argc, char **argv) {
                     const Board root_board = b_copy;
                     SearchWorker &worker = uci_search_workers[0];
 
+                    std::mutex timer_mutex;
+                    std::condition_variable timer_cv;
                     auto timer_active = std::make_shared<std::atomic<bool>>(true);
                     auto clock_ready = std::make_shared<std::atomic<bool>>(!pondering);
 
                     std::thread timer([hard_ms, real_tc, pondering, timer_active, clock_ready,
-                                       time_manager]() {
-                        const auto wait_for_limit = [timer_active](I64 limit_ms) {
-                            using namespace std::chrono;
-                            const auto deadline = steady_clock::now()
-                                + milliseconds(std::max<I64>(0, limit_ms));
-                            while (timer_active->load()) {
-                                const I64 remaining = duration_cast<milliseconds>(
-                                    deadline - steady_clock::now()).count();
-                                if (remaining <= 0)
-                                    break;
-                                std::this_thread::sleep_for(
-                                    milliseconds(std::min<I64>(5, remaining)));
-                            }
-                            return timer_active->load();
+                                       time_manager, &timer_mutex, &timer_cv]() {
+                        const auto wait_for_limit = [timer_active, &timer_mutex, &timer_cv](I64 limit_ms) {
+                            std::unique_lock<std::mutex> lock(timer_mutex);
+                            return !timer_cv.wait_for(
+                                lock, std::chrono::milliseconds(std::max<I64>(0, limit_ms)),
+                                [timer_active] { return !timer_active->load(); });
                         };
 
                         if (pondering) {
@@ -765,7 +760,11 @@ int main(int argc, char **argv) {
                            && !uci_search_context.stop.load())
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    *timer_active = false;
+                    {
+                        std::lock_guard<std::mutex> lock(timer_mutex);
+                        *timer_active = false;
+                    }
+                    timer_cv.notify_one();
                     uci_search_context.stop = true;
                     timer.join();
 
