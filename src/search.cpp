@@ -975,6 +975,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     MovePicker move_picker(b, tt_move, ss->excluded_move, ply, H, ss);
     Move best_move = MOVE_NONE;
     int legal_count = 0;
+    bool had_legal_move = false;
     int quiet_count = 0;
     Move quiets_played[256];
 
@@ -987,6 +988,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     while (move_picker.next(picked)) {
         const Move m = picked.m;
         const bool is_quiet = !is_capture_or_promo(b, m);
+        had_legal_move = true;
         const int move_history = is_quiet ? quiet_history_score(b, m, ply, H, ss) : 0;
         bool lmp_reject = false;
         bool futility_reject = false;
@@ -1170,7 +1172,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     }
 
     if (legal_count == 0) {
-        if (ss->excluded_move != MOVE_NONE) return alpha;
+        // Pruning every candidate proves no terminal result; retain fail-low.
+        if (had_legal_move || ss->excluded_move != MOVE_NONE) return alpha;
         return in_check ? -MATE_SCORE + ply : 0;
     }
 

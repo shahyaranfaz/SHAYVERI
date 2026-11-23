@@ -22,6 +22,7 @@ debug/attack_tables
 debug/time_manager
 debug/position_rules
 debug/search_regression
+debug/search_pruning
 debug/nnue_test
 debug/nnue_*_test.nnue
 debug/__pycache__

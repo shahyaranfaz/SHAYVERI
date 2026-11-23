@@ -94,6 +94,7 @@ POSITION_RULES_SRC := \
 	../src/zobrist.cpp \
 	position_rules.cpp
 SEARCH_REGRESSION_SRC := $(COMMON_SRC) search_regression_test.cpp
+SEARCH_PRUNING_SRC := $(filter-out ../src/search.cpp,$(COMMON_SRC)) search_pruning_test.cpp
 NNUE_TEST_SRC := \
 	../src/attacks.cpp \
 	../src/board.cpp \
@@ -144,6 +145,7 @@ TIDY_SRC := \
 	time_manager_test.cpp \
 	position_rules.cpp \
 	search_regression_test.cpp \
+	search_pruning_test.cpp \
 	nnue_test.cpp
 
 BIN := perft
@@ -157,7 +159,10 @@ ATTACK_TABLE_BIN := attack_tables
 TIME_MANAGER_BIN := time_manager
 POSITION_RULES_BIN := position_rules
 SEARCH_REGRESSION_BIN := search_regression
+SEARCH_PRUNING_BIN := search_pruning
 NNUE_TEST_BIN := nnue_test
+
+all: $(SEARCH_PRUNING_BIN)
 
 all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(POSITION_RULES_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN)
 
@@ -173,6 +178,7 @@ TEST_TARGETS := \
 	time_manager_suite \
 	position_rules_suite \
 	search_regression_suite \
+	search_pruning_suite \
 	nnue_suite \
 	datagen_check \
 	audit_bullet_test \
@@ -252,6 +258,9 @@ $(POSITION_RULES_BIN): $(POSITION_RULES_SRC)
 $(SEARCH_REGRESSION_BIN): $(SEARCH_REGRESSION_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SEARCH_REGRESSION_SRC)
 
+$(SEARCH_PRUNING_BIN): $(SEARCH_PRUNING_SRC) ../src/search.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SEARCH_PRUNING_SRC)
+
 $(NNUE_TEST_BIN): $(NNUE_TEST_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(NNUE_TEST_SRC)
 
@@ -294,6 +303,10 @@ position_rules_suite: $(POSITION_RULES_BIN)
 search_regression_suite: $(SEARCH_REGRESSION_BIN)
 	./$(SEARCH_REGRESSION_BIN)
 
+.PHONY: search_pruning_suite
+search_pruning_suite: $(SEARCH_PRUNING_BIN)
+	./$(SEARCH_PRUNING_BIN)
+
 nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue $(DEFAULT_NNUE)
 	./$(NNUE_TEST_BIN) nnue_classic_test.nnue
 	./$(NNUE_TEST_BIN) nnue_kb8_test.nnue
@@ -324,6 +337,7 @@ tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py
 
 clean:
+	rm -f $(SEARCH_PRUNING_BIN)
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(POSITION_RULES_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
