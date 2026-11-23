@@ -76,6 +76,28 @@ void test_repetition_semantics() {
            "threefold repetition was not recognized");
 }
 
+void test_en_passant_repetition_keys() {
+    struct Case { const char *fen; bool legal_ep; };
+    const Case cases[] = {
+        {"4k3/8/8/4p3/8/8/8/4K3 w - e6 0 1", false},
+        {"4k3/8/8/3Pp3/8/8/8/4K3 w - e6 0 1", true},
+        {"3rk3/8/8/3Pp3/8/8/8/3K4 w - e6 0 1", false},
+        {"4k3/8/8/8/3pP3/8/8/4K3 b - e3 0 1", true},
+        {"3k4/8/8/8/3pP3/8/8/3RK3 b - e3 0 1", false},
+        {"4k3/8/8/r4pPK/8/8/8/8 w - f6 0 1", false},
+    };
+    for (const auto &test : cases) {
+        const Board with_ep = board_from_fen(test.fen);
+        Board without_ep = with_ep;
+        without_ep.en_passant = SQ_NONE;
+        without_ep.hash = Zobrist::compute(without_ep);
+        expect(with_ep.hash != without_ep.hash, "legacy EP hash changed");
+        expect((PositionRules::repetition_key(with_ep)
+                != PositionRules::repetition_key(without_ep)) == test.legal_ep,
+               "EP repetition identity does not match legal capture availability");
+    }
+}
+
 } // namespace
 
 int main() {
@@ -85,6 +107,7 @@ int main() {
     test_check_state();
     test_insufficient_material();
     test_repetition_semantics();
+    test_en_passant_repetition_keys();
 
     std::cout << "[PASS] Position-rules suite\n";
     return 0;

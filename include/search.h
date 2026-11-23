@@ -70,6 +70,7 @@ private:
 using IterCallback = std::function<void(int, Move, int, U64, I64, double)>;
 
 struct SearchRequest {
+    // PositionRules::repetition_key values, including the current position.
     std::span<const U64> repetition{};
     std::span<const Move> root_moves{};
     IterCallback on_iteration{};

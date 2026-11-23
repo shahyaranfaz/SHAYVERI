@@ -10,6 +10,7 @@
 #include "nnue.h"
 #include "opening_book.h"
 #include "parse_cli.h"
+#include "position_rules.h"
 #include "search.h"
 #include "tablebase.h"
 #include "time_manager.h"
@@ -350,7 +351,7 @@ int main(int argc, char **argv) {
     set_startpos(b);
 
     std::vector<U64> hash_history;
-    hash_history.push_back(b.hash);
+    hash_history.push_back(PositionRules::repetition_key(b));
 
     if (argc > 1) {
         if (std::string(argv[1]) == "datagen") {
@@ -454,7 +455,7 @@ int main(int argc, char **argv) {
             stop_search();
             set_startpos(b);
             hash_history.clear();
-            hash_history.push_back(b.hash);
+            hash_history.push_back(PositionRules::repetition_key(b));
             TT.clear();
             uci_search_context.clear_histories();
             g_pondering.store(false);
@@ -468,14 +469,14 @@ int main(int argc, char **argv) {
             if (pos == "startpos") {
                 set_startpos(b);
                 hash_history.clear();
-                hash_history.push_back(b.hash);
+                hash_history.push_back(PositionRules::repetition_key(b));
             } else if (pos == "fen") {
                 std::string fen, part;
                 for (int i = 0; i < 6 && iss >> part; ++i)
                     fen += (i ? " " : "") + part;
                 if (!set_from_fen(b, fen)) set_startpos(b);
                 hash_history.clear();
-                hash_history.push_back(b.hash);
+                hash_history.push_back(PositionRules::repetition_key(b));
             }
 
             std::string moves_token;
@@ -485,7 +486,7 @@ int main(int argc, char **argv) {
                     Move m = uci_to_move(b, mv);
                     Undo u;
                     if (m != MOVE_NONE && make_move(b, m, u)) {
-                        hash_history.push_back(b.hash);
+                        hash_history.push_back(PositionRules::repetition_key(b));
                         continue;
                     }
                     std::cout << "info string rejected position move " << mv

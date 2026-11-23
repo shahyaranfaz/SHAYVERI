@@ -3,6 +3,7 @@
 #include "make.h"
 #include "move_io.h"
 #include "nnue.h"
+#include "position_rules.h"
 #include "search.h"
 #include "tt.h"
 #include "tune.h"
@@ -118,6 +119,25 @@ void test_checked_qsearch() {
     expect(qsearch_score(test_context, test_worker, evasion)
                > -Tune::MATE_SCORE + Tune::MAX_PLY,
            "qsearch treated a position with a legal evasion as mate");
+}
+
+void test_en_passant_repetition_history() {
+    Board board;
+    expect(set_startpos(board), "failed to initialize EP repetition test");
+    Undo undo;
+    expect(make_move(board, uci_to_move(board, "e2e4"), undo), "failed to play e4");
+    const U64 initial_hash = board.hash;
+    std::vector<U64> history{PositionRules::repetition_key(board)};
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        for (const char *text : {"g8f6", "g1f3", "f6g8", "f3g1"}) {
+            expect(make_move(board, uci_to_move(board, text), undo),
+                   "failed to play repetition cycle");
+            history.push_back(PositionRules::repetition_key(board));
+        }
+    }
+    expect(board.hash != initial_hash, "legacy opening-book hash unexpectedly changed");
+    expect(PositionRules::is_threefold_repetition(history, PositionRules::repetition_key(board)),
+           "uncapturable EP square hid the first repetition occurrence");
 }
 
 void test_searchmoves_and_node_limit() {
@@ -393,6 +413,7 @@ int main() {
     test_terminal_positions();
     std::cout << "[PASS] terminal positions\n";
     test_draw_rules();
+    test_en_passant_repetition_history();
     std::cout << "[PASS] draw rules\n";
     test_checked_qsearch();
     std::cout << "[PASS] checked qsearch\n";

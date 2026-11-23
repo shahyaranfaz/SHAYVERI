@@ -3,10 +3,29 @@
 
 #include "attacks.h"
 #include "board.h"
+#include "zobrist.h"
 
 #include <span>
 
 namespace SHAYVERI::PositionRules {
+
+// Keep the book/TT hash stable; repetition distinguishes EP only if legal.
+inline U64 repetition_key(const Board &b) {
+    if (b.en_passant == SQ_NONE) return b.hash;
+    const Colour side = b.side_to_move;
+    const Square captured = side == WHITE ? b.en_passant - 8 : b.en_passant + 8;
+    U64 candidates = pawn_attacks(flip(side), b.en_passant)
+        & b.bit_boards[side == WHITE ? WP : BP];
+    const U64 enemy = b.occupancies[flip(side)] & ~bb_square(captured);
+    while (candidates) {
+        const Square from = pop_lsb(candidates);
+        const U64 occupied = (b.occupied & ~bb_square(from) & ~bb_square(captured))
+            | bb_square(b.en_passant);
+        if ((attackers_to(b, king_square(b, side), occupied) & enemy) == 0)
+            return b.hash;
+    }
+    return b.hash ^ Zobrist::en_passants[get_file(b.en_passant)];
+}
 
 inline bool is_in_check(const Board &b) {
     const Square king = king_square(b, b.side_to_move);

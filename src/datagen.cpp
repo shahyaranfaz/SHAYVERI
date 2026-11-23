@@ -221,7 +221,7 @@ GameResult terminal_result(Board &b, const std::vector<U64> &history) {
         return {GameEnd::Checkmate, b.side_to_move == WHITE ? 0 : 2};
     }
     if (b.half_move >= 100) return {GameEnd::Draw, 1};
-    if (PositionRules::is_threefold_repetition(history, b.hash))
+    if (PositionRules::is_threefold_repetition(history, PositionRules::repetition_key(b)))
         return {GameEnd::Draw, 1};
     if (PositionRules::has_insufficient_material(b))
         return {GameEnd::Draw, 1};
@@ -348,7 +348,7 @@ bool play_external_start(Board &b,
     }
 
     history.clear();
-    history.push_back(b.hash);
+    history.push_back(PositionRules::repetition_key(b));
     if (terminal_result(b, history).end != GameEnd::None) {
         counters.terminal_external_starts++;
         return false;
@@ -364,7 +364,7 @@ bool play_twic_book_opening(Board &b,
                             const DatagenOptions &options) {
     set_startpos(b);
     history.clear();
-    history.push_back(b.hash);
+    history.push_back(PositionRules::repetition_key(b));
 
     int min_plies = std::max(0, options.opening_min_plies);
     int max_plies = std::max(min_plies, options.opening_max_plies);
@@ -379,7 +379,7 @@ bool play_twic_book_opening(Board &b,
 
         Undo u;
         if (!make_generated_move(b, chosen, u)) return false;
-        history.push_back(b.hash);
+        history.push_back(PositionRules::repetition_key(b));
     }
 
     return true;
@@ -661,7 +661,7 @@ void datagen_worker(int id,
                 result = {GameEnd::Draw, 1};
                 break;
             }
-            history.push_back(b.hash);
+            history.push_back(PositionRules::repetition_key(b));
         }
 
         U64 written = write_game_entries(
@@ -829,7 +829,7 @@ std::vector<std::string> load_start_fens(const DatagenOptions &options, DatagenC
         std::string fen = fen_from_start_line(line);
         Board b;
         if (!fen.empty() && set_from_fen(b, fen) && structurally_valid_position(b)) {
-            std::vector<U64> history{b.hash};
+            std::vector<U64> history{PositionRules::repetition_key(b)};
             if (terminal_result(b, history).end == GameEnd::None) {
                 fens.push_back(fen);
             } else {

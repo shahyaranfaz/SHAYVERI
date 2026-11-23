@@ -660,7 +660,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
     if (b.half_move >= 100) return rule_draw_score(b, ply);
     if (rep_len > 1
         && PositionRules::has_search_repetition(
-            b.hash, rep_stack, rep_len - 1, b.half_move))
+            PositionRules::repetition_key(b), rep_stack, rep_len - 1, b.half_move))
         return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
@@ -742,7 +742,7 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
         context.table.prefetch(b.hash);
         NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
         legal_count++;
-        rep_stack[rep_len] = b.hash;
+        rep_stack[rep_len] = PositionRules::repetition_key(b);
 
         int score = -qsearch(context, thread, b, -beta, -alpha,
                              depth - 1, ply + 1, ss + 1,
@@ -776,7 +776,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     if (b.half_move >= 100) return rule_draw_score(b, ply);
     if (rep_len > 1
         && PositionRules::has_search_repetition(
-            key, rep_stack, rep_len - 1, b.half_move))
+            PositionRules::repetition_key(b), rep_stack, rep_len - 1, b.half_move))
         return 0;
 
     alpha = std::max(alpha, -MATE_SCORE + ply);
@@ -919,7 +919,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
                 make_legal_move(b, m, u);
                 context.table.prefetch(b.hash);
                 NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
-                if (rep_len < MAX_PLY * 2) rep_stack[rep_len] = b.hash;
+                if (rep_len < MAX_PLY * 2) rep_stack[rep_len] = PositionRules::repetition_key(b);
                 ss->move = m;
                 ss->piece = moved_piece;
                 ++pc_tried;
@@ -1042,7 +1042,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         if (is_quiet) quiets_played[quiet_count++] = m;
         else if (cap_victim_pt != NONE_PTYPE)
             captures_tried[capture_tried_count++] = {m, cap_victim_pt, get_type(moved_piece)};
-        rep_stack[rep_len] = b.hash;
+        rep_stack[rep_len] = PositionRules::repetition_key(b);
         ss->move = m;
         ss->piece = moved_piece;
 
@@ -1224,9 +1224,9 @@ static SearchResult search_impl(
             rep_stack[i] = request.repetition[
                 rep_offset + static_cast<std::size_t>(i)];
     }
-    if (rep_len == 0 || rep_stack[rep_len - 1] != b.hash) {
-        if (rep_len < MAX_PLY) rep_stack[rep_len++] = b.hash;
-        else rep_stack[MAX_PLY - 1] = b.hash;
+    if (rep_len == 0 || rep_stack[rep_len - 1] != PositionRules::repetition_key(b)) {
+        if (rep_len < MAX_PLY) rep_stack[rep_len++] = PositionRules::repetition_key(b);
+        else rep_stack[MAX_PLY - 1] = PositionRules::repetition_key(b);
     }
 
     auto start_time = std::chrono::steady_clock::now();
@@ -1285,7 +1285,7 @@ static SearchResult search_impl(
                 context.table.prefetch(b.hash);
                 NNUE::update_accumulator((ss + 1)->acc, ss->acc, b, m, u);
                 legal_root_count++;
-                rep_stack[rep_len] = b.hash;
+                rep_stack[rep_len] = PositionRules::repetition_key(b);
 
                 ss->move = m;
                 ss->piece = root_piece;
@@ -1373,7 +1373,7 @@ static SearchResult search_impl(
             if (b_pv.half_move >= 100) break;
             if (pv_rep_len > 1
                 && PositionRules::has_search_repetition(
-                    b_pv.hash, pv_rep_stack, pv_rep_len - 1,
+                    PositionRules::repetition_key(b_pv), pv_rep_stack, pv_rep_len - 1,
                     b_pv.half_move))
                 break;
 
@@ -1383,10 +1383,10 @@ static SearchResult search_impl(
             if (!pv_line.empty()) pv_line += " ";
             pv_line += move_to_uci(pv_move);
 
-            if (pv_rep_len < MAX_PLY * 2) pv_rep_stack[pv_rep_len++] = b_pv.hash;
+            if (pv_rep_len < MAX_PLY * 2) pv_rep_stack[pv_rep_len++] = PositionRules::repetition_key(b_pv);
             else {
                 std::memmove(pv_rep_stack, pv_rep_stack + 1, sizeof(U64) * (MAX_PLY * 2 - 1));
-                pv_rep_stack[MAX_PLY * 2 - 1] = b_pv.hash;
+                pv_rep_stack[MAX_PLY * 2 - 1] = PositionRules::repetition_key(b_pv);
             }
 
             if (const TTEntry* e = context.table.probe(b_pv.hash)) pv_move = e->best;
@@ -1461,7 +1461,7 @@ int qsearch_score(SearchContext &context, SearchWorker &worker, Board &b) {
     StackInfo *ss = worker.impl->prepare_stack();
     ss->acc.refresh(b);
     U64 rep_stack[MAX_PLY * 2]{};
-    rep_stack[0] = b.hash;
+    rep_stack[0] = PositionRules::repetition_key(b);
     const int score =
         qsearch(context, thread, b, -INF, INF,
                 Tune::qs_start_depth, 0, ss, rep_stack, 1);
