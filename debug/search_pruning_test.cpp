@@ -38,4 +38,35 @@ int main() {
             return EXIT_FAILURE;
     }
     std::cout << "[PASS] All-pruned nodes preserve fail-low bounds\n";
+
+    table.clear();
+    history->clear();
+    Board board;
+    if (!set_from_fen(board, "7k/8/8/8/8/4B3/8/K5Q1 w - - 8 1"))
+        return EXIT_FAILURE;
+    U64 repetition[MAX_PLY * 2]{};
+    repetition[0] = PositionRules::repetition_key(board);
+    Undo undo;
+    make_null_move(board, undo);
+    make_legal_move(board, uci_to_move(board, "h8h7"), undo);
+    repetition[1] = PositionRules::repetition_key(board);
+    make_null_move(board, undo);
+    const MoveList legal = generate_legal_moves(board);
+    if (legal.count != 1 || move_to_uci(legal.moves[0]) != "h7h8")
+        return EXIT_FAILURE;
+    stack[2].acc.refresh(board);
+    SearchThreadState thread;
+    const std::string before = get_board_fen(board);
+    const U64 before_key = repetition[0];
+    const int score = search_after_null(context, thread, board, 1, -INF, INF,
+                                        3, *history, repetition, 2, false,
+                                        stack.get() + 2);
+    if (get_board_fen(board) != before || repetition[0] != before_key)
+        return EXIT_FAILURE;
+    if (score >= 0) {
+        std::cerr << "[FAIL] Null subtree treated an artificial cycle as a draw: "
+                  << score << '\n';
+        return EXIT_FAILURE;
+    }
+    std::cout << "[PASS] Null subtree does not claim repetition across passes\n";
 }

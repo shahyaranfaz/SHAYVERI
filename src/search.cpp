@@ -760,6 +760,11 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
     return alpha;
 }
 
+static int search_after_null(SearchContext &context, SearchThreadState &thread,
+                             Board &b, int depth, int alpha, int beta, int ply,
+                             SearchHeuristics &H, U64 *rep_stack, int rep_len,
+                             bool cut_node, StackInfo *ss);
+
 static int negamax(SearchContext &context, SearchThreadState &thread,
                    Board &b, int depth, int alpha, int beta, int ply,
                    SearchHeuristics &H, U64 *rep_stack, int rep_len, bool pv_node, bool cut_node, StackInfo* ss,
@@ -869,9 +874,9 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         const Piece saved_piece = ss->piece;
         ss->move = MOVE_NONE;
         ss->piece = NONE_PIECE;
-        int score = -negamax(context, thread, b,
+        int score = -search_after_null(context, thread, b,
                              depth - 1 - R, -beta, -beta + 1, ply + 1,
-                             H, rep_stack, rep_len, false, !cut_node, ss + 1, false);
+                             H, rep_stack, rep_len, !cut_node, ss + 1);
         ss->move = saved_move;
         ss->piece = saved_piece;
         unmake_null_move(b, u);
@@ -1189,6 +1194,18 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     }
 
     return alpha;
+}
+
+static int search_after_null(SearchContext &context, SearchThreadState &thread,
+                             Board &b, int depth, int alpha, int beta, int ply,
+                             SearchHeuristics &H, U64 *rep_stack, int rep_len,
+                             bool cut_node, StackInfo *ss) {
+    // An artificial pass breaks legal-game history. Descendants may repeat
+    // within this subtree, but must not match positions before the pass.
+    U64 *null_history = rep_stack + rep_len;
+    null_history[0] = PositionRules::repetition_key(b);
+    return negamax(context, thread, b, depth, alpha, beta, ply, H,
+                   null_history, 1, false, cut_node, ss, false);
 }
 
 static SearchResult search_impl(
