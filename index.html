@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#080b0a">
   <meta name="color-scheme" content="dark">
   <meta name="application-name" content="SHAYVERI">
-  <meta name="description" content="SHAYVERI v2.10.1 — a fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta name="description" content="SHAYVERI v2.10.1 — a fast, modern C++ chess engine with embedded NNUE evaluation.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SHAYVERI">
   <meta property="og:title" content="SHAYVERI Chess Engine">
-  <meta property="og:description" content="A fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta property="og:description" content="A fast, modern C++ chess engine with embedded NNUE evaluation.">
   <meta property="og:url" content="https://shahyaranfaz.github.io/SHAYVERI/">
   <meta property="og:image" content="https://shahyaranfaz.github.io/SHAYVERI/assets/social/open-graph.png">
   <meta property="og:image:width" content="1200">
@@ -18,7 +18,7 @@
   <meta property="og:image:alt" content="SHAYVERI crowned S logo and wordmark">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SHAYVERI Chess Engine">
-  <meta name="twitter:description" content="A fast, modern C++ chess engine with NNUE and handcrafted evaluation.">
+  <meta name="twitter:description" content="A fast, modern C++ chess engine with embedded NNUE evaluation.">
   <meta name="twitter:image" content="https://shahyaranfaz.github.io/SHAYVERI/assets/social/open-graph.png">
   <meta name="twitter:image:alt" content="SHAYVERI crowned S logo and wordmark">
   <link rel="canonical" href="https://shahyaranfaz.github.io/SHAYVERI/">
@@ -390,7 +390,7 @@
           <div class="overview-item"><h3>Protocol</h3><p>Implements UCI for command-line use and integration with chess GUIs, tournament managers, and bot frameworks.</p></div>
           <div class="overview-item"><h3>Configuration</h3><p>Exposes runtime controls for hash memory, threads, evaluation path and network, opening-book use, pondering, and time allocation.</p></div>
           <div class="overview-item"><h3>Search</h3><p>Combines iterative deepening, Principal Variation Search, transposition-table reuse, selective pruning, extensions, and history-based move ordering.</p></div>
-          <div class="overview-item"><h3>Evaluation</h3><p>Provides an embedded KB16x512 NNUE evaluation and an independently tuned HCE evaluation path.</p></div>
+          <div class="overview-item"><h3>Evaluation</h3><p>The v3 development engine uses embedded KB16x512 NNUE evaluation exclusively. Published ratings below describe v2.10.1.</p></div>
           <div class="overview-item"><h3>Time And Parallelism</h3><p>Supports deterministic single-thread search and timed Lazy SMP with adaptive soft and hard time limits.</p></div>
           <div class="overview-item"><h3>Opening Book</h3><p>The self-built embedded book uses standard-chess games from TWIC where both players are rated at least 2600. Its reproducible pipeline keeps the first 30 plies, aggregates observed moves for positions with at least five weighted plays, and compiles the majority move without evaluator-specific metadata.</p></div>
           <div class="overview-item"><h3>Platform</h3><p>Targets modern x86-64 CPUs with BMI/BMI2, LZCNT, and POPCNT support, with build targets for Linux, Windows, and Intel macOS.</p></div>
@@ -457,25 +457,17 @@
     <section id="evaluation">
       <div class="shell">
         <div class="section-head">
-          <div><p class="eyebrow">04 / Evaluation</p><h2>Evaluation Paths</h2></div>
+          <div><p class="eyebrow">04 / Evaluation</p><h2>NNUE Evaluation</h2></div>
         </div>
-        <p class="section-copy">To select between the HCE and NNUE evaluation paths, use the UCI option <code>UseNNUE</code>.</p>
+        <p class="section-copy">The v3 development engine requires NNUE. The default net is embedded; <code>EvalFile</code> selects a compatible external network.</p>
         <div class="evaluation-grid">
-          <article class="detail-card"><h3>Handcrafted Evaluation</h3><ul>
-            <li>Tapered middlegame/endgame material, piece-square tables, bishop-pair scoring, development, and tempo.</li>
-            <li>Pawn-hash evaluation of passed, isolated, doubled, backward, chained, storming, weak, and islanded pawns.</li>
-            <li>King safety from pawn shields, open files, king-zone pressure, coordinated attackers, and escape squares.</li>
-            <li>Safe mobility with file-openness scaling, piece coordination, batteries, and mutual support.</li>
-            <li>Pins, overloads, undefended pieces, pawn and minor-piece threats, and supported outposts.</li>
-            <li>Evaluation and search parameters refined through Texel tuning and SPSA.</li>
-          </ul></article>
           <article class="detail-card"><h3>NNUE Evaluation</h3><ul>
-            <li>The embedded default is <code>SHAYVERI2_10_4.nnue</code>, a KB16x512 network using SCReLU.</li>
+            <li>The embedded default is <code>SHAYVERI2_11_7.nnue</code>, a KB16x512 network using SCReLU.</li>
             <li>Side-relative Chess768 features are split across 16 mirrored king buckets and a 512-unit hidden layer.</li>
             <li>Two perspective accumulators are refreshed or incrementally updated through make/unmake search.</li>
             <li>Scalar and AVX2 inference paths evaluate the same network format.</li>
             <li>The UCI option <code>EvalFile</code> accepts compatible Chess768, KB8, and KB16 networks with 256 or 512 hidden units.</li>
-            <li>The promoted network followed a two-stage continuation: Net1 was warm-started from <code>SHAYVERI2_5_0.nnue</code> on external RobotMoon/Stockfish data, then Net4 was warm-started from Net1 using 45% corrected SHAYVERI self-play data and 55% frozen Net1 external data. The training data are not included in the repository.</li>
+            <li>The published v2.10.1 network followed a two-stage continuation: Net1 was warm-started from <code>SHAYVERI2_5_0.nnue</code> on external RobotMoon/Stockfish data, then Net4 was warm-started from Net1 using 45% corrected SHAYVERI self-play data and 55% frozen Net1 external data. The training data are not included in the repository.</li>
           </ul></article>
         </div>
       </div>
@@ -494,7 +486,6 @@
         </dl>
         <h3 class="option-group">Evaluation</h3>
         <dl class="option-list">
-          <div class="option"><dt>UseNNUE</dt><dd>Toggles between the NNUE and HCE evaluation paths without changing the configured network path.</dd></div>
           <div class="option"><dt>EvalFile</dt><dd>Specifies the path to a compatible external NNUE network. The embedded default is used when left unchanged.</dd></div>
         </dl>
         <h3 class="option-group">Opening Book</h3>
@@ -516,7 +507,7 @@
         <div class="section-head">
           <div><p class="eyebrow">06 / Usage</p><h2>Build And Use</h2></div>
         </div>
-        <p class="section-copy">Builds require C++20 and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT. Keep <code>SHAYVERI2_10_4.nnue</code> at the repository root so it can be embedded during compilation. At runtime, the UCI option <code>EvalFile</code> can select a compatible external network instead.</p>
+        <p class="section-copy">Builds require C++20 and a modern x86-64 CPU with BMI/BMI2, LZCNT, and POPCNT. Keep <code>SHAYVERI2_11_7.nnue</code> at the repository root so it can be embedded during compilation. At runtime, the UCI option <code>EvalFile</code> can select a compatible external network instead.</p>
         <div class="terminal-grid">
           <article>
           <div class="terminal">

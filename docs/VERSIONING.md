@@ -35,7 +35,7 @@ SemVer compatibility signaling.
 - `0`: developing the first usable engine
 - `1`: refining and tuning the HCE engine
 - `2`: NNUE integration, networks, and NNUE-era search work
-- `3`: planned future work
+- `3`: NNUE-only engine development and CCRL submission
 
 The major component changes only when the project moves to the next era.
 

@@ -7,7 +7,7 @@ reproducible game quotas.
 
 ## Motivation
 
-A full STC and LTC pin requires 36,000 games. Distributing deterministic game
+A full STC and LTC pin requires 28,000 games. Distributing deterministic game
 shards across multiple machines makes that workload practical and lets faster
 workers complete more of it. The master keeps the final game quotas exact while
 the available workers reduce the total wall-clock time.
@@ -18,13 +18,13 @@ The master freezes one worker roster, runs STC to completion, analyzes it with
 Ordo, and then opens LTC. Workers claim paired-game shards until each phase's
 exact quota is complete. Worker count and speed affect runtime, not the sample.
 
-The fixed nine-engine pool contains release SHAYVERI with NNUE and HCE, five
+The fixed eight-engine pool contains NNUE-only SHAYVERI, five
 external engines, and Stockfish 18 limited to 2850 and 3000 Elo.
 
 | Phase | Time control | Games per pairing | Total games |
 |------:|-------------:|------------------:|------------:|
-|   STC |     `10+0.1` |               800 |      28,800 |
-|   LTC |     `90+0.5` |               200 |       7,200 |
+|   STC |     `10+0.1` |               800 |      22,400 |
+|   LTC |     `90+0.5` |               200 |       5,600 |
 
 Every opening is played with both colors. Seeds derive from `BASE_SEED`, phase,
 and shard number. Fastchess recovers transient engine failures. A failed
@@ -94,7 +94,6 @@ Validate a completed phase manually:
 python3 scripts/elo_pin/validate_run.py \
   --pgn outputs/v0.0.0/stc/rating_pool.pgn \
   --games-per-pair 800 \
-  --player "SHAYVERI v0.0.0 / HCE" \
   --player "SHAYVERI v0.0.0 / NNUE" \
   --player Alexandria9 --player Berserk13 --player Ethereal14 \
   --player PlentyChess7 --player Weiss2 --player SF2850 --player SF3000 \
@@ -135,3 +134,11 @@ their work directory for diagnosis.
 
 Game and shard quotas must be positive even numbers because openings are
 color-paired.
+
+### NNUE-only development
+
+The current pool has eight engines and 28 pairings. HCE is no longer a participant.
+At the standard settings this requires 22,400 STC games and 5,600 LTC games.
+Historical HCE results remain valid for their original pools. Record the pool
+change when comparing ratings across runs; retain the same Stockfish anchors.
+Start a fresh run rather than resuming a nine-engine run with the new scripts.

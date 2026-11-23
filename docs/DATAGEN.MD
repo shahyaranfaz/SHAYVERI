@@ -88,8 +88,8 @@ These worker settings override the corresponding direct engine defaults.
 
 If `--eval-file` is omitted, the embedded default net is used. Use
 `--eval-file "<embedded>"` for the same behavior, pass an explicit `.nnue` path
-to seed with another network, and use `--eval-file "<hce>"` only for no-NNUE
-debug runs.
+to seed with another network. The v3.0.0 development engine requires NNUE and
+rejects `--eval-file "<hce>"`.
 
 ## Start Positions
 
@@ -195,15 +195,9 @@ owns:
 Do not consume a shard as complete unless the pipeline-level completion marker
 and datagen DONE marker agree.
 
-## HCE Role
+## Historical HCE comparisons
 
-HCE is not a training teacher.
-
-Use HCE only as:
-
-- a style/flavour reference
-- a no-net regression opponent
-- a later diagnostic for positions where SHAYVERI NNUE/search disagrees hard
-
-Do not blend HCE eval into labels by default, and do not choose a weaker net
-only because it is more HCE-like.
+The v3.0.0 development engine has no HCE evaluator. Current datagen always
+uses NNUE. Preserve older HCE-generated corpus provenance and training history;
+removing the evaluator does not invalidate existing datasets. For historical
+comparisons, use a separately frozen HCE-capable binary.

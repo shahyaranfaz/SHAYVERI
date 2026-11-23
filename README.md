@@ -8,8 +8,8 @@
 
 [Website](https://shahyaranfaz.github.io/SHAYVERI/) | [Download v2.10.1](https://github.com/shahyaranfaz/SHAYVERI/releases/tag/v2.10.1)
 
-SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core, a
-handcrafted evaluation path, and an embedded NNUE evaluation path. The current
+SHAYVERI is a UCI-compliant C++20 chess engine with a classical search core and
+embedded NNUE evaluation. As of v3.0.0, SHAYVERI is NNUE-only. The current
 public strength numbers come from controlled multi-engine round-robin gauntlets
 analyzed with Ordo. They are pool-relative, anchored to fixed-strength `SF2850`
 and `SF3000`, and should not be read as universal CCRL ratings.
@@ -24,8 +24,6 @@ as its default network. The versioning scheme is explained in
 |-----------------:|-----------:|-------------:|-------:|--------:|
 | SHAYVERI v2.10.1 |       NNUE |   STC 10+0.1 | 3261.4 | +/-16.0 |
 | SHAYVERI v2.10.1 |       NNUE |   LTC 90+0.5 | 3320.6 | +/-30.3 |
-| SHAYVERI v2.10.1 |        HCE |   STC 10+0.1 | 2674.8 | +/-18.1 |
-| SHAYVERI v2.10.1 |        HCE |   LTC 90+0.5 | 2794.1 | +/-30.9 |
 
 The unchanged v2.10.1 engine configuration is about +586.6 Elo over HCE at STC
 and +526.5 Elo at LTC in this anchored pool. Against the identically anchored v2.9.0
@@ -33,8 +31,9 @@ results, it gained +67.0 Elo at STC and +50.3 Elo at LTC.
 
 ## Architecture
 
-The diagram below maps the UCI interface, opening-book selection, search
-control, chess-position state, and HCE/NNUE evaluation paths. Select it to open
+The historical v2.10 diagram below maps the UCI interface, opening book,
+search, position state, and the former HCE/NNUE paths. Current v3 development
+uses NNUE exclusively. Select it to open
 the full-resolution version.
 
 <p align="center">
@@ -65,7 +64,7 @@ searches, then rebuilds it using the collected profile. This machine-native
 build takes longer but provides the best local performance. Release binaries
 remain portable non-PGO builds.
 
-The default net, `SHAYVERI2_10_4.nnue`, is automatically embedded into the
+The development default net, `SHAYVERI2_11_7.nnue`, is automatically embedded into the
 binary while building. Hence, the `.nnue` file must be at root-level only
 while building. At runtime, the UCI option `EvalFile` can be used to load
 a compatible external network instead.
@@ -115,34 +114,16 @@ go movetime 1000
 - Hard timer enforcement, low-clock sudden-death protection, fixed move time,
   and ponder integration
 
-## Evaluation paths
-
-To select between the `HCE` and `NNUE` evaluation paths, use the UCI option 
-`UseNNUE`.
-
-## Handcrafted evaluation
-
-- Piece-square tables with tapered middlegame/endgame interpolation
-- Pawn-hash evaluation of passed, isolated, doubled, backward, chained,
-  storming, weak, and islanded pawns
-- King safety: pawn shield integrity, open files toward king, enemy pressure in
-  king zone, coordinated attacker types, and escape squares
-- Piece mobility weighted by piece type with openness multipliers
-- Coordination: mutual protection graph, batteries, support chains, shared
-  attack targets
-- Tactical pressure: pins, skewers, x-ray pressure, overloaded defenders,
-  undefended pieces
-- Pawn and minor-piece threats against loose or more valuable pieces
-- Outpost squares for knights, bishops, rooks, and queens
-- Bishop pair, development, tempo, and initiative bonuses
-- Evaluation and search parameters refined through Texel tuning and SPSA
-
 ## NNUE evaluation
+
+A valid network is required for search and datagen. The default is embedded;
+`EvalFile` selects a compatible external network. Failed loads preserve the
+active network. `UseNNUE` and `EvalFile=<hce>` are no longer supported.
 
 The supported NNUE architectures, binary formats, embedding behavior, and
 compatibility policy are documented in [`docs/NNUE.md`](docs/NNUE.md).
 
-The embedded default, `SHAYVERI2_10_4.nnue`, is a `KB16x512` network: Chess768
+The development embedded default, `SHAYVERI2_11_7.nnue`, is a `KB16x512` network: Chess768
 features split across 16 mirrored king buckets, a 512-wide hidden layer, and
 SCReLU activation. Search keeps both perspectives in incrementally updated
 accumulators as moves are made and unmade.
@@ -192,8 +173,6 @@ make -C scripts/opening_book run_all
 
 ### Evaluation
 
-- `UseNNUE`: toggle between the NNUE and HCE evaluation paths without changing
-  the configured network path.
 - `EvalFile`: specify the path to a compatible external NNUE network. The
   embedded default is used when left unchanged.
 
@@ -233,7 +212,7 @@ make test
   side, and counters.
 - En-passant legality edge cases adapted from `niklasf/python-chess`.
 - SEE regression checks.
-- Evaluation symmetry checks on vertically mirrored, colour-swapped positions.
+- NNUE symmetry checks on vertically mirrored, colour-swapped positions.
 - Transposition-table safety checks.
 - Time-manager policy checks covering adaptive scaling, safe clock ceilings, and
   no-increment survival.
