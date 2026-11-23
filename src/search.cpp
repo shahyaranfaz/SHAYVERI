@@ -1,4 +1,5 @@
 #include "search.h"
+#include "tablebase.h"
 
 #include "make.h"
 #include "move.h"
@@ -65,7 +66,7 @@ SearchDetail::SingularSearchDecision SearchDetail::classify_singular_search(
         return {extension, false};
     }
 
-    const bool non_mate_score = std::abs(singular_score) < MATE_SCORE - MAX_PLY;
+    const bool non_mate_score = std::abs(singular_score) < TB_THRESHOLD;
     if (Tune::se_multicut && singular_score >= beta && non_mate_score)
         return {0, true};
 
@@ -260,12 +261,13 @@ static int correction_history_index(const Board& b) {
 static int corrected_static_eval(const Board& b, int raw_eval, const SearchHeuristics& H) {
     const int stm = static_cast<int>(b.side_to_move) & 1;
     const int entry = H.correction_history[stm][correction_history_index(b)];
-    return raw_eval + entry / std::max(1, Tune::corrhist_scale);
+    return std::clamp(raw_eval + entry / std::max(1, Tune::corrhist_scale),
+                      -TB_THRESHOLD + 1, TB_THRESHOLD - 1);
 }
 
 static void update_correction_history(const Board& b, SearchHeuristics& H,
                                              int raw_eval, int score, int depth, int bound) {
-    if (std::abs(score) >= MATE_SCORE - MAX_PLY) return;
+    if (std::abs(score) >= TB_THRESHOLD) return;
 
     const bool useful =
         bound == TT_EXACT ||
@@ -629,12 +631,47 @@ private:
 
 static_assert(sizeof(MovePicker) <= 5 * 1024);
 
+static int score_from_tt(int score, int ply) {
+    return score > TB_THRESHOLD ? score - ply
+         : score < -TB_THRESHOLD ? score + ply : score;
+}
+
+static int score_to_tt(int score, int ply) {
+    return score > TB_THRESHOLD ? score + ply
+         : score < -TB_THRESHOLD ? score - ply : score;
+}
+
+static bool usable_tt_score(int score, int half_move) {
+    // WDL bounds were obtained at clock zero, which is absent from the TT key.
+    const int value = std::abs(score);
+    return half_move == 0 || value < TB_THRESHOLD || value >= MATE_SCORE - MAX_PLY;
+}
+
+static bool tablebase_cutoff(SearchContext &context, const Board &b,
+                             int alpha, int beta, int ply, int &score) {
+    if (b.half_move != 0 || !Tablebase::can_probe(b)
+        || PositionRules::is_in_check(b)) return false;
+    const auto wdl = Tablebase::probe_wdl(b);
+    if (wdl == Tablebase::WDL::Failed) return false;
+    context.tb_hits.fetch_add(1, std::memory_order_relaxed);
+    if (wdl == Tablebase::WDL::Win) {
+        score = TB_SCORE - ply;
+        return score >= beta;
+    }
+    if (wdl == Tablebase::WDL::Loss) {
+        score = -TB_SCORE + ply;
+        return score <= alpha;
+    }
+    score = 0; // Draw, cursed win, and blessed loss under the fifty-move rule.
+    return true;
+}
+
 static int evaluate_position(const Board &b, const StackInfo *ss) {
     const int score = NNUE::evaluate(
             static_cast<int>(b.side_to_move),
             __builtin_popcountll(b.occupied),
             ss->acc);
-    constexpr int MAX_EVAL = MATE_SCORE - MAX_PLY - 1;
+    constexpr int MAX_EVAL = TB_THRESHOLD - 1;
     return std::clamp(score, -MAX_EVAL, MAX_EVAL);
 }
 
@@ -665,14 +702,17 @@ static int qsearch(SearchContext &context, SearchThreadState &thread,
     if (alpha >= beta) return alpha;
     if (ply >= MAX_PLY - 1) return max_ply_score(b, alpha, ply, ss);
 
+    int tb_score = 0;
+    if (ss->excluded_move == MOVE_NONE && Tablebase::max_pieces() != 0
+        && tablebase_cutoff(context, b, alpha, beta, ply, tb_score))
+        return tb_score;
+
     const TTEntry *tte = context.table.probe(b.hash);
 
     // TT probe: use any stored result for immediate cutoffs
-    if (tte && tte->depth >= 0) {
+    if (tte && tte->depth >= 0 && usable_tt_score(tte->score, b.half_move)) {
         const TTEntry *e = tte;
-        int s = e->score;
-        if (s > MATE_SCORE - MAX_PLY) s -= ply;
-        else if (s < -MATE_SCORE + MAX_PLY) s += ply;
+        const int s = score_from_tt(e->score, ply);
         if (e->flag == TT_EXACT) return s;
         if (e->flag == TT_LOWER && s >= beta) return s;
         if (e->flag == TT_UPPER && s <= alpha) return s;
@@ -786,6 +826,11 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     if (alpha >= beta) return alpha;
     if (ply >= MAX_PLY - 1) return max_ply_score(b, alpha, ply, ss);
 
+    int tb_score = 0;
+    if (ss->excluded_move == MOVE_NONE && Tablebase::max_pieces() != 0
+        && tablebase_cutoff(context, b, alpha, beta, ply, tb_score))
+        return tb_score;
+
     const int original_alpha = alpha;
     Move tt_move = MOVE_NONE;
     int tt_score = 0;
@@ -802,10 +847,8 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
         tt_has_eval = e->has_eval;
         tt_eval = e->eval;
 
-        if (tt_depth >= depth) {
-            int s = tt_score;
-            if (s > MATE_SCORE - MAX_PLY) s -= ply;
-            else if (s < -MATE_SCORE + MAX_PLY) s += ply;
+        if (tt_depth >= depth && usable_tt_score(tt_score, b.half_move)) {
+            const int s = score_from_tt(tt_score, ply);
 
             // Only prune if we are not in a singular extension check
             if (!pv_node && ss->excluded_move == MOVE_NONE) {
@@ -946,7 +989,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
     int extension = 0;
     if (!pv_node && !in_check && ss->excluded_move == MOVE_NONE && depth >= Tune::se_min_depth
         && tt_move != MOVE_NONE && tt_bound != TT_UPPER && tt_depth >= depth - Tune::se_depth_margin
-        && std::abs(tt_score) < MATE_SCORE - MAX_PLY) {
+        && std::abs(tt_score) < TB_THRESHOLD) {
 
         int r_beta = tt_score - Tune::se_margin;
         int se_depth = (depth - 1) / std::max(1, Tune::se_reduction_denom);
@@ -1093,9 +1136,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             if (have_static_eval && !in_check && ss->excluded_move == MOVE_NONE)
                 update_correction_history(b, H, raw_static_eval, score, depth, TT_LOWER);
             if (ss->excluded_move == MOVE_NONE) {
-                int tt_s = score > MATE_SCORE - MAX_PLY
-                    ? score + ply
-                    : (score < -MATE_SCORE + MAX_PLY ? score - ply : score);
+                int tt_s = score_to_tt(score, ply);
                 context.table.store(key, depth, tt_s, TT_LOWER, m);
             }
             if (is_quiet) {
@@ -1184,7 +1225,7 @@ static int negamax(SearchContext &context, SearchThreadState &thread,
             const int bound = (alpha <= original_alpha) ? TT_UPPER : TT_EXACT;
             update_correction_history(b, H, raw_static_eval, alpha, depth, bound);
         }
-        int tt_s = (alpha > MATE_SCORE - MAX_PLY) ? alpha + ply : (alpha < -MATE_SCORE + MAX_PLY ? alpha - ply : alpha);
+        int tt_s = score_to_tt(alpha, ply);
         context.table.store(key, depth, tt_s,
                             (alpha <= original_alpha) ? TT_UPPER : TT_EXACT,
                             best_move);
@@ -1241,6 +1282,31 @@ static SearchResult search_impl(
     if (rep_len == 0 || rep_stack[rep_len - 1] != PositionRules::repetition_key(b)) {
         if (rep_len < MAX_PLY) rep_stack[rep_len++] = PositionRules::repetition_key(b);
         else rep_stack[MAX_PLY - 1] = PositionRules::repetition_key(b);
+    }
+
+    if (request.root_bias == 0 && Tablebase::can_probe(b) && b.half_move < 100
+        && !search_stopped(context, thread)
+        && !PositionRules::has_insufficient_material(b)
+        && !PositionRules::has_search_repetition(PositionRules::repetition_key(b),
+                                                rep_stack, rep_len - 1, b.half_move)) {
+        const auto root = Tablebase::probe_root(b);
+        if (root.wdl != Tablebase::WDL::Failed && root.move != MOVE_NONE
+            && is_legal_move(b, root.move)
+            && (request.root_moves.empty()
+                || std::find(request.root_moves.begin(), request.root_moves.end(), root.move)
+                    != request.root_moves.end())) {
+            context.tb_hits.fetch_add(1, std::memory_order_relaxed);
+            const int score = root.wdl == Tablebase::WDL::Win ? TB_SCORE
+                            : root.wdl == Tablebase::WDL::Loss ? -TB_SCORE : 0;
+            if (request.emit_info) {
+                std::lock_guard<std::mutex> output_lock(uci_output_mutex);
+                std::cout << "info depth 0 score cp " << score
+                          << " nodes 0 tbhits " << context.tb_hits.load(std::memory_order_relaxed)
+                          << " pv " << move_to_uci(root.move) << "\n";
+                std::cout.flush();
+            }
+            return {root.move, MOVE_NONE, score, 0, 0, 0};
+        }
     }
 
     auto start_time = std::chrono::steady_clock::now();
@@ -1426,7 +1492,7 @@ static SearchResult search_impl(
                       << " nodes " << nodes
                       << " nps " << nps
                       << " hashfull " << context.table.hashfull()
-                      << " tbhits 0"
+                      << " tbhits " << context.tb_hits.load(std::memory_order_relaxed)
                       << " pv " << pv_line << "\n";
             std::cout.flush();
         }

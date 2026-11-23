@@ -75,7 +75,9 @@ COMMON_SRC := \
 	../src/nnue_update.cpp \
 	../src/zobrist.cpp \
 	../src/tt.cpp \
-	../src/see.cpp
+	../src/see.cpp \
+	../src/tablebase.cpp \
+	../external/fathom/src/tbprobe.c
 
 PERFT_SRC := $(COMMON_SRC) perft.cpp
 LEGALITY_SRC := $(COMMON_SRC) legality.cpp
@@ -94,6 +96,7 @@ POSITION_RULES_SRC := \
 	position_rules.cpp
 SEARCH_REGRESSION_SRC := $(COMMON_SRC) search_regression_test.cpp
 SEARCH_PRUNING_SRC := $(filter-out ../src/search.cpp,$(COMMON_SRC)) search_pruning_test.cpp
+TABLEBASE_SEARCH_SRC := $(filter-out ../src/search.cpp,$(COMMON_SRC)) tablebase_search_test.cpp
 NNUE_TEST_SRC := \
 	../src/attacks.cpp \
 	../src/board.cpp \
@@ -144,6 +147,7 @@ TIDY_SRC := \
 	position_rules.cpp \
 	search_regression_test.cpp \
 	search_pruning_test.cpp \
+	tablebase_search_test.cpp \
 	nnue_test.cpp
 
 BIN := perft
@@ -158,9 +162,11 @@ TIME_MANAGER_BIN := time_manager
 POSITION_RULES_BIN := position_rules
 SEARCH_REGRESSION_BIN := search_regression
 SEARCH_PRUNING_BIN := search_pruning
+TABLEBASE_SEARCH_BIN := tablebase_search
 NNUE_TEST_BIN := nnue_test
 
 all: $(SEARCH_PRUNING_BIN)
+all: $(TABLEBASE_SEARCH_BIN)
 
 all: $(BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(LEGALITY_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(POSITION_RULES_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN)
 
@@ -177,6 +183,8 @@ TEST_TARGETS := \
 	position_rules_suite \
 	search_regression_suite \
 	search_pruning_suite \
+	tablebase_search_suite \
+	tablebase_uci_test \
 	nnue_suite \
 	datagen_check \
 	audit_bullet_test \
@@ -260,6 +268,9 @@ $(SEARCH_REGRESSION_BIN): $(SEARCH_REGRESSION_SRC)
 $(SEARCH_PRUNING_BIN): $(SEARCH_PRUNING_SRC) ../src/search.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(SEARCH_PRUNING_SRC)
 
+$(TABLEBASE_SEARCH_BIN): $(TABLEBASE_SEARCH_SRC) ../src/search.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(TABLEBASE_SEARCH_SRC)
+
 $(NNUE_TEST_BIN): $(NNUE_TEST_SRC)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(NNUE_TEST_SRC)
 
@@ -306,6 +317,13 @@ search_regression_suite: $(SEARCH_REGRESSION_BIN) $(DEFAULT_NNUE)
 search_pruning_suite: $(SEARCH_PRUNING_BIN) $(DEFAULT_NNUE)
 	./$(SEARCH_PRUNING_BIN) $(DEFAULT_NNUE)
 
+.PHONY: tablebase_search_suite tablebase_uci_test
+tablebase_search_suite: $(TABLEBASE_SEARCH_BIN) $(DEFAULT_NNUE)
+	./$(TABLEBASE_SEARCH_BIN) $(DEFAULT_NNUE) fixtures/syzygy
+
+tablebase_uci_test: ensure_engine
+	$(PYTHON) tablebase_uci_test.py
+
 nnue_suite: $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue $(DEFAULT_NNUE)
 	./$(NNUE_TEST_BIN) nnue_classic_test.nnue
 	./$(NNUE_TEST_BIN) nnue_kb8_test.nnue
@@ -340,6 +358,7 @@ tactical_regression: ensure_engine
 	$(PYTHON) tactical_regression.py
 
 clean:
+	rm -f $(TABLEBASE_SEARCH_BIN)
 	rm -f $(SEARCH_PRUNING_BIN)
 	rm -f $(BIN) $(LEGALITY_BIN) $(FEN_STATE_BIN) $(MAKE_UNMAKE_BIN) $(SEE_TESTS_BIN) $(EVAL_SYM_BIN) $(TT_SAFETY_BIN) $(ATTACK_TABLE_BIN) $(TIME_MANAGER_BIN) $(POSITION_RULES_BIN) $(SEARCH_REGRESSION_BIN) $(NNUE_TEST_BIN) nnue_classic_test.nnue nnue_kb8_test.nnue
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +

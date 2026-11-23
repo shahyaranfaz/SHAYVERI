@@ -21,6 +21,8 @@ namespace Tune {
 static constexpr int MAX_PLY             =   128;
 static constexpr int INF                 = 32001;
 static constexpr int MATE_SCORE          = 32000;
+static constexpr int TB_SCORE            = 30000;
+static constexpr int TB_THRESHOLD        = TB_SCORE - MAX_PLY;
 static constexpr int CORRHIST_TABLE_SIZE = 16384;
 
 // Internal tactical and move-ordering values. These are not tuned material terms.

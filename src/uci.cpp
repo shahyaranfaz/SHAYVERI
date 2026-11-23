@@ -184,6 +184,8 @@ static void set_syzygy_path(const std::string &value) {
     const std::string path = is_empty_syzygy_path(value) ? "<empty>" : value;
     if (path == "<empty>") {
         Tablebase::initialize(path);
+        TT.clear();
+        uci_search_context.clear_histories();
         g_syzygy_path = path;
         std::cout << "info string Syzygy cardinality 0\n";
         return;
@@ -202,6 +204,8 @@ static void set_syzygy_path(const std::string &value) {
         return;
     }
 
+    TT.clear();
+    uci_search_context.clear_histories();
     g_syzygy_path = path;
     std::cout << "info string Syzygy cardinality "
               << Tablebase::max_pieces() << "\n";
@@ -545,6 +549,7 @@ int main(int argc, char **argv) {
             stop_search();
             uci_search_context.stop = false;
             uci_search_context.nodes = 0;
+            uci_search_context.tb_hits = 0;
 
             if (book_hit && g_book_info_depth == 0) {
                 std::cout << "info string book\n"
@@ -642,13 +647,15 @@ int main(int argc, char **argv) {
                         char output[512];
                         const int output_size = std::snprintf(
                             output, sizeof(output),
-                            "info depth %d seldepth %d score %s time %lld nodes %llu nps %llu hashfull %d tbhits 0\n"
+                            "info depth %d seldepth %d score %s time %lld nodes %llu nps %llu hashfull %d tbhits %llu\n"
                             "bestmove %s%s\n",
                             result.depth, result.selective_depth, score,
                             static_cast<long long>(elapsed_ms),
                             static_cast<unsigned long long>(result.nodes),
                             static_cast<unsigned long long>(nps),
-                            uci_search_context.table.hashfull(), bestmove, ponder);
+                            uci_search_context.table.hashfull(),
+                            static_cast<unsigned long long>(uci_search_context.tb_hits.load()),
+                            bestmove, ponder);
                         write_search_output(output, output_size, sizeof(output));
                     }));
                 continue;
@@ -748,7 +755,7 @@ int main(int argc, char **argv) {
                     // A ponder search that finishes naturally, for example on
                     // a terminal position, must still wait for ponderhit or
                     // stop before returning a move.
-                    while (pondering && g_pondering.load()
+                    while (((pondering && g_pondering.load()) || real_tc.infinite)
                            && !uci_search_context.stop.load())
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
@@ -812,6 +819,7 @@ int main(int argc, char **argv) {
                 set_from_fen(bench_b, fen);
                 std::vector<Move> sm;
                 uci_search_context.nodes = 0;
+                uci_search_context.tb_hits = 0;
                 SearchResult res = search(
                     uci_search_context, bench_worker, bench_b, 10,
                     SearchRequest{

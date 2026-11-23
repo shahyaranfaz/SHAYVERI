@@ -28,6 +28,7 @@ struct SearchContext {
     TranspositionTable &table;
     std::atomic<bool> stop{false};
     std::atomic<U64> nodes{0};
+    std::atomic<U64> tb_hits{0};
     std::atomic<U64> node_limit{0};
 
 private:

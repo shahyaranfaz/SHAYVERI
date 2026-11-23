@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <mutex>
 #include <string>
 
 extern "C" {
@@ -63,7 +64,7 @@ WDL probe_wdl(const Board &board) {
         board.bit_boards[WB] | board.bit_boards[BB],
         board.bit_boards[WN] | board.bit_boards[BN],
         board.bit_boards[WP] | board.bit_boards[BP],
-        static_cast<unsigned>(board.half_move), 
+        static_cast<unsigned>(board.half_move),
         static_cast<unsigned>(board.castling),
         board.en_passant == SQ_NONE ? 0u : static_cast<unsigned>(board.en_passant),
         board.side_to_move == WHITE);
@@ -73,6 +74,9 @@ WDL probe_wdl(const Board &board) {
 
 RootResult probe_root(const Board &board) {
     if (!can_probe(board)) return {WDL::Failed, MOVE_NONE, 0};
+    // Fathom permits concurrent WDL probes, but not concurrent root probes.
+    static std::mutex root_mutex;
+    const std::lock_guard<std::mutex> lock(root_mutex);
 
     const unsigned result = tb_probe_root(
         board.occupancies[WHITE], board.occupancies[BLACK],
@@ -106,6 +110,9 @@ RootResult probe_root(const Board &board) {
             return {wdl, move, dtz};
         }
     }
+
+    // Without DTZ, a nonzero clock cannot be resolved safely using WDL alone.
+    if (board.half_move != 0) return {WDL::Failed, MOVE_NONE, 0};
 
     TbRootMoves results{};
     const int success = tb_probe_root_wdl(
